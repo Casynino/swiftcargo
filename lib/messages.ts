@@ -136,6 +136,16 @@ const day = (date: Date | null | undefined) =>
  * a dev machine would otherwise put a link in a customer's WhatsApp that
  * resolves to the customer's own phone.
  */
+/**
+ * WHATSAPP REMEMBERS A LINK'S CARD FOREVER.
+ *
+ * Its servers fetch the preview once per exact address and keep it, so a link
+ * already sent keeps showing the card it had that day — the old wording, the
+ * old picture. Bumping this tag changes the address enough for a fresh fetch
+ * while the page it opens is the same one.
+ */
+const SHARE_TAG = "s=2";
+
 export function trackUrl(): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (configured && !configured.includes("localhost")) {
@@ -218,7 +228,7 @@ export function composeMessage(
         cargoBlock(context) +
         storageBlock(context) +
         `\n\n*Angalia invoice yako kamili na njia za malipo:*\n` +
-        `${track}/${ref}`
+        `${track}/${ref}?${SHARE_TAG}`
       );
 
     case "payment.reminder":
@@ -230,7 +240,7 @@ export function composeMessage(
         cargoBlock(context) +
         storageBlock(context) +
         `\n\n*Angalia invoice yako kamili na njia za malipo:*\n` +
-        `${track}/${ref}`
+        `${track}/${ref}?${SHARE_TAG}`
       );
 
     case "cargo.ready":
@@ -242,7 +252,7 @@ export function composeMessage(
         cargoBlock(context) +
         `\n\nTafadhali njoo na kitambulisho.` +
         storageBlock(context) +
-        `\n\n*Fuatilia mzigo wako:*\n${track}/${ref}`
+        `\n\n*Fuatilia mzigo wako:*\n${track}/${ref}?${SHARE_TAG}`
       );
 
     default:
