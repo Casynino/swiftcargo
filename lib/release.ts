@@ -204,7 +204,9 @@ export const RELEASE_INCLUDE = {
     },
   },
   exceptions: { select: { status: true, reference: true } },
-  pickupNote: { select: { status: true, onCredit: true } },
+  /* noteNumber is not part of the decision either — it is the paper in the
+     customer's hand, and the counter matches one against the other. */
+  pickupNote: { select: { status: true, onCredit: true, noteNumber: true } },
 } satisfies Prisma.CargoInclude;
 
 export async function releaseCheckFor(cargoId: string) {

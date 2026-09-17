@@ -26,6 +26,12 @@ export const metadata: Metadata = { title: "Pickup list" };
  * timeline and the case live. This list answers one question: who is standing
  * at the counter, and may they take their goods.
  *
+ * The exception is a search. Somebody typed a name because that person is in
+ * front of them, and an empty list in answer teaches the counter nothing — so a
+ * search that matches blocked cargo says which consignment and what is missing,
+ * in the words lib/release.ts uses, which carry no figure. The alternative is a
+ * clerk ringing Finance, or releasing on a customer's word.
+ *
  * Clearance is computed on every read — verified, invoiced, paid, no case, no
  * hold. Nothing on this screen can grant it.
  */
@@ -70,6 +76,7 @@ export default async function ReleasePage({
 
   const checked = cargo.map((item) => ({ item, check: checkRelease(item) }));
   const ready = checked.filter((c) => c.check.ok);
+  const held = query ? checked.filter((c) => !c.check.ok) : [];
 
   return (
     <div className="space-y-6">
@@ -136,7 +143,16 @@ export default async function ReleasePage({
                       : ""}
                   </p>
                 </div>
-                <Badge tone="good">cleared</Badge>
+                {/* The paper the customer is holding, so the counter can match
+                    one against the other before anything moves. */}
+                <div className="flex items-center gap-2">
+                  {item.pickupNote?.noteNumber ? (
+                    <span className="tnum text-xs text-muted-foreground">
+                      {item.pickupNote.noteNumber}
+                    </span>
+                  ) : null}
+                  <Badge tone="good">cleared</Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 <ReleaseForm
@@ -151,6 +167,40 @@ export default async function ReleasePage({
         )}
       </section>
 
+      {/* Only ever in answer to a search: the customer is at the counter and
+          the clerk needs a sentence to give them. */}
+      {held.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Found, but not cleared ({held.length})
+          </h2>
+          <Card>
+            <CardContent className="space-y-2 pt-6">
+              {held.map(({ item, check }) => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-lg border px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{item.receiver.fullName}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      <Link
+                        href={`/app/cargo/${item.id}`}
+                        className="tnum hover:underline"
+                      >
+                        {item.reference}
+                      </Link>
+                      {" · "}
+                      {check.blockedBy}
+                    </p>
+                  </div>
+                  <Badge tone="warn">not cleared</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
     </div>
   );
 }
