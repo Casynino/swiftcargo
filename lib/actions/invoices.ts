@@ -261,32 +261,48 @@ export async function generateContainerInvoices(
 
     const { vatAmount, total } = applyVat(priced.amount, vatPercent);
 
-    await prisma.invoice.create({
-      data: {
-        number: numbers[index],
-        customerId: cargo.receiverId,
-        cargoId: cargo.id,
-        containerCargoId: line.id,
-        status: "DRAFT",
-        billableCbm: priced.billableCbm,
-        billableKg: priced.billableKg,
-        standardRate: priced.standardRate,
-        appliedRate: priced.appliedRate,
-        rateBasis: priced.basis,
-        discount: priced.discount,
-        subtotal: priced.amount,
-        vatPercent,
-        vatAmount,
-        total,
-        currency: priced.currency,
-        exchangeRateId: fx?.id ?? null,
-        fxRate: fx?.rate ?? null,
-        totalTzs: fx ? usdToTzs(total, fx.rate) : null,
-        issuedById: actor.id,
-        items: { create: priced.items },
-      },
-    });
-    raised++;
+    /* Two people pressing this on the same container both read the same lines
+       and both try to write. The unique constraint on the sailing decides it,
+       and the loser is named in the answer — an unhandled collision here would
+       abandon the run half-done, with the consignments after it unbilled and
+       nothing on screen saying which. */
+    try {
+      await prisma.invoice.create({
+        data: {
+          number: numbers[index],
+          customerId: cargo.receiverId,
+          cargoId: cargo.id,
+          containerCargoId: line.id,
+          status: "DRAFT",
+          billableCbm: priced.billableCbm,
+          billableKg: priced.billableKg,
+          standardRate: priced.standardRate,
+          appliedRate: priced.appliedRate,
+          rateBasis: priced.basis,
+          discount: priced.discount,
+          subtotal: priced.amount,
+          vatPercent,
+          vatAmount,
+          total,
+          currency: priced.currency,
+          exchangeRateId: fx?.id ?? null,
+          fxRate: fx?.rate ?? null,
+          totalTzs: fx ? usdToTzs(total, fx.rate) : null,
+          issuedById: actor.id,
+          items: { create: priced.items },
+        },
+      });
+      raised++;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        skipped.push(`${cargo.reference}: already billed for this sailing.`);
+        continue;
+      }
+      throw error;
+    }
   }
 
   await recordAudit({
