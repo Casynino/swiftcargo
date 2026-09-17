@@ -94,7 +94,6 @@ function cargoBlock(context: MessageContext): string {
   if (context.reference) lines.push(`• Tracking: ${context.reference}`);
   if (context.invoiceNumber) lines.push(`• Invoice: ${context.invoiceNumber}`);
   if (context.description) lines.push(`• Bidhaa: ${context.description}`);
-  if (context.packages) lines.push(`• Vifurushi: ${context.packages}`);
   if (context.cbm) lines.push(`• Ujazo: ${context.cbm} CBM`);
   if (context.ratePerCbm) {
     lines.push(`• Rate: ${context.currency ?? "USD"} ${context.ratePerCbm}/CBM`);
@@ -161,103 +160,89 @@ export function composeMessage(
   const name = context.customerName.split(" ")[0] ?? context.customerName;
   const ref = context.reference ?? "";
   const track = context.trackUrl ?? trackUrl();
-  const sign = `\n\n— ${COMPANY.name}`;
-  const goods = context.description ? ` (${context.description})` : "";
+  const link = ref ? `${track}/${ref}?${SHARE_TAG}` : track;
+
+  /**
+   * ONE LETTER, WHATEVER THE DESK.
+   *
+   * Company name, a greeting on its own line, one sentence saying where the
+   * cargo is, the details as bullets, the storage terms, then the link. Support,
+   * Finance and the owner all send this shape, so a customer who gets two
+   * messages in a week reads the same thing twice rather than two inventions.
+   */
+  const letter = (
+    sentence: string,
+    options: { details?: boolean; storage?: boolean; linkLabel?: string } = {}
+  ) => {
+    const { details = true, storage = true, linkLabel } = options;
+    return (
+      `*${COMPANY.name.toUpperCase()}*\n\n` +
+      `Habari ${name} !\n\n` +
+      `${sentence}` +
+      (details ? `\n\n${cargoBlock(context)}` : "") +
+      (storage ? storageBlock(context) : "") +
+      `\n\n*${linkLabel ?? "Fuatilia mzigo wako:"}*\n${link}`
+    );
+  };
 
   switch (kind) {
     case "cargo.received_china":
-      return (
-        `Habari ${name}, mzigo wako${goods} umepokelewa katika ghala letu ${ROUTE.originCity}, China.\n` +
-        `Namba ya kufuatilia: ${ref}\n` +
-        (context.packages ? `Vifurushi: ${context.packages}\n` : "") +
-        (context.cbm ? `Ujazo: ${context.cbm} CBM\n` : "") +
-        `Fuatilia hapa: ${track}\n\n` +
-        `Hello ${name}, we have received your cargo at our ${ROUTE.originCity} warehouse. ` +
-        `Track it any time with ${ref}.` +
-        sign
+      return letter(
+        `Mzigo wako umepokelewa katika ghala letu ${ROUTE.originCity}, China, ` +
+          `na unasubiri kupakiwa kwenye kontena.`,
+        { storage: false }
       );
 
     case "cargo.loaded":
-      return (
-        `Habari ${name}, mzigo wako ${ref} umepakiwa kwenye kontena` +
-        (context.containerNumber ? ` ${context.containerNumber}` : "") +
-        ` tayari kwa safari.\n\n` +
-        `Hello ${name}, your cargo ${ref} has been loaded into a container and is ready to sail.` +
-        sign
+      return letter(
+        `Mzigo wako umepakiwa kwenye kontena` +
+          (context.containerNumber ? ` ${context.containerNumber}` : "") +
+          ` tayari kwa safari kuelekea ${ROUTE.destinationCity}.`,
+        { storage: false }
       );
 
     case "cargo.departed":
-      return (
-        `Habari ${name}, mzigo wako ${ref} umeondoka ${ROUTE.originCity}` +
-        (context.vessel ? ` kwa meli ${context.vessel}` : "") +
-        ` kuelekea ${ROUTE.destinationCity}.\n` +
-        `Safari ya baharini huchukua siku ${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax}.\n` +
-        (context.eta ? `Tunatarajia kufika: ${day(context.eta)}\n` : "") +
-        `\nHello ${name}, your cargo ${ref} has left ${ROUTE.originCity} for ${ROUTE.destinationCity}. ` +
-        `Sea transit takes ${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} days.` +
-        sign
+      return letter(
+        `Mzigo wako umeondoka ${ROUTE.originCity}` +
+          (context.vessel ? ` kwa meli ${context.vessel}` : "") +
+          ` kuelekea ${ROUTE.destinationCity}. Safari ya baharini huchukua siku ` +
+          `${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax}` +
+          (context.eta ? `, tunatarajia kufika ${day(context.eta)}` : "") +
+          `.`,
+        { storage: false }
       );
 
     case "cargo.arrived":
-      return (
-        `Habari ${name}, mzigo wako ${ref} umefika bandari ya ${ROUTE.destinationCity}. ` +
-        `Tunaendelea na taratibu za forodha na tutakujulisha ukiwa tayari.\n\n` +
-        `Hello ${name}, your cargo ${ref} has arrived at ${ROUTE.destinationCity} port. ` +
-        `We are clearing it and will let you know when it is ready.` +
-        sign
+      return letter(
+        `Mzigo wako umefika bandari ya ${ROUTE.destinationCity}. Tunaendelea na ` +
+          `taratibu za forodha na tutakujulisha ukiwa tayari.`,
+        { storage: false }
       );
 
     case "cargo.received_dar":
-      return (
-        `Habari ${name}, mzigo wako ${ref} umefika ghala letu ${ROUTE.destinationCity}. ` +
-        `Tunauhakiki na tutakutumia invoice hivi punde.\n\n` +
-        `Hello ${name}, your cargo ${ref} is at our ${ROUTE.destinationCity} warehouse. ` +
-        `We are checking it in and your invoice will follow shortly.` +
-        sign
+      return letter(
+        `Mzigo wako umefika ghala letu ${ROUTE.destinationCity}. Tunauhakiki na ` +
+          `tutakutumia invoice hivi punde.`
       );
 
     case "invoice.issued":
-      /* The same shape as the reminder: the customer reads one message layout
-         whichever desk sent it, with the shilling figure in bold and the link
-         to the bill underneath. */
-      return (
-        `*${COMPANY.name.toUpperCase()}*\n\n` +
-        `Habari ${name},\n` +
-        `Mzigo wako umefika salama ${ROUTE.destinationCity} na uko tayari ` +
-        `kuchukuliwa baada ya malipo kuthibitishwa.\n\n` +
-        cargoBlock(context) +
-        storageBlock(context) +
-        `\n\n*Angalia invoice yako kamili na njia za malipo:*\n` +
-        `${track}/${ref}?${SHARE_TAG}`
-      );
-
     case "payment.reminder":
-      return (
-        `*${COMPANY.name.toUpperCase()}*\n\n` +
-        `Habari ${name},\n` +
+      return letter(
         `Mzigo wako umefika salama ${ROUTE.destinationCity} na uko tayari ` +
-        `kuchukuliwa baada ya malipo kuthibitishwa.\n\n` +
-        cargoBlock(context) +
-        storageBlock(context) +
-        `\n\n*Angalia invoice yako kamili na njia za malipo:*\n` +
-        `${track}/${ref}?${SHARE_TAG}`
+          `kuchukuliwa baada ya malipo kuthibitishwa.`,
+        { linkLabel: "Angalia invoice yako kamili na njia za malipo:" }
       );
 
     case "cargo.ready":
-      return (
-        `*${COMPANY.name.toUpperCase()}*\n\n` +
-        `Habari ${name},\n` +
+      return letter(
         `Mzigo wako umelipiwa na uko tayari kuchukuliwa katika ghala letu ` +
-        `${ROUTE.destinationCity}.\n\n` +
-        cargoBlock(context) +
-        `\n\nTafadhali njoo na kitambulisho.` +
-        storageBlock(context) +
-        `\n\n*Fuatilia mzigo wako:*\n${track}/${ref}?${SHARE_TAG}`
+          `${ROUTE.destinationCity}. Tafadhali njoo na kitambulisho.`
       );
 
     default:
-      return (
-        `Habari ${name},\n\nHello ${name},` + (ref ? ` (${ref})` : "") + sign
+      return letter(
+        `Tunakuandikia kuhusu mzigo wako.`,
+        { details: !!ref, storage: false }
       );
   }
 }
