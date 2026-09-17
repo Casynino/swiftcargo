@@ -16,3 +16,37 @@ export function whatsappHref(number: string | null | undefined) {
   const digits = (number ?? "").replace(/\D/g, "");
   return digits.length >= 9 ? `https://wa.me/${digits}` : null;
 }
+
+/**
+ * A WhatsApp chat that opens with the message already written.
+ *
+ * NOBODY SHOULD ARRIVE IN THE DESK'S INBOX SAYING NOTHING. A bare wa.me link
+ * opens an empty chat, and what lands is "Hi" — the desk then spends two
+ * messages finding out who is writing and about what. With the greeting and the
+ * reference already in the box the customer presses send once, and the first
+ * thing the desk reads is the thing it needs.
+ *
+ * Swahili first: it is the customer's language, and the warmth is the point.
+ * The text is the customer's to edit before they send it — it is a draft in
+ * their app, not a message anybody sends on their behalf.
+ */
+export function whatsappLink(
+  number: string | null | undefined,
+  text?: string | null
+): string | null {
+  const base = whatsappHref(number);
+  if (!base || !text) return base;
+  return `${base}?text=${encodeURIComponent(text)}`;
+}
+
+/** The openers, in one place so every entrance to the desk sounds the same. */
+export const WHATSAPP_OPENER = {
+  /** No reference to hand — the footer, the contact page. */
+  general: "Habari Swift Cargo! Mambo vipi? Naomba msaada kuhusu usafirishaji wa mzigo.",
+  /** Asking about one consignment. */
+  cargo: (reference: string) =>
+    `Habari Swift Cargo! Mambo vipi? Naomba msaada kuhusu mzigo ${reference}.`,
+  /** Sending the slip for a bill. */
+  paymentProof: (reference: string) =>
+    `Habari Swift Cargo! Mambo vipi? Nimelipia mzigo ${reference} — huu hapa uthibitisho wa malipo.`,
+} as const;

@@ -5,7 +5,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
-import { telHref, whatsappHref } from "@/lib/site-contact";
+import { telHref, whatsappLink, WHATSAPP_OPENER } from "@/lib/site-contact";
 
 const SHIP = [
   ["/services", "Services"],
@@ -30,7 +30,9 @@ export async function SiteFooter() {
   const company = await prisma.companySetting.findUnique({
     where: { id: "singleton" },
   });
-  const whatsapp = whatsappHref(company?.whatsapp);
+  /* Opens with the greeting already written, so what reaches the desk is a
+     person asking about something rather than a bare "Hi". */
+  const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER.general);
 
   return (
     <footer className="border-t bg-ink text-white/80">

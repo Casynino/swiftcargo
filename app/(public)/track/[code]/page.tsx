@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { clientAddress, hit } from "@/lib/rate-limit";
-import { whatsappHref } from "@/lib/site-contact";
+import { whatsappLink, WHATSAPP_OPENER } from "@/lib/site-contact";
 import { SHARE_CARD_TEXT } from "@/lib/share-card-text";
 import {
   referenceFromInput,
@@ -235,12 +235,17 @@ export default async function TrackResultPage({
 function TrackingCard({ result }: { result: PublicTracking }) {
   const locale = DEFAULT_LOCALE;
   const { journey, charge, storage } = result;
-  const wa = whatsappHref(result.whatsapp);
-  const waAbout = wa
-    ? `${wa}?text=${encodeURIComponent(
-        `Hello Swift Cargo, I am asking about cargo ${result.reference}`
-      )}`
-    : null;
+  /* Both links open WhatsApp with the message written: the customer presses
+     send once, and the desk reads the reference before it reads anything
+     else. See lib/site-contact.ts. */
+  const waProof = whatsappLink(
+    result.whatsapp,
+    WHATSAPP_OPENER.paymentProof(result.reference)
+  );
+  const waAbout = whatsappLink(
+    result.whatsapp,
+    WHATSAPP_OPENER.cargo(result.reference)
+  );
   const settled = charge?.status === "PAID";
   const ready = journey.headline === "Ready for collection";
 
@@ -585,9 +590,9 @@ function TrackingCard({ result }: { result: PublicTracking }) {
                   {result.reference}
                 </span>{" "}
                 kama kumbukumbu ya malipo. Baada ya kulipa, tuma uthibitisho kwa{" "}
-                {wa ? (
+                {waProof ? (
                   <a
-                    href={wa}
+                    href={waProof}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-brand hover:underline"
