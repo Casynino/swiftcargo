@@ -4,7 +4,7 @@
   "private": true,
   "description": "Swift Cargo — sea freight China → Tanzania. Public website, customer portal and internal operations system.",
   "engines": {
-    "node": ">=18.18"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
