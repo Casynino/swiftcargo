@@ -74,6 +74,8 @@ export type PriceListRow = {
 
 export type PriceList = {
   rows: PriceListRow[];
+  /** From CompanySetting, so the row dialog adds up to what the bill says. */
+  vatPercent: string;
   /** Rows that can be confirmed now. */
   ready: number;
   totalUsdLabel: string;
@@ -253,6 +255,7 @@ export async function priceListFor(
   const sumTzs = fx ? ready.reduce((sum, r) => sum + r.totalTzs, 0) : null;
   return {
     rows,
+    vatPercent: vatPercent.toString(),
     ready: ready.length,
     totalUsdLabel: formatCurrency(sumUsd, "USD"),
     totalTzsLabel: sumTzs === null ? null : formatCurrency(sumTzs, "TZS"),

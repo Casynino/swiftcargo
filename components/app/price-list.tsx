@@ -87,6 +87,7 @@ export function PriceList({
                 row={row}
                 cargoTypes={cargoTypes}
                 canEdit={canConfirm}
+                vatPercent={Number(list.vatPercent)}
                 locale={locale}
               />
             ))}
@@ -194,11 +195,13 @@ function PriceRow({
   row,
   cargoTypes,
   canEdit,
+  vatPercent,
   locale,
 }: {
   row: PriceListRow;
   cargoTypes: string[];
   canEdit: boolean;
+  vatPercent: number;
   locale: Locale;
 }) {
   return (
@@ -246,7 +249,12 @@ function PriceRow({
         ) : null}
       </td>
       <td className="px-4 py-3">
-        <RateCell row={row} canEdit={canEdit} locale={locale} />
+        <RateCell
+          row={row}
+          canEdit={canEdit}
+          vatPercent={vatPercent}
+          locale={locale}
+        />
       </td>
       <td className="tnum px-4 py-3 text-right">
         {row.blockedReason ? (
@@ -319,10 +327,12 @@ function TypeCell({
 function RateCell({
   row,
   canEdit,
+  vatPercent,
   locale,
 }: {
   row: PriceListRow;
   canEdit: boolean;
+  vatPercent: number;
   locale: Locale;
 }) {
   const shown = (
@@ -361,6 +371,7 @@ function RateCell({
         freight={Number(row.freight)}
         extra={Number(row.extra)}
         discount={Number(row.discountOff)}
+        vatPercent={vatPercent}
         locale={locale}
       />
     </div>

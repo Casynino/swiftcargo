@@ -286,3 +286,172 @@ describe("confirming prices a list at a time", () => {
     });
   });
 });
+
+/**
+ * THE PER-CARGO PRICE DIALOG, AGAINST THE DATABASE.
+ *
+ * Four boxes go into it and any of them may be empty, which is the whole
+ * difficulty: empty is not zero. A rate and a freight total both empty mean
+ * "price this from the rate book again"; a rate typed beats a total typed; and
+ * pressing Save twice with the same extra in the box must not charge it twice.
+ */
+describe("the price for one cargo, set from the row", () => {
+  test("a typed rate beats a typed total, and the book's rate stays beside it", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW1", { cargoType: "TEST Shoes", cbm: "2" });
+
+      const saved = await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: new Prisma.Decimal(300),
+        /* Typed as well, and deliberately ignored: the rate is the figure
+           somebody agreed and the total is what falls out of it. */
+        freight: new Prisma.Decimal(999),
+        extra: null,
+        discount: null,
+        reason: "Agreed on the phone",
+      });
+      assert.equal(saved.total.toString(), (await withVat(tx, "600")).toString());
+
+      const invoice = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      assert.equal(invoice.status, "DRAFT");
+      assert.equal(invoice.appliedRate?.toString(), "300");
+      assert.equal(invoice.standardRate?.toString(), "400", "the book's own rate is kept");
+      assert.ok(lib.carriesAgreedRate(invoice), "and it reads as an agreement");
+
+      const moved = await tx.fieldChange.findMany({
+        where: { entity: "Invoice", entityId: invoice.id },
+      });
+      assert.ok(
+        moved.some((f) => f.field === "appliedRate") && moved.some((f) => f.field === "total"),
+        "the old rate and the old total are on the record first"
+      );
+    });
+  });
+
+  test("an extra and a discount are their own lines, and saving twice does not stack them", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW2", { cargoType: "TEST Shoes", cbm: "1" });
+
+      const input = {
+        cargoId: cargo.id,
+        basis: "PER_CBM" as const,
+        rate: new Prisma.Decimal(400),
+        freight: null,
+        extra: new Prisma.Decimal(50),
+        discount: new Prisma.Decimal(20),
+        reason: "Repacked, and a little off",
+      };
+      await lib.setWaitingPrice(tx, me, input);
+      const second = await lib.setWaitingPrice(tx, me, input);
+
+      assert.equal(second.total.toString(), (await withVat(tx, "430")).toString());
+      const invoice = await tx.invoice.findFirstOrThrow({
+        where: { cargoId: cargo.id },
+        include: { items: true },
+      });
+      assert.equal(invoice.items.filter((i) => i.category === "Charge").length, 1);
+      assert.equal(invoice.items.filter((i) => i.category === "Discount").length, 1);
+      assert.equal(invoice.discount.toString(), "20");
+    });
+  });
+
+  test("both boxes empty puts the row back on the rate book", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW3", { cargoType: "TEST Shoes", cbm: "1" });
+
+      await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: new Prisma.Decimal(120),
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "Agreed, then regretted",
+      });
+      const back = await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: null,
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "Back to the published rate",
+      });
+
+      assert.equal(back.total.toString(), (await withVat(tx, "400")).toString());
+      const invoice = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      assert.equal(invoice.appliedRate?.toString(), "400");
+      assert.equal(
+        lib.carriesAgreedRate(invoice),
+        false,
+        "and it no longer claims to be an agreement"
+      );
+    });
+  });
+
+  test("a freight total typed by hand clears the rate rather than claiming one", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW4", { cargoType: "TEST Shoes", cbm: "1" });
+
+      const saved = await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: null,
+        freight: new Prisma.Decimal(275),
+        extra: null,
+        discount: null,
+        reason: "One price for the lot",
+      });
+      assert.equal(saved.total.toString(), (await withVat(tx, "275")).toString());
+
+      const invoice = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      assert.equal(invoice.appliedRate, null, "nobody derived this from a rate");
+      assert.equal(invoice.rateBasis, "FLAT");
+    });
+  });
+
+  test("a bill that has gone out is not reached from the price list", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW5", { cargoType: "TEST Shoes", cbm: "1" });
+
+      await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: new Prisma.Decimal(350),
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "Agreed",
+      });
+      await tx.invoice.updateMany({
+        where: { cargoId: cargo.id },
+        data: { status: "ISSUED", issuedAt: new Date() },
+      });
+
+      await assert.rejects(
+        () =>
+          lib.setWaitingPrice(tx, me, {
+            cargoId: cargo.id,
+            basis: "PER_CBM",
+            rate: new Prisma.Decimal(100),
+            freight: null,
+            extra: null,
+            discount: null,
+            reason: "Second thoughts",
+          }),
+        (error: unknown) => error instanceof lib.PriceListRefused
+      );
+    });
+  });
+});

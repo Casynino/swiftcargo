@@ -41,6 +41,7 @@ export function RowPriceEditor({
   freight,
   extra,
   discount,
+  vatPercent,
   locale,
 }: {
   cargoId: string;
@@ -63,6 +64,8 @@ export function RowPriceEditor({
   freight: number;
   extra: number;
   discount: number;
+  /** What the bill will add on top, so the preview is the figure that lands. */
+  vatPercent: number;
   locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
@@ -113,7 +116,11 @@ export function RowPriceEditor({
     rate.trim() === "" ? null : Math.round(n(rate) * pricedOn * 100) / 100;
   const effectiveFreight =
     fromRate ?? (typed.trim() === "" ? freight : n(typed));
-  const preview = effectiveFreight + n(more) - n(off);
+  const subtotal = effectiveFreight + n(more) - n(off);
+  /* VAT is added by the bill, so the dialog adds it too. A preview that stops
+     at the subtotal sends the desk back to the row to find a bigger number. */
+  const vat = Math.round(subtotal * (vatPercent / 100) * 100) / 100;
+  const preview = subtotal + vat;
 
   if (!open) {
     return (
@@ -406,7 +413,8 @@ export function RowPriceEditor({
             <span className="text-muted-foreground">
               {effectiveFreight.toFixed(2)}
               {n(more) > 0 ? ` + ${n(more).toFixed(2)}` : ""}
-              {n(off) > 0 ? ` − ${n(off).toFixed(2)}` : ""} ={" "}
+              {n(off) > 0 ? ` − ${n(off).toFixed(2)}` : ""}
+              {vat > 0 ? ` + ${vat.toFixed(2)} ${t(locale, "VAT")}` : ""} ={" "}
             </span>
             <span className="font-semibold text-foreground">
               {currency} {preview.toFixed(2)}

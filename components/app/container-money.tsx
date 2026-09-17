@@ -207,6 +207,10 @@ export async function ContainerMoney({
   const mayConfirm = can(user.role, "invoice.priceConfirm");
   const mayAmend = can(user.role, "container.amendArrived");
   const mayReadCosts = can(user.role, "expense.view");
+  /* The two desks that talk to customers about money. The floors hold neither,
+     so the send button is not rendered for them and the action refuses them. */
+  const mayTellCustomers =
+    can(user.role, "conversation.reply") || can(user.role, "payment.submit");
   const [locale, correction, priceList, cargoTypes] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
@@ -339,6 +343,28 @@ export async function ContainerMoney({
       invoiceHref: r.live[0]
         ? `/app/finance/invoices/${r.live[0].id}`
         : null,
+      invoiceId: r.live[0]?.id ?? null,
+      send: (() => {
+        const bill = r.live[0];
+        if (!mayTellCustomers || !bill) return null;
+        const phone = whatsappNumber(c.receiver.phone);
+        if (!phone) return null;
+        return {
+          phone,
+          /* The invoice's own pinned figures, never today's rate: a customer
+             quoted at 2,700 who then reads 2,800 believes the bill changed. */
+          message: composeMessage("invoice.issued", {
+            customerName: c.receiver.fullName,
+            reference: c.reference,
+            description: c.description,
+            invoiceNumber: bill.number,
+            amount: bill.total.toString(),
+            amountTzs: bill.totalTzs?.toString() ?? null,
+            fxRate: bill.fxRate?.toString() ?? null,
+            currency: bill.currency,
+          }),
+        };
+      })(),
       href: `/app/cargo/${c.id}`,
       cargoType: types[0] ?? null,
       typeMixed: types.length > 1,
@@ -562,8 +588,14 @@ export async function ContainerMoney({
             {rows.filter((r) => r.owing > 0).length} consignment
             {rows.filter((r) => r.owing > 0).length === 1 ? "" : "s"} still owed{" "}
             <span className="tnum font-semibold text-destructive">
-              {formatMoney(owedTotal, currency)}
+              {tzs(owedTotal) ?? formatMoney(owedTotal, currency)}
             </span>
+            {rate ? (
+              <span className="tnum text-muted-foreground">
+                {" "}
+                ({formatMoney(owedTotal, currency)})
+              </span>
+            ) : null}
           </p>
           <Link
             href="/app/finance/collections"
@@ -592,8 +624,8 @@ export async function ContainerMoney({
           label: `${a.bankName} (${a.currency})`,
         }))}
         missing={missingCosts}
-        totalLabel={formatMoney(spent, "USD")}
-        totalSecondary={tzs(spent)}
+        totalLabel={tzs(spent) ?? formatMoney(spent, "USD")}
+        totalSecondary={rate ? formatMoney(spent, "USD") : null}
         mayRecord={mayRecordCost}
         locale={locale}
         correctionAccounts={correction.accounts}
@@ -610,6 +642,7 @@ export async function ContainerMoney({
         otherContainers={otherContainers}
         canConfirm={mayConfirm}
         canAmend={mayAmend}
+        vatPercent={Number(priceList.vatPercent)}
         locale={locale}
       />
 

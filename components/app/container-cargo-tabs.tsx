@@ -14,6 +14,7 @@ import {
 
 import { useUrlState } from "@/components/app/use-url-state";
 import { MoveCargo } from "@/components/app/move-cargo";
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { RowPriceEditor } from "@/components/app/row-price-editor";
 import { SubmitButton } from "@/components/app/submit-button";
 import { setPriceListCargoType, type PriceListState } from "@/lib/actions/price-list";
@@ -53,7 +54,19 @@ export type CargoRow = {
   /** How many photographs there are, when there is more than one. */
   proofCount: number;
   invoiceHref: string | null;
+  invoiceId: string | null;
   href: string;
+  /**
+   * THE BILL, READY TO GO TO THE CUSTOMER.
+   *
+   * Confirming a price issues the invoice and puts a notification in the
+   * customer's portal. Most customers here read WhatsApp, not a portal, so the
+   * bill is sent by a person from the list they are already looking at — the
+   * wording composed on the server from the invoice's own pinned figures, so
+   * nobody retypes an amount into a phone. Null where there is no bill yet, no
+   * number to send to, or no authority to send.
+   */
+  send: { phone: string; message: string } | null;
   /** The single cargo type on the lines, for the picker on the row. */
   cargoType: string | null;
   /** Lines at more than one type — changed on the consignment, not here. */
@@ -121,6 +134,7 @@ export function ContainerCargoTabs({
   otherContainers,
   canConfirm,
   canAmend,
+  vatPercent,
   locale,
 }: {
   containerId: string;
@@ -133,6 +147,8 @@ export function ContainerCargoTabs({
   otherContainers: { id: string; reference: string }[];
   canConfirm: boolean;
   canAmend: boolean;
+  /** What the bill adds on top, so a row's dialog agrees with its own row. */
+  vatPercent: number;
   locale: Locale;
 }) {
   const [tab, setTab] = useUrlState("tab", "cargo", ["cargo", "documents", "timeline"] as const);
@@ -280,6 +296,7 @@ export function ContainerCargoTabs({
                   otherContainers={otherContainers}
                   canConfirm={canConfirm}
                   canAmend={canAmend}
+                  vatPercent={vatPercent}
                   locale={locale}
                 />
               ))}
@@ -366,6 +383,7 @@ function CargoTableRow({
   otherContainers,
   canConfirm,
   canAmend,
+  vatPercent,
   locale,
 }: {
   containerId: string;
@@ -374,6 +392,7 @@ function CargoTableRow({
   otherContainers: { id: string; reference: string }[];
   canConfirm: boolean;
   canAmend: boolean;
+  vatPercent: number;
   locale: Locale;
 }) {
   const [moving, setMoving] = useState(false);
@@ -446,6 +465,17 @@ function CargoTableRow({
                 {t(locale, "Move")}
               </button>
             ) : null}
+            {row.send ? (
+              <WhatsAppButton
+                cargoId={row.id}
+                invoiceId={row.invoiceId ?? undefined}
+                phone={row.send.phone}
+                message={row.send.message}
+                kind="invoice.issued"
+                label={t(locale, "Send the bill")}
+                iconOnly
+              />
+            ) : null}
             {canConfirm && row.edit ? (
               <RowPriceEditor
                 cargoId={row.id}
@@ -460,6 +490,7 @@ function CargoTableRow({
                 freight={row.edit.freight}
                 extra={row.edit.extra}
                 discount={row.edit.discount}
+                vatPercent={vatPercent}
                 locale={locale}
               />
             ) : null}
