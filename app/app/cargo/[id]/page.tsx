@@ -559,7 +559,7 @@ export default async function CargoDetailPage({
                       china: china ? formatCbm(china.cbm) : "—",
                       dar: dar.cbm ? formatCbm(dar.cbm) : "—",
                       delta: cbmDelta
-                        ? `${cbmDelta.difference.greaterThan(0) ? "+" : ""}${cbmDelta.difference.toFixed(3)} m³`
+                        ? `${cbmDelta.difference.greaterThan(0) ? "+" : ""}${cbmDelta.difference.toFixed(3)} CBM`
                         : null,
                       differs: !!cbmDelta && !cbmDelta.difference.isZero(),
                     },

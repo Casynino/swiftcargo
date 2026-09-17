@@ -387,14 +387,14 @@ export default async function LoadingContainersPage({
                             : "Departed"}
                     </Badge>
 
-                    {/* How full, as a bar. "18.9 m³" means nothing on its own;
+                    {/* How full, as a bar. "18.9 CBM" means nothing on its own;
                         "18.9 of 76" is the question the loading bay asks. */}
                     <div className="min-w-[12rem] flex-1">
                       <div className="flex items-baseline justify-between text-xs">
                         <span className="tnum font-medium">
                           {formatCbm(box.cbm)}{" "}
                           <span className="text-muted-foreground">
-                            of {box.capacity} m³
+                            of {box.capacity} CBM
                           </span>
                         </span>
                         <span className="tnum text-muted-foreground">

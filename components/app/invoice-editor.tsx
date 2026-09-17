@@ -121,7 +121,7 @@ export function InvoiceEditor({
               />
               <p className="text-xs text-muted-foreground">
                 The rate book says {standardRate !== null ? `USD ${standardRate.toFixed(2)}` : "nothing recorded"}
-                {freight !== null ? ` · ${Number(rate).toFixed(2)} × ${cbm!.toFixed(3)} m³ = USD ${freight.toFixed(2)} before VAT` : ""}.
+                {freight !== null ? ` · ${Number(rate).toFixed(2)} × ${cbm!.toFixed(3)} CBM = USD ${freight.toFixed(2)} before VAT` : ""}.
                 Anything else is recorded as a variance against the rate book, with your reason.
               </p>
             </div>

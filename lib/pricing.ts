@@ -248,9 +248,9 @@ export async function quote(
     amount,
     discount: billableCbm.mul(standardRate).sub(amount).toDecimalPlaces(2),
     blockedReason: null,
-    explanation: `${billableCbm.toFixed(3)} m³ at ${currency} ${appliedRate}/m³${
+    explanation: `${billableCbm.toFixed(3)} CBM at ${currency} ${appliedRate}/CBM${
       floor && measuredCbm.lessThan(floor)
-        ? ` (minimum ${new Prisma.Decimal(floor).toFixed(3)} m³)`
+        ? ` (minimum ${new Prisma.Decimal(floor).toFixed(3)} CBM)`
         : ""
     }`,
   };

@@ -80,7 +80,7 @@ export function CargoMix({
           <h2 className="font-semibold">{t(locale, "What you are sending")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{periodLabel}</p>
         </div>
-        <p className="tnum text-right text-xs text-muted-foreground">{totalCbm.toFixed(2)} m³</p>
+        <p className="tnum text-right text-xs text-muted-foreground">{totalCbm.toFixed(2)} CBM</p>
       </div>
 
       <div className="flex items-center justify-center py-2">

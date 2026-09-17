@@ -284,7 +284,7 @@ export default async function ContainerPage({
         THE BOX, IN SIX FIGURES.
 
         All six are added up from the consignments inside — nobody types a total
-        anywhere — and the volume card carries a ring, because "4.8 m³" means
+        anywhere — and the volume card carries a ring, because "4.8 CBM" means
         nothing on its own and "4.8 of 67" is the only question the loading bay
         is actually asking.
       */}
@@ -341,7 +341,7 @@ export default async function ContainerPage({
           label="Volume loaded"
           numeric={Number(loadedCbm)}
           decimals={3}
-          suffix=" m³"
+          suffix=" CBM"
           icon={ContainerIcon}
           tone="success"
           hint={

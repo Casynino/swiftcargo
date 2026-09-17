@@ -27,7 +27,7 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
     {}
   );
   /* The capacity follows the box chosen until somebody types their own — a
-     20-foot box offered 67 m³ reads full at half its real load, and "over
+     20-foot box offered 67 CBM reads full at half its real load, and "over
      capacity" on the loading screen is only as good as this number. */
   const [capacity, setCapacity] = useState("67");
   const [capacityByHand, setCapacityByHand] = useState(false);
@@ -77,7 +77,7 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="capacityCbm">Usable capacity (m³)</Label>
+            <Label htmlFor="capacityCbm">Usable capacity (CBM)</Label>
             <Input
               id="capacityCbm"
               name="capacityCbm"

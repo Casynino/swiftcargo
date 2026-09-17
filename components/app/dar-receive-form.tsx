@@ -169,7 +169,7 @@ export function DarReceiveForm({
 
         <div className="space-y-2">
           <Label htmlFor="cbm">
-            Volume (m³)
+            Volume (CBM)
             {china ? (
               <span className="ml-2 font-normal text-muted-foreground">
                 China said {Number(china.cbm).toFixed(3)}

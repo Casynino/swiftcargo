@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, type RateBasis } from "@prisma/client";
 
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { formatCurrency, formatRate, roundMoney, usdToTzs } from "@/lib/currency";
@@ -472,6 +472,337 @@ export async function setWaitingCargoType(
     keepAgreedRate: false,
   });
   return { changed, outcome };
+}
+
+export type WaitingPriceInput = {
+  cargoId: string;
+  /** The unit the rate is quoted in. The rate book's own basis, or the other one. */
+  basis: RateBasis;
+  /** The rate agreed. Null with a null freight means "price it from the book". */
+  rate: Prisma.Decimal | null;
+  /** A freight total typed straight in, when nobody derived it from a rate. */
+  freight: Prisma.Decimal | null;
+  /** Handling, repacking, a delivery — one line, replaced each time. */
+  extra: Prisma.Decimal | null;
+  /** Money off, as one line. Zero or null takes an earlier one back off. */
+  discount: Prisma.Decimal | null;
+  reason?: string | null;
+};
+
+const FREIGHT_UNIT: Record<RateBasis, string> = {
+  PER_CBM: "CBM",
+  PER_KG: "kg",
+  FLAT: "consignment",
+};
+
+/**
+ * THE WHOLE PRICE OF ONE WAITING CONSIGNMENT, SET IN ONE PRESS.
+ *
+ * What the air side's per-cargo dialog does, in cubic metres. Four figures come
+ * in — the rate, a freight total somebody typed instead, an extra charge and a
+ * discount — and any of them may be absent. Absent is not zero: an empty rate
+ * and an empty freight together mean "price this from the rate book again",
+ * which is the only way back from an agreement somebody regrets.
+ *
+ * A TYPED RATE BEATS A TYPED TOTAL, because it is the number that was actually
+ * agreed on the phone: the customer was told $380 a cubic metre, and the total
+ * is what falls out of that. A total typed on its own is kept as a total and
+ * clears the rate — a figure nobody derived from a rate must not claim to have
+ * been.
+ *
+ * The book's rate stays on the bill beside the agreed one, so the gap reads as
+ * what it is. Old rate and old total go to FieldChange before anything moves,
+ * and every write is conditional on the bill still being a draft: an issued
+ * bill is Finance's, by discount or re-price with a reason, never this.
+ */
+export async function setWaitingPrice(
+  client: TxClient,
+  actor: Actor,
+  input: WaitingPriceInput
+): Promise<{ invoiceNumber: string; total: Prisma.Decimal }> {
+  const reason = input.reason?.trim() || "Price agreed on the price list";
+
+  const release = await client.release.findFirst({
+    where: { cargoId: input.cargoId },
+    select: { id: true },
+  });
+  if (release) throw new PriceListRefused("This cargo has already been collected.");
+
+  if (input.rate !== null && input.rate.lessThanOrEqualTo(0)) {
+    throw new PriceListRefused("A rate has to be above zero.");
+  }
+  if (input.freight !== null && input.freight.lessThan(0)) {
+    throw new PriceListRefused("A freight total cannot be below zero.");
+  }
+
+  /* Both boxes empty is the request to go back to the book, and that is the
+     one case where an agreement already on the draft is deliberately dropped. */
+  const fromBook = input.rate === null && input.freight === null;
+  const priced = await priceWaitingCargo(client, actor, input.cargoId, {
+    reason,
+    keepAgreedRate: !fromBook,
+  });
+  if (priced.kind === "blocked") {
+    throw new PriceListRefused(`${priced.reference}: ${priced.reason}`);
+  }
+  if (priced.kind === "billed") {
+    throw new PriceListRefused(
+      `${priced.reference} is already billed. Change the price on the bill.`
+    );
+  }
+  if (priced.kind === "not-counted") {
+    throw new PriceListRefused("Dar has not counted this cargo yet.");
+  }
+
+  const invoice = await client.invoice.findUnique({
+    where: { id: priced.invoiceId },
+    include: {
+      items: true,
+      cargo: {
+        select: {
+          reference: true,
+          description: true,
+          darReceiving: { select: { cbm: true, weightKg: true } },
+          chinaReceiving: { select: { cbm: true, weightKg: true } },
+        },
+      },
+    },
+  });
+  if (!invoice || invoice.status !== "DRAFT") {
+    throw new PriceListRefused("That bill has already been issued.");
+  }
+
+  const freightItems = invoice.items.filter((i) => i.category === "Freight");
+  let appliedRate = invoice.appliedRate;
+  let rateBasis = invoice.rateBasis;
+  let billableCbm = invoice.billableCbm;
+  let billableKg = invoice.billableKg;
+
+  const replaceFreight = async (line: {
+    quantity: Prisma.Decimal;
+    unit: string;
+    unitPrice: Prisma.Decimal;
+  }) => {
+    await client.invoiceItem.deleteMany({
+      where: { id: { in: freightItems.map((i) => i.id) } },
+    });
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: `Sea freight — ${invoice.cargo.description}`,
+        quantity: line.quantity,
+        unit: line.unit,
+        unitPrice: line.unitPrice,
+        amount: line.quantity.mul(line.unitPrice).toDecimalPlaces(2),
+        category: "Freight",
+        taxable: true,
+      },
+    });
+  };
+
+  if (input.rate !== null) {
+    const unit = FREIGHT_UNIT[input.basis];
+    /*
+      THE PER-LINE WORKING SURVIVES WHERE IT CAN.
+
+      A consignment billed as four typed lines keeps its four lines: each is
+      re-multiplied at the agreed rate, so the customer can still see which
+      goods cost what. It collapses to one line only when the unit itself is
+      changing, because a cubic-metre line and a kilo line are not the same
+      line with a different price on it.
+    */
+    const sameUnit =
+      freightItems.length > 0 && freightItems.every((i) => i.unit === unit);
+    if (sameUnit && input.basis !== "FLAT") {
+      for (const item of freightItems) {
+        await client.invoiceItem.update({
+          where: { id: item.id },
+          data: {
+            unitPrice: input.rate,
+            amount: item.quantity.mul(input.rate).toDecimalPlaces(2),
+          },
+        });
+      }
+      const quantity = freightItems.reduce(
+        (sum, i) => sum.add(i.quantity),
+        new Prisma.Decimal(0)
+      );
+      billableCbm = input.basis === "PER_CBM" ? quantity : null;
+      billableKg = input.basis === "PER_KG" ? quantity : null;
+    } else {
+      const measured = billingMeasurement(invoice.cargo);
+      const quantity =
+        input.basis === "PER_CBM" ? measured.measuredCbm : measured.measuredKg;
+      if (!quantity || new Prisma.Decimal(quantity).lessThanOrEqualTo(0)) {
+        throw new PriceListRefused(
+          input.basis === "PER_CBM"
+            ? "Nothing has been measured, so there is no volume to charge."
+            : "Nothing has been weighed, so there are no kilos to charge."
+        );
+      }
+      await replaceFreight({
+        quantity: new Prisma.Decimal(quantity),
+        unit,
+        unitPrice: input.rate,
+      });
+      billableCbm = input.basis === "PER_CBM" ? new Prisma.Decimal(quantity) : null;
+      billableKg = input.basis === "PER_KG" ? new Prisma.Decimal(quantity) : null;
+    }
+    appliedRate = input.rate;
+    rateBasis = input.basis;
+  } else if (input.freight !== null) {
+    await replaceFreight({
+      quantity: new Prisma.Decimal(1),
+      unit: "consignment",
+      unitPrice: input.freight,
+    });
+    /* Nobody agreed a rate, so the bill does not claim one. The book's figure
+       stays where it is, which is what the gap is measured against. */
+    appliedRate = null;
+    rateBasis = "FLAT";
+    billableCbm = null;
+    billableKg = null;
+  } else {
+    /* Back to the book: priceWaitingCargo has already rewritten the lines. */
+    const fresh = await client.invoice.findUniqueOrThrow({
+      where: { id: invoice.id },
+      select: {
+        appliedRate: true,
+        rateBasis: true,
+        billableCbm: true,
+        billableKg: true,
+      },
+    });
+    appliedRate = fresh.appliedRate;
+    rateBasis = fresh.rateBasis;
+    billableCbm = fresh.billableCbm;
+    billableKg = fresh.billableKg;
+  }
+
+  /* One extra and one discount, each replaced rather than stacked. Pressing
+     Save twice with 20 in the box means twenty dollars, not forty. */
+  const extras = invoice.items.filter((i) => i.category === "Charge");
+  if (extras.length > 0) {
+    await client.invoiceItem.deleteMany({ where: { id: { in: extras.map((i) => i.id) } } });
+  }
+  if (input.extra && input.extra.greaterThan(0)) {
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: `Additional charge — ${reason}`,
+        quantity: new Prisma.Decimal(1),
+        unit: null,
+        unitPrice: input.extra,
+        amount: input.extra,
+        category: "Charge",
+        taxable: true,
+      },
+    });
+  }
+
+  const offs = invoice.items.filter((i) => i.category === "Discount");
+  if (offs.length > 0) {
+    await client.invoiceItem.deleteMany({ where: { id: { in: offs.map((i) => i.id) } } });
+  }
+  const off = input.discount && input.discount.greaterThan(0) ? input.discount : null;
+  if (off) {
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: `Discount — ${reason}`,
+        quantity: new Prisma.Decimal(1),
+        unit: null,
+        unitPrice: off.negated(),
+        amount: off.negated(),
+        category: "Discount",
+        taxable: true,
+      },
+    });
+  }
+
+  const items = await client.invoiceItem.findMany({ where: { invoiceId: invoice.id } });
+  const subtotal = items.reduce((sum, i) => sum.add(i.amount), new Prisma.Decimal(0));
+  if (subtotal.lessThan(0)) {
+    throw new PriceListRefused("That takes the bill below nothing. Lower the discount.");
+  }
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+
+  if (
+    (invoice.appliedRate?.toString() ?? null) !== (appliedRate?.toString() ?? null)
+  ) {
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Invoice",
+        entityId: invoice.id,
+        field: "appliedRate",
+        oldValue: invoice.appliedRate?.toString() ?? "from the rate book",
+        newValue: appliedRate?.toString() ?? "typed as a total",
+        reason,
+      },
+      client
+    );
+  }
+  if (!invoice.total.equals(total)) {
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Invoice",
+        entityId: invoice.id,
+        field: "total",
+        oldValue: invoice.total.toString(),
+        newValue: total.toString(),
+        reason,
+      },
+      client
+    );
+  }
+
+  const claim = await client.invoice.updateMany({
+    where: { id: invoice.id, status: "DRAFT" },
+    data: {
+      appliedRate,
+      rateBasis,
+      billableCbm,
+      billableKg,
+      /* A book draft at mixed rates has no standard to measure against; the
+         old figure becomes it, so the agreement is still visible as one. */
+      standardRate: invoice.standardRate ?? invoice.appliedRate ?? undefined,
+      discount: off ?? new Prisma.Decimal(0),
+      subtotal,
+      vatAmount,
+      total,
+      totalTzs: invoice.fxRate ? usdToTzs(total, invoice.fxRate) : null,
+    },
+  });
+  if (claim.count === 0) throw new PriceListRefused(`${invoice.number} was issued a moment ago.`);
+
+  await recordAudit(
+    {
+      actor,
+      action: "invoice.reprice",
+      entity: "Invoice",
+      entityId: invoice.id,
+      summary: `Priced draft ${invoice.number} on the price list at ${
+        appliedRate
+          ? `${invoice.currency} ${appliedRate}/${FREIGHT_UNIT[rateBasis ?? "PER_CBM"]}`
+          : "a freight total typed by hand"
+      } — ${invoice.currency} ${total}: ${reason}`,
+      metadata: {
+        from: invoice.total.toString(),
+        to: total.toString(),
+        oldRate: invoice.appliedRate?.toString() ?? null,
+        rate: appliedRate?.toString() ?? null,
+        basis: rateBasis,
+        extra: input.extra?.toString() ?? null,
+        discount: off?.toString() ?? null,
+        reason,
+      },
+    },
+    client
+  );
+
+  return { invoiceNumber: invoice.number, total };
 }
 
 /**

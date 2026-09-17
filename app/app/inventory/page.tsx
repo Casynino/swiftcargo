@@ -238,7 +238,7 @@ export default async function InventoryPage({
           label="Volume on the floor"
           numeric={floorCbm}
           decimals={2}
-          suffix="m³"
+          suffix="CBM"
           icon={Package}
           tone="success"
         />

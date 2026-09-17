@@ -1209,7 +1209,7 @@ export async function receiveNewCargo(
     action: "cargo.receive.intake",
     entity: "Cargo",
     entityId: result.id,
-    summary: `Received ${result.reference} at the counter — ${lines.length} item line(s), ${totalPackages} package(s), ${totalCbm} m³; note ${result.noteNumber}${
+    summary: `Received ${result.reference} at the counter — ${lines.length} item line(s), ${totalPackages} package(s), ${totalCbm} CBM; note ${result.noteNumber}${
       data.paperReceiptNo ? `, book ${data.paperReceiptNo}` : ""
     }`,
     metadata: {
@@ -1227,7 +1227,7 @@ export async function receiveNewCargo(
   revalidatePath("/app/dashboard");
 
   return {
-    ok: `${result.reference} received — ${totalPackages} package(s), ${totalCbm.toFixed(3)} m³. Delivery note ${result.noteNumber} is ready and the customer has been told.`,
+    ok: `${result.reference} received — ${totalPackages} package(s), ${totalCbm.toFixed(3)} CBM. Delivery note ${result.noteNumber} is ready and the customer has been told.`,
     id: result.id,
   };
 }

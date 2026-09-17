@@ -198,7 +198,7 @@ export async function submitQuoteRequest(
       {
         kind: "request.quote",
         title: `Quote request ${reference}`,
-        body: `${data.contactName} · ${data.service}${data.estimatedCbm ? ` · ${data.estimatedCbm} m³` : ""}`,
+        body: `${data.contactName} · ${data.service}${data.estimatedCbm ? ` · ${data.estimatedCbm} CBM` : ""}`,
         href: "/app/support/requests",
       },
       tx

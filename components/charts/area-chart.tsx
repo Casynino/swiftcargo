@@ -36,7 +36,7 @@ function render(value: number, format: ValueFormat, currency: string) {
         maximumFractionDigits: currency === "TZS" ? 0 : 2,
       }).format(value);
     case "cbm":
-      return `${value.toFixed(3)} m³`;
+      return `${value.toFixed(3)} CBM`;
     case "kg":
       return `${value.toFixed(2)} kg`;
     default:

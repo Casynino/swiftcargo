@@ -11,9 +11,14 @@ import { nextExceptionReference } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { applyDarMeasurement, CorrectionRefused } from "@/lib/cargo-corrections";
-import { priceOnCheckIn } from "@/lib/price-confirmation";
+import {
+  priceOnCheckIn,
+  PriceListRefused,
+  setWaitingCargoType,
+} from "@/lib/price-confirmation";
 import { authorize } from "@/lib/session";
 import { store, UploadError } from "@/lib/storage";
+import { cargoTypeOptions } from "@/lib/valuation";
 
 export type ActionState = { error?: string; ok?: string; id?: string };
 
@@ -784,4 +789,336 @@ export async function acceptAsExpected(
       .filter(Boolean)
       .join(" "),
   };
+}
+
+/** What "damaged" can mean on the Dar bench. Good is not one of them. */
+const DAMAGE_CONDITIONS = ["MINOR_DAMAGE", "DAMAGED", "WET"] as const;
+
+const damageSchema = z.object({
+  cargoId: z.string().min(1),
+  condition: z.enum(DAMAGE_CONDITIONS),
+  note: z.string().trim().min(3, "Say what you found."),
+});
+
+/**
+ * THE DAMAGED TAG, PUT ON BY THE PERSON HOLDING THE CARTON.
+ *
+ * A consignment comes off the container wet, or crushed, or with a corner
+ * open. It is HERE — that is the difference between this and missing — so it
+ * stays on the Dar floor, it is still counted and it is still billed. What it
+ * gains is a tag that travels with it: onto the check-in row, the container's
+ * cargo list, the consignment itself and the price list Finance reads, so
+ * nobody quotes a customer a clean bill for a bale that arrived soaked.
+ *
+ * A PHOTOGRAPH IS NOT OPTIONAL. A damage claim is argued weeks later against a
+ * supplier, an insurer or a shipping line, and the only evidence that survives
+ * is the picture taken at the bench with the damage in front of the lens. The
+ * form refuses without one for the same reason the air side refuses: a claim
+ * recorded as a sentence is a claim that gets paid by us.
+ *
+ * The tag can go on a consignment nobody has counted yet — that is the usual
+ * case, the damage being the first thing anyone notices — and China's figures
+ * are taken as the count, exactly as the tick does. It can also go on one
+ * already checked in clean, because damage is found when the customer opens
+ * the bale on the floor, not always on the way off the lorry.
+ */
+export async function reportDamageAtDar(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("receiving.dar");
+
+  const parsed = damageSchema.safeParse({
+    cargoId: formData.get("cargoId"),
+    condition: formData.get("condition") || "DAMAGED",
+    note: formData.get("note"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the form." };
+  }
+  const data = parsed.data;
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: data.cargoId, deletedAt: null },
+    include: {
+      chinaReceiving: true,
+      darReceiving: true,
+      containerLines: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        include: { container: { select: { id: true, reference: true } } },
+      },
+      exceptions: {
+        where: { type: "DAMAGED_CARGO", status: { notIn: ["RESOLVED", "CLOSED"] } },
+        select: { id: true, reference: true, evidence: true },
+      },
+    },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+  if (HANDED_OVER.includes(cargo.status)) {
+    return {
+      error: `${cargo.reference} has already been handed over. Damage found after collection is a claim — raise a case on it.`,
+    };
+  }
+  if (!cargo.darReceiving && !DAR_RECEIVABLE.includes(cargo.status)) {
+    return {
+      error: `${cargo.reference} has not arrived at Dar. Record the container's arrival first.`,
+    };
+  }
+  if (!cargo.darReceiving && !cargo.chinaReceiving) {
+    return {
+      error: `Nobody has counted ${cargo.reference}. Count it on the scales — the condition is on that same form.`,
+    };
+  }
+
+  /* Written before the transaction, for the reason every other upload here
+     is: a slow upload must not hold row locks on a busy floor. */
+  const photos = formData
+    .getAll("photos")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  if (photos.length === 0) {
+    return {
+      error: "Take a photograph of the damage. A claim without one is argued on somebody's memory.",
+    };
+  }
+  const stored: string[] = [];
+  try {
+    for (const file of photos) stored.push(await store(file, "cargo"));
+  } catch (error) {
+    return {
+      error: error instanceof UploadError ? error.message : "That upload failed.",
+    };
+  }
+
+  const china = cargo.chinaReceiving;
+  const line = cargo.containerLines.at(0);
+  const containerId = line?.containerId ?? null;
+  const wasCounted = !!cargo.darReceiving;
+
+  const result = await prisma.$transaction(async (tx) => {
+    if (cargo.darReceiving) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "DarReceiving",
+          entityId: cargo.darReceiving.id,
+          field: "condition",
+          oldValue: cargo.darReceiving.condition,
+          newValue: data.condition,
+          reason: data.note,
+        },
+        tx
+      );
+      await tx.darReceiving.update({
+        where: { id: cargo.darReceiving.id },
+        data: {
+          condition: data.condition,
+          discrepancy: true,
+          discrepancyNotes: data.note,
+          /* A signature that the cargo was clean cannot stand over a tag that
+             says it is not. Signing off again is the resolution of the case. */
+          verified: false,
+          verifiedAt: null,
+        },
+      });
+    } else {
+      const warehouse =
+        (actor.warehouseId
+          ? await tx.warehouse.findFirst({
+              where: { id: actor.warehouseId, active: true, kind: "TANZANIA" },
+              select: { id: true },
+            })
+          : null) ??
+        (await tx.warehouse.findFirst({
+          where: { active: true, kind: "TANZANIA" },
+          orderBy: { createdAt: "asc" },
+          select: { id: true },
+        }));
+      if (!warehouse) {
+        throw new Error("No Dar warehouse is set up to receive into. Ask an administrator.");
+      }
+      /* The damage IS the check-in: the boxes are on the floor, counted at
+         China's figures the way the tick counts them, and flagged. */
+      await tx.darReceiving.create({
+        data: {
+          cargoId: cargo.id,
+          warehouseId: warehouse.id,
+          containerId,
+          packagesCount: china!.packagesCount,
+          piecesCount: china!.piecesCount,
+          weightKg: china!.weightKg,
+          cbm: china!.cbm,
+          condition: data.condition,
+          discrepancy: true,
+          discrepancyNotes: data.note,
+          receivedById: actor.id,
+        },
+      });
+      await setCargoStatus(
+        tx,
+        cargo.id,
+        "RECEIVED_DAR",
+        actor,
+        `Received at Dar, ${data.condition.toLowerCase().replace("_", " ")}`
+      );
+      await notifyCustomer(
+        [cargo.senderId, cargo.receiverId],
+        {
+          kind: "cargo.received_dar",
+          title: `${cargo.reference} has reached our Dar warehouse`,
+          body: "We are checking something on this consignment and will be in touch.",
+          href: "/portal",
+        },
+        tx
+      );
+    }
+
+    await tx.cargoPhoto.createMany({
+      data: stored.map((url) => ({
+        cargoId: cargo.id,
+        kind: "DAMAGE" as const,
+        url,
+        warehouseKind: "TANZANIA" as const,
+        uploadedById: actor.id,
+      })),
+    });
+
+    /* One live case per consignment. A second bale found wet on the same
+       delivery is the same argument with the same supplier, and two cases is
+       two people each answering half of it. */
+    const open = cargo.exceptions[0];
+    if (open) {
+      await tx.exceptionEvent.create({
+        data: {
+          caseId: open.id,
+          to: "OPEN",
+          note: `More damage recorded at Dar: ${data.note}`,
+          actorId: actor.id,
+        },
+      });
+      /* Evidence is a JSON column rather than a scalar list, so the new
+         pictures are added to what is there instead of replacing it — a second
+         photograph must never be the reason the first one disappears. */
+      const held = Array.isArray(open.evidence) ? (open.evidence as string[]) : [];
+      await tx.exceptionCase.update({
+        where: { id: open.id },
+        data: { evidence: [...held, ...stored] },
+      });
+      return { caseRef: open.reference };
+    }
+
+    const reference = await nextExceptionReference(tx);
+    const created = await tx.exceptionCase.create({
+      data: {
+        reference,
+        type: "DAMAGED_CARGO",
+        priority: data.condition === "MINOR_DAMAGE" ? "NORMAL" : "HIGH",
+        cargoId: cargo.id,
+        customerId: cargo.senderId,
+        containerId,
+        department: "DAR_WAREHOUSE",
+        title: `${cargo.reference} arrived ${data.condition.toLowerCase().replace("_", " ")}`,
+        description: data.note,
+        raisedById: actor.id,
+        evidence: stored,
+      },
+      select: { id: true, reference: true },
+    });
+    await tx.exceptionEvent.create({
+      data: {
+        caseId: created.id,
+        to: "OPEN",
+        note: "Damage found at Dar receiving.",
+        actorId: actor.id,
+      },
+    });
+    await notifyStaff(
+      [
+        ...(await staffInDepartment("CUSTOMER_SUPPORT", tx)),
+        ...(await staffInDepartment("MANAGEMENT", tx)),
+        ...(await staffInDepartment("CHINA_WAREHOUSE", tx)),
+      ],
+      {
+        kind: "exception.raised",
+        title: `${cargo.reference} arrived damaged`,
+        body: data.note.slice(0, 160),
+        href: "/app/exceptions",
+      },
+      tx
+    );
+    return { caseRef: created.reference };
+  });
+
+  /* Newly on the floor, so the rate book prices it as a draft like any other
+     check-in. Damage does not change the freight — what the company does about
+     it is Finance's decision, on the bill, with a reason. */
+  if (!wasCounted) await priceOnCheckIn(actor, [cargo.id]);
+
+  await recordAudit({
+    actor,
+    action: "cargo.damaged.dar",
+    entity: "Cargo",
+    entityId: cargo.id,
+    summary: `${cargo.reference} tagged ${data.condition.toLowerCase().replace("_", " ")} at Dar — case ${result.caseRef}`,
+    metadata: {
+      condition: data.condition,
+      note: data.note,
+      photos: stored.length,
+      container: line?.container.reference ?? null,
+    },
+  });
+
+  revalidatePath("/app/receive/dar");
+  if (containerId) revalidatePath(`/app/receive/dar/${containerId}`);
+  revalidatePath("/app/exceptions");
+  revalidatePath(`/app/cargo/${cargo.id}`);
+  return { ok: `Tagged. Case ${result.caseRef} is open on the damage.` };
+}
+
+/**
+ * THE CARGO TYPE, CHOSEN ON THE CHECK-IN ROW.
+ *
+ * Guangzhou types a consignment when it takes it in, and most arrive typed. The
+ * ones that do not are the ones somebody has to chase later: an untyped
+ * consignment cannot be priced from the rate book, so it reaches Finance as a
+ * row saying "no cargo type yet" and goes back round the houses.
+ *
+ * The person who can answer is the one with the goods open in front of them,
+ * and that is Dar, at the moment of counting. So the type is on the row, it
+ * saves the moment it is picked, every line's old type goes to FieldChange
+ * first, and the draft bill is re-priced at the new type's rate — all of which
+ * is the price list's own machinery, asked for here by the floor instead.
+ *
+ * The floor still never sees a price. What it sets is what the goods ARE.
+ */
+export async function setCheckInCargoType(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("receiving.dar");
+
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const cargoType = String(formData.get("cargoType") ?? "");
+  const containerId = String(formData.get("containerId") ?? "");
+
+  try {
+    const allowedTypes = await cargoTypeOptions();
+    const result = await prisma.$transaction(
+      (tx) =>
+        setWaitingCargoType(tx, actor, {
+          cargoId,
+          cargoType,
+          allowedTypes,
+          reason: "Cargo type recorded at Dar check-in",
+        }),
+      { timeout: 20_000 }
+    );
+    revalidatePath("/app/receive/dar");
+    if (containerId) revalidatePath(`/app/receive/dar/${containerId}`);
+    revalidatePath(`/app/cargo/${cargoId}`);
+    return { ok: result.changed ? `Now ${cargoType}.` : `Already ${cargoType}.` };
+  } catch (error) {
+    if (error instanceof PriceListRefused) return { error: error.message };
+    throw error;
+  }
 }

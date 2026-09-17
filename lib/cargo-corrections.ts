@@ -588,7 +588,7 @@ export async function applyPackageLine(
       entityId: created.id,
       field: "created",
       oldValue: null,
-      newValue: `${next.quantity} × ${next.packageType}${next.cargoType ? ` (${next.cargoType})` : ""}, ${cbm.toString()} m³`,
+      newValue: `${next.quantity} × ${next.packageType}${next.cargoType ? ` (${next.cargoType})` : ""}, ${cbm.toString()} CBM`,
       reason: input.reason?.trim() || "Line added",
     },
     tx
@@ -603,7 +603,7 @@ export async function applyPackageLine(
       action: "cargo.package.add",
       entity: "CargoPackage",
       entityId: created.id,
-      summary: `Added ${reference} to ${cargo.reference} — ${next.quantity} × ${next.packageType}, ${cbm.toString()} m³`,
+      summary: `Added ${reference} to ${cargo.reference} — ${next.quantity} × ${next.packageType}, ${cbm.toString()} CBM`,
       metadata: { reason: input.reason?.trim() || null, custody: cargoCustody(cargo.status) },
     },
     tx

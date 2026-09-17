@@ -125,11 +125,11 @@ export function RateDialog({
         <dl className="space-y-1 rounded-lg border bg-secondary/40 px-3 py-2 text-xs">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Standard rate</dt>
-            <dd className="tnum font-medium">{standardRate !== null ? `${usd(standardRate)} per m³` : "not recorded"}</dd>
+            <dd className="tnum font-medium">{standardRate !== null ? `${usd(standardRate)} per CBM` : "not recorded"}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Current rate</dt>
-            <dd className="tnum font-medium">{appliedRate !== null ? `${usd(appliedRate)} per m³` : "not recorded"}</dd>
+            <dd className="tnum font-medium">{appliedRate !== null ? `${usd(appliedRate)} per CBM` : "not recorded"}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Special rate</dt>
@@ -137,7 +137,7 @@ export function RateDialog({
           </div>
         </dl>
         <label className="block space-y-1">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Rate per m³</span>
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Rate per CBM</span>
           <span className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">USD</span>
             <Input
@@ -155,13 +155,13 @@ export function RateDialog({
         </label>
         {freight !== null ? (
           <p className="tnum text-xs text-muted-foreground">
-            {rate.toFixed(2)} × {cbm!.toFixed(3)} m³ ={" "}
+            {rate.toFixed(2)} × {cbm!.toFixed(3)} CBM ={" "}
             <span className="font-semibold text-foreground">{usd(freight)}</span>
             {off !== null && Math.abs(off) > 0.005 ? (
               <span className={off > 0 ? "text-success" : "text-warning"}>
                 {" · "}
                 {off > 0 ? "−" : "+"}
-                {usd(Math.abs(off))} per m³ against the book
+                {usd(Math.abs(off))} per CBM against the book
               </span>
             ) : null}
           </p>

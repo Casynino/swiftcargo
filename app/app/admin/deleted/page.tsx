@@ -416,7 +416,7 @@ export default async function DeletedRecordsPage() {
                               ) : null}
                             </p>
                             <p className="tnum shrink-0 text-xs text-muted-foreground">
-                              {line.quantity} · {formatCbm(line.cbm)} m³
+                              {line.quantity} · {formatCbm(line.cbm)} CBM
                               {line.weightKg ? ` · ${formatWeight(line.weightKg)}` : ""}
                             </p>
                           </div>

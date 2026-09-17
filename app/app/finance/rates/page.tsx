@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Rate book" };
 
-const PER = { PER_CBM: "m³", PER_KG: "kg", FLAT: "flat" } as const;
+const PER = { PER_CBM: "CBM", PER_KG: "kg", FLAT: "flat" } as const;
 
 const usd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -165,7 +165,7 @@ export default async function RateBookPage() {
           },
           {
             icon: Tags,
-            label: "Range per m³",
+            label: "Range per CBM",
             value: cheapest && dearest ? `${usd(Number(cheapest.rate))} – ${usd(Number(dearest.rate))}` : "—",
             sub: cheapest && dearest ? `${cheapest.cargoType ?? "General"} to ${dearest.cargoType ?? "General"}` : "No live rates",
             tone: "text-foreground",
@@ -260,7 +260,7 @@ export default async function RateBookPage() {
                       </div>
                       <p className="mt-2 flex justify-between text-[11px] text-muted-foreground">
                         <span>
-                          {r.minimumCbm ? `minimum ${Number(r.minimumCbm).toFixed(3)} m³` : r.minimumKg ? `minimum ${Number(r.minimumKg)} kg` : "no minimum"}
+                          {r.minimumCbm ? `minimum ${Number(r.minimumCbm).toFixed(3)} CBM` : r.minimumKg ? `minimum ${Number(r.minimumKg)} kg` : "no minimum"}
                         </span>
                         <span>{agreed ? `${agreed} customer rate${agreed === 1 ? "" : "s"}` : ""}</span>
                       </p>

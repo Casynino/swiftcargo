@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { cargoTypeOptions } from "@/lib/valuation";
 
 export const metadata: Metadata = { title: "Check in cargo" };
 
@@ -73,6 +75,62 @@ export default async function CheckInContainerPage({
   ]);
   if (!container) notFound();
 
+  /*
+    WHAT THE FLOOR NEEDS TO CORRECT A MANIFEST, FETCHED ONLY IF IT MAY.
+
+    The rate book's categories, the other landed containers a bale might have
+    come off, and the consignments that could be added to this one. The last
+    list is deliberately narrow: cargo that is at sea or landed and is not
+    already on a container somebody has discharged.
+  */
+  const mayAmend = can(user.role, "container.amendArrived");
+  const [cargoTypes, otherContainers, addable] = await Promise.all([
+    cargoTypeOptions(),
+    mayAmend
+      ? prisma.container.findMany({
+          where: {
+            deletedAt: null,
+            id: { not: container.id },
+            status: { in: ["ARRIVED", "CLOSED"] },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 40,
+          select: { id: true, reference: true },
+        })
+      : Promise.resolve([] as { id: string; reference: string }[]),
+    mayAmend
+      ? prisma.cargo.findMany({
+          where: {
+            deletedAt: null,
+            status: {
+              in: [
+                "RECEIVED_CHINA",
+                "ASSIGNED_TO_CONTAINER",
+                "CONTAINER_LOADED",
+                "DEPARTED_CHINA",
+                "IN_TRANSIT",
+                "ARRIVED_TANZANIA",
+                "MISSING_AT_DAR",
+              ],
+            },
+            containerLines: {
+              none: { container: { status: { in: ["ARRIVED", "CLOSED"] } } },
+            },
+            invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 200,
+          select: {
+            id: true,
+            reference: true,
+            shippingMark: true,
+            description: true,
+            sender: { select: { fullName: true } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
   const selectedCargo = cargoId
     ? await prisma.cargo.findFirst({
         where: { id: cargoId, deletedAt: null },
@@ -131,6 +189,13 @@ export default async function CheckInContainerPage({
         containerId={container.id}
         warehouses={warehouses}
         defaultWarehouseId={user.warehouseId}
+        cargoTypes={cargoTypes}
+        otherContainers={otherContainers}
+        canAmend={mayAmend}
+        addable={addable.map((c) => ({
+          id: c.id,
+          label: `${c.reference} · ${c.shippingMark ?? c.sender.fullName} · ${c.description}`,
+        }))}
         rows={container.cargoLines.map((line) => {
           const c = line.cargo;
           /* China's count if the counter recorded one, otherwise whatever was
@@ -173,6 +238,9 @@ export default async function CheckInContainerPage({
             discrepancy: c.darReceiving?.discrepancy ?? false,
             verified: c.darReceiving?.verified ?? false,
             missing: c.status === "MISSING_AT_DAR",
+            condition: c.darReceiving?.condition ?? null,
+            damaged:
+              !!c.darReceiving && c.darReceiving.condition !== "GOOD",
             hasCase: c.exceptions.length > 0,
             /* Decimals are formatted to strings here: a Prisma Decimal must
                never cross into a client component as a float. */

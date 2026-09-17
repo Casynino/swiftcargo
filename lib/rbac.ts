@@ -69,6 +69,22 @@ export type Permission =
   | "container.arrive"
   | "container.close"
   | "container.delete"
+  /**
+   * WHICH CONTAINER A CONSIGNMENT CAME OFF, CORRECTED AFTER IT LANDED.
+   *
+   * Loading is Guangzhou's and stops at the seal — `container.load` refuses
+   * once the box is shut, and it should. But a manifest is a piece of paper
+   * written in another country, and the first person to read it against actual
+   * cargo stands in Dar with the goods in front of them: a consignment listed
+   * that never came off, a bale that came off a box it was never listed on.
+   * Without this the floor would have to leave a wrong manifest standing, and
+   * the container's price list would be a list of the wrong cargo.
+   *
+   * It is not a second `container.load`. It reaches only landed containers, it
+   * refuses anything Dar has already counted or Finance has already billed, and
+   * every use writes the old container and the new one to FieldChange.
+   */
+  | "container.amendArrived"
   | "packingList.view"
   | "packingList.issue"
   | "shipment.view"
@@ -254,6 +270,9 @@ const DAR_WAREHOUSE: Permission[] = [
   "container.view",
   "container.arrive",
   "container.close",
+  /* The floor that opens the box is the floor that discovers the manifest is
+     wrong, and by the owner's decision it is the floor that corrects it. */
+  "container.amendArrived",
   "packingList.view",
   "shipment.view",
   "shipment.document",
@@ -282,6 +301,10 @@ const CUSTOMER_SUPPORT: Permission[] = [
   "receiving.china",
   "deliveryNote.view",
   "container.view",
+  /* The customer rings to say their goods were not on the sailing they were
+     told about. The counter that takes the call is the counter that can put it
+     right, rather than passing it to the floor and back. */
+  "container.amendArrived",
   "packingList.view",
   "shipment.view",
   "finance.view",
@@ -325,6 +348,9 @@ const FINANCE: Permission[] = [
   "cargo.viewInternal",
   "deliveryNote.view",
   "container.view",
+  /* Finance is the other desk that notices: a container whose price list does
+     not add up to the cargo standing in the warehouse. */
+  "container.amendArrived",
   "packingList.view",
   "shipment.view",
   "finance.view",

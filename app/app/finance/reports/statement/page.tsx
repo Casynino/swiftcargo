@@ -137,8 +137,8 @@ export default async function StatementPage({
         <Section title="7. Collections and volume">
           <Line l="Collection rate on the month's bills" m={f.collectionRate === null ? "—" : `${f.collectionRate.toFixed(1)}%`} />
           <Line l="Bills paid / unpaid / part paid / to verify" m={`${f.counts.paid} / ${f.counts.unpaid} / ${f.counts.partPaid} / ${f.counts.toVerify}`} />
-          <Line l="CBM received in Guangzhou" m={`${f.cbmReceived.toFixed(3)} m³`} />
-          <Line l="CBM landed in Dar" m={`${f.cbmLanded.toFixed(3)} m³`} />
+          <Line l="CBM received in Guangzhou" m={`${f.cbmReceived.toFixed(3)} CBM`} />
+          <Line l="CBM landed in Dar" m={`${f.cbmLanded.toFixed(3)} CBM`} />
           <Line l="Packages received" m={String(f.packages)} />
           <Line l="Customers billed" m={String(f.customers)} />
           <Line l="Containers arrived / closed" m={`${f.arrived} / ${f.closed}`} />

@@ -501,7 +501,7 @@ export default async function DarReceivePage({
           { label: "Landed", value: String(landed.length), icon: Warehouse },
           { label: "At sea", value: String(atSea.length), icon: Ship, tone: "marine" },
           { label: "Still in Guangzhou", value: String(inChina.length), icon: Warehouse },
-          { label: "Arriving volume", value: `${arrivingCbm.toFixed(2)} m³`, icon: Package },
+          { label: "Arriving volume", value: `${arrivingCbm.toFixed(2)} CBM`, icon: Package },
           {
             label: "Oldest wait",
             value: waitingDays === null ? "—" : `${waitingDays} day(s)`,
@@ -535,7 +535,7 @@ export default async function DarReceivePage({
           numeric={atSea.length}
           icon={Ship}
           tone="marine"
-          hint={`${arrivingCbm.toFixed(2)} m³ arriving`}
+          hint={`${arrivingCbm.toFixed(2)} CBM arriving`}
         />
         <KpiCard
           index={3}

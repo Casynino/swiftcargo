@@ -99,7 +99,7 @@ export default async function ReportsPage() {
           label="Volume taken in"
           numeric={Number(chinaTotals._sum.cbm ?? 0)}
           decimals={2}
-          suffix="m³"
+          suffix="CBM"
           icon={Package}
           tone="marine"
         />
@@ -132,7 +132,7 @@ export default async function ReportsPage() {
               data={volume}
               tone={2}
               highlightIndex={volume.length - 1}
-              formatValue={(n) => `${n.toFixed(2)} m³`}
+              formatValue={(n) => `${n.toFixed(2)} CBM`}
             />
           </CardContent>
         </Card>

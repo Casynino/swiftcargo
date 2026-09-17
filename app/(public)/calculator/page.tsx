@@ -78,7 +78,7 @@ export default async function CalculatorPage() {
           )}
         </p>
         <p className="tnum mt-3 rounded-md bg-card px-3 py-2 text-sm">
-          60 × 40 × 40 cm × 12 = 1.152 m³
+          60 × 40 × 40 cm × 12 = 1.152 CBM
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild>

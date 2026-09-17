@@ -325,7 +325,7 @@ export default async function ProfitAndLossPage({
         </header>
         <div className="grid grid-cols-2 gap-px bg-border md:grid-cols-4 xl:grid-cols-7">
           {[
-            ["CBM received", `${month.cbmReceived.toFixed(3)} m³`, `${monthBefore.cbmReceived.toFixed(3)} m³`],
+            ["CBM received", `${month.cbmReceived.toFixed(3)} CBM`, `${monthBefore.cbmReceived.toFixed(3)} CBM`],
             ["Containers arrived", String(month.arrived), String(monthBefore.arrived)],
             ["Revenue", lead(month.revenue), lead(monthBefore.revenue)],
             ["Collected", lead(month.collected), lead(monthBefore.collected)],
@@ -347,7 +347,7 @@ export default async function ProfitAndLossPage({
           ["Most profitable", best ? lead(best.profit) : "—", best?.reference, "text-success"],
           ["Least profitable", worst ? lead(worst.profit) : "—", worst?.reference, ""],
           ["Most owed on it", mostOwed ? lead(mostOwed.owed) : "—", mostOwed?.reference, "text-destructive"],
-          ["Largest volume", biggest ? `${biggest.cbm.toFixed(3)} m³` : "—", biggest?.reference, ""],
+          ["Largest volume", biggest ? `${biggest.cbm.toFixed(3)} CBM` : "—", biggest?.reference, ""],
         ].map(([l, v, ref, tone]) => (
           <div key={l as string} className={cell}>
             <p className={label}>{l}</p>
@@ -578,7 +578,7 @@ export default async function ProfitAndLossPage({
               {months.map((m) => (
                 <div key={m.label} className="flex flex-1 flex-col items-center gap-1">
                   <div className="flex h-32 w-full items-end">
-                    <div className={cn("w-full rounded-t", m.current ? "bg-brand" : "bg-brand/50")} style={{ height: `${Math.max(2, (m.cbm / maxCbm) * 100)}%` }} title={`${m.cbm.toFixed(3)} m³`} />
+                    <div className={cn("w-full rounded-t", m.current ? "bg-brand" : "bg-brand/50")} style={{ height: `${Math.max(2, (m.cbm / maxCbm) * 100)}%` }} title={`${m.cbm.toFixed(3)} CBM`} />
                   </div>
                   <span className={cn("text-[10px]", m.current ? "font-semibold" : "text-muted-foreground")}>{m.label}</span>
                 </div>

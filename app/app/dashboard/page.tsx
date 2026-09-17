@@ -335,7 +335,7 @@ export default async function DashboardPage() {
                 numeric={floor.waiting}
                 icon={Warehouse}
                 tone="warning"
-                hint={`${floor.waitingCbm.toFixed(2)} m³ on the shelf`}
+                hint={`${floor.waitingCbm.toFixed(2)} CBM on the shelf`}
                 href="/app/inventory"
               />
               <KpiCard
@@ -347,7 +347,7 @@ export default async function DashboardPage() {
                 delta={floor.delta ?? undefined}
                 deltaLabel="vs last month"
                 trend={floor.trend}
-                hint={`${floor.receivedToday} today · ${floor.todayCbm.toFixed(2)} m³`}
+                hint={`${floor.receivedToday} today · ${floor.todayCbm.toFixed(2)} CBM`}
               />
               <KpiCard
                 index={2}
@@ -355,7 +355,7 @@ export default async function DashboardPage() {
                 numeric={floor.atSea}
                 icon={Ship}
                 tone="marine"
-                hint={`${floor.seaCbm.toFixed(2)} m³ on the water to ${ROUTE.destinationCity}`}
+                hint={`${floor.seaCbm.toFixed(2)} CBM on the water to ${ROUTE.destinationCity}`}
                 href="/app/containers?status=IN_TRANSIT"
               />
             </div>
@@ -446,7 +446,7 @@ export default async function DashboardPage() {
                         </span>
                         <span className="tnum">{b.value}</span>
                         <span className="tnum w-20 text-right text-muted-foreground">
-                          {b.cbm.toFixed(2)} m³
+                          {b.cbm.toFixed(2)} CBM
                         </span>
                       </li>
                     ))}
@@ -473,7 +473,7 @@ export default async function DashboardPage() {
                       .reduce((n, v) => n + v, 0)
                       .toFixed(1)}
                     <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-                      m³
+                      CBM
                     </span>
                   </span>
                 </CardHeader>
@@ -507,7 +507,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <span className="tnum text-sm text-muted-foreground">
-                    {floorMix.total.toFixed(2)} m³
+                    {floorMix.total.toFixed(2)} CBM
                   </span>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-5">
@@ -520,12 +520,12 @@ export default async function DashboardPage() {
                       <Donut
                         slices={floorMix.slices}
                         label={floorMix.total.toFixed(1)}
-                        caption="m³"
+                        caption="CBM"
                       />
                       <div className="w-full">
                         <DonutLegend
                           slices={floorMix.slices}
-                          format={(n) => `${n.toFixed(2)} m³`}
+                          format={(n) => `${n.toFixed(2)} CBM`}
                         />
                       </div>
                     </>
@@ -574,7 +574,7 @@ export default async function DashboardPage() {
                             {box.consignments} consignment
                             {box.consignments === 1 ? "" : "s"} · {box.packages}{" "}
                             package{box.packages === 1 ? "" : "s"} ·{" "}
-                            {box.cbm.toFixed(3)} m³
+                            {box.cbm.toFixed(3)} CBM
                           </p>
                           {fill !== null ? (
                             <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
@@ -608,7 +608,7 @@ export default async function DashboardPage() {
                       data={boxes.sailed}
                       tone={2}
                       highlightIndex={boxes.sailed.length - 1}
-                      formatValue={(n) => `${n.toFixed(2)} m³`}
+                      formatValue={(n) => `${n.toFixed(2)} CBM`}
                       height={195}
                     />
                   )}
@@ -671,7 +671,7 @@ export default async function DashboardPage() {
                   data={volume}
                   tone={2}
                   highlightIndex={volume.length - 1}
-                  formatValue={(n) => `${n.toFixed(2)} m³`}
+                  formatValue={(n) => `${n.toFixed(2)} CBM`}
                   height={195}
                 />
               </CardContent>

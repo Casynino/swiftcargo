@@ -141,7 +141,7 @@ export default async function DeliveryNotePage({
             ["Packages", String(snap.packagesCount)],
             ["Pieces", snap.piecesCount ? String(snap.piecesCount) : "—"],
             ["Weight", snap.weightKg ? `${snap.weightKg} kg` : "—"],
-            ["Volume", `${Number(snap.cbm).toFixed(3)} m³`],
+            ["Volume", `${Number(snap.cbm).toFixed(3)} CBM`],
           ].map(([label, value]) => (
             <div key={label}>
               <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">

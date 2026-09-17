@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
+import { Prisma, type RateBasis } from "@prisma/client";
 
 import { recordAudit } from "@/lib/audit";
 import {
@@ -9,6 +9,7 @@ import {
   confirmPriceList,
   PriceListRefused,
   setWaitingCargoType,
+  setWaitingPrice,
   setWaitingRate,
 } from "@/lib/price-confirmation";
 import { WAITING_ON_CONTAINER } from "@/lib/price-list";
@@ -169,6 +170,63 @@ export async function setPriceListRate(
           rate: new Prisma.Decimal(raw),
           reason,
         }),
+      { timeout: 20_000 }
+    );
+    const line = await prisma.containerCargo.findFirst({
+      where: { cargoId },
+      orderBy: { createdAt: "desc" },
+      select: { containerId: true },
+    });
+    refreshPriceViews(line?.containerId, cargoId);
+    return { ok: `${result.invoiceNumber} now USD ${result.total.toFixed(2)}.` };
+  } catch (error) {
+    if (error instanceof PriceListRefused) return { error: error.message };
+    throw error;
+  }
+}
+
+/** An empty box is not zero: it is "leave this to the rate book". */
+function money(formData: FormData, key: string): Prisma.Decimal | null {
+  const raw = String(formData.get(key) ?? "").replace(/,/g, "").trim();
+  if (raw === "") return null;
+  if (!/^\d+(\.\d{1,4})?$/.test(raw)) {
+    throw new PriceListRefused(`${raw} is not a figure. Type it like 380 or 380.50.`);
+  }
+  return new Prisma.Decimal(raw);
+}
+
+/**
+ * THE WHOLE PRICE OF ONE ROW, FROM THE DIALOG THAT OPENS ON IT.
+ *
+ * The rate, the unit it is charged in, a freight total typed instead, an extra
+ * and a discount — the four figures the air side's per-cargo dialog asks for,
+ * saved together so the desk reads one total before pressing once. Anything
+ * left empty is left alone; a rate and a freight both empty put the row back on
+ * the rate book.
+ */
+export async function savePriceListPrice(
+  _prev: PriceListState,
+  formData: FormData
+): Promise<PriceListState> {
+  const actor = await authorize("invoice.priceConfirm");
+
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const basisRaw = String(formData.get("basis") ?? "PER_CBM");
+  const basis: RateBasis = basisRaw === "PER_KG" ? "PER_KG" : "PER_CBM";
+  const reason = String(formData.get("reason") ?? "");
+
+  try {
+    const input = {
+      cargoId,
+      basis,
+      rate: money(formData, "rate"),
+      freight: money(formData, "freight"),
+      extra: money(formData, "extra"),
+      discount: money(formData, "discount"),
+      reason,
+    };
+    const result = await prisma.$transaction(
+      (tx) => setWaitingPrice(tx, actor, input),
       { timeout: 20_000 }
     );
     const line = await prisma.containerCargo.findFirst({

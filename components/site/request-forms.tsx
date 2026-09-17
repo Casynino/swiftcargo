@@ -144,7 +144,7 @@ export function QuoteForm() {
           <Input id="q-originCity" name="originCity" maxLength={200} defaultValue="Guangzhou" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="q-estimatedCbm">{t(locale, "Estimated volume (m³)")}</Label>
+          <Label htmlFor="q-estimatedCbm">{t(locale, "Estimated volume (CBM)")}</Label>
           <Input id="q-estimatedCbm" name="estimatedCbm" type="number" inputMode="decimal" step="0.001" min={0} max={10000} />
         </div>
         <div className="space-y-2">

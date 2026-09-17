@@ -170,7 +170,7 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
 
             {totals.perLine[index] > 0 ? (
               <p className="tnum mt-3 text-sm text-muted-foreground">
-                {totals.perLine[index].toFixed(3)} m³
+                {totals.perLine[index].toFixed(3)} CBM
               </p>
             ) : null}
           </Card>
@@ -194,7 +194,7 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
           <p className="tnum mt-3 text-4xl font-semibold tracking-tight">
             {totals.cbm.toFixed(3)}
             <span className="ml-1.5 text-lg font-medium text-muted-foreground">
-              m³
+              CBM
             </span>
           </p>
 
@@ -218,8 +218,8 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
 
           {totals.atMinimum && chosen?.minimumCbm ? (
             <p className="mt-3 rounded-md bg-warning/10 px-3 py-2 text-xs text-warning">
-              {t(locale, "Below the minimum of")} {chosen.minimumCbm.toFixed(2)} m³.{" "}
-              {t(locale, "You would be charged for")} {totals.billable.toFixed(3)} m³.
+              {t(locale, "Below the minimum of")} {chosen.minimumCbm.toFixed(2)} CBM.{" "}
+              {t(locale, "You would be charged for")} {totals.billable.toFixed(3)} CBM.
             </p>
           ) : null}
 
@@ -235,7 +235,7 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
                 }).format(totals.estimate)}
               </p>
               <p className="tnum mt-1 text-xs text-muted-foreground">
-                {chosen.cargoType} · {chosen.currency} {chosen.rate}/m³
+                {chosen.cargoType} · {chosen.currency} {chosen.rate}/CBM
               </p>
             </div>
           ) : null}

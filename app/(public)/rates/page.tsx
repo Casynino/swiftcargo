@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-const BASIS = { PER_CBM: "per m³", PER_KG: "per kg", FLAT: "per container" } as const;
+const BASIS = { PER_CBM: "per CBM", PER_KG: "per kg", FLAT: "per container" } as const;
 
 /**
  * The published rate card.
@@ -108,7 +108,7 @@ export default async function RatesPage() {
                     </TableCell>
                     <TableCell className="tnum hidden text-right text-muted-foreground sm:table-cell">
                       {rate.minimumCbm
-                        ? `${Number(rate.minimumCbm).toFixed(2)} m³`
+                        ? `${Number(rate.minimumCbm).toFixed(2)} CBM`
                         : rate.minimumKg
                           ? `${Number(rate.minimumKg)} kg`
                           : "—"}

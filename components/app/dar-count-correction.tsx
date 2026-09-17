@@ -100,7 +100,7 @@ export function DarCountCorrection({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="dar-cbm">{t(locale, "Volume (m³)")}</Label>
+          <Label htmlFor="dar-cbm">{t(locale, "Volume (CBM)")}</Label>
           <Input
             id="dar-cbm"
             name="cbm"

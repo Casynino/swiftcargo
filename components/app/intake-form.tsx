@@ -513,7 +513,7 @@ export function IntakeForm({
                   <div className="flex items-center gap-3">
                     {cbm !== null ? (
                       <span className="tnum text-sm font-semibold text-marine">
-                        {cbm.toFixed(3)} m³
+                        {cbm.toFixed(3)} CBM
                       </span>
                     ) : null}
                     {lines.length > 1 ? (
@@ -699,7 +699,7 @@ export function IntakeForm({
                 {/*
                   THE ARITHMETIC, BOTH WAYS.
 
-                  A clerk who types 1 m³ over twelve cartons is told what one
+                  A clerk who types 1 CBM over twelve cartons is told what one
                   carton of that size measures — and can put those three numbers
                   in the boxes with one press. It is a cube, and says so: real
                   cartons are not cubes, and the figure is offered as a sanity
@@ -708,7 +708,7 @@ export function IntakeForm({
                 */}
                 {line.cbmByHand && cubeSide(line) ? (
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    {line.cbm} m³ over {line.quantity || 1} package
+                    {line.cbm} CBM over {line.quantity || 1} package
                     {Number(line.quantity) === 1 ? "" : "s"} is about{" "}
                     <span className="tnum font-medium text-foreground">
                       {cubeSide(line)} × {cubeSide(line)} × {cubeSide(line)}{" "}
@@ -814,7 +814,7 @@ export function IntakeForm({
               ],
               ["Packages", String(totals.packages)],
               ["Pieces", totals.pieces > 0 ? String(totals.pieces) : "—"],
-              ["Total CBM", `${totals.cbm.toFixed(3)} m³`],
+              ["Total CBM", `${totals.cbm.toFixed(3)} CBM`],
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { Prisma, type ContainerStatus } from "@prisma/client";
+import { Prisma, type CargoStatus, type ContainerStatus } from "@prisma/client";
 
-import { recordAudit } from "@/lib/audit";
+import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { DateOutOfRange, formDate } from "@/lib/dates";
 import { issueFor as issuePackingListFor } from "@/lib/packing-list";
-import { setCargoStatusBulk } from "@/lib/cargo";
+import { setCargoStatus, setCargoStatusBulk } from "@/lib/cargo";
 import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
 import {
   nextContainerReference,
@@ -820,4 +820,351 @@ export async function issuePackingList(
 
   revalidatePath(`/app/containers/${container.id}`);
   return { ok: `Packing list ${list.number} issued.` };
+}
+
+/** Containers whose cargo is on the Dar floor rather than in Guangzhou or at sea. */
+const LANDED_CONTAINER_STATUSES: ContainerStatus[] = ["ARRIVED", "CLOSED"];
+
+/** Where a consignment goes back to when it turns out it was never in the box. */
+const STILL_AT_SEA: CargoStatus[] = [
+  "ASSIGNED_TO_CONTAINER",
+  "CONTAINER_LOADED",
+  "DEPARTED_CHINA",
+  "IN_TRANSIT",
+  "ARRIVED_TANZANIA",
+  "MISSING_AT_DAR",
+];
+
+/**
+ * A CONSIGNMENT THAT WAS ON THE MANIFEST AND NOT IN THE BOX.
+ *
+ * The packing list is written in Guangzhou and read in Dar, and the first
+ * person to check one against actual cargo is standing on the Dar floor with
+ * the container open. What they find is sometimes that a consignment is on the
+ * paper and was never loaded — the wrong box, the next sailing, a line typed
+ * twice. `unloadCargo` will not help them: it stops at the seal, correctly,
+ * because it is the loading tool.
+ *
+ * So this is the landed twin, and it is deliberately narrower. It refuses a
+ * consignment Dar has already counted off this container — that one WAS in the
+ * box, and its short count is a case, not a manifest edit — and it refuses one
+ * carrying a bill somebody has been given. The old container and the new
+ * absence of one go to FieldChange with the reason before anything moves, and
+ * the container keeps an event saying what left it.
+ *
+ * A consignment taken off goes back to being Guangzhou's, which is where it is
+ * if it did not sail: that is the claim being made, and the status has to say
+ * it out loud rather than leave the boxes counted in two places.
+ */
+export async function takeOffArrivedContainer(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("container.amendArrived");
+
+  const containerId = String(formData.get("containerId") ?? "");
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length < 3) {
+    return { error: "Say why it is coming off the manifest — it goes on the record with your name." };
+  }
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, deletedAt: null },
+    select: { id: true, reference: true, status: true },
+  });
+  if (!container) return { error: "That container no longer exists." };
+  if (!LANDED_CONTAINER_STATUSES.includes(container.status)) {
+    return {
+      error: `${container.reference} has not landed yet. While a box is open, take cargo off it with the loading list.`,
+    };
+  }
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      darReceiving: { select: { id: true, containerId: true } },
+      invoices: {
+        where: { status: { notIn: ["CANCELLED"] } },
+        select: { id: true, number: true, status: true },
+      },
+    },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+
+  const line = await prisma.containerCargo.findUnique({
+    where: { containerId_cargoId: { containerId: container.id, cargoId: cargo.id } },
+    select: { id: true },
+  });
+  if (!line) return { error: `${cargo.reference} is not on ${container.reference}.` };
+
+  /* Counted off this box by the Dar floor. Saying afterwards that it was never
+     in it contradicts the only first-hand record there is. */
+  if (cargo.darReceiving && cargo.darReceiving.containerId === container.id) {
+    return {
+      error: `Dar has already checked ${cargo.reference} in off ${container.reference}. Correct the count, or raise a case — a consignment that came off the box was on it.`,
+    };
+  }
+  const billed = cargo.invoices.find((i) => i.status !== "DRAFT");
+  if (billed) {
+    return {
+      error: `${cargo.reference} is billed on ${billed.number}, and that bill names this sailing. Cancel it first.`,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Cargo",
+        entityId: cargo.id,
+        field: "container",
+        oldValue: container.reference,
+        newValue: null,
+        reason,
+      },
+      tx
+    );
+
+    /* A draft names the sailing it was priced for. The consignment is leaving
+       that sailing, so the draft stops claiming it rather than being deleted —
+       the figures are still the figures, and the line is a real foreign key. */
+    await tx.invoice.updateMany({
+      where: { cargoId: cargo.id, containerCargoId: line.id },
+      data: { containerCargoId: null },
+    });
+
+    await tx.cargoPackage.updateMany({
+      where: { cargoId: cargo.id, containerId: container.id },
+      data: { containerId: null },
+    });
+    await tx.containerCargo.delete({ where: { id: line.id } });
+
+    if (STILL_AT_SEA.includes(cargo.status)) {
+      await setCargoStatus(
+        tx,
+        cargo.id,
+        "RECEIVED_CHINA",
+        actor,
+        `Taken off ${container.reference} after it landed: ${reason}`
+      );
+    }
+
+    await tx.containerEvent.create({
+      data: {
+        containerId: container.id,
+        from: container.status,
+        to: container.status,
+        note: `${cargo.reference} taken off the manifest: ${reason}`,
+        actorId: actor.id,
+      },
+    });
+  });
+
+  await recordAudit({
+    actor,
+    action: "container.amendArrived",
+    entity: "Container",
+    entityId: container.id,
+    summary: `Took ${cargo.reference} off ${container.reference} after arrival — ${reason}`,
+    metadata: { cargoId: cargo.id, reference: cargo.reference, reason },
+  });
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath(`/app/receive/dar/${container.id}`);
+  revalidatePath("/app/containers/arrived");
+  revalidatePath(`/app/cargo/${cargo.id}`);
+  return { ok: `${cargo.reference} is off ${container.reference} and back on the Guangzhou floor.` };
+}
+
+/**
+ * A CONSIGNMENT THAT WAS IN THE BOX AND NOT ON THE MANIFEST.
+ *
+ * The other half of the same discovery. A bale comes off the container with a
+ * mark that is not on the packing list, or a consignment nobody could find
+ * turns up in the next box down. Dar puts it on the container it actually came
+ * off, and from there it is checked in, priced and billed with the rest of that
+ * sailing.
+ *
+ * It is never a new record: what goes on the manifest is a consignment that
+ * already exists, with its own reference, its own mark and its own Guangzhou
+ * measurements. Nothing about the cargo is retyped here.
+ */
+export async function putOnArrivedContainer(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("container.amendArrived");
+
+  const containerId = String(formData.get("containerId") ?? "");
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length < 3) {
+    return { error: "Say why it belongs on this container — it goes on the record with your name." };
+  }
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, deletedAt: null },
+    select: { id: true, reference: true, status: true },
+  });
+  if (!container) return { error: "That container no longer exists." };
+  if (!LANDED_CONTAINER_STATUSES.includes(container.status)) {
+    return {
+      error: `${container.reference} has not landed yet. While a box is open, load cargo into it from the floor list.`,
+    };
+  }
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      chinaReceiving: { select: { packagesCount: true, cbm: true, weightKg: true } },
+      darReceiving: {
+        select: { id: true, containerId: true, packagesCount: true, cbm: true, weightKg: true },
+      },
+      invoices: {
+        where: { status: { notIn: ["DRAFT", "CANCELLED"] } },
+        select: { number: true },
+      },
+      packages: {
+        where: { deletedAt: null },
+        select: { quantity: true, cbm: true, weightKg: true },
+      },
+      containerLines: {
+        select: {
+          id: true,
+          containerId: true,
+          container: { select: { reference: true, status: true } },
+        },
+      },
+    },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+  if (cargo.invoices.length > 0) {
+    return {
+      error: `${cargo.reference} is billed on ${cargo.invoices[0].number}, and that bill names the sailing it was on. Cancel it first.`,
+    };
+  }
+
+  const already = cargo.containerLines.find((l) => l.containerId === container.id);
+  if (already) return { ok: `${cargo.reference} is already on ${container.reference}.` };
+
+  /*
+    ONE BOX AT A TIME, AND THE OLD MANIFEST IS CORRECTED WITH IT.
+
+    A consignment scanned onto the wrong container is MOVED here rather than
+    taken off one screen and added on another: one press, one reason, and the
+    old container and the new one as the two halves of a single FieldChange.
+    The exception is a consignment the Dar floor already counted off another
+    box. That is a first-hand record of which container it came out of, and it
+    is not overruled by a second opinion typed afterwards.
+  */
+  const counted = cargo.containerLines.find(
+    (l) =>
+      cargo.darReceiving !== null &&
+      cargo.darReceiving.containerId === l.containerId &&
+      l.containerId !== container.id
+  );
+  if (counted) {
+    return {
+      error: `Dar checked ${cargo.reference} in off ${counted.container.reference}. A consignment that came off one box was in that box — correct the check-in, or raise a case.`,
+    };
+  }
+
+  const measured = cargo.darReceiving ?? cargo.chinaReceiving;
+  const fromLines = cargo.packages.length > 0;
+  const cbm = fromLines
+    ? cargo.packages.reduce((sum, p) => sum.add(p.cbm), new Prisma.Decimal(0))
+    : new Prisma.Decimal(measured?.cbm ?? 0);
+  const weight = fromLines
+    ? cargo.packages.reduce((sum, p) => sum.add(p.weightKg ?? 0), new Prisma.Decimal(0))
+    : new Prisma.Decimal(measured?.weightKg ?? 0);
+  const packagesCount = fromLines
+    ? cargo.packages.reduce((sum, p) => sum + p.quantity, 0)
+    : (measured?.packagesCount ?? 0);
+  const was = cargo.containerLines[0]?.container.reference ?? null;
+
+  await prisma.$transaction(async (tx) => {
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Cargo",
+        entityId: cargo.id,
+        field: "container",
+        oldValue: was,
+        newValue: container.reference,
+        reason,
+      },
+      tx
+    );
+
+    await tx.containerCargo.deleteMany({
+      where: { cargoId: cargo.id, containerId: { not: container.id } },
+    });
+    await tx.cargoPackage.updateMany({
+      where: { cargoId: cargo.id, deletedAt: null },
+      data: { containerId: container.id },
+    });
+    await tx.containerCargo.create({
+      data: {
+        containerId: container.id,
+        cargoId: cargo.id,
+        packagesCount,
+        cbm,
+        weightKg: weight.greaterThan(0) ? weight : null,
+        loadedAt: new Date(),
+        notes: reason,
+      },
+    });
+
+    /* Landed, not received: putting it on the manifest says the box it came
+       off, not that anybody has counted it. Dar checks it in from the same
+       screen as the rest, and a consignment already booked in keeps the state
+       its own floor gave it. */
+    if (cargo.status !== "RECEIVED_DAR" && STILL_AT_SEA.concat("RECEIVED_CHINA").includes(cargo.status)) {
+      await setCargoStatus(
+        tx,
+        cargo.id,
+        "ARRIVED_TANZANIA",
+        actor,
+        `Came off ${container.reference}: ${reason}`
+      );
+    }
+    if (cargo.darReceiving) {
+      await tx.darReceiving.update({
+        where: { id: cargo.darReceiving.id },
+        data: { containerId: container.id },
+      });
+    }
+
+    await tx.containerEvent.create({
+      data: {
+        containerId: container.id,
+        from: container.status,
+        to: container.status,
+        note: `${cargo.reference} added to the manifest: ${reason}`,
+        actorId: actor.id,
+      },
+    });
+  });
+
+  await recordAudit({
+    actor,
+    action: "container.amendArrived",
+    entity: "Container",
+    entityId: container.id,
+    summary: `Added ${cargo.reference} to ${container.reference} after arrival — ${reason}`,
+    metadata: { cargoId: cargo.id, reference: cargo.reference, was, reason },
+  });
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath(`/app/receive/dar/${container.id}`);
+  revalidatePath("/app/containers/arrived");
+  revalidatePath(`/app/cargo/${cargo.id}`);
+  return { ok: `${cargo.reference} is on ${container.reference}. Check it in with the rest.` };
 }

@@ -172,7 +172,7 @@ export default async function PackingListPage({
               snap.vessel ? `${snap.vessel}${snap.voyage ? ` / ${snap.voyage}` : ""}` : "—"],
             ["Consignments", String(snap.lines.length)],
             ["Customers", String(snap.totalCustomers)],
-            ["Total volume", `${Number(snap.totalCbm).toFixed(3)} m³`],
+            ["Total volume", `${Number(snap.totalCbm).toFixed(3)} CBM`],
             ["Our reference", snap.reference],
           ].map(([label, value]) => (
             <div key={label}>
@@ -310,7 +310,7 @@ export default async function PackingListPage({
                   {groups.reduce((sum, g) => sum + g.packages, 0)} pkgs
                 </td>
                 <td className="tnum py-2 pl-6 text-right">
-                  {Number(snap.totalCbm).toFixed(3)} m³
+                  {Number(snap.totalCbm).toFixed(3)} CBM
                 </td>
               </tr>
             </tbody>

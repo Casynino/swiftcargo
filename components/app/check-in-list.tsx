@@ -1,27 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import {
   AlertTriangle,
+  ArrowRightLeft,
   Camera,
   Check,
   CheckCheck,
   ChevronRight,
+  PackageOpen,
   Scale,
 } from "lucide-react";
 
+import { DamageTag } from "@/components/app/damage-tag";
 import { DarReceiveForm } from "@/components/app/dar-receive-form";
 import { FormMessage } from "@/components/app/form-message";
 import { MissingCargoButton } from "@/components/app/missing-cargo-button";
+import { AddToContainer, MoveCargo } from "@/components/app/move-cargo";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   acceptAsExpected,
+  setCheckInCargoType,
   verifyContainer,
   type ActionState,
 } from "@/lib/actions/dar";
+import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
@@ -47,6 +53,9 @@ export type CheckInRow = {
   discrepancy: boolean;
   verified: boolean;
   missing: boolean;
+  /** Not GOOD on the Dar receiving row: the tag stays visible from here on. */
+  condition: string | null;
+  damaged: boolean;
   hasCase: boolean;
   china: {
     packagesCount: number;
@@ -84,11 +93,22 @@ export function CheckInList({
   rows,
   warehouses,
   defaultWarehouseId,
+  cargoTypes,
+  otherContainers,
+  addable,
+  canAmend,
 }: {
   containerId: string;
   rows: CheckInRow[];
   warehouses: { id: string; name: string }[];
   defaultWarehouseId: string | null;
+  /** The rate book's own categories, for the type picked on the row. */
+  cargoTypes: string[];
+  /** Other landed containers, for a consignment that came off the wrong one. */
+  otherContainers: { id: string; reference: string }[];
+  /** Consignments that could be added to this manifest. */
+  addable: { id: string; label: string }[];
+  canAmend: boolean;
 }) {
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
@@ -176,6 +196,9 @@ export function CheckInList({
                   row={row}
                   warehouses={warehouses}
                   defaultWarehouseId={defaultWarehouseId}
+                  cargoTypes={cargoTypes}
+                  otherContainers={otherContainers}
+                  canAmend={canAmend}
                   picked={picked.has(row.id)}
                   onPick={
                     row.arrivedPackages === null && !row.missing
@@ -187,6 +210,14 @@ export function CheckInList({
             </tbody>
           </table>
         </div>
+        {canAmend ? (
+          /* A bale comes off with a mark the packing list does not carry. It is
+             already a consignment somebody took in — it is picked, never
+             retyped — and from here it is checked in with the rest of the box. */
+          <div className="border-t bg-secondary/30 px-4 py-3">
+            <AddToContainer containerId={containerId} candidates={addable} />
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -322,6 +353,9 @@ function CheckInRowView({
   row,
   warehouses,
   defaultWarehouseId,
+  cargoTypes,
+  otherContainers,
+  canAmend,
   picked,
   onPick,
 }: {
@@ -329,12 +363,16 @@ function CheckInRowView({
   row: CheckInRow;
   warehouses: { id: string; name: string }[];
   defaultWarehouseId: string | null;
+  cargoTypes: string[];
+  otherContainers: { id: string; reference: string }[];
+  canAmend: boolean;
   picked: boolean;
   onPick?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [counting, setCounting] = useState(false);
   const [flagging, setFlagging] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [state, action] = useActionState<ActionState, FormData>(
     acceptAsExpected,
     {}
@@ -410,8 +448,23 @@ function CheckInRowView({
           {row.description}
         </td>
 
+        {/* WHAT THE GOODS ARE, ANSWERED BY WHOEVER HAS THEM OPEN.
+
+            An untyped consignment cannot be priced from the rate book, and the
+            person who can say what it is standing in front of it. The floor
+            still never sees a price — what it sets is what the goods are. */}
         <td className="hidden px-3 py-2 text-muted-foreground lg:table-cell">
-          {row.cargoTypes.length > 0 ? row.cargoTypes.join(", ") : "—"}
+          {row.cargoTypes.length > 1 ? (
+            <span>{row.cargoTypes.join(", ")}</span>
+          ) : (
+            <CargoTypeCell
+              cargoId={row.id}
+              containerId={containerId}
+              reference={row.reference}
+              current={row.cargoTypes[0] ?? ""}
+              options={cargoTypes}
+            />
+          )}
         </td>
 
         <td className="tnum px-3 py-2 text-right">
@@ -458,6 +511,10 @@ function CheckInRowView({
         <td className="hidden px-3 py-2 md:table-cell">
           {row.missing ? (
             <Badge tone="bad">Missing</Badge>
+          ) : row.damaged ? (
+            /* Read before "short" and before "verified": a bale that came off
+               wet is the fact about it, whatever else is true. */
+            <Badge tone="bad">{CONDITION_LABEL[row.condition ?? "DAMAGED"]}</Badge>
           ) : row.verified ? (
             <Badge tone="good">Verified</Badge>
           ) : row.discrepancy ? (
@@ -517,12 +574,30 @@ function CheckInRowView({
         </td>
 
         <td className="px-3 py-2 text-right">
-          <Link
-            href={`/app/cargo/${row.id}`}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Open
-          </Link>
+          <span className="flex items-center justify-end gap-2">
+            {canAmend ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMoving((v) => !v);
+                  setCounting(false);
+                  setFlagging(false);
+                }}
+                aria-expanded={moving}
+                title="It came off a different box, or off none"
+                className="focus-ring inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium hover:bg-secondary"
+              >
+                <ArrowRightLeft className="size-3" />
+                Move
+              </button>
+            ) : null}
+            <Link
+              href={`/app/cargo/${row.id}`}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Open
+            </Link>
+          </span>
         </td>
       </tr>
 
@@ -579,14 +654,30 @@ function CheckInRowView({
         </tr>
       ) : null}
 
+      {moving ? (
+        <tr className="border-t bg-secondary/30">
+          <td colSpan={11} className="px-6 py-4">
+            <MoveCargo
+              cargoId={row.id}
+              containerId={containerId}
+              reference={row.reference}
+              containers={otherContainers}
+              onDone={() => setMoving(false)}
+            />
+          </td>
+        </tr>
+      ) : null}
+
       {flagging ? (
         <tr className="border-t bg-secondary/30">
           <td colSpan={11} className="px-6 py-4">
-            <p className="mb-2 text-sm text-muted-foreground">
+            <p className="mb-3 text-sm text-muted-foreground">
               It did not come off the container, or it came off damaged. Either
-              opens a case naming what was expected against what arrived.
+              opens a case naming what was expected against what arrived — and
+              they are not the same answer: missing means it is not here, damaged
+              means it is here and hurt.
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
               <MissingCargoButton cargoId={row.id} reference={row.reference} />
               <Link
                 href={`/app/exceptions?cargo=${row.id}`}
@@ -595,9 +686,80 @@ function CheckInRowView({
                 Raise a different issue
               </Link>
             </div>
+            <div className="rounded-lg border bg-card p-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-medium">
+                <PackageOpen className="size-4 text-destructive" />
+                It is here and it is damaged
+              </p>
+              <DamageTag
+                cargoId={row.id}
+                reference={row.reference}
+                condition={row.condition}
+              />
+            </div>
           </td>
         </tr>
       ) : null}
     </>
   );
 }
+
+/** The cargo type, chosen on the row and saved the moment it is picked. */
+function CargoTypeCell({
+  cargoId,
+  containerId,
+  reference,
+  current,
+  options,
+}: {
+  cargoId: string;
+  containerId: string;
+  reference: string;
+  current: string;
+  options: string[];
+}) {
+  const [state, action] = useActionState<ActionState, FormData>(
+    setCheckInCargoType,
+    {}
+  );
+  const formRef = useRef<HTMLFormElement>(null);
+  const list = current && !options.includes(current) ? [current, ...options] : options;
+
+  if (options.length === 0) return <span>{current || "—"}</span>;
+
+  return (
+    <form ref={formRef} action={action}>
+      <input type="hidden" name="cargoId" value={cargoId} />
+      <input type="hidden" name="containerId" value={containerId} />
+      <NativeSelect
+        key={current}
+        name="cargoType"
+        defaultValue={current}
+        aria-label={`Cargo type for ${reference}`}
+        className={cn("h-8 min-w-40 text-xs", !current && "border-warning text-warning")}
+        onChange={(event) => {
+          if (event.currentTarget.value) formRef.current?.requestSubmit();
+        }}
+      >
+        {!current ? <option value="">Choose a type…</option> : null}
+        {list.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </NativeSelect>
+      {state.error ? (
+        <p className="mt-1 text-xs text-destructive">{state.error}</p>
+      ) : null}
+    </form>
+  );
+}
+
+/** What the Dar floor wrote on the receiving row, said in words. */
+const CONDITION_LABEL: Record<string, string> = {
+  GOOD: "Good",
+  MINOR_DAMAGE: "Minor damage",
+  DAMAGED: "Damaged",
+  WET: "Wet",
+  REPACKED: "Repacked",
+};

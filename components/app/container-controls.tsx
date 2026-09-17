@@ -170,7 +170,7 @@ export function LoadPanel({
                 <TableCell className="tnum text-right text-sm">
                   {item.packages}
                 </TableCell>
-                {/* One figure, one line: "2.420 m³" broken after the number
+                {/* One figure, one line: "2.420 CBM" broken after the number
                     reads as two different numbers at a glance. */}
                 <TableCell className="tnum whitespace-nowrap text-right text-sm font-medium">
                   {formatCbm(item.cbm)}

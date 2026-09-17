@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import {
+  ArrowRightLeft,
   ChevronRight,
   Clock,
   Download,
@@ -12,6 +13,11 @@ import {
 } from "lucide-react";
 
 import { useUrlState } from "@/components/app/use-url-state";
+import { MoveCargo } from "@/components/app/move-cargo";
+import { RowPriceEditor } from "@/components/app/row-price-editor";
+import { SubmitButton } from "@/components/app/submit-button";
+import { setPriceListCargoType, type PriceListState } from "@/lib/actions/price-list";
+import { t, type Locale } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -37,13 +43,42 @@ export type CargoRow = {
   volumeLabel: string;
   countedAs: string;
   priceLabel: string | null;
+  /** The same figure in shillings — what anybody here reads out loud. */
+  priceTzsLabel: string | null;
   /** What is still owed on it, for the sort and the badge. */
   owing: number;
   state: "paid" | "owed" | "unpriced" | "collected" | "note";
   stateLabel: string;
   proofUrl: string | null;
+  /** How many photographs there are, when there is more than one. */
+  proofCount: number;
   invoiceHref: string | null;
   href: string;
+  /** The single cargo type on the lines, for the picker on the row. */
+  cargoType: string | null;
+  /** Lines at more than one type — changed on the consignment, not here. */
+  typeMixed: boolean;
+  /** The tag the Dar floor put on when the boxes came off the container. */
+  damaged: boolean;
+  conditionLabel: string | null;
+  /**
+   * WHAT THE PRICE DIALOG NEEDS, OR NULL WHERE THERE IS NOTHING TO CHANGE.
+   *
+   * Null once a bill has gone out or money has moved on it: a figure a
+   * customer is holding is Finance's, by discount or re-price with a reason,
+   * and never by a dialog that says "save the price".
+   */
+  edit: {
+    standardRate: number | null;
+    agreedRate: number | null;
+    bookBasis: "PER_CBM" | "PER_KG" | "FLAT" | null;
+    basis: "PER_CBM" | "PER_KG" | "FLAT" | null;
+    cbm: number | null;
+    weightKg: number | null;
+    freight: number;
+    extra: number;
+    discount: number;
+  } | null;
 };
 
 export type DocumentRow = {
@@ -78,13 +113,27 @@ type Sort = keyof typeof SORTS;
  * lives on the slowest in the building.
  */
 export function ContainerCargoTabs({
+  containerId,
   cargo,
   documents,
   timeline,
+  cargoTypes,
+  otherContainers,
+  canConfirm,
+  canAmend,
+  locale,
 }: {
+  containerId: string;
   cargo: CargoRow[];
   documents: DocumentRow[];
   timeline: TimelineRow[];
+  /** The rate book's own categories, for the type picked on a row. */
+  cargoTypes: string[];
+  /** Other landed containers, for a consignment that came off the wrong one. */
+  otherContainers: { id: string; reference: string }[];
+  canConfirm: boolean;
+  canAmend: boolean;
+  locale: Locale;
 }) {
   const [tab, setTab] = useUrlState("tab", "cargo", ["cargo", "documents", "timeline"] as const);
   const [query, setQuery] = useUrlState<string>("q", "");
@@ -215,6 +264,7 @@ export function ContainerCargoTabs({
                 <TableHead>Goods</TableHead>
                 <TableHead className="text-right">Volume</TableHead>
                 <TableHead className="text-right">Counted as</TableHead>
+                <TableHead className="w-40" />
                 <TableHead className="text-right">Price</TableHead>
                 <TableHead className="w-16">Proof</TableHead>
                 <TableHead className="w-20" />
@@ -222,99 +272,16 @@ export function ContainerCargoTabs({
             </TableHeader>
             <TableBody>
               {shown.map((row) => (
-                <TableRow
+                <CargoTableRow
                   key={row.id}
-                  className={cn(
-                    /* The stripe answers the only question the desk asks of a
-                       row at a glance: has this one been paid for. */
-                    row.state === "paid" || row.state === "collected"
-                      ? "border-l-2 border-l-emerald-500"
-                      : row.state === "note"
-                        ? "border-l-2 border-l-brand"
-                        : row.state === "owed"
-                          ? "border-l-2 border-l-amber-500"
-                          : ""
-                  )}
-                >
-                  <TableCell className="tnum whitespace-nowrap text-sm text-muted-foreground">
-                    {row.receivedLabel}
-                  </TableCell>
-                  <TableCell className="tnum whitespace-nowrap text-sm">
-                    {row.reference}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">
-                    {row.customer}
-                    <span className="tnum block text-xs font-normal text-muted-foreground">
-                      {row.phone}
-                    </span>
-                  </TableCell>
-                  <TableCell className="max-w-[14rem] truncate text-sm text-muted-foreground">
-                    {row.goods}
-                  </TableCell>
-                  <TableCell className="tnum whitespace-nowrap text-right text-sm">
-                    {row.volumeLabel}
-                  </TableCell>
-                  <TableCell className="tnum whitespace-nowrap text-right text-sm text-muted-foreground">
-                    {row.countedAs}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-right">
-                    {row.priceLabel ? (
-                      <span className="inline-flex items-center gap-2">
-                        {row.invoiceHref ? (
-                          <Link
-                            href={row.invoiceHref}
-                            className="tnum text-sm font-medium hover:underline"
-                          >
-                            {row.priceLabel}
-                          </Link>
-                        ) : (
-                          <span className="tnum text-sm font-medium">
-                            {row.priceLabel}
-                          </span>
-                        )}
-                        <Badge
-                          tone={
-                            row.state === "paid" || row.state === "collected"
-                              ? "good"
-                              : row.state === "note"
-                                ? "progress"
-                                : "warn"
-                          }
-                        >
-                          {row.stateLabel}
-                        </Badge>
-                      </span>
-                    ) : (
-                      <Badge tone="neutral">{row.stateLabel}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {/* What the floor photographed. It is the whole damage
-                        argument later, so it is one click from the money. */}
-                    {row.proofUrl ? (
-                      <a
-                        href={row.proofUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
-                      >
-                        <Download className="size-3.5" />
-                        View
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="p-0">
-                    <Link
-                      href={row.href}
-                      className="flex items-center justify-end gap-1 px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      Open
-                      <ChevronRight className="size-4" />
-                    </Link>
-                  </TableCell>
-                </TableRow>
+                  containerId={containerId}
+                  row={row}
+                  cargoTypes={cargoTypes}
+                  otherContainers={otherContainers}
+                  canConfirm={canConfirm}
+                  canAmend={canAmend}
+                  locale={locale}
+                />
               ))}
             </TableBody>
           </Table>
@@ -380,5 +347,270 @@ export function ContainerCargoTabs({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * ONE CONSIGNMENT ON THE CONTAINER, AND EVERYTHING THAT CAN BE DONE TO IT.
+ *
+ * The container's cargo is listed once, here, and the price work happens on
+ * these rows rather than in a second table above the page: the type where it
+ * is missing or wrong, the price dialog behind Edit, and Move for a bale that
+ * came off a different box. Listing the same boxes twice with different columns
+ * is how two screens come to disagree about one container.
+ */
+function CargoTableRow({
+  containerId,
+  row,
+  cargoTypes,
+  otherContainers,
+  canConfirm,
+  canAmend,
+  locale,
+}: {
+  containerId: string;
+  row: CargoRow;
+  cargoTypes: string[];
+  otherContainers: { id: string; reference: string }[];
+  canConfirm: boolean;
+  canAmend: boolean;
+  locale: Locale;
+}) {
+  const [moving, setMoving] = useState(false);
+
+  return (
+    <>
+      <TableRow
+        className={cn(
+          /* The stripe answers the only question the desk asks of a row at a
+             glance: has this one been paid for. Damage is read before any of
+             them — a bale that came off wet is the fact about it. */
+          row.damaged
+            ? "border-l-2 border-l-destructive"
+            : row.state === "paid" || row.state === "collected"
+              ? "border-l-2 border-l-emerald-500"
+              : row.state === "note"
+                ? "border-l-2 border-l-brand"
+                : row.state === "owed"
+                  ? "border-l-2 border-l-amber-500"
+                  : ""
+        )}
+      >
+        <TableCell className="tnum whitespace-nowrap text-sm text-muted-foreground">
+          {row.receivedLabel}
+        </TableCell>
+        <TableCell className="tnum whitespace-nowrap text-sm">
+          {row.reference}
+          {row.damaged ? (
+            <Badge tone="bad" className="ml-1.5 align-middle">
+              {row.conditionLabel}
+            </Badge>
+          ) : null}
+        </TableCell>
+        <TableCell className="text-sm font-medium">
+          {row.customer}
+          <span className="tnum block text-xs font-normal text-muted-foreground">
+            {row.phone}
+          </span>
+        </TableCell>
+        <TableCell className="max-w-[16rem] text-sm text-muted-foreground">
+          {canConfirm && !row.typeMixed && row.edit && cargoTypes.length > 0 ? (
+            <CargoTypeCell
+              cargoId={row.id}
+              reference={row.reference}
+              current={row.cargoType ?? ""}
+              options={cargoTypes}
+              locale={locale}
+            />
+          ) : (
+            <span className="block truncate">{row.goods}</span>
+          )}
+        </TableCell>
+        <TableCell className="tnum whitespace-nowrap text-right text-sm">
+          {row.volumeLabel}
+        </TableCell>
+        <TableCell className="tnum whitespace-nowrap text-right text-sm text-muted-foreground">
+          {row.countedAs}
+        </TableCell>
+        <TableCell className="whitespace-nowrap">
+          <span className="flex items-center gap-1.5">
+            {canAmend && otherContainers.length >= 0 ? (
+              <button
+                type="button"
+                onClick={() => setMoving((v) => !v)}
+                aria-expanded={moving}
+                title={t(locale, "It came off a different box, or off none")}
+                className="focus-ring inline-flex items-center gap-1 rounded-full border bg-card px-2 py-0.5 text-xs font-medium hover:bg-secondary"
+              >
+                <ArrowRightLeft className="size-3" />
+                {t(locale, "Move")}
+              </button>
+            ) : null}
+            {canConfirm && row.edit ? (
+              <RowPriceEditor
+                cargoId={row.id}
+                reference={row.reference}
+                currency="USD"
+                standardRate={row.edit.standardRate}
+                agreedRate={row.edit.agreedRate}
+                bookBasis={row.edit.bookBasis}
+                basis={row.edit.basis}
+                cbm={row.edit.cbm}
+                weightKg={row.edit.weightKg}
+                freight={row.edit.freight}
+                extra={row.edit.extra}
+                discount={row.edit.discount}
+                locale={locale}
+              />
+            ) : null}
+          </span>
+        </TableCell>
+        <TableCell className="whitespace-nowrap text-right">
+          {row.priceLabel ? (
+            <span className="inline-flex flex-col items-end gap-0.5">
+              <span className="inline-flex items-center gap-2">
+              {row.invoiceHref ? (
+                <Link
+                  href={row.invoiceHref}
+                  className="tnum text-sm font-medium hover:underline"
+                >
+                  {row.priceLabel}
+                </Link>
+              ) : (
+                <span className="tnum text-sm font-medium">{row.priceLabel}</span>
+              )}
+              <Badge
+                tone={
+                  row.state === "paid" || row.state === "collected"
+                    ? "good"
+                    : row.state === "note"
+                      ? "progress"
+                      : "warn"
+                }
+              >
+                {row.stateLabel}
+              </Badge>
+              </span>
+              {row.priceTzsLabel ? (
+                <span className="tnum text-xs text-muted-foreground">
+                  {row.priceTzsLabel}
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            <Badge tone="neutral">{row.stateLabel}</Badge>
+          )}
+        </TableCell>
+        <TableCell>
+          {/* What the floor photographed. It is the whole damage argument
+              later, so it is one click from the money. */}
+          {row.proofUrl ? (
+            <span className="flex items-center gap-1.5">
+              <a
+                href={row.proofUrl}
+                target="_blank"
+                rel="noreferrer"
+                title={`${t(locale, "View")} ${row.proofCount} ${t(locale, row.proofCount === 1 ? "photo" : "photos")}`}
+                className="focus-ring relative block size-8 shrink-0 overflow-hidden rounded border"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={row.proofUrl}
+                  alt={`${row.reference}`}
+                  loading="lazy"
+                  className="size-full object-cover"
+                />
+                {row.proofCount > 1 ? (
+                  <span className="tnum absolute bottom-0 right-0 rounded-tl bg-black/70 px-1 text-[10px] font-medium text-white">
+                    {row.proofCount}
+                  </span>
+                ) : null}
+              </a>
+              <a
+                href={row.proofUrl}
+                download={`${row.reference}.jpg`}
+                aria-label={t(locale, "Download the photo")}
+                className="focus-ring text-muted-foreground hover:text-foreground"
+              >
+                <Download className="size-3.5" />
+              </a>
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
+        </TableCell>
+        <TableCell className="p-0">
+          <Link
+            href={row.href}
+            className="flex items-center justify-end gap-1 px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
+          >
+            {t(locale, "Open")}
+            <ChevronRight className="size-4" />
+          </Link>
+        </TableCell>
+      </TableRow>
+
+      {moving ? (
+        <TableRow>
+          <TableCell colSpan={10} className="bg-secondary/30 px-6 py-4">
+            <MoveCargo
+              cargoId={row.id}
+              containerId={containerId}
+              reference={row.reference}
+              containers={otherContainers}
+              onDone={() => setMoving(false)}
+            />
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </>
+  );
+}
+
+/** The cargo type, chosen on the row and saved the moment it is picked. */
+function CargoTypeCell({
+  cargoId,
+  reference,
+  current,
+  options,
+  locale,
+}: {
+  cargoId: string;
+  reference: string;
+  current: string;
+  options: string[];
+  locale: Locale;
+}) {
+  const [state, action] = useActionState<PriceListState, FormData>(
+    setPriceListCargoType,
+    {}
+  );
+  const formRef = useRef<HTMLFormElement>(null);
+  const list = current && !options.includes(current) ? [current, ...options] : options;
+
+  return (
+    <form ref={formRef} action={action}>
+      <input type="hidden" name="cargoId" value={cargoId} />
+      <NativeSelect
+        key={current}
+        name="cargoType"
+        defaultValue={current}
+        aria-label={`${t(locale, "Cargo type for")} ${reference}`}
+        className={cn("h-8 min-w-40 text-xs", !current && "border-warning text-warning")}
+        onChange={(event) => {
+          if (event.currentTarget.value) formRef.current?.requestSubmit();
+        }}
+      >
+        {!current ? <option value="">{t(locale, "Choose a type…")}</option> : null}
+        {list.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </NativeSelect>
+      {state.error ? (
+        <p className="mt-1 text-xs text-destructive">{state.error}</p>
+      ) : null}
+    </form>
   );
 }

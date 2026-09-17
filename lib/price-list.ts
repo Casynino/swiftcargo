@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, type CargoCondition, type RateBasis, type ServiceType } from "@prisma/client";
 
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { billingMeasurement, priceConsignment } from "@/lib/invoice-draft";
@@ -45,12 +45,25 @@ export type PriceListRow = {
   mixed: boolean;
   invoiceId: string | null;
   invoiceNumber: string | null;
-  /** The rate per CBM being charged, or null where lines differ. */
+  /** The rate being charged, or null where lines differ. */
   rate: string | null;
   /** The book's own rate, beside an agreed one. */
   standardRate: string | null;
   agreed: boolean;
+  /** The unit this bill charges in, and the unit the rate book prices in.
+      They differ only where somebody changed it for this consignment. */
+  basis: RateBasis | null;
+  bookBasis: RateBasis | null;
   billableCbm: string | null;
+  /** What a per-kilo rate would be multiplied by. */
+  weightKg: string | null;
+  /** The freight on the bill as it stands, before extras and discount. */
+  freight: string;
+  extra: string;
+  discountOff: string;
+  /** Not GOOD: the tag the Dar floor put on when the boxes came off damaged. */
+  condition: CargoCondition | null;
+  damaged: boolean;
   totalUsd: string | null;
   totalLabel: string | null;
   totalTzsLabel: string | null;
@@ -88,6 +101,7 @@ export async function priceListFor(
         invoices: {
           where: { status: "DRAFT" },
           orderBy: { createdAt: "asc" },
+          include: { items: true },
         },
       },
     }),
@@ -96,6 +110,42 @@ export async function priceListFor(
   ]);
   const vatPercent = new Prisma.Decimal(settings?.vatPercent ?? 0);
   const tzsOf = (usd: Prisma.Decimal) => (fx ? usdToTzs(usd, fx.rate) : null);
+
+  /*
+    THE UNIT THE RATE BOOK PRICES IN, BESIDE THE UNIT THE BILL CHARGES IN.
+
+    A desk changing a rate has to be told which of the two numbers it is
+    quoting, and a rate per kilo typed against a rate per cubic metre is the
+    mistake that makes a bill ten times wrong. Asked once per cargo type rather
+    than once per row: a container of ninety consignments is four or five types.
+  */
+  const bookBasisCache = new Map<string, RateBasis | null>();
+  const bookBasisFor = async (service: ServiceType, cargoType: string | null) => {
+    const key = `${service}|${cargoType ?? ""}`;
+    if (!bookBasisCache.has(key)) {
+      const now = new Date();
+      const live = {
+        active: true,
+        effectiveFrom: { lte: now },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
+      };
+      const rate =
+        (cargoType
+          ? await client.shippingRate.findFirst({
+              where: { ...live, service, cargoType },
+              orderBy: { effectiveFrom: "desc" },
+              select: { basis: true },
+            })
+          : null) ??
+        (await client.shippingRate.findFirst({
+          where: { ...live, service, cargoType: null },
+          orderBy: { effectiveFrom: "desc" },
+          select: { basis: true },
+        }));
+      bookBasisCache.set(key, rate?.basis ?? null);
+    }
+    return bookBasisCache.get(key) ?? null;
+  };
 
   const rows: PriceListRow[] = [];
   for (const item of cargo) {
@@ -111,6 +161,11 @@ export async function priceListFor(
       customerCode: item.receiver.code,
       packages: item.darReceiving?.packagesCount ?? null,
       cbm: item.darReceiving?.cbm?.toString() ?? null,
+      weightKg:
+        (item.darReceiving?.weightKg ?? item.chinaReceiving?.weightKg)?.toString() ??
+        null,
+      condition: item.darReceiving?.condition ?? null,
+      damaged: !!item.darReceiving && item.darReceiving.condition !== "GOOD",
       types: item.packages.length === 0 && item.commodity ? [item.commodity] : types,
       mixed: types.length > 1 || (types.length === 1 && untyped),
     };
@@ -122,6 +177,10 @@ export async function priceListFor(
     let billableCbm: Prisma.Decimal | null = null;
     let blockedReason: string | null = null;
     let agreed = false;
+    let basis: RateBasis | null = null;
+    let freight = new Prisma.Decimal(0);
+    let extra = new Prisma.Decimal(0);
+    let discountOff = new Prisma.Decimal(0);
 
     if (draft) {
       /* Two drafts only when a consignment's lines split across sailings; the
@@ -130,7 +189,15 @@ export async function priceListFor(
       rate = draft.appliedRate;
       standardRate = draft.standardRate;
       billableCbm = draft.billableCbm;
+      basis = draft.rateBasis;
       agreed = carriesAgreedRate(draft);
+      for (const invoice of item.invoices) {
+        for (const line of invoice.items) {
+          if (line.category === "Charge") extra = extra.add(line.amount);
+          else if (line.category === "Discount") discountOff = discountOff.sub(line.amount);
+          else freight = freight.add(line.amount);
+        }
+      }
     } else {
       const priced = await priceConsignment(
         {
@@ -153,6 +220,8 @@ export async function priceListFor(
         rate = priced.appliedRate;
         standardRate = priced.standardRate;
         billableCbm = priced.billableCbm;
+        basis = priced.basis;
+        freight = priced.amount;
       }
     }
 
@@ -164,7 +233,12 @@ export async function priceListFor(
       rate: rate?.toString() ?? null,
       standardRate: standardRate?.toString() ?? null,
       agreed,
+      basis,
+      bookBasis: await bookBasisFor(item.service, base.types[0] ?? null),
       billableCbm: billableCbm?.toString() ?? null,
+      freight: freight.toString(),
+      extra: extra.toString(),
+      discountOff: discountOff.toString(),
       totalUsd: total?.toString() ?? null,
       totalLabel: total ? formatCurrency(total, draft?.currency ?? "USD") : null,
       totalTzsLabel: tzs ? formatCurrency(tzs, "TZS") : null,

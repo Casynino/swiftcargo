@@ -193,7 +193,7 @@ export default async function HomePage() {
               title: "Loose cargo (LCL)",
               body:
                 "Your goods share a container with other customers and you pay for the space you use, by the cubic metre. Best for anything under a few cubic metres.",
-              points: ["Priced per m³", "Charged on what our warehouse measures", "Consolidated in Guangzhou"],
+              points: ["Priced per CBM", "Charged on what our warehouse measures", "Consolidated in Guangzhou"],
             },
             {
               icon: Container,
@@ -320,7 +320,7 @@ export default async function HomePage() {
                   {formatMoney(rate.rate, rate.currency)}
                   <span className="ml-1.5 text-base font-medium text-muted-foreground">
                     {rate.basis === "PER_CBM"
-                      ? "/ m³"
+                      ? "/ CBM"
                       : rate.basis === "PER_KG"
                         ? "/ kg"
                         : t(locale, "flat")}
@@ -328,7 +328,7 @@ export default async function HomePage() {
                 </p>
                 {rate.minimumCbm ? (
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {t(locale, "Minimum")} {Number(rate.minimumCbm).toFixed(2)} m³
+                    {t(locale, "Minimum")} {Number(rate.minimumCbm).toFixed(2)} CBM
                   </p>
                 ) : null}
               </Card>

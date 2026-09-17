@@ -527,7 +527,7 @@ export async function CommandCentre({ user }: { user: SessionUser }) {
             <Figure
               className="flex-1"
               label={t(locale, "Volume on the floor")}
-              value={`${operations.cbmOnFloor.toFixed(2)} m³`}
+              value={`${operations.cbmOnFloor.toFixed(2)} CBM`}
               hint={t(locale, "measured at Dar and not yet handed over")}
               icon={Ruler}
               tone="brand"
@@ -686,7 +686,7 @@ export async function CommandCentre({ user }: { user: SessionUser }) {
                 {t(locale, "No container has sailed yet, so there is nothing to compare.")}
               </p>
             ) : (
-              <ActivityBars className="mt-4" points={overview.carried} unit="m³" />
+              <ActivityBars className="mt-4" points={overview.carried} unit="CBM" />
             )}
           </BentoCard>
         </div>

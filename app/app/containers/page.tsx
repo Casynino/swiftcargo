@@ -226,7 +226,7 @@ export default async function ContainersPage({
           label="Volume at sea"
           numeric={Number(sailingVolume._sum.cbm ?? 0)}
           decimals={2}
-          suffix="m³"
+          suffix="CBM"
           icon={Anchor}
           tone="signal"
         />

@@ -14,7 +14,7 @@ import { formatCbm, formatDate, formatMoney } from "@/lib/format";
 import type { Valuation } from "@/lib/valuation";
 
 const BASIS_LABEL: Record<string, string> = {
-  PER_CBM: "per m³",
+  PER_CBM: "per CBM",
   PER_KG: "per kg",
   FLAT: "flat",
 };

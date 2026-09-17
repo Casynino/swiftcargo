@@ -1,26 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
-import { ClipboardCheck, Pencil } from "lucide-react";
+import { useActionState, useRef } from "react";
+import { ClipboardCheck } from "lucide-react";
 
 import { FormMessage } from "@/components/app/form-message";
+import { RowPriceEditor } from "@/components/app/row-price-editor";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   confirmPrices,
   setPriceListCargoType,
-  setPriceListRate,
   type PriceListState,
 } from "@/lib/actions/price-list";
 import { t, type Locale } from "@/lib/i18n";
 import type { PriceList as PriceListData, PriceListRow } from "@/lib/price-list";
 import { cn } from "@/lib/utils";
 
-const cbm = (value: string | null) => (value === null ? "—" : `${Number(value).toFixed(3)} m³`);
+/** What the Dar floor wrote on the receiving row, said in words. */
+const CONDITION_LABEL: Record<string, string> = {
+  GOOD: "Good",
+  MINOR_DAMAGE: "Minor damage",
+  DAMAGED: "Damaged",
+  WET: "Wet",
+  REPACKED: "Repacked",
+};
+
+const cbm = (value: string | null) => (value === null ? "—" : `${Number(value).toFixed(3)} CBM`);
 const usd = (value: string | null) =>
   value === null
     ? "—"
@@ -52,6 +59,72 @@ export function PriceList({
   canConfirm: boolean;
   locale: Locale;
 }) {
+  if (list.rows.length === 0) return null;
+
+  return (
+    <ConfirmPricesBanner
+      heading={heading}
+      containerId={containerId}
+      list={list}
+      canConfirm={canConfirm}
+      locale={locale}
+    >
+      <div className="overflow-x-auto border-t bg-card">
+        <table className="w-full min-w-[860px] text-sm">
+          <thead>
+            <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-2 font-medium">{t(locale, "Cargo")}</th>
+              <th className="px-4 py-2 font-medium">{t(locale, "Cargo type")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t(locale, "CBM")}</th>
+              <th className="px-4 py-2 font-medium">{t(locale, "Rate per CBM")}</th>
+              <th className="px-4 py-2 text-right font-medium">{t(locale, "Amount")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.rows.map((row) => (
+              <PriceRow
+                key={row.cargoId}
+                row={row}
+                cargoTypes={cargoTypes}
+                canEdit={canConfirm}
+                locale={locale}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </ConfirmPricesBanner>
+  );
+}
+
+/**
+ * THE BANNER, AND THE ONE PRESS.
+ *
+ * On a container page the cargo is already on the screen once, in the
+ * container's own table, and a second table of the same consignments above the
+ * financial overview is the same boxes listed twice with different columns.
+ * So the card is a banner there: what is waiting, what it comes to, and the
+ * button. The corrections happen on the rows of the table that was already
+ * there.
+ *
+ * The group with no container has no such table, so it keeps its own — passed
+ * in as children.
+ */
+export function ConfirmPricesBanner({
+  heading,
+  containerId,
+  list,
+  canConfirm,
+  locale,
+  children,
+}: {
+  heading?: React.ReactNode;
+  containerId: string | null;
+  list: PriceListData;
+  canConfirm: boolean;
+  locale: Locale;
+  children?: React.ReactNode;
+}) {
   const [state, action] = useActionState<PriceListState, FormData>(confirmPrices, {});
   const blocked = list.rows.length - list.ready;
   if (list.rows.length === 0) return null;
@@ -77,7 +150,9 @@ export function PriceList({
             </span>{" "}
             {t(
               locale,
-              "in total. Read down the list below, correct anything that looks wrong on its row, then confirm the rest in one go. Confirming issues each bill at today's exchange rate, sends it to the customer and moves it to Collections."
+              children
+                ? "in total. Read down the list below, correct anything that looks wrong on its row, then confirm the rest in one go. Confirming issues each bill at today's exchange rate, sends it to the customer and moves it to Collections."
+                : "in total. Read down the cargo below, open anything that looks wrong and correct it, then confirm the rest in one go. Confirming issues each bill at today's exchange rate, sends it to the customer and moves it to Collections."
             )}
           </p>
           {blocked > 0 ? (
@@ -110,30 +185,7 @@ export function PriceList({
         </div>
       ) : null}
 
-      <div className="overflow-x-auto border-t bg-card">
-        <table className="w-full min-w-[860px] text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="px-4 py-2 font-medium">{t(locale, "Cargo")}</th>
-              <th className="px-4 py-2 font-medium">{t(locale, "Cargo type")}</th>
-              <th className="px-4 py-2 text-right font-medium">{t(locale, "CBM")}</th>
-              <th className="px-4 py-2 font-medium">{t(locale, "Rate per CBM")}</th>
-              <th className="px-4 py-2 text-right font-medium">{t(locale, "Amount")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.rows.map((row) => (
-              <PriceRow
-                key={row.cargoId}
-                row={row}
-                cargoTypes={cargoTypes}
-                canEdit={canConfirm}
-                locale={locale}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {children}
     </section>
   );
 }
@@ -155,6 +207,14 @@ function PriceRow({
         <Link href={`/app/cargo/${row.cargoId}`} className="tnum font-medium hover:underline">
           {row.reference}
         </Link>
+        {row.damaged ? (
+          /* The tag the Dar floor put on when the boxes came off the container.
+             It follows the cargo to whoever prices it, so nobody quotes a clean
+             bill for a bale that arrived soaked. */
+          <Badge tone="bad" className="ml-2 align-middle">
+            {CONDITION_LABEL[row.condition ?? "DAMAGED"]}
+          </Badge>
+        ) : null}
         <span className="block text-xs text-muted-foreground">{row.description}</span>
         <span className="block text-xs text-muted-foreground">
           {row.customer} · {row.customerCode}
@@ -255,7 +315,7 @@ function TypeCell({
   );
 }
 
-/** The rate per CBM, with the book's beside it when somebody agreed another. */
+/** The rate, the book's beside it, and the door to the whole price. */
 function RateCell({
   row,
   canEdit,
@@ -265,16 +325,11 @@ function RateCell({
   canEdit: boolean;
   locale: Locale;
 }) {
-  const [open, setOpen] = useState(false);
-  const [state, action] = useActionState<PriceListState, FormData>(setPriceListRate, {});
-
-  useEffect(() => {
-    if (state.ok) setOpen(false);
-  }, [state]);
-
   const shown = (
     <div>
-      <span className="tnum">{row.rate ? usd(row.rate) : row.blockedReason ? "—" : t(locale, "Mixed")}</span>
+      <span className="tnum">
+        {row.rate ? usd(row.rate) : row.blockedReason ? "—" : t(locale, "Mixed")}
+      </span>
       {row.agreed ? (
         <span className="ml-2 inline-block rounded bg-brand/15 px-1 py-px text-[10px] font-semibold text-brand">
           {t(locale, "Special rate")}
@@ -290,56 +345,24 @@ function RateCell({
 
   if (!canEdit || row.blockedReason) return shown;
 
-  if (!open) {
-    return (
-      <div className="flex flex-wrap items-start gap-2">
-        {shown}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          onClick={() => setOpen(true)}
-        >
-          <Pencil className="size-3.5" />
-          {t(locale, "Edit")}
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form action={action} className="w-56 space-y-1.5">
-      <input type="hidden" name="cargoId" value={row.cargoId} />
-      <Input
-        name="rate"
-        inputMode="decimal"
-        defaultValue={row.rate ?? ""}
-        placeholder={t(locale, "Rate per CBM, USD")}
-        aria-label={`${t(locale, "Rate per CBM for")} ${row.reference}`}
-        className="h-8"
-        autoFocus
+    <div className="flex flex-wrap items-start gap-2">
+      {shown}
+      <RowPriceEditor
+        cargoId={row.cargoId}
+        reference={row.reference}
+        currency="USD"
+        standardRate={row.standardRate === null ? null : Number(row.standardRate)}
+        agreedRate={row.agreed && row.rate !== null ? Number(row.rate) : null}
+        bookBasis={row.bookBasis}
+        basis={row.basis}
+        cbm={row.billableCbm === null ? null : Number(row.billableCbm)}
+        weightKg={row.weightKg === null ? null : Number(row.weightKg)}
+        freight={Number(row.freight)}
+        extra={Number(row.extra)}
+        discount={Number(row.discountOff)}
+        locale={locale}
       />
-      <Input
-        name="reason"
-        placeholder={t(locale, "Note (optional)")}
-        className="h-8"
-      />
-      <div className="flex gap-2">
-        <SubmitButton size="sm" className="h-7 px-2 text-xs" pendingLabel={t(locale, "Saving…")}>
-          {t(locale, "Save")}
-        </SubmitButton>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs"
-          onClick={() => setOpen(false)}
-        >
-          {t(locale, "Cancel")}
-        </Button>
-      </div>
-      {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}
-    </form>
+    </div>
   );
 }

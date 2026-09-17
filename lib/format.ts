@@ -78,7 +78,7 @@ export function formatMoney(value: Numeric, currency = "USD") {
 export function formatCbm(value: Numeric) {
   const n = toNumber(value);
   if (n === null) return "—";
-  return `${n.toFixed(3)} m³`;
+  return `${n.toFixed(3)} CBM`;
 }
 
 export function formatWeight(value: Numeric) {

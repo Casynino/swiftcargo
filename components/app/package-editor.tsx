@@ -201,7 +201,7 @@ export function PackageEditor({
                 Total
               </TableCell>
               <TableCell className="tnum text-right text-sm">
-                {total.toFixed(3)} m³
+                {total.toFixed(3)} CBM
               </TableCell>
               <TableCell colSpan={canEdit ? 2 : 1} />
             </TableRow>
@@ -322,7 +322,7 @@ export function PackageEditor({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cbm">Volume (m³)</Label>
+              <Label htmlFor="cbm">Volume (CBM)</Label>
               <Input
                 id="cbm"
                 name="cbm"
@@ -429,7 +429,7 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
           <NativeSelect id="override-packageId" name="packageId" required>
             {lines.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.reference} ({Number(l.cbm).toFixed(3)} m³)
+                {l.reference} ({Number(l.cbm).toFixed(3)} CBM)
               </option>
             ))}
           </NativeSelect>

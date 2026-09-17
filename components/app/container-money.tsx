@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { PriceList } from "@/components/app/price-list";
+import { ConfirmPricesBanner } from "@/components/app/price-list";
 import {
   ContainerExpenses,
   type ContainerExpenseRow,
@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
 import { composeMessage, whatsappNumber } from "@/lib/messages";
 import { outstandingOf } from "@/lib/invoice-balance";
@@ -92,6 +93,7 @@ export async function ContainerMoney({
                 orderBy: { takenAt: "asc" },
                 take: 1,
               },
+              _count: { select: { photos: true } },
               invoices: {
                 where: { status: { not: "CANCELLED" } },
                 include: { payments: true },
@@ -181,8 +183,10 @@ export async function ContainerMoney({
     expectedRevenue > 0 ? (expectedProfit / expectedRevenue) * 100 : 0;
 
   const fx = rate ? Number(rate.rate) : 0;
+  /* Through lib/currency, never by multiplying here: one place rounds, and it
+     rounds shillings to the shilling. */
   const tzs = (usd: number) =>
-    fx > 0 ? formatMoney(usd * fx, "TZS") : null;
+    rate ? formatCurrency(usdToTzs(usd, rate.rate), "TZS") : null;
 
   const invoiced = rows.filter((r) => r.live.length > 0).length;
   const noBillAtAll = rows.filter(
@@ -201,6 +205,8 @@ export async function ContainerMoney({
 
   const mayRecordCost = can(user.role, "expense.record");
   const mayConfirm = can(user.role, "invoice.priceConfirm");
+  const mayAmend = can(user.role, "container.amendArrived");
+  const mayReadCosts = can(user.role, "expense.view");
   const [locale, correction, priceList, cargoTypes] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
@@ -211,6 +217,10 @@ export async function ContainerMoney({
     priceListForContainer(container.id),
     mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
   ]);
+  /* The waiting price for each consignment, worked out once for the whole
+     container and read on the row rather than in a table of its own. */
+  const waiting = new Map(priceList.rows.map((row) => [row.cargoId, row]));
+
   const expenseRows: ContainerExpenseRow[] = container.expenses.map((e) => ({
     id: e.id,
     reference: e.reference,
@@ -227,6 +237,19 @@ export async function ContainerMoney({
     correction: mayRecordCost && e.cancelledAt === null ? toCorrectable(e) : null,
   }));
 
+  const otherContainers = mayAmend
+    ? await prisma.container.findMany({
+        where: {
+          deletedAt: null,
+          id: { not: container.id },
+          status: { in: ["ARRIVED", "CLOSED"] },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 40,
+        select: { id: true, reference: true },
+      })
+    : [];
+
   const cargoRows: CargoRow[] = rows.map((r) => {
     const c = r.cargo;
     const measured = c.darReceiving ?? c.chinaReceiving;
@@ -238,9 +261,21 @@ export async function ContainerMoney({
     const receivedAt =
       c.darReceiving?.receivedAt ?? c.chinaReceiving?.receivedAt ?? c.createdAt;
 
-    /* One reading per row, in the order the desk cares about it: collected
-       beats a note out, a note beats paid, paid beats owed, and a line nobody
-       has priced is none of those. */
+    /*
+      ONE READING PER ROW, AND IT AGREES WITH THE BANNER ABOVE IT.
+
+      The table used to say "Not priced" about consignments the price list had
+      already worked a figure out for, because it only looked for an invoice —
+      and a consignment priced from the rate book at check-in but not yet
+      raised has no invoice row at all. Two halves of one screen answering the
+      same question differently is worse than either answer.
+
+      So the row reads the same source the banner reads: collected beats a note
+      out, a note beats paid, paid beats issued, issued beats a draft, a draft
+      beats the book's own figure, and only a consignment the book cannot price
+      is "not priced".
+    */
+    const waitingRow = waiting.get(c.id);
     const state: CargoRow["state"] =
       c.pickupNote?.status === "USED"
         ? "collected"
@@ -268,7 +303,13 @@ export async function ContainerMoney({
           ? formatMoney(r.billed, r.currency)
           : r.draft
             ? formatMoney(r.draft.total, r.currency)
-            : null,
+            : (waitingRow?.totalLabel ?? null),
+      priceTzsLabel:
+        r.live.length > 0
+          ? tzs(r.billed)
+          : r.draft
+            ? tzs(Number(r.draft.total))
+            : (waitingRow?.totalTzsLabel ?? null),
       owing: r.owing,
       state,
       stateLabel:
@@ -279,15 +320,50 @@ export async function ContainerMoney({
             : state === "paid"
               ? "Paid"
               : state === "owed"
-                ? "Owed"
+                ? "Issued"
                 : r.draft
-                  ? "Not confirmed"
-                  : "Not priced",
+                  ? `Draft ${r.draft.number}`
+                  : waitingRow?.totalLabel
+                    ? "Priced from the book"
+                    : waitingRow?.blockedReason
+                      ? "Cannot be priced"
+                      : /* Sea freight is billed on what landed, so a
+                           consignment nobody in Dar has counted has nothing to
+                           price yet. Saying "not priced" about it read as a
+                           failure of the rate book. */
+                        c.darReceiving
+                        ? "Not priced"
+                        : "Waiting for Dar's count",
       proofUrl: c.photos[0]?.url ?? null,
+      proofCount: c._count.photos,
       invoiceHref: r.live[0]
         ? `/app/finance/invoices/${r.live[0].id}`
         : null,
       href: `/app/cargo/${c.id}`,
+      cargoType: types[0] ?? null,
+      typeMixed: types.length > 1,
+      damaged:
+        !!c.darReceiving && c.darReceiving.condition !== "GOOD",
+      conditionLabel: c.darReceiving
+        ? (CONDITION_LABEL[c.darReceiving.condition] ?? null)
+        : null,
+      /* Only what is still waiting can be re-priced here. A bill the customer
+         is holding is changed on the bill, with a reason. */
+      edit: (() => {
+        const w = waiting.get(c.id);
+        if (!w || r.live.length > 0) return null;
+        return {
+          standardRate: w.standardRate === null ? null : Number(w.standardRate),
+          agreedRate: w.agreed && w.rate !== null ? Number(w.rate) : null,
+          bookBasis: w.bookBasis,
+          basis: w.basis,
+          cbm: w.billableCbm === null ? null : Number(w.billableCbm),
+          weightKg: w.weightKg === null ? null : Number(w.weightKg),
+          freight: Number(w.freight),
+          extra: Number(w.extra),
+          discount: Number(w.discountOff),
+        };
+      })(),
     };
   });
 
@@ -340,12 +416,15 @@ export async function ContainerMoney({
 
   return (
     <div className="space-y-6">
-      {/* The job before the numbers: sign the rate book's prices off. Shown
-          only while something is waiting, with one press for all of it. */}
-      <PriceList
+      {/* THE JOB BEFORE THE NUMBERS: SIGN THE RATE BOOK'S PRICES OFF.
+
+          A banner, not a second table. The container's cargo is already on this
+          page once, below, and the corrections happen on those rows — listing
+          the same boxes twice with different columns is how two halves of one
+          screen come to disagree about one container. */}
+      <ConfirmPricesBanner
         containerId={container.id}
         list={priceList}
-        cargoTypes={cargoTypes}
         canConfirm={mayConfirm}
         locale={locale}
       />
@@ -359,44 +438,72 @@ export async function ContainerMoney({
           </p>
         </header>
 
-        <dl className="grid grid-cols-2 gap-px border-y bg-border lg:grid-cols-6">
+        {/*
+          SHILLINGS FIRST, DOLLARS UNDER THEM.
+
+          The bill is priced in dollars and collected in shillings, and the
+          figure anybody in this office reads out loud — to a customer, to the
+          owner, into a ledger — is the shilling one. Printing the dollars large
+          made the page answer a question nobody here asks first. The dollar
+          figure stays, small, because it is what the rate book quoted and what
+          a re-price argues about.
+
+          COSTS ARE A SEPARATE ANSWER FROM REVENUE. Three cards for a desk that
+          may read a bill, six for one that may also read what the sailing cost
+          — the same split the air side draws, on the same permission.
+        */}
+        <dl
+          className={cn(
+            "grid grid-cols-2 gap-px border-y bg-border sm:grid-cols-3",
+            mayReadCosts ? "lg:grid-cols-6" : "lg:grid-cols-3"
+          )}
+        >
           {[
             {
               label: "Expected revenue",
-              value: formatMoney(expectedRevenue, currency),
-              sub: tzs(expectedRevenue),
+              value: tzs(expectedRevenue) ?? formatMoney(expectedRevenue, currency),
+              sub: rate ? formatMoney(expectedRevenue, currency) : null,
               tone: "",
             },
             {
               label: "Collected",
-              value: formatMoney(collected, currency),
-              sub: tzs(collected),
+              value: tzs(collected) ?? formatMoney(collected, currency),
+              sub: rate ? formatMoney(collected, currency) : null,
               tone: "text-success",
             },
             {
               label: "Expected outstanding",
-              value: formatMoney(expectedOutstanding, currency),
-              sub: tzs(expectedOutstanding),
-              tone: "text-destructive",
+              value:
+                tzs(expectedOutstanding) ?? formatMoney(expectedOutstanding, currency),
+              sub: rate ? formatMoney(expectedOutstanding, currency) : null,
+              tone: expectedOutstanding > 0 ? "text-destructive" : "",
             },
-            {
-              label: "Expenses",
-              value: formatMoney(spent, currency),
-              sub: tzs(spent),
-              tone: "text-destructive",
-            },
-            {
-              label: "Expected profit",
-              value: formatMoney(expectedProfit, currency),
-              sub: tzs(expectedProfit),
-              tone: expectedProfit < 0 ? "text-destructive" : "",
-            },
-            {
-              label: "Expected margin",
-              value: `${Math.round(expectedMargin)}%`,
-              sub: null,
-              tone: expectedMargin < 0 ? "text-destructive" : "",
-            },
+            ...(mayReadCosts
+              ? [
+                  {
+                    label: "Expenses",
+                    value: tzs(spent) ?? formatMoney(spent, currency),
+                    sub: rate ? formatMoney(spent, currency) : null,
+                    tone: "text-destructive",
+                  },
+                  {
+                    label: expectedProfit < 0 ? "Expected loss" : "Expected profit",
+                    value:
+                      tzs(Math.abs(expectedProfit)) ??
+                      formatMoney(Math.abs(expectedProfit), currency),
+                    sub: rate ? formatMoney(Math.abs(expectedProfit), currency) : null,
+                    tone: expectedProfit < 0 ? "text-destructive" : "",
+                  },
+                  {
+                    label: "Expected margin",
+                    /* A container that has billed nothing has not made 0%. It
+                       has no answer yet, and saying so is not the same claim. */
+                    value: expectedRevenue > 0 ? `${Math.round(expectedMargin)}%` : "—",
+                    sub: null,
+                    tone: expectedMargin < 0 ? "text-destructive" : "",
+                  },
+                ]
+              : []),
           ].map((cell) => (
             <div key={cell.label} className="bg-card px-4 py-4">
               <dt className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -495,11 +602,26 @@ export async function ContainerMoney({
 
 
       <ContainerCargoTabs
+        containerId={container.id}
         cargo={cargoRows}
         documents={documentRows}
         timeline={timelineRows}
+        cargoTypes={cargoTypes}
+        otherContainers={otherContainers}
+        canConfirm={mayConfirm}
+        canAmend={mayAmend}
+        locale={locale}
       />
 
     </div>
   );
 }
+
+/** What the Dar floor wrote on the receiving row, said in words. */
+const CONDITION_LABEL: Record<string, string> = {
+  GOOD: "Good",
+  MINOR_DAMAGE: "Minor damage",
+  DAMAGED: "Damaged",
+  WET: "Wet",
+  REPACKED: "Repacked",
+};
