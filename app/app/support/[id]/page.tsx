@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import type { Role, TicketPriority } from "@prisma/client";
+import type { Prisma, Role, TicketPriority } from "@prisma/client";
 
 import { ConversationReply } from "@/components/app/conversation-reply";
 import { Field } from "@/components/app/field";
@@ -11,11 +11,12 @@ import { CargoStatusBadge } from "@/components/app/status-badge";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { markConversationRead } from "@/lib/actions/messages";
-import { formatDateTime, formatMoney } from "@/lib/format";
-import { outstandingOf } from "@/lib/invoice-balance";
+import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
+import { balanceOf, owedAcross } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { ROLE_PERMISSIONS, can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { JOURNEY_INCLUDE, journeyOf } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
@@ -26,6 +27,19 @@ const PRIORITY_TONE: Record<TicketPriority, BadgeProps["tone"]> = {
   HIGH: "warn",
   NORMAL: "neutral",
   LOW: "neutral",
+};
+
+/** A bill somebody has been asked to pay. A draft is Finance's working. */
+const LIVE_BILL: Prisma.InvoiceWhereInput = {
+  status: { notIn: ["DRAFT", "CANCELLED"] },
+};
+
+const PAYMENT_TONE: Record<string, BadgeProps["tone"]> = {
+  PENDING: "warn",
+  VERIFIED: "good",
+  REJECTED: "bad",
+  REVERSED: "bad",
+  CANCELLED: "neutral",
 };
 
 /**
@@ -44,22 +58,55 @@ export default async function ConversationPage({
   const user = await requirePermission("conversation.view");
   const { id } = await params;
 
+  /*
+    THE MONEY IS GATED AT THE QUERY, NOT AT THE MARKUP.
+
+    Every other screen in the app decides whether to READ a bill rather than
+    whether to draw one, and this page did the opposite: it pulled both invoice
+    trees with their payments for anybody holding `conversation.view` and then
+    chose what to print. Support holds `finance.view` as well, so nothing leaked
+    today — but the day a desk is given tickets and not bills, the figures would
+    already be in the page's payload.
+  */
+  const money = can(user.role, "finance.view");
+  const billsFor = () => ({
+    /* Not hidden in the markup: a desk without `finance.view` is handed no
+       rows at all, so there is nothing in the payload to forget to hide. */
+    where: money ? LIVE_BILL : { id: { in: [] as string[] } },
+    orderBy: { createdAt: "asc" as const },
+    include: {
+      payments: {
+        orderBy: { createdAt: "desc" as const },
+        select: {
+          id: true,
+          reference: true,
+          status: true,
+          amount: true,
+          currency: true,
+          method: true,
+          paidAt: true,
+          createdAt: true,
+          writtenOff: true,
+          fxRate: true,
+          baseCurrencyAmount: true,
+          creditedAmount: true,
+        },
+      },
+    },
+  });
+
   const [conversation, staff] = await Promise.all([
     prisma.conversation.findUnique({
       where: { id },
       include: {
-        customer: {
-          include: {
-            invoices: { include: { payments: true } },
-          },
-        },
+        customer: { include: { invoices: billsFor() } },
         cargo: {
           include: {
             containerLines: {
               include: { container: { include: { shipment: true } } },
             },
             darReceiving: true,
-            invoices: { include: { payments: true } },
+            invoices: billsFor(),
           },
         },
         assignedTo: { select: { name: true } },
@@ -89,12 +136,34 @@ export default async function ConversationPage({
 
   await markConversationRead(conversation.id);
 
-  const balance = conversation.customer.invoices
-    .filter((i) => i.status !== "DRAFT" && i.status !== "CANCELLED")
-    .reduce((sum, i) => sum + Number(outstandingOf(i)), 0);
+  /* Shillings summed in shillings, with the dollar figure beside them. The
+     page used to add every bill's outstanding together as a number and print
+     the total as dollars, so one TZS 36,450 bill and one USD 50 bill came out
+     as "USD 36,500" on the screen the desk reads a balance off down a phone. */
+  const owed = money ? owedAcross(conversation.customer.invoices) : null;
 
   const container = conversation.cargo?.containerLines.at(-1)?.container;
-  const cargoInvoice = conversation.cargo?.invoices.at(0);
+
+  /* The bill they are being asked to pay: the unsettled one, or the last one
+     issued when nothing is owing. `.at(0)` took whichever row came back first,
+     which on an older consignment is a bill that was settled months ago. */
+  const bills = conversation.cargo?.invoices ?? [];
+  const cargoInvoice =
+    bills.find((invoice) => !balanceOf(invoice).settled) ?? bills.at(-1) ?? null;
+  const bill = cargoInvoice ? balanceOf(cargoInvoice) : null;
+  const payments = cargoInvoice?.payments ?? [];
+
+  /* The same stage the customer is looking at while they are on the phone.
+     Answering "it is at sea" to somebody whose screen says "being located" is
+     how a call becomes a complaint. */
+  const journey = conversation.cargoId
+    ? await prisma.cargo
+        .findUnique({
+          where: { id: conversation.cargoId },
+          include: JOURNEY_INCLUDE,
+        })
+        .then((cargo) => (cargo ? journeyOf(cargo) : null))
+    : null;
 
   return (
     <div className="space-y-6">
@@ -223,15 +292,24 @@ export default async function ConversationPage({
                     mono
                   />
                 ) : null}
-                <Field
-                  label="Outstanding"
-                  value={
-                    <span className={balance > 0 ? "font-semibold" : ""}>
-                      {formatMoney(balance, "USD")}
-                    </span>
-                  }
-                  mono
-                />
+                {owed ? (
+                  <Field
+                    label="Outstanding"
+                    value={
+                      <>
+                        <span className={owed.owes ? "font-semibold" : ""}>
+                          {owed.owes ? owed.primary : formatMoney(0, "TZS")}
+                        </span>
+                        {owed.owes && owed.equivalent ? (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {owed.equivalent}
+                          </span>
+                        ) : null}
+                      </>
+                    }
+                    mono
+                  />
+                ) : null}
               </dl>
             </CardContent>
           </Card>
@@ -260,6 +338,40 @@ export default async function ConversationPage({
                       <CargoStatusBadge status={conversation.cargo.status} />
                     }
                   />
+                  {/* WHAT THE CUSTOMER IS LOOKING AT WHILE THEY ARE ON THE
+                      PHONE. The badge above is the company's own word for the
+                      record; this is the sentence their tracking page prints,
+                      and answering the call from the other one is how a
+                      question becomes a complaint. */}
+                  {journey ? (
+                    <Field
+                      label="Their tracking says"
+                      value={
+                        <>
+                          <Badge
+                            tone={
+                              journey.tone === "progress"
+                                ? "progress"
+                                : journey.tone === "good"
+                                  ? "good"
+                                  : journey.tone === "warn"
+                                    ? "warn"
+                                    : journey.tone === "bad"
+                                      ? "bad"
+                                      : "neutral"
+                            }
+                          >
+                            {journey.headline}
+                          </Badge>
+                          {journey.notice ? (
+                            <span className="mt-1.5 block text-xs text-muted-foreground">
+                              {journey.notice}
+                            </span>
+                          ) : null}
+                        </>
+                      }
+                    />
+                  ) : null}
                   <Field
                     label="Container"
                     value={container?.containerNumber ?? container?.reference}
@@ -274,20 +386,105 @@ export default async function ConversationPage({
                         : null
                     }
                   />
-                  <Field label="Invoice" value={cargoInvoice?.number} mono />
-                  <Field
-                    label="Owing on it"
-                    value={
-                      cargoInvoice
-                        ? formatMoney(
-                            outstandingOf(cargoInvoice),
-                            cargoInvoice.currency
-                          )
-                        : null
-                    }
-                    mono
-                  />
+                  {money ? (
+                    <>
+                      <Field
+                        label="Invoice"
+                        value={
+                          cargoInvoice ? (
+                            <Link
+                              href={`/app/finance/invoices/${cargoInvoice.id}`}
+                              className="font-medium hover:underline"
+                            >
+                              {cargoInvoice.number}
+                            </Link>
+                          ) : null
+                        }
+                        mono
+                      />
+                      <Field
+                        label="Billed"
+                        value={
+                          bill
+                            ? formatMoney(bill.total, cargoInvoice!.currency)
+                            : null
+                        }
+                        mono
+                      />
+                      <Field
+                        label="Owing on it"
+                        value={
+                          bill ? (
+                            <>
+                              <span className={bill.settled ? "" : "font-semibold"}>
+                                {bill.outstandingTzs
+                                  ? formatMoney(bill.outstandingTzs, "TZS")
+                                  : formatMoney(
+                                      bill.outstanding,
+                                      cargoInvoice!.currency
+                                    )}
+                              </span>
+                              {bill.outstandingTzs &&
+                              cargoInvoice!.currency !== "TZS" ? (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  {formatMoney(
+                                    bill.outstanding,
+                                    cargoInvoice!.currency
+                                  )}
+                                </span>
+                              ) : null}
+                            </>
+                          ) : null
+                        }
+                        mono
+                      />
+                      {/* The bill's OWN rate, pinned when it was issued. Never
+                          today's board — a bill agreed at 2,650 is still 2,650
+                          after the board moves, and quoting today's figure down
+                          the phone is quoting a different bill. */}
+                      <Field
+                        label="Rate on the bill"
+                        value={
+                          bill?.rate
+                            ? `1 USD = ${bill.rate.toString()} TZS`
+                            : null
+                        }
+                        mono
+                      />
+                    </>
+                  ) : null}
                 </dl>
+
+                {money && payments.length > 0 ? (
+                  <div className="mt-5 border-t pt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Payments
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {payments.slice(0, 6).map((payment) => (
+                        <li
+                          key={payment.id}
+                          className="flex items-baseline justify-between gap-3 text-sm"
+                        >
+                          <span className="tnum font-medium">
+                            {formatMoney(payment.amount, payment.currency)}
+                          </span>
+                          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {formatDate(payment.paidAt ?? payment.createdAt)}
+                            <Badge tone={PAYMENT_TONE[payment.status] ?? "neutral"}>
+                              {payment.status.toLowerCase()}
+                            </Badge>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* The rule the whole system turns on, said where a clerk
+                        is about to repeat a figure to a customer. */}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Only verified payments count against the balance.
+                    </p>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}
