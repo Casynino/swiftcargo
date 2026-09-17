@@ -40,6 +40,11 @@ const nextConfig = {
   // without this every bill on Vercel prints without its mark.
   outputFileTracingIncludes: {
     "/app/**/*": ["./public/brand/swift-cargo.png"],
+    // The tracking share card draws the mark into a 1200x630 PNG at request
+    // time (app/(public)/track/opengraph-image.tsx). Same reason as above: a
+    // path built from process.cwd() is invisible to the tracer, and without
+    // this every link pasted into WhatsApp previews without the logo.
+    "/track/**": ["./public/brand/icon.png"],
   },
   images: {
     // Every <Image> in the app is a local file or a data URL. A wildcard here

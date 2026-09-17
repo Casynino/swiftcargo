@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, PackageSearch, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,19 @@ import { cn } from "@/lib/utils";
  * URL as one who typed it carefully. Everything else about what counts as a
  * reference is decided on the server, in lib/tracking.ts.
  */
-export function TrackForm({ dark = false }: { dark?: boolean }) {
+export function TrackForm({
+  dark = false,
+  /**
+   * The big version, for the tracking hero: one tall pill with the icon inside
+   * the field. It is the only control on that screen and it is the thing
+   * everybody came for, so it is sized to be hit with a thumb on a phone held
+   * one-handed rather than to sit politely inside a card.
+   */
+  pill = false,
+}: {
+  dark?: boolean;
+  pill?: boolean;
+}) {
   const locale = DEFAULT_LOCALE;
   const router = useRouter();
   const [code, setCode] = useState("");
@@ -33,33 +45,49 @@ export function TrackForm({ dark = false }: { dark?: boolean }) {
         if (!clean || pending) return;
         startTransition(() => router.push(`/track/${encodeURIComponent(clean)}`));
       }}
-      className="flex gap-2"
+      className={cn("flex gap-2", pill && "flex-col gap-2.5 sm:flex-row")}
     >
-      <Input
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="SC0125"
-        aria-label={t(locale, "Cargo reference")}
-        autoCapitalize="characters"
-        autoComplete="off"
-        spellCheck={false}
-        maxLength={40}
-        required
-        className={cn(
-          "h-11 min-w-0 flex-1 tnum",
-          dark &&
-            "border-white/20 bg-white/10 text-white placeholder:text-white/40"
-        )}
-      />
+      <div className={cn("relative min-w-0 flex-1", !pill && "contents")}>
+        {pill ? (
+          <PackageSearch
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2",
+              dark ? "text-white/40" : "text-muted-foreground"
+            )}
+          />
+        ) : null}
+        <Input
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="SC0125"
+          aria-label={t(locale, "Cargo reference")}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
+          maxLength={40}
+          required
+          className={cn(
+            "tnum h-11 min-w-0 flex-1",
+            pill &&
+              "h-14 w-full rounded-xl pl-12 text-base uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal",
+            dark &&
+              "border-white/20 bg-white/10 text-white placeholder:text-white/40"
+          )}
+        />
+      </div>
       <Button
         type="submit"
         size="lg"
         variant={dark ? "accent" : "default"}
         disabled={pending}
         aria-label={t(locale, "Track")}
+        className={cn(pill && "h-14 rounded-xl px-8 text-base")}
       >
         {pending ? <Loader2 className="animate-spin" /> : <Search />}
-        <span className="hidden sm:inline">{t(locale, "Track")}</span>
+        <span className={cn(pill ? "inline" : "hidden sm:inline")}>
+          {t(locale, "Track")}
+        </span>
       </Button>
     </form>
   );

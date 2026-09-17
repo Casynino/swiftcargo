@@ -322,3 +322,69 @@
     animation: none;
   }
 }
+
+/**
+ * THE SEA LANE ON THE TRACKING PAGE.
+ *
+ * See components/site/sea-lane.tsx. Everything here is transform, opacity or
+ * stroke-dashoffset — all three run on the compositor, so the chart costs a
+ * phone nothing to keep on screen while somebody types a reference.
+ *
+ * Nothing in here is fast. The slowest thing on the page is a container ship
+ * that takes a month to cross, and the motion is pitched to say that.
+ */
+@keyframes sea-drift {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes sea-ping {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.85;
+  }
+  70%,
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+
+/* The dashes crawl towards Dar, which is the direction the cargo is going. */
+.sea-lane-dash {
+  stroke-dasharray: 3 9;
+  animation: sea-drift 3.6s linear infinite;
+}
+
+/* transform-box keeps the ping centred on its own circle rather than on the
+   viewBox origin, which is where an SVG transform lands by default. */
+.sea-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sea-ping 3.8s ease-out infinite;
+}
+
+/* SMIL cannot read a media query, so the moving ships and the still ones are
+   both in the document and CSS chooses. `visibility` rather than `display`:
+   an animation in a display:none subtree is not reliably ticked, and the still
+   ships are placed by a frozen animateMotion — hide them that way and they can
+   appear at the top-left corner of the chart instead of on the lane. */
+.sea-ships-still {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sea-lane-dash,
+  .sea-ping {
+    animation: none;
+  }
+
+  .sea-ships-moving {
+    visibility: hidden;
+  }
+
+  .sea-ships-still {
+    visibility: visible;
+  }
+}
