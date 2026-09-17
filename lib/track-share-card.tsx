@@ -99,6 +99,19 @@ function markUrl(): string | null {
 export default async function TrackShareCard() {
   const mark = markUrl();
 
+  /*
+    EVERYTHING THAT MATTERS SITS IN THE MIDDLE THIRD.
+
+    WhatsApp does not show this card at 1200×630. In a chat list and in most
+    previews it is a small SQUARE cropped from the CENTRE, so a mark in the
+    top-left corner is cropped away and what survives is half a sentence. So
+    the mark, the name, the tagline and the headline are stacked down the
+    centre column — roughly x 285 to 915, the square the crop keeps — and
+    nothing is placed where a crop would slice it in half.
+
+    The lane is background here, not the subject: dimmed under a scrim, so the
+    picture still says sea freight without competing with the logo.
+  */
   return new ImageResponse(
     (
       <div
@@ -107,7 +120,8 @@ export default async function TrackShareCard() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-start",
+          alignItems: "center",
+          justifyContent: "center",
           background: "#0a1720",
           position: "relative",
         }}
@@ -118,15 +132,15 @@ export default async function TrackShareCard() {
           alt=""
           width={1200}
           height={567}
-          style={{ position: "absolute", top: 20, left: 0, opacity: 0.85 }}
+          style={{ position: "absolute", top: 32, left: 0, opacity: 0.4 }}
         />
-        {/* The scrim, so the words never land on a coastline. */}
+        {/* The scrim, so the words and the mark never land on a coastline. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(105deg, #0a1720 12%, rgba(10,23,32,0.9) 42%, rgba(10,23,32,0.35) 70%, rgba(10,23,32,0.1) 100%)",
+              "radial-gradient(circle at 50% 50%, rgba(10,23,32,0.94) 0%, rgba(10,23,32,0.9) 42%, rgba(10,23,32,0.6) 100%)",
           }}
         />
 
@@ -135,72 +149,70 @@ export default async function TrackShareCard() {
             position: "relative",
             display: "flex",
             flexDirection: "column",
-            padding: "58px 64px 0",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 640,
+            textAlign: "center",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            {mark ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mark} alt="" width={64} height={64} />
-            ) : null}
-            <div
-              style={{
-                display: "flex",
-                fontSize: 30,
-                fontWeight: 700,
-                color: "#ffffff",
-                letterSpacing: "0.02em",
-              }}
-            >
-              Swift Cargo
-            </div>
+          {mark ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mark} alt="" width={168} height={168} />
+          ) : null}
+
+          <div
+            style={{
+              display: "flex",
+              marginTop: 10,
+              fontSize: 56,
+              fontWeight: 700,
+              color: "#ffffff",
+              letterSpacing: "0.06em",
+            }}
+          >
+            SWIFT CARGO
           </div>
+          <div
+            style={{
+              display: "flex",
+              marginTop: 6,
+              fontSize: 27,
+              color: "#4fc9f0",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {SHARE_CARD_TEXT.tagline}
+          </div>
+
+          <div
+            style={{ display: "flex", width: 120, height: 3, marginTop: 26, background: "#f4611f" }}
+          />
 
           <div
             style={{
               display: "flex",
               marginTop: 26,
-              maxWidth: 780,
-              fontSize: 62,
-              fontWeight: 700,
+              /* Sized to sit inside the square crop with air either side: at
+                 40 the headline ran edge to edge of the 630 the crop keeps. */
+              fontSize: 36,
+              fontWeight: 600,
               color: "#ffffff",
-              lineHeight: 1.05,
+              lineHeight: 1.2,
             }}
           >
             {SHARE_CARD_TEXT.headline}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              marginTop: 14,
-              maxWidth: 880,
-              fontSize: 30,
-              color: "rgba(255,255,255,0.7)",
-              lineHeight: 1.25,
-            }}
-          >
-            {SHARE_CARD_TEXT.subline}
           </div>
 
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              marginTop: 30,
-              gap: 16,
+              marginTop: 16,
+              fontSize: 23,
+              color: "rgba(255,255,255,0.62)",
+              letterSpacing: "0.16em",
             }}
           >
-            <div style={{ display: "flex", width: 44, height: 3, background: "#29b6e8" }} />
-            <div
-              style={{
-                display: "flex",
-                fontSize: 27,
-                color: "#4fc9f0",
-                letterSpacing: "0.16em",
-              }}
-            >
-              GUANGZHOU → DAR ES SALAAM
-            </div>
+            GUANGZHOU → DAR ES SALAAM
           </div>
         </div>
       </div>

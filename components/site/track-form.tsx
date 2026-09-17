@@ -21,6 +21,13 @@ import { cn } from "@/lib/utils";
 export function TrackForm({
   dark = false,
   /**
+   * The reference already on the screen, when there is one. The result page
+   * carries the same box as the landing page and a customer who has just
+   * looked something up should see what they looked up, not an empty field
+   * asking them to remember it.
+   */
+  value,
+  /**
    * The big version, for the tracking hero: one tall pill with the icon inside
    * the field. It is the only control on that screen and it is the thing
    * everybody came for, so it is sized to be hit with a thumb on a phone held
@@ -29,11 +36,12 @@ export function TrackForm({
   pill = false,
 }: {
   dark?: boolean;
+  value?: string;
   pill?: boolean;
 }) {
   const locale = DEFAULT_LOCALE;
   const router = useRouter();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(value ?? "");
   const [pending, startTransition] = useTransition();
 
   return (

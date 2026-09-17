@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { CargoPhotos } from "@/components/site/cargo-photos";
-import { TrackForm } from "@/components/site/track-form";
+import { TrackHero } from "@/components/site/track-hero";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
@@ -157,9 +157,6 @@ export default async function TrackResultPage({
             "Your reference is on your delivery note and on every box label. It looks like SC0125."
           )}
         </p>
-        <div className="mt-8">
-          <TrackForm dark pill />
-        </div>
       </Shell>
     );
   }
@@ -169,7 +166,7 @@ export default async function TrackResultPage({
   const burst = hit(`track-burst:${address}`, BURST, BURST_MS);
   if (!steady.ok || !burst.ok) {
     return (
-      <Shell>
+      <Shell reference={reference}>
         <Clock className="size-8 text-white/50" />
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">
           {t(locale, "Too many lookups")}
@@ -196,7 +193,7 @@ export default async function TrackResultPage({
 
   if (!result) {
     return (
-      <Shell>
+      <Shell reference={reference}>
         <h1 className="text-2xl font-semibold tracking-tight">
           {t(locale, "We cannot find")}{" "}
           <span className="tnum font-mono">{reference}</span>
@@ -213,10 +210,7 @@ export default async function TrackResultPage({
             "Shipping marks cannot be tracked here. Sign in to see everything under your mark."
           )}
         </p>
-        <div className="mt-8">
-          <TrackForm dark pill />
-        </div>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap gap-3">
           <Button asChild variant="outline" className={ON_INK}>
             <Link href="/login?callbackUrl=%2Fportal">{t(locale, "Sign in")}</Link>
           </Button>
@@ -229,16 +223,12 @@ export default async function TrackResultPage({
   }
 
   return (
-    <Backdrop>
-      <TrackingCard result={result} />
-
-      <p className="mt-10 text-center text-sm text-white/55">
-        {t(locale, "Tracking something else?")}
-      </p>
-      <div className="mx-auto mt-3 max-w-md">
-        <TrackForm dark pill />
-      </div>
-    </Backdrop>
+    <>
+      <TrackHero reference={result.reference} />
+      <Backdrop>
+        <TrackingCard result={result} />
+      </Backdrop>
+    </>
   );
 }
 
@@ -799,11 +789,12 @@ function Cell({
   );
 }
 
-/* One column on the ink field. Wider and the eight facts stop reading as two
-   rows of four; narrower and the bill's lines begin to wrap. */
+/* One column on the ink field, carrying on from the hero above it rather than
+   starting a new page. Wider and the eight facts stop reading as two rows of
+   four; narrower and the bill's lines begin to wrap. */
 function Backdrop({ children }: { children: React.ReactNode }) {
   return (
-    <section className="relative isolate min-h-[70vh] overflow-hidden bg-ink py-10 sm:py-14">
+    <section className="relative isolate overflow-hidden bg-ink py-10 sm:py-14">
       <div
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(ellipse_at_78%_-10%,hsl(var(--marine)/0.22),transparent_60%),radial-gradient(ellipse_at_5%_110%,hsl(var(--signal)/0.16),transparent_58%)]"
@@ -813,10 +804,21 @@ function Backdrop({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+/* Nothing found, or nothing askable. The hero keeps the box they typed into,
+   so these states say what went wrong and leave the retry where it was. */
+function Shell({
+  children,
+  reference,
+}: {
+  children: React.ReactNode;
+  reference?: string;
+}) {
   return (
-    <Backdrop>
-      <div className="mx-auto max-w-xl text-white">{children}</div>
-    </Backdrop>
+    <>
+      <TrackHero reference={reference} />
+      <Backdrop>
+        <div className="mx-auto max-w-xl text-white">{children}</div>
+      </Backdrop>
+    </>
   );
 }

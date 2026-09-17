@@ -18,7 +18,7 @@
  * characters and a description around 110.
  *
  * Its own module rather than a constant in lib/track-share-card.tsx: that file
- * pulls in the image renderer, and a page that only needs four strings should
+ * pulls in the image renderer, and a page that only needs three strings should
  * not drag a rasteriser into its bundle to get them.
  */
 export const SHARE_CARD_TEXT = {
@@ -26,5 +26,6 @@ export const SHARE_CARD_TEXT = {
   description:
     "Fast sea freight and China sourcing to Dar es Salaam. Track your cargo any time — On time, Every time.",
   headline: "Shipping from China to Tanzania",
-  subline: "Sea freight and China sourcing — On time, Every time",
+  /** The company's own line, printed under the mark. */
+  tagline: "On time, Every time",
 } as const;
