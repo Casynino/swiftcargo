@@ -29,6 +29,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { SectionLabel } from "@/components/app/section-label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -74,11 +75,12 @@ export default async function ContainerPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; floor?: string }>;
 }) {
   const user = await requirePermission("container.view");
   const { id } = await params;
-  const { edit } = await searchParams;
+  const { edit, floor } = await searchParams;
+  const floorQuery = floor?.trim() ?? "";
 
   /* The paperwork shelf turns into the voyage form and back, so the sailing has
      one home rather than a read-only copy and an editable one somewhere else. */
@@ -127,22 +129,56 @@ export default async function ContainerPage({
   );
   const showMoney = sailed && can(user.role, "finance.view");
 
-  /* Everything received in Guangzhou and not yet on a box. Only offered while
-     this container can still take cargo. */
-  const waiting = open
-    ? await prisma.cargo.findMany({
-        where: { deletedAt: null, status: "RECEIVED_CHINA" },
-        orderBy: { createdAt: "asc" },
-        take: 200,
-        include: {
-          sender: { select: { fullName: true } },
-          packages: {
-            where: { deletedAt: null },
-            select: { cbm: true, quantity: true, cargoType: true },
+  /*
+    EVERYTHING RECEIVED IN GUANGZHOU AND NOT YET ON A BOX.
+
+    Only offered while this container can still take cargo, oldest first,
+    because the oldest consignment on the floor is the one a customer is
+    already asking about.
+
+    Capped, and the cap is searchable rather than silent. A floor holding more
+    than two hundred waiting consignments showed the first two hundred and said
+    nothing, so a clerk looking for one that fell off the end concluded it had
+    never been received — and it sat there through the next sailing.
+  */
+  const FLOOR_LIMIT = 200;
+  const floorWhere = {
+    deletedAt: null,
+    status: "RECEIVED_CHINA" as const,
+    ...(floorQuery
+      ? {
+          OR: [
+            { reference: { contains: floorQuery, mode: "insensitive" as const } },
+            { shippingMark: { contains: floorQuery, mode: "insensitive" as const } },
+            { paperReceiptNo: { contains: floorQuery } },
+            { description: { contains: floorQuery, mode: "insensitive" as const } },
+            {
+              sender: {
+                fullName: { contains: floorQuery, mode: "insensitive" as const },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const [waiting, floorTotal] = open
+    ? await Promise.all([
+        prisma.cargo.findMany({
+          where: floorWhere,
+          orderBy: { createdAt: "asc" },
+          take: FLOOR_LIMIT,
+          include: {
+            sender: { select: { fullName: true } },
+            packages: {
+              where: { deletedAt: null },
+              select: { cbm: true, quantity: true, cargoType: true },
+            },
           },
-        },
-      })
-    : [];
+        }),
+        prisma.cargo.count({ where: floorWhere }),
+      ])
+    : [[] as never[], 0];
 
   /*
     NO CARD FOR A STEP THIS DESK CANNOT TAKE.
@@ -213,12 +249,34 @@ export default async function ContainerPage({
               <span className="block text-sm font-semibold text-foreground">
                 {formatCbm(waitingCbm)}
               </span>
-              {waiting.length} waiting · {waitingCustomers} customer
+              {floorTotal} waiting · {waitingCustomers} customer
               {waitingCustomers === 1 ? "" : "s"}
             </span>
           ) : null}
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col">
+        <CardContent className="flex min-h-0 flex-1 flex-col gap-3">
+          {/* Its own GET form, outside the loading form below it — a form
+              cannot be nested in a form, and the floor has to stay searchable
+              while cargo is ticked. */}
+          {floorTotal > FLOOR_LIMIT || floorQuery ? (
+            <form className="flex gap-2">
+              <Input
+                name="floor"
+                defaultValue={floorQuery}
+                placeholder="Name, reference, mark or receipt no.…"
+                aria-label="Search the Guangzhou floor"
+              />
+              <Button type="submit" variant="outline" size="sm">
+                Find
+              </Button>
+            </form>
+          ) : null}
+          {floorTotal > waiting.length ? (
+            <p className="text-xs text-muted-foreground">
+              Showing the {waiting.length} oldest of {floorTotal} waiting. Search
+              for the rest.
+            </p>
+          ) : null}
           <LoadPanel
             containerId={container.id}
             loadedCbm={Number(loadedCbm)}

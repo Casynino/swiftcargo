@@ -166,6 +166,16 @@ export default async function LoadingContainersPage({
       GROUPS[g].statuses.includes(status)
     ) ?? "shipped";
 
+  /*
+    WHAT IS IN THE BOX, NOT WHAT CAME THROUGH THE DOOR.
+
+    These rows used to be read off each consignment's China receiving record,
+    which is the whole delivery as it was taken in. A consignment split across
+    two sailings is counted once on its receiving row and twice here, so both
+    containers claimed all of it — and the footer, the fill bar and the packing
+    list, which are summed from the ContainerCargo lines, disagreed with the
+    table printed above them. The line is what went into THIS box.
+  */
   const boxes = containers.map((container) => {
     const lines = container.cargoLines.map((l) => {
       const m = l.cargo.chinaReceiving;
@@ -182,10 +192,13 @@ export default async function LoadingContainersPage({
         customer: l.cargo.receiver.fullName,
         phone: l.cargo.receiver.phone,
         goods: types.length > 0 ? types.join(", ") : (l.cargo.description ?? "—"),
-        packages: m?.packagesCount ?? 0,
-        pieces: m?.piecesCount ?? m?.packagesCount ?? 0,
-        weight: Number(m?.weightKg ?? 0),
-        cbm: Number(m?.cbm ?? 0),
+        packages: l.packagesCount,
+        /* Pieces are not carried on the container line — they are the count
+           inside the packages, and the receiving row is the only place that
+           holds it. Nothing tallied stays a dash rather than becoming a zero. */
+        pieces: m?.piecesCount ?? 0,
+        weight: Number(l.weightKg ?? 0),
+        cbm: Number(l.cbm),
         received: m?.receivedAt ?? null,
       };
     });
@@ -511,7 +524,7 @@ export default async function LoadingContainersPage({
                                   {line.packages}
                                 </td>
                                 <td className="tnum px-3 py-2.5 text-right">
-                                  {line.pieces}
+                                  {line.pieces > 0 ? line.pieces : "—"}
                                 </td>
                                 <td className="tnum px-3 py-2.5 text-right text-muted-foreground">
                                   {line.weight > 0 ? formatWeight(line.weight) : "—"}
@@ -535,7 +548,7 @@ export default async function LoadingContainersPage({
                                 {box.packages}
                               </td>
                               <td className="tnum px-3 py-2.5 text-right">
-                                {box.pieces}
+                                {box.pieces > 0 ? box.pieces : "—"}
                               </td>
                               <td className="tnum px-3 py-2.5 text-right">
                                 {box.weight > 0 ? formatWeight(box.weight) : "—"}
