@@ -266,7 +266,7 @@ export default async function ArrivedContainersPage({
     {
       label: "Containers",
       value: String(shown.length),
-      note: `${sum((r) => r.cargo)} cargo \u00b7 ${formatCbm(sum((r) => r.cbm))}`,
+      note: `${sum((r) => r.cargo)} cargo · ${formatCbm(sum((r) => r.cbm))}`,
       tone: "",
     },
     {

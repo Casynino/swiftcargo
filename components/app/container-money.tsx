@@ -259,7 +259,7 @@ export async function ContainerMoney({
       receivedAt: receivedAt.getTime(),
       customer: c.receiver.fullName,
       phone: c.receiver.phone,
-      goods: types.length > 0 ? types.join(", ") : (c.description ?? "\u2014"),
+      goods: types.length > 0 ? types.join(", ") : (c.description ?? "—"),
       category: types[0] ?? "",
       volumeLabel: formatCbm(measured?.cbm),
       countedAs: `${measured?.packagesCount ?? 0} pkg`,
@@ -297,7 +297,7 @@ export async function ContainerMoney({
           {
             id: container.packingList.id,
             title: "Packing list",
-            note: `${container.packingList.number} \u00b7 frozen when the box was sealed`,
+            note: `${container.packingList.number} · frozen when the box was sealed`,
             href: `/app/containers/${container.id}/packing-list`,
           },
         ]
@@ -315,7 +315,7 @@ export async function ContainerMoney({
     ...(container.shipment?.documents ?? []).map((d) => ({
       id: d.id,
       title: d.name,
-      note: `${d.kind.replace(/_/g, " ").toLowerCase()} \u00b7 ${formatDate(d.uploadedAt)}`,
+      note: `${d.kind.replace(/_/g, " ").toLowerCase()} · ${formatDate(d.uploadedAt)}`,
       href: d.url,
     })),
   ];
@@ -324,7 +324,7 @@ export async function ContainerMoney({
     id: e.id,
     title: e.note ?? e.to.replace(/_/g, " ").toLowerCase(),
     at: formatDate(e.createdAt),
-    by: e.actor?.name ?? "\u2014",
+    by: e.actor?.name ?? "—",
   }));
 
   const measuredTotals = rows.reduce(
@@ -418,13 +418,13 @@ export async function ContainerMoney({
           <p className="tnum text-muted-foreground">
             {invoiced} of {rows.length} invoiced
             {toConfirm > 0 ? (
-              <span className="text-warning"> \u00b7 {toConfirm} still to confirm</span>
+              <span className="text-warning"> · {toConfirm} still to confirm</span>
             ) : null}
           </p>
           <p className="tnum text-muted-foreground">
             1 USD ={" "}
             <span className="font-medium text-foreground">
-              {fx > 0 ? fx.toLocaleString() : "\u2014"}
+              {fx > 0 ? fx.toLocaleString() : "—"}
             </span>{" "}
             TZS{" "}
             <Link
@@ -471,7 +471,7 @@ export async function ContainerMoney({
           finished when every one of them has been asked for money. */}
       {noBillAtAll > 0 ? (
         <p className="rounded-xl border border-dashed px-5 py-3 text-sm text-muted-foreground">
-          This container cannot be closed yet \u2014 {noBillAtAll} with no bill at
+          This container cannot be closed yet — {noBillAtAll} with no bill at
           all. Nobody has been asked for that money yet.
         </p>
       ) : null}
