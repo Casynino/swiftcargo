@@ -237,6 +237,13 @@ async function main() {
         );
       }
 
+      /* Everything is read and decided before the first number is minted. The
+         cargo counter is the row every receiving counter in the company takes
+         when it saves, and from the first reference until the commit a clerk
+         pressing Save waits on this transaction — so the writes that follow
+         are a handful of statements, not ten rounds of five. */
+      type Planned = { listed: Listed; item: Item; key: string; customerId: string; shippingMark: string | null };
+      const planned: Planned[] = [];
       for (const listed of LIST) {
         const customer = customers.get(listed.code)!;
         for (const [index, item] of listed.items.entries()) {
@@ -278,96 +285,120 @@ async function main() {
             );
           }
 
-          const reference = await nextCargoReference(tx);
-          const cbm = D(item.cbm).toDecimalPlaces(4);
-          /* Typed straight from the list with no sides to multiply, which is a
-             hand-entered volume by the same rule the receiving counter applies. */
-          const derived = calculateCbm({ length: null, width: null, height: null, quantity: item.quantity, unit: "CM" });
-          const byHand = derived === null || !derived.equals(cbm);
-          const now = new Date();
+          planned.push({ listed, item, key, customerId: customer.id, shippingMark: customer.shippingMark });
+        }
+      }
 
-          const cargo = await tx.cargo.create({
-            data: {
-              reference,
-              qrToken: generateQrToken(),
-              senderId: customer.id,
-              receiverId: customer.id,
-              shippingMark: customer.shippingMark,
-              service: "LCL",
-              description: item.en,
-              declaredPackages: item.quantity,
-              declaredCbm: cbm,
-              status: "RECEIVED_DAR",
-            },
+      if (planned.length > 0) {
+        const references: string[] = [];
+        for (let i = 0; i < planned.length; i++) references.push(await nextCargoReference(tx));
+
+        const now = new Date();
+        const rows = planned.map((plan, i) => {
+          const cbm = D(plan.item.cbm).toDecimalPlaces(4);
+          /* Typed straight from the list with no sides to multiply: a
+             hand-entered volume, by the same rule the receiving counter applies. */
+          const derived = calculateCbm({
+            length: null,
+            width: null,
+            height: null,
+            quantity: plan.item.quantity,
+            unit: "CM",
           });
+          return { ...plan, reference: references[i], cbm, byHand: derived === null || !derived.equals(cbm) };
+        });
 
-          await tx.cargoPackage.create({
-            data: {
-              cargoId: cargo.id,
-              reference: packageReference(reference, 1),
-              description: item.en,
-              descriptionZh: item.zh,
-              quantity: item.quantity,
-              pieces: item.pieces,
-              cbm,
-              cbmOverridden: byHand,
-            },
-          });
+        const cargo = await tx.cargo.createManyAndReturn({
+          data: rows.map((row) => ({
+            reference: row.reference,
+            qrToken: generateQrToken(),
+            senderId: row.customerId,
+            receiverId: row.customerId,
+            shippingMark: row.shippingMark,
+            service: "LCL" as const,
+            description: row.item.en,
+            declaredPackages: row.item.quantity,
+            declaredCbm: row.cbm,
+            status: "RECEIVED_DAR" as const,
+          })),
+          select: { id: true, reference: true },
+        });
+        const idOf = new Map(cargo.map((c) => [c.reference, c.id]));
+        const cargoId = (reference: string) => {
+          const id = idOf.get(reference);
+          if (!id) throw new Error(`${reference} was not written. Nothing was written.`);
+          return id;
+        };
 
-          await tx.darReceiving.create({
-            data: {
-              cargoId: cargo.id,
-              warehouseId: dar.id,
-              containerId: null,
-              packagesCount: item.quantity,
-              piecesCount: item.pieces,
-              weightKg: null,
-              cbm,
-              condition: "GOOD",
-              discrepancy: false,
-              verified: true,
-              verifiedAt: now,
-              receivedAt: now,
-              notes: "Already in the Dar es Salaam warehouse before this system; entered from the owner's list of arrived cargo.",
-            },
-          });
+        await tx.cargoPackage.createMany({
+          data: rows.map((row) => ({
+            cargoId: cargoId(row.reference),
+            reference: packageReference(row.reference, 1),
+            description: row.item.en,
+            descriptionZh: row.item.zh,
+            quantity: row.item.quantity,
+            pieces: row.item.pieces,
+            cbm: row.cbm,
+            cbmOverridden: row.byHand,
+          })),
+        });
 
-          await tx.cargoStatusHistory.create({
-            data: {
-              cargoId: cargo.id,
-              from: null,
-              to: "RECEIVED_DAR",
-              reason: "Already checked in at the Dar es Salaam warehouse before this system; entered from the owner's list of arrived cargo",
-            },
-          });
+        await tx.darReceiving.createMany({
+          data: rows.map((row) => ({
+            cargoId: cargoId(row.reference),
+            warehouseId: dar.id,
+            containerId: null,
+            packagesCount: row.item.quantity,
+            piecesCount: row.item.pieces,
+            weightKg: null,
+            cbm: row.cbm,
+            condition: "GOOD" as const,
+            discrepancy: false,
+            verified: true,
+            verifiedAt: now,
+            receivedAt: now,
+            notes: "Already in the Dar es Salaam warehouse before this system; entered from the owner's list of arrived cargo.",
+          })),
+        });
 
-          await tx.auditLog.create({
-            data: {
-              actorEmail: ACTOR_EMAIL,
-              action: "cargo.import",
-              entity: "Cargo",
-              entityId: cargo.id,
-              summary: `${reference} entered as already received at Dar — ${item.en} / ${item.zh}, ${item.quantity} package(s), ${item.pieces} piece(s), ${cbm.toFixed(2)} m³ for ${listed.name} (${listed.code})`,
-              metadata: {
-                importKey: key,
-                source: "Owner's list of cargo arrived and checked in at Dar",
-                customerCode: listed.code,
-                description: item.en,
-                descriptionZh: item.zh,
-                packages: item.quantity,
-                pieces: item.pieces,
-                cbm: cbm.toString(),
-                declaredGoodsValue: {
-                  currency: "USD",
-                  unitPricePerPiece: item.unitPrice,
-                  amount: item.amount,
-                },
+        await tx.cargoStatusHistory.createMany({
+          data: rows.map((row) => ({
+            cargoId: cargoId(row.reference),
+            from: null,
+            to: "RECEIVED_DAR" as const,
+            reason:
+              "Already checked in at the Dar es Salaam warehouse before this system; entered from the owner's list of arrived cargo",
+          })),
+        });
+
+        await tx.auditLog.createMany({
+          data: rows.map((row) => ({
+            actorEmail: ACTOR_EMAIL,
+            action: "cargo.import",
+            entity: "Cargo",
+            entityId: cargoId(row.reference),
+            summary: `${row.reference} entered as already received at Dar — ${row.item.en} / ${row.item.zh}, ${row.item.quantity} package(s), ${row.item.pieces} piece(s), ${row.cbm.toFixed(2)} m³ for ${row.listed.name} (${row.listed.code})`,
+            metadata: {
+              importKey: row.key,
+              source: "Owner's list of cargo arrived and checked in at Dar",
+              customerCode: row.listed.code,
+              description: row.item.en,
+              descriptionZh: row.item.zh,
+              packages: row.item.quantity,
+              pieces: row.item.pieces,
+              cbm: row.cbm.toString(),
+              declaredGoodsValue: {
+                currency: "USD",
+                unitPricePerPiece: row.item.unitPrice,
+                amount: row.item.amount,
               },
             },
-          });
+          })),
+        });
 
-          stats.cargoCreated++;
-          created.push(`${reference}  ${listed.code}  ${item.en} / ${item.zh}`);
+        stats.cargoCreated = rows.length;
+        for (const row of rows) {
+          created.push(`${row.reference}  ${row.listed.code}  ${row.item.en} / ${row.item.zh}`);
         }
       }
 
