@@ -178,8 +178,13 @@ export default async function CheckInContainerPage({
   const damaged = container.cargoLines.filter(
     (l) => l.cargo.darReceiving && l.cargo.darReceiving.condition !== "GOOD"
   ).length;
+  /* The count or the condition did not match, or somebody raised a case on the
+     consignment by hand. A consignment that never came off has its own figure
+     beside this one and is deliberately not counted twice. */
   const discrepancies = container.cargoLines.filter(
-    (l) => l.cargo.darReceiving?.discrepancy
+    (l) =>
+      l.cargo.status !== "MISSING_AT_DAR" &&
+      (l.cargo.darReceiving?.discrepancy || l.cargo.exceptions.length > 0)
   ).length;
   /* Cargo the frozen packing list does not carry, or carries against another
      box: put on this manifest at Dar, and each one holding the case that says

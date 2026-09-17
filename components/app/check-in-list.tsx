@@ -114,7 +114,7 @@ function matchesLens(row: CheckInRow, lens: Lens) {
     case "missing":
       return row.missing;
     case "discrepancies":
-      return row.discrepancy || row.hasCase;
+      return !row.missing && (row.discrepancy || row.hasCase);
     case "added":
       return row.added;
     default:
@@ -184,7 +184,10 @@ export function CheckInList({
     verified: rows.filter((r) => r.verified).length,
     damaged: rows.filter((r) => r.damaged).length,
     missing: rows.filter((r) => r.missing).length,
-    discrepancies: rows.filter((r) => r.discrepancy || r.hasCase).length,
+    /* The same rule the container's own counter above uses, so the chip and
+       the strip can never disagree about the box in front of the clerk. */
+    discrepancies: rows.filter((r) => !r.missing && (r.discrepancy || r.hasCase))
+      .length,
     added: rows.filter((r) => r.added).length,
   };
   const shown = rows.filter((r) => matchesLens(r, lens));
