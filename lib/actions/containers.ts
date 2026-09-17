@@ -533,6 +533,36 @@ export async function sealContainer(
       );
     }
 
+    /*
+      NOTHING IN THIS BOX IS ALSO IN ANOTHER ONE.
+
+      Loading takes a consignment off whatever open container it was on, so this
+      should never be true — which is exactly why it is worth asking at the one
+      moment it stops being correctable. After the seal the box is unreachable
+      for twenty-eight days, and a consignment counted on two live sailings is
+      loaded twice, billed twice and checked in twice, with nobody able to say
+      which manifest was wrong.
+    */
+    const elsewhere = await tx.containerCargo.findMany({
+      where: {
+        cargoId: { in: inside.map((l) => l.cargoId) },
+        containerId: { not: container.id },
+        container: { deletedAt: null, status: { not: "CLOSED" } },
+      },
+      select: {
+        cargo: { select: { reference: true } },
+        container: { select: { reference: true } },
+      },
+      take: 5,
+    });
+    if (elsewhere.length > 0) {
+      throw new Error(
+        `${elsewhere
+          .map((l) => `${l.cargo.reference} is also on ${l.container.reference}`)
+          .join(", ")}. Take it off one of them before sealing.`
+      );
+    }
+
     await setCargoStatusBulk(
       tx,
       inside.map((l) => l.cargoId),
