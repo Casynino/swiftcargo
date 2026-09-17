@@ -85,11 +85,11 @@ export default async function PortalPage() {
   const onTheWay = rows.filter(
     (r) =>
       !["COLLECTED", "DELIVERED", "CANCELLED"].includes(r.item.status) &&
-      r.journey.headline !== "Ready for collection"
+      !r.journey.ready
   );
   const ready = rows.filter(
     (r) =>
-      r.journey.headline === "Ready for collection" &&
+      r.journey.ready &&
       r.item.receiverId === user.customerId
   );
 

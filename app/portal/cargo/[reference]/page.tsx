@@ -88,7 +88,7 @@ export default async function PortalCargoPage({
   const container = cargo.containerLines.at(-1)?.container ?? null;
   const owed = owedAcross(invoices);
   const firstUnpaid = invoices.find((invoice) => owedAcross([invoice]).owes) ?? invoices[0];
-  const ready = journey.headline === "Ready for collection";
+  const ready = journey.ready;
   const arrivedAt = journey.steps.find((s) => s.key === "ARRIVED_DAR")?.at ?? null;
 
   return (

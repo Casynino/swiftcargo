@@ -173,6 +173,18 @@ export function initialsOf(name: string): string {
 /** The record the journey is derived from. Shared with the portal. */
 export const JOURNEY_INCLUDE = {
   ...RELEASE_INCLUDE,
+  /* A superset of what the release check selects off the same row. The stage
+     needs the condition too, because "damaged" and "short" are different
+     sentences to a customer while the release check only cares that either one
+     stops the boxes. */
+  darReceiving: {
+    select: {
+      verified: true,
+      discrepancy: true,
+      packagesCount: true,
+      condition: true,
+    },
+  },
   history: {
     select: { to: true, createdAt: true },
     orderBy: { createdAt: "asc" },
@@ -205,6 +217,9 @@ export const JOURNEY_INCLUDE = {
         select: {
           reference: true,
           status: true,
+          /* The manifest freezes when the box is sealed, so its date is the
+             plainest answer there is to "has it been packed and shut". */
+          packingList: { select: { issuedAt: true } },
           shipment: {
             select: { vessel: true, voyage: true, eta: true, actualArrival: true },
           },
@@ -242,6 +257,8 @@ export function journeyOf(cargo: JourneyCargo, now = new Date()): Journey {
     .map((i) => i.issuedAt ?? i.createdAt)
     .sort((a, b) => a.getTime() - b.getTime())[0];
 
+  const dar = cargo.darReceiving;
+
   return publicJourney({
     status: cargo.status,
     stamps,
@@ -252,6 +269,7 @@ export function journeyOf(cargo: JourneyCargo, now = new Date()): Journey {
           arrivedAt:
             container.shipment?.actualArrival ?? arrivedEvent?.createdAt ?? null,
           eta: container.shipment?.eta ?? null,
+          packingListAt: container.packingList?.issuedAt ?? null,
         }
       : null,
     billing: {
@@ -260,11 +278,31 @@ export function journeyOf(cargo: JourneyCargo, now = new Date()): Journey {
       pendingClaim: live.some((invoice) =>
         invoice.payments.some((p) => p.status === "PENDING")
       ),
+      /* Verified money only. A claim nobody has checked moves the customer's
+         screen to "we are confirming your payment" and not one shilling
+         further — see paymentState. */
+      paidSome: live.some((invoice) => balanceOf(invoice).paid.greaterThan(0)),
+      /* Priced by the rate book at Dar check-in and waiting on the price list.
+         Never called a bill: nobody has been asked for it. */
+      drafted: cargo.invoices.some((i) => i.status === "DRAFT"),
     },
     releasable: checkRelease(cargo).ok,
-    onHold:
-      cargo.operationalHold ||
-      cargo.exceptions.some((e) => e.status !== "RESOLVED" && e.status !== "CLOSED"),
+    /* A hold and an open case are both reasons the boxes stand still, and they
+       are different sentences — so they arrive separately rather than as one
+       word the customer cannot act on. */
+    onHold: cargo.operationalHold,
+    caseOpen: cargo.exceptions.some(
+      (e) => e.status !== "RESOLVED" && e.status !== "CLOSED"
+    ),
+    receivedAtDar: dar !== null,
+    awaitingDarVerification: dar !== null && !dar.verified,
+    /* Repacked is not damage — the floor put a burst carton back together,
+       which is a kindness and not something to alarm a customer with. */
+    damaged:
+      dar?.condition === "DAMAGED" ||
+      dar?.condition === "MINOR_DAMAGE" ||
+      dar?.condition === "WET",
+    discrepancy: dar?.discrepancy === true,
     now,
   });
 }
@@ -689,6 +727,7 @@ export async function trackByReference(raw: string): Promise<PublicTracking | nu
         select: {
           verified: true,
           discrepancy: true,
+          condition: true,
           packagesCount: true,
           piecesCount: true,
           cbm: true,

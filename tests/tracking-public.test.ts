@@ -135,6 +135,17 @@ const ACCOUNTS = [
   },
 ];
 
+/* Nothing wrong with the boxes, nothing standing on the Dar floor. Each test
+   that cares about one of these says so itself. */
+const QUIET = {
+  onHold: false,
+  receivedAtDar: false,
+  awaitingDarVerification: false,
+  damaged: false,
+  discrepancy: false,
+  caseOpen: false,
+} as const;
+
 function build(over: Partial<Parameters<typeof publicTracking>[0]> = {}) {
   const cargo = over.cargo ?? source();
   return publicTracking({
@@ -147,10 +158,18 @@ function build(over: Partial<Parameters<typeof publicTracking>[0]> = {}) {
         departedAt: day(-33),
         arrivedAt: day(-4),
         eta: day(-4),
+        packingListAt: day(-35),
       },
-      billing: { issuedAt: day(-3), owes: true, pendingClaim: false },
+      billing: {
+        issuedAt: day(-3),
+        owes: true,
+        pendingClaim: false,
+        paidSome: false,
+        drafted: false,
+      },
       releasable: false,
-      onHold: false,
+      ...QUIET,
+      receivedAtDar: cargo.darReceiving !== null,
       now: NOW,
     }),
     invoice: invoice(),
@@ -242,8 +261,15 @@ describe("what a reference publishes", () => {
         status: "RECEIVED_DAR",
         stamps: { RECEIVED_DAR: day(-3) },
         container: null,
-        billing: { issuedAt: null, owes: false, pendingClaim: false },
+        billing: {
+          issuedAt: null,
+          owes: false,
+          pendingClaim: false,
+          paidSome: false,
+          drafted: false,
+        },
         releasable: false,
+        ...QUIET,
         onHold: true,
         now: NOW,
       }),
@@ -266,8 +292,15 @@ describe("what a reference publishes", () => {
         status: "MISSING_AT_DAR",
         stamps: { ARRIVED_TANZANIA: day(-4) },
         container: null,
-        billing: { issuedAt: null, owes: false, pendingClaim: false },
+        billing: {
+          issuedAt: null,
+          owes: false,
+          pendingClaim: false,
+          paidSome: false,
+          drafted: false,
+        },
         releasable: false,
+        ...QUIET,
         onHold: true,
         now: NOW,
       }),
