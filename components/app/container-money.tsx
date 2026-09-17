@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ConfirmPricingForm } from "@/components/app/finance-forms";
+import { PriceList } from "@/components/app/price-list";
 import {
   ContainerExpenses,
   type ContainerExpenseRow,
@@ -30,6 +30,8 @@ import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
 
 import { correctionOptions, toCorrectable, correctableInclude } from "@/lib/expense-correction";
+import { priceListForContainer } from "@/lib/price-list";
+import { cargoTypeOptions } from "@/lib/valuation";
 import { can } from "@/lib/rbac";
 import { localeOf } from "@/lib/viewer-locale";
 import { cn } from "@/lib/utils";
@@ -198,9 +200,17 @@ export async function ContainerMoney({
     .filter((name) => !recordedTypes.has(name));
 
   const mayRecordCost = can(user.role, "expense.record");
-  const [locale, correction] = mayRecordCost
-    ? await Promise.all([localeOf(user.id), correctionOptions()])
-    : (["en", { accounts: [], categories: [] }] as const);
+  const mayConfirm = can(user.role, "invoice.priceConfirm");
+  const [locale, correction, priceList, cargoTypes] = await Promise.all([
+    localeOf(user.id),
+    mayRecordCost
+      ? correctionOptions()
+      : Promise.resolve({ accounts: [], categories: [] } as Awaited<
+          ReturnType<typeof correctionOptions>
+        >),
+    priceListForContainer(container.id),
+    mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
+  ]);
   const expenseRows: ContainerExpenseRow[] = container.expenses.map((e) => ({
     id: e.id,
     reference: e.reference,
@@ -330,6 +340,16 @@ export async function ContainerMoney({
 
   return (
     <div className="space-y-6">
+      {/* The job before the numbers: sign the rate book's prices off. Shown
+          only while something is waiting, with one press for all of it. */}
+      <PriceList
+        containerId={container.id}
+        list={priceList}
+        cargoTypes={cargoTypes}
+        canConfirm={mayConfirm}
+        locale={locale}
+      />
+
       <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
         <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
           <h2 className="font-semibold">Financial overview</h2>
@@ -473,13 +493,6 @@ export async function ContainerMoney({
         correctionCategories={correction.categories}
       />
 
-      {/* One press for the whole container. Everything priced from the record,
-          nothing typed. */}
-      <ConfirmPricingForm
-        containerId={container.id}
-        waiting={toConfirm}
-        drafts={rows.filter((r) => r.draft && r.live.length === 0).length}
-      />
 
       <ContainerCargoTabs
         cargo={cargoRows}

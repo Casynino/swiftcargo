@@ -2,7 +2,7 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, type TxClient } from "@/lib/prisma";
 
 /**
  * WHAT THE WAREHOUSE'S FIGURES ARE WORTH.
@@ -67,9 +67,10 @@ type PackageLike = {
  */
 export async function valueLines(
   packages: PackageLike[],
-  options: { service?: "LCL" | "FCL"; customerId?: string } = {}
+  options: { service?: "LCL" | "FCL"; customerId?: string } = {},
+  client: TxClient | typeof prisma = prisma
 ): Promise<Valuation> {
-  return valueWith(await loadRateBook(options), packages);
+  return valueWith(await loadRateBook(options, client), packages);
 }
 
 export type RateBook = {
@@ -93,7 +94,8 @@ type RateRow = {
  * lookup would start timing out the one write the warehouse cannot lose.
  */
 export async function loadRateBook(
-  options: { service?: "LCL" | "FCL"; customerId?: string } = {}
+  options: { service?: "LCL" | "FCL"; customerId?: string } = {},
+  client: TxClient | typeof prisma = prisma
 ): Promise<RateBook> {
   const service = options.service ?? "LCL";
   const now = new Date();
@@ -106,9 +108,9 @@ export async function loadRateBook(
   };
 
   const [rates, agreed] = await Promise.all([
-    prisma.shippingRate.findMany({ where: live, orderBy: { effectiveFrom: "desc" } }),
+    client.shippingRate.findMany({ where: live, orderBy: { effectiveFrom: "desc" } }),
     options.customerId
-      ? prisma.customerRate.findMany({
+      ? client.customerRate.findMany({
           where: { ...live, customerId: options.customerId },
           orderBy: { effectiveFrom: "desc" },
         })
@@ -128,12 +130,14 @@ export function valueWith(book: RateBook, packages: PackageLike[]): Valuation {
       the invoice engine, because the estimate and the bill must never disagree
       about which rate applies.
 
-      THE GENERAL FALLBACK IS ONLY FOR UNTYPED LINES. A line whose clerk chose
-      "Machinery" and found no Machinery rate is a hole in the rate book, and
-      quietly billing it at the house default hides that hole behind a number
-      that is wrong in the company's disfavour as often as not. Untyped lines
-      are older records from before categories existed, and those still take the
-      fallback so they remain billable.
+      A TYPE WITH NO RATE OF ITS OWN TAKES THE GENERAL RATE. The owner's
+      decision, copied from how the air side prices: a rate published for a
+      cargo type wins, and anything the book has not banded yet is charged at
+      the general rate for the service, so one press can confirm a whole
+      container instead of stopping at every type nobody has priced. The price
+      list shows the rate each line took, so a line on the general rate is
+      visible to whoever confirms it. Only a book with no general rate either
+      leaves a line unpriced, and that line is named.
     */
     const exact = <T extends { cargoType: string | null }>(list: T[]) =>
       list.find((r) => r.cargoType === cargoType);
@@ -141,7 +145,7 @@ export function valueWith(book: RateBook, packages: PackageLike[]): Valuation {
       list.find((r) => r.cargoType === null);
 
     if (cargoType === null) return general(agreed) ?? general(rates) ?? null;
-    return exact(agreed) ?? exact(rates) ?? null;
+    return exact(agreed) ?? exact(rates) ?? general(agreed) ?? general(rates) ?? null;
   };
 
   const currency = rates[0]?.currency ?? "USD";
@@ -167,7 +171,7 @@ export function valueWith(book: RateBook, packages: PackageLike[]): Valuation {
         basis: null,
         amount: new Prisma.Decimal(0),
         blocked: p.cargoType
-          ? `No live rate for "${p.cargoType}".`
+          ? `No live rate for "${p.cargoType}" and no general rate.`
           : "No cargo type was chosen at receiving.",
       };
     }

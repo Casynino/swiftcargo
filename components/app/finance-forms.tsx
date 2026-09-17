@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Ban, Banknote, Check, CheckCheck, Plus, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { Ban, Banknote, Check, Plus, RotateCcw, ShieldCheck, X } from "lucide-react";
 
 import {
   createCustomerRate,
@@ -13,7 +13,6 @@ import {
   adjustInvoice,
   cancelInvoice,
   generateContainerInvoices,
-  confirmContainerPricing,
   generateInvoice,
   issueInvoice,
   type ActionState as InvoiceState,
@@ -729,69 +728,3 @@ export function ReversePaymentForm({ paymentId }: { paymentId: string }) {
   );
 }
 
-/**
- * CONFIRM THE PRICES ON A WHOLE CONTAINER.
- *
- * The Finance desk's move on the day a box is counted off. Every figure behind
- * it was worked out from what Dar actually received, at the rate for each kind
- * of goods — nothing on this form is typed except how long the customer has to
- * pay. Pressing it raises whatever is unbilled and issues the lot, which is
- * what tells the customers and what the release engine reads.
- */
-export function ConfirmPricingForm({
-  containerId,
-  waiting,
-  drafts,
-}: {
-  containerId: string;
-  waiting: number;
-  drafts: number;
-}) {
-  const [state, action] = useActionState<InvoiceState, FormData>(
-    confirmContainerPricing,
-    {}
-  );
-
-  if (waiting === 0 && drafts === 0) {
-    return (
-      <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-        Every consignment on this container has been confirmed and billed.
-      </div>
-    );
-  }
-
-  return (
-    <form
-      action={action}
-      className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-4"
-    >
-      <input type="hidden" name="containerId" value={containerId} />
-      <div className="flex-1">
-        <p className="text-sm font-medium">
-          {waiting} consignment{waiting === 1 ? "" : "s"} priced and waiting for
-          you
-        </p>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Worked out from what Dar counted, at each line&apos;s own rate.
-          Confirming issues the bills and tells the customers.
-        </p>
-        <FormMessage error={state.error} ok={state.ok} />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="dueDays" className="text-xs">
-          Payable within
-        </Label>
-        <NativeSelect id="dueDays" name="dueDays" defaultValue="7" className="w-36">
-          <option value="0">On receipt</option>
-          <option value="3">3 days</option>
-          <option value="7">7 days</option>
-          <option value="14">14 days</option>
-        </NativeSelect>
-      </div>
-      <SubmitButton pendingLabel="Confirming…">
-        <CheckCheck />
-        Confirm all prices
-      </SubmitButton>
-    </form>
-  );
-}

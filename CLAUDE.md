@@ -56,8 +56,21 @@ the cargo stops being amendable by that desk; after that it takes
 **The rate book prices cargo types, per line.** `ShippingRate` rows are named by
 the company's own categories, and each measured line is charged at the rate for
 its own type — two hundred cartons of shoes and a machine on one note are not
-the same money per cubic metre. A chosen type with no live rate is reported, not
-quietly billed at a house default.
+the same money per cubic metre. By the owner's decision, copied from the air
+side, a type with no live rate of its own is charged at the general rate
+(`cargoType` null) for the service; the price list shows the rate each row took.
+Only a book with neither leaves a line unpriced, and that row is named and left
+waiting while the rest are confirmed.
+
+**Prices are confirmed a list at a time.** Dar check-in raises a DRAFT from the
+rate book (`lib/price-confirmation.ts`), outside the check-in and never able to
+fail it. The price list — each waiting container, and the cargo in Dar with no
+container — shows every figure; the confirmer changes a row's cargo type or rate
+on the row (FieldChange, old value first), and one press, "Confirm all N prices",
+prices anything still without a draft and issues each bill in its own
+transaction: exchange-rate row pinned, accounts snapshotted, customer told. An
+agreed rate survives confirming; a row the book cannot price blocks only itself.
+`invoice.priceConfirm` is Support's, Finance's, the Manager's and the owner's.
 
 **The system does the arithmetic; the warehouse does the counting.** Receiving
 asks for what is physically there — customer, category, packages, pieces,

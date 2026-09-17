@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Boxes, ChevronRight, Package, Search } from "lucide-react";
 
 import { EmptyState } from "@/components/app/empty-state";
+import { PriceList } from "@/components/app/price-list";
 import { ContainerTabs } from "@/components/app/container-tabs";
 import { PageHeader } from "@/components/app/page-header";
 import { Card } from "@/components/ui/card";
@@ -19,9 +20,13 @@ import { formatCbm, formatDate, formatMoney } from "@/lib/format";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
+import { priceListForContainer, priceListWithoutContainer } from "@/lib/price-list";
 import { requirePermission } from "@/lib/session";
 import { unsailedToPrice } from "@/lib/unsailed-pricing";
 import { cn } from "@/lib/utils";
+import { cargoTypeOptions } from "@/lib/valuation";
+import { localeOf } from "@/lib/viewer-locale";
+import { t } from "@/lib/i18n";
 
 export const metadata: Metadata = { title: "Arrived containers" };
 
@@ -301,6 +306,32 @@ export default async function ArrivedContainersPage({
         : showMoney
   );
 
+  /*
+    THE PRICES THEMSELVES, FOR A DESK THAT MAY SEE MONEY.
+
+    Each container still waiting, and the group with no container, as the same
+    list the container page opens with: the rate book's figure on every row,
+    the type and the rate correctable on the row, and one press per list.
+  */
+  const pricing =
+    chosen === "pricing" && showMoney
+      ? await (async () => {
+          const mayConfirm = can(user.role, "invoice.priceConfirm");
+          const [locale, cargoTypes, withoutContainer, perContainer] = await Promise.all([
+            localeOf(user.id),
+            mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
+            priceListWithoutContainer(),
+            Promise.all(
+              shown.map(async (row) => ({
+                row,
+                list: await priceListForContainer(row.container.id),
+              }))
+            ),
+          ]);
+          return { mayConfirm, locale, cargoTypes, withoutContainer, perContainer };
+        })()
+      : null;
+
   const waitingOnFinance =
     rows.filter((r) => r.toPrice > 0).reduce((sum, r) => sum + r.toPrice, 0) +
     unsailed.length;
@@ -397,7 +428,56 @@ export default async function ArrivedContainersPage({
         </div>
       </Card>
 
-      {chosen === "pricing" && unsailed.length > 0 ? (
+      {pricing ? (
+        <div className="space-y-6">
+          {pricing.perContainer.map(({ row, list }) => (
+            <PriceList
+              key={row.container.id}
+              heading={
+                <Link
+                  href={`/app/containers/${row.container.id}`}
+                  className="font-medium text-brand hover:underline"
+                >
+                  {row.container.reference}
+                  {row.container.shipment?.vessel ? ` · ${row.container.shipment.vessel}` : ""}
+                </Link>
+              }
+              containerId={row.container.id}
+              list={list}
+              cargoTypes={pricing.cargoTypes}
+              canConfirm={pricing.mayConfirm}
+              locale={pricing.locale}
+            />
+          ))}
+          <PriceList
+            heading={
+              <span className="font-medium text-foreground">
+                {t(pricing.locale, "In Dar with no container on record")}
+              </span>
+            }
+            containerId={null}
+            list={pricing.withoutContainer}
+            cargoTypes={pricing.cargoTypes}
+            canConfirm={pricing.mayConfirm}
+            locale={pricing.locale}
+          />
+          {pricing.perContainer.every(({ list }) => list.rows.length === 0) &&
+          pricing.withoutContainer.rows.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon="Ship"
+                title={t(pricing.locale, "Nothing is waiting for a price")}
+                description={t(
+                  pricing.locale,
+                  "Cargo appears here as soon as Dar checks it in."
+                )}
+              />
+            </Card>
+          ) : null}
+        </div>
+      ) : null}
+
+      {chosen === "pricing" && !pricing && unsailed.length > 0 ? (
         <Card>
           <div className="border-b px-4 py-3">
             <p className="text-sm font-medium">
@@ -473,7 +553,7 @@ export default async function ArrivedContainersPage({
 
       {/* Nothing on a container to price, and the consignments above are the
           whole answer: an empty table under them reads as "nothing to do". */}
-      {chosen === "pricing" && shown.length === 0 && unsailed.length > 0 ? null : (
+      {pricing || (chosen === "pricing" && shown.length === 0 && unsailed.length > 0) ? null : (
       <Card>
         {shown.length === 0 ? (
           <EmptyState

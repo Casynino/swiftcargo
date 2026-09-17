@@ -94,6 +94,16 @@ export type Permission =
   | "invoice.create"
   | "invoice.edit"
   | "invoice.issue"
+  /**
+   * Confirming the prices the rate book worked out when Dar checked cargo in,
+   * and correcting a waiting row's cargo type or rate on the way.
+   *
+   * Narrower than `invoice.issue`: it only ever turns the system's own drafts
+   * into bills, a list at a time, and only touches a price nobody has been
+   * asked for yet. Support holds it because the owner wants the counter able to
+   * price cargo and send the bill in the same conversation.
+   */
+  | "invoice.priceConfirm"
   | "invoice.discount"
   | "invoice.cancel"
   | "rate.view"
@@ -280,6 +290,11 @@ const CUSTOMER_SUPPORT: Permission[] = [
      counter answers in the same call. Every change asks why and is recorded
      against the name of whoever made it. */
   "invoice.discount",
+  /* Confirming the waiting prices, as Finance does. A counter that can price
+     cargo and cannot turn that price into a bill sends the customer away to
+     wait for somebody else. A bill already issued, paid or collected is not
+     reached through this. */
+  "invoice.priceConfirm",
   "release.view",
   "exception.view",
   "exception.raise",
@@ -318,6 +333,7 @@ const FINANCE: Permission[] = [
   "invoice.create",
   "invoice.edit",
   "invoice.issue",
+  "invoice.priceConfirm",
   "invoice.discount",
   "invoice.cancel",
   "rate.view",

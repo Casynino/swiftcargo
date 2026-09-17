@@ -22,6 +22,7 @@ import { can } from "@/lib/rbac";
 import { authorize } from "@/lib/session";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { paymentSnapshotNow } from "@/lib/invoice-accounts";
+import { confirmPrices } from "@/lib/actions/price-list";
 
 
 /**
@@ -569,111 +570,21 @@ export async function cancelInvoice(
 /**
  * CONFIRM THE PRICES ON A WHOLE CONTAINER.
  *
- * This is the Finance desk's move once Dar has counted a container off. Every
- * consignment on it has been measured twice and signed off; the rate book turns
- * each one into a figure; and this action is Finance saying "yes, that is what
- * we are charging" for the lot.
- *
- * It does the two steps a clerk would otherwise do three hundred times: raise a
- * draft for anything not yet billed, then issue every draft on the container.
- * Issuing is what tells the customer and what the release engine reads — a
- * draft is Finance's working and can neither be owed nor paid.
- *
- * Anything that cannot be priced is REPORTED, not guessed at. A line with no
- * live rate for its cargo type stops and is named; the rest of the container
- * goes out. One unpriceable consignment does not hold up two hundred.
+ * The same press as "Confirm all prices" on the price list, kept under this
+ * name for the callers that already use it. It prices whatever Dar counted and
+ * has no draft yet, then issues every draft on the container — see
+ * lib/price-confirmation.ts. A line the rate book cannot price is named and
+ * left waiting; the rest of the container goes out.
  */
 export async function confirmContainerPricing(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const actor = await authorize("invoice.issue");
-
-  const containerId = String(formData.get("containerId") ?? "");
-  const dueDays = Number(formData.get("dueDays") ?? 7);
-
-  const container = await prisma.container.findFirst({
-    where: { id: containerId, deletedAt: null },
-    select: { id: true, reference: true },
-  });
-  if (!container) return { error: "That container no longer exists." };
-
-  /* Raise whatever has not been billed yet, using the existing path so there is
-     one place that prices a consignment. */
-  const raise = new FormData();
-  raise.set("containerId", containerId);
-  const raised = await generateContainerInvoices({}, raise);
-  if (raised.error) return raised;
-
-  const drafts = await prisma.invoice.findMany({
-    where: {
-      status: "DRAFT",
-      cargo: { containerLines: { some: { containerId } } },
-    },
-    include: { cargo: { select: { reference: true } } },
-  });
-
-  const dueAt = new Date();
-  dueAt.setDate(dueAt.getDate() + (Number.isFinite(dueDays) ? dueDays : 7));
-
-  const fx = await currentExchangeRate();
-  if (!fx && drafts.length) {
-    return { error: "There is no exchange rate published. Set one in the Rate book first." };
+  await authorize("invoice.priceConfirm");
+  if (!String(formData.get("containerId") ?? "")) {
+    return { error: "Which container?" };
   }
-
-  /* One copy of the accounts for the whole container, so every bill confirmed
-     by one press names the same places to pay. */
-  const accounts = drafts.length ? await paymentSnapshotNow() : null;
-
-  let issued = 0;
-  for (const invoice of drafts) {
-    const snapshot = issueSnapshot(invoice, fx!);
-    /* Conditional update, not a read-then-write: two people confirming the same
-       container in the same second must not both issue the same invoice. */
-    const claim = await prisma.invoice.updateMany({
-      where: { id: invoice.id, status: "DRAFT" },
-      data: {
-        status: "ISSUED",
-        issuedAt: new Date(),
-        dueAt,
-        ...snapshot,
-        paymentSnapshot: accounts ?? undefined,
-      },
-    });
-    if (claim.count === 0) continue;
-
-    await notifyCustomer([invoice.customerId], {
-      kind: "invoice.issued",
-      title: `Invoice ${invoice.number}`,
-      body: `${amountDueLine(invoice.total, snapshot.fxRate)} is due for ${invoice.cargo.reference}.`,
-      href: "/portal/invoices",
-    });
-    issued++;
-  }
-
-  await recordAudit({
-    actor,
-    action: "container.pricing.confirm",
-    entity: "Container",
-    entityId: container.id,
-    summary: `Confirmed pricing on ${container.reference} — ${issued} invoice(s) issued`,
-  });
-
-  revalidatePath(`/app/finance/containers/${containerId}`);
-  revalidatePath("/app/finance/invoices");
-
-  if (issued === 0) {
-    return {
-      ok: raised.ok
-        ? `${raised.ok} Nothing was left to confirm.`
-        : "Everything on this container was already confirmed.",
-    };
-  }
-  return {
-    ok: `${issued} invoice(s) confirmed and sent.${
-      raised.ok?.includes("could not be priced") ? ` ${raised.ok}` : ""
-    }`,
-  };
+  return confirmPrices({}, formData);
 }
 
 

@@ -28,6 +28,7 @@ import {
   syncLineTotals,
 } from "@/lib/cargo-corrections";
 import { repriceDraftsAfterCorrection } from "@/lib/invoice-reprice";
+import { priceOnCheckIn } from "@/lib/price-confirmation";
 import { store, UploadError } from "@/lib/storage";
 import { formMessage } from "@/lib/safe-error";
 import { authorize } from "@/lib/session";
@@ -1345,11 +1346,11 @@ export async function updateCargoDetails(
       })
     );
     if (result.changes.some((c) => c.field === "cargoType")) {
-      await repriceDraftsAfterCorrection(
-        actor,
-        cargoId,
-        String(formData.get("reason") ?? "").trim() || "Cargo type corrected"
-      );
+      /* Raises the draft where Dar counted the cargo before it had a type the
+         book could price, and re-prices the one already there otherwise. */
+      await priceOnCheckIn(actor, [cargoId], {
+        reason: String(formData.get("reason") ?? "").trim() || "Cargo type corrected",
+      });
     }
     revalidatePath(`/app/cargo/${cargoId}`);
     for (const customerId of result.customers) {

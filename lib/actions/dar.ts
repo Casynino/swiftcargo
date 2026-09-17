@@ -11,7 +11,7 @@ import { nextExceptionReference } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { applyDarMeasurement, CorrectionRefused } from "@/lib/cargo-corrections";
-import { repriceDraftsAfterCorrection } from "@/lib/invoice-reprice";
+import { priceOnCheckIn } from "@/lib/price-confirmation";
 import { authorize } from "@/lib/session";
 import { store, UploadError } from "@/lib/storage";
 
@@ -351,13 +351,14 @@ export async function receiveInDar(
     throw error;
   }
 
-  if (figuresMoved) {
-    await repriceDraftsAfterCorrection(
-      actor,
-      cargo.id,
-      recountReason
-    );
-  }
+  /* The rate book prices it now, as a draft, so the price list already holds
+     a figure for whoever confirms it. A re-count re-prices the draft on the
+     corrected figures. Outside the check-in and never able to fail it. */
+  await priceOnCheckIn(
+    actor,
+    [cargo.id],
+    figuresMoved ? { reason: recountReason } : undefined
+  );
 
   await recordAudit({
     actor,
@@ -674,6 +675,7 @@ export async function acceptAsExpected(
   });
 
   let accepted = 0;
+  const checkedIn: string[] = [];
   const skipped: string[] = [];
   const notLanded: string[] = [];
 
@@ -745,8 +747,13 @@ export async function acceptAsExpected(
       );
       return true;
     });
-    if (took) accepted++;
+    if (took) {
+      accepted++;
+      checkedIn.push(item.id);
+    }
   }
+
+  await priceOnCheckIn(actor, checkedIn);
 
   await recordAudit({
     actor,

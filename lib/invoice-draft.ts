@@ -114,10 +114,11 @@ export async function priceConsignment(
     };
   }
 
-  const valuation = await valueLines(packages, {
-    service: cargo.service,
-    customerId: cargo.receiverId,
-  });
+  const valuation = await valueLines(
+    packages,
+    { service: cargo.service, customerId: cargo.receiverId },
+    client
+  );
 
   const unpriceable = valuation.lines.find((l) => l.blocked);
   if (unpriceable) {
