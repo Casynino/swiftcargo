@@ -163,6 +163,8 @@ export default async function PackingListPage({
           </div>
         </header>
 
+        {/* Lists frozen before these fields existed are still printed, and say
+            "—" for what they never recorded rather than claiming a blank. */}
         <section className="grid grid-cols-1 gap-x-6 gap-y-4 border-b py-6 text-sm sm:grid-cols-4">
           {[
             ["Container", snap.container],
@@ -170,7 +172,11 @@ export default async function PackingListPage({
             ["Shipping line", snap.shippingLine ?? "—"],
             ["Vessel / voyage",
               snap.vessel ? `${snap.vessel}${snap.voyage ? ` / ${snap.voyage}` : ""}` : "—"],
-            ["Consignments", String(snap.lines.length)],
+            ["Loaded at", snap.originWarehouse ?? snap.originPort ?? "—"],
+            ["Destination", snap.destinationPort ?? "—"],
+            ["Packed", snap.packedAt ? formatDate(new Date(snap.packedAt)) : "—"],
+            ["Shipped", snap.shippedAt ? formatDate(new Date(snap.shippedAt)) : "—"],
+            ["Consignments", String(snap.totalCargo ?? snap.lines.length)],
             ["Customers", String(snap.totalCustomers)],
             ["Total volume", `${Number(snap.totalCbm).toFixed(3)} CBM`],
             ["Our reference", snap.reference],
@@ -211,6 +217,10 @@ export default async function PackingListPage({
                 <thead>
                   <tr className="border-b text-[10px] uppercase tracking-widest text-neutral-500">
                     <th className="py-1.5 text-left font-semibold">Cargo ref</th>
+                    {/* The number on the carbon page the customer is holding.
+                        It is what the old packing lists were referenced by, and
+                        it is how a query about a delivery is opened. */}
+                    <th className="py-1.5 text-left font-semibold">Note no.</th>
                     <th className="py-1.5 text-left font-semibold">Goods</th>
                     <th className="py-1.5 text-left font-semibold">Cargo type</th>
                     <th className="py-1.5 text-right font-semibold">Pkgs</th>
@@ -226,6 +236,9 @@ export default async function PackingListPage({
                           <tr key={item.reference} className="border-b">
                             <td className="tnum py-1.5 align-top">
                               {itemIndex === 0 ? line.cargoReference : ""}
+                            </td>
+                            <td className="tnum py-1.5 align-top text-neutral-600">
+                              {item.paperReceiptNo ?? line.paperReceiptNo ?? "—"}
                             </td>
                             <td className="py-1.5">
                               {item.description ?? line.description}
@@ -262,6 +275,9 @@ export default async function PackingListPage({
                       : [
                           <tr key={line.cargoReference} className="border-b">
                             <td className="tnum py-1.5">{line.cargoReference}</td>
+                            <td className="tnum py-1.5 text-neutral-600">
+                              {line.paperReceiptNo ?? "—"}
+                            </td>
                             <td className="py-1.5">{line.description}</td>
                             <td className="py-1.5 text-neutral-600">—</td>
                             <td className="tnum py-1.5 text-right">
@@ -282,7 +298,7 @@ export default async function PackingListPage({
                         ]
                   )}
                   <tr className="font-semibold">
-                    <td colSpan={3} className="py-1.5 text-xs uppercase tracking-wide">
+                    <td colSpan={4} className="py-1.5 text-xs uppercase tracking-wide">
                       {group.customer} subtotal
                     </td>
                     <td className="tnum py-1.5 text-right">{group.packages}</td>
@@ -309,6 +325,16 @@ export default async function PackingListPage({
                 <td className="tnum py-2 text-right">
                   {groups.reduce((sum, g) => sum + g.packages, 0)} pkgs
                 </td>
+                {/* Pieces and weight belong on the sheet customs reads, and were
+                    the two figures it had to be added up by hand from. */}
+                <td className="tnum py-2 pl-6 text-right">
+                  {snap.totalPieces ? `${snap.totalPieces} pcs` : ""}
+                </td>
+                <td className="tnum py-2 pl-6 text-right">
+                  {snap.totalWeightKg
+                    ? `${Number(snap.totalWeightKg).toFixed(2)} kg`
+                    : ""}
+                </td>
                 <td className="tnum py-2 pl-6 text-right">
                   {Number(snap.totalCbm).toFixed(3)} CBM
                 </td>
@@ -320,7 +346,9 @@ export default async function PackingListPage({
         <footer className="mt-8 grid grid-cols-1 gap-6 border-t pt-6 text-xs text-neutral-600 sm:grid-cols-2">
           <p>
             {list
-              ? `Issued by ${list.issuedBy?.name ?? "Swift Cargo"} on ${formatDate(list.issuedAt)}.`
+              ? `Issued by ${snap.issuedBy ?? list.issuedBy?.name ?? "Swift Cargo"} on ${formatDate(
+                  snap.issuedAt ? new Date(snap.issuedAt) : list.issuedAt
+                )}${snap.version > 1 ? ` · drawing ${snap.version}, frozen at the seal` : ""}.`
               : "Not yet issued. This sheet is drawn from what is in the container right now and changes as cargo is loaded or taken out. It is issued and frozen when the container is sealed."}
           </p>
           <div className="sm:text-right">
