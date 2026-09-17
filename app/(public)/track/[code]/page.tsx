@@ -165,9 +165,9 @@ export default async function TrackResultPage({
   }
 
   const address = await clientAddress();
-  const window = hit(`track:${address}`, LOOKUPS_PER_WINDOW, WINDOW_MS);
+  const steady = hit(`track:${address}`, LOOKUPS_PER_WINDOW, WINDOW_MS);
   const burst = hit(`track-burst:${address}`, BURST, BURST_MS);
-  if (!window.ok || !burst.ok) {
+  if (!steady.ok || !burst.ok) {
     return (
       <Shell>
         <Clock className="size-8 text-white/50" />
