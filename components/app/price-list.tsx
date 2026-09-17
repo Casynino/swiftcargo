@@ -127,7 +127,12 @@ export function ConfirmPricesBanner({
   children?: React.ReactNode;
 }) {
   const [state, action] = useActionState<PriceListState, FormData>(confirmPrices, {});
-  const blocked = list.rows.length - list.ready;
+  /* Two different reasons a row is not in the press, said as two different
+     sentences. "The rate book cannot price this" is Finance's to fix here; "Dar
+     is still counting" is somebody else's and there is nothing to do but wait,
+     and telling a desk to look at a row it cannot act on wastes its morning. */
+  const waiting = list.rows.filter((r) => !r.darConfirmed).length;
+  const blocked = list.rows.length - list.ready - waiting;
   if (list.rows.length === 0) return null;
 
   return (
@@ -167,11 +172,33 @@ export function ConfirmPricesBanner({
               )}
             </p>
           ) : null}
+          {waiting > 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {waiting}{" "}
+              {t(
+                locale,
+                waiting === 1
+                  ? "consignment is still with the Dar floor. It joins this press once Dar confirms the count."
+                  : "consignments are still with the Dar floor. They join this press once Dar confirms the count."
+              )}
+            </p>
+          ) : null}
         </div>
 
         {canConfirm && list.ready > 0 ? (
           <form action={action} className="shrink-0">
             {containerId ? <input type="hidden" name="containerId" value={containerId} /> : null}
+            {/* Exactly the rows the button counts. Without them the press would
+                reach the whole container and come back reporting the rows still
+                with Dar as failures, which reads as a fault rather than as the
+                floor not having finished. The server narrows this against what
+                is actually waiting and re-checks each one, so a stale list can
+                only ask for less than it should, never more. */}
+            {list.rows
+              .filter((row) => !row.blockedReason && row.darConfirmed)
+              .map((row) => (
+                <input key={row.cargoId} type="hidden" name="cargoIds" value={row.cargoId} />
+              ))}
             <SubmitButton variant="accent" pendingLabel={t(locale, "Confirming…")}>
               {list.ready === 1
                 ? t(locale, "Confirm 1 price")
@@ -268,7 +295,12 @@ function PriceRow({
               <span className="block text-xs text-muted-foreground">{row.totalTzsLabel}</span>
             ) : null}
             <span className="mt-1 block">
-              {row.invoiceNumber ? (
+              {/* The figure is shown either way — Finance reads what the sailing
+                  will come to before the floor has finished — but a row Dar has
+                  not signed off says so rather than offering itself. */}
+              {!row.darConfirmed ? (
+                <Badge tone="warn">{t(locale, row.darWaiting ?? "With Dar")}</Badge>
+              ) : row.invoiceNumber ? (
                 <Badge tone="warn">
                   {t(locale, "Draft")} {row.invoiceNumber}
                 </Badge>

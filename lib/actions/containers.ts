@@ -205,6 +205,21 @@ export async function loadCargo(
       },
     });
 
+    /*
+      NOTHING LOADED IS NOT A LOAD.
+
+      Every id here came off a list a clerk was looking at, and a consignment
+      that has since been sealed into another box, cancelled or deleted simply
+      drops out of the query above. Saying "0 consignment(s) loaded" in the
+      green style of a success told the loading bay the job was done, and the
+      cargo they thought they had put in the container was still on the floor.
+    */
+    if (cargo.length === 0) {
+      throw new Error(
+        "None of those can be loaded any more — they have been sealed into another container, or taken off the floor. Reload the list."
+      );
+    }
+
     for (const item of cargo) {
       /*
         ONE BOX AT A TIME.
@@ -274,6 +289,28 @@ export async function loadCargo(
       actor,
       `Assigned to container ${container.reference}`
     );
+
+    /*
+      WHAT WENT IN, ON THE BOX'S OWN TIMELINE.
+
+      The consignment's history says which container it joined; the container's
+      said only that it opened and that it was sealed. Everything in between —
+      the thing the loading bay actually did, in what order, by whom — lived
+      nowhere but the audit log, which is a security record and not the list the
+      container page renders. The arrival amendments already write these; a
+      load is the same kind of event and was the one missing it.
+    */
+    await tx.containerEvent.create({
+      data: {
+        containerId: container.id,
+        from: "LOADING",
+        to: "LOADING",
+        note: `Loaded ${cargo.length} consignment(s): ${cargo
+          .map((c) => c.reference)
+          .join(", ")}`,
+        actorId: actor.id,
+      },
+    });
 
     await notifyCustomer(
       /* The receiver collects and pays; the sender shipped it. Both follow the box. */
@@ -346,7 +383,7 @@ export async function unloadCargo(
     */
     const lines = await tx.containerCargo.findMany({
       where: { containerId: container.id, cargoId: { in: cargoIds } },
-      select: { cargoId: true },
+      select: { cargoId: true, cargo: { select: { reference: true } } },
     });
     const inside = lines.map((l) => l.cargoId);
     if (inside.length === 0) return inside;
@@ -373,6 +410,19 @@ export async function unloadCargo(
       actor,
       `Taken back off ${container.reference}`
     );
+
+    /* The mirror of the load event. A box whose timeline shows four
+       consignments going in and nothing coming out cannot explain why its
+       packing list is shorter than the paper somebody printed at lunchtime. */
+    await tx.containerEvent.create({
+      data: {
+        containerId: container.id,
+        from: container.status,
+        to: container.status,
+        note: `Taken off: ${lines.map((l) => l.cargo.reference).join(", ")}`,
+        actorId: actor.id,
+      },
+    });
     return inside;
   });
   } catch (error) {
@@ -468,6 +518,21 @@ export async function sealContainer(
       select: { cargoId: true },
     });
 
+    /*
+      AN EMPTY BOX IS NOT SEALED.
+
+      The count was checked before the transaction opened, and between that
+      read and this claim another clerk can have taken the last consignment
+      back off. Sealing anyway produced a container at sea with no contents, no
+      packing list and a seal number on the record — a sailing nobody could
+      account for and nothing Dar could check against.
+    */
+    if (inside.length === 0) {
+      throw new Error(
+        "Everything was taken back off while you were sealing. There is nothing in it."
+      );
+    }
+
     await setCargoStatusBulk(
       tx,
       inside.map((l) => l.cargoId),
@@ -480,8 +545,21 @@ export async function sealContainer(
        ANYTHING. The document says what was in the box when the box was shut,
        which is the only moment the claim is true, and it is the sheet the
        shipping line and Dar both work from. A clerk who forgot this step used
-       to leave the container with no manifest at all. */
-    await issuePackingListFor(tx, container.id, actor.id, { atSeal: true });
+       to leave the container with no manifest at all.
+
+       Sealing FAILS if it cannot be written. The whole promise of this system
+       to the Dar floor is that a sealed box arrives with a frozen list of what
+       is in it; a seal that quietly succeeded without one sent a container
+       across the ocean with nothing to check it against, and nobody found out
+       for twenty-eight days. */
+    const list = await issuePackingListFor(tx, container.id, actor.id, {
+      atSeal: true,
+    });
+    if (!list) {
+      throw new Error(
+        "The packing list could not be drawn for this container, so it has not been sealed. Nothing has changed."
+      );
+    }
     return inside.length;
   });
   } catch (error) {
@@ -512,6 +590,25 @@ const voyageSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+/** A day, as a string that can sit beside another one in a FieldChange row. */
+const dayOf = (d: Date | null | undefined) =>
+  d ? d.toISOString().slice(0, 10) : null;
+
+/**
+ * The vessel, the voyage, the bill of lading and the dates.
+ *
+ * EVERY FIELD THAT MOVES IS WRITTEN DOWN, OLD VALUE FIRST. These are the facts
+ * a customer is quoted, a shipping line is chased on and an arrival is
+ * predicted from, and they change for two very different reasons: the line
+ * gave us a bill of lading we did not have yet, or somebody typed over a
+ * departure date that was already right. The first is routine; the second is
+ * the one an argument turns on four weeks later, and the only way to tell them
+ * apart afterwards is to have kept both figures.
+ *
+ * A box that has already sailed also gets an event on its own timeline, so a
+ * correction made to a container at sea is visible on the page anybody opens to
+ * ask about it, not only in the audit log.
+ */
 export async function updateVoyage(
   _prev: ActionState,
   formData: FormData
@@ -543,21 +640,100 @@ export async function updateVoyage(
 
   const shipment = await prisma.shipment.findUnique({
     where: { containerId: data.containerId },
-    select: { id: true, reference: true },
+    select: {
+      id: true,
+      reference: true,
+      shippingLine: true,
+      vessel: true,
+      voyage: true,
+      billOfLading: true,
+      departureDate: true,
+      eta: true,
+      notes: true,
+      container: { select: { id: true, reference: true, status: true } },
+    },
   });
   if (!shipment) return { error: "That container has no voyage." };
 
-  await prisma.shipment.update({
-    where: { id: shipment.id },
-    data: {
-      shippingLine: data.shippingLine || null,
-      vessel: data.vessel || null,
-      voyage: data.voyage || null,
-      billOfLading: data.billOfLading || null,
-      departureDate: departure,
-      eta: arrival,
-      notes: data.notes || null,
-    },
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  const next = {
+    shippingLine: data.shippingLine || null,
+    vessel: data.vessel || null,
+    voyage: data.voyage || null,
+    billOfLading: data.billOfLading || null,
+    departureDate: departure,
+    eta: arrival,
+    notes: data.notes || null,
+  };
+
+  const moved = (
+    [
+      ["shippingLine", shipment.shippingLine, next.shippingLine],
+      ["vessel", shipment.vessel, next.vessel],
+      ["voyage", shipment.voyage, next.voyage],
+      ["billOfLading", shipment.billOfLading, next.billOfLading],
+      ["departureDate", dayOf(shipment.departureDate), dayOf(next.departureDate)],
+      ["eta", dayOf(shipment.eta), dayOf(next.eta)],
+      ["notes", shipment.notes, next.notes],
+    ] as const
+  ).filter(([, was, now]) => (was ?? null) !== (now ?? null));
+
+  if (moved.length === 0) return { ok: "Nothing changed." };
+
+  /*
+    A SEALED BOX IS NOT AN OPEN ONE.
+
+    Filling in a bill of lading the line only issued after departure is the
+    normal case and must not be blocked. Rewriting the vessel or the departure
+    date of a container that has already left is a correction to a fact other
+    people are working from, so it is asked to say why — the same trade the
+    arrived-container amendments make.
+  */
+  const sailed = ["DEPARTED", "IN_TRANSIT", "ARRIVED", "CLOSED"].includes(
+    shipment.container.status
+  );
+  const rewriting = moved.some(
+    ([field, was]) =>
+      was !== null && ["vessel", "voyage", "departureDate"].includes(field)
+  );
+  if (sailed && rewriting && reason.length < 3) {
+    return {
+      error: `${shipment.container.reference} has already sailed. Say why the sailing details are being changed — it goes on the record with your name.`,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const [field, was, now] of moved) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "Shipment",
+          entityId: shipment.id,
+          field,
+          oldValue: was,
+          newValue: now,
+          reason: reason || null,
+        },
+        tx
+      );
+    }
+
+    await tx.shipment.update({ where: { id: shipment.id }, data: next });
+
+    if (sailed) {
+      await tx.containerEvent.create({
+        data: {
+          containerId: shipment.container.id,
+          from: shipment.container.status,
+          to: shipment.container.status,
+          note: `Voyage details changed after sailing: ${moved
+            .map(([field]) => field)
+            .join(", ")}${reason ? ` — ${reason}` : ""}`,
+          actorId: actor.id,
+        },
+      });
+    }
   });
 
   await recordAudit({
@@ -565,7 +741,16 @@ export async function updateVoyage(
     action: "shipment.update",
     entity: "Shipment",
     entityId: shipment.id,
-    summary: `Updated voyage details on ${shipment.reference}`,
+    summary: `Updated ${moved
+      .map(([field]) => field)
+      .join(", ")} on ${shipment.reference}${reason ? ` — ${reason}` : ""}`,
+    metadata: {
+      changes: moved.map(([field, was, now]) => ({
+        field,
+        from: was ?? null,
+        to: now ?? null,
+      })),
+    },
   });
 
   revalidatePath(`/app/containers/${data.containerId}`);

@@ -4,7 +4,7 @@ import { Prisma, type CargoCondition, type RateBasis, type ServiceType } from "@
 
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { billingMeasurement, priceConsignment } from "@/lib/invoice-draft";
-import { carriesAgreedRate } from "@/lib/price-confirmation";
+import { carriesAgreedRate, darConfirmationGap } from "@/lib/price-confirmation";
 import { applyVat, companySettings, currentExchangeRate } from "@/lib/pricing";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { UNSAILED_TO_PRICE } from "@/lib/unsailed-pricing";
@@ -64,6 +64,17 @@ export type PriceListRow = {
   /** Not GOOD: the tag the Dar floor put on when the boxes came off damaged. */
   condition: CargoCondition | null;
   damaged: boolean;
+  /**
+   * DAR HAS SIGNED THE COUNT OFF.
+   *
+   * False while the floor is still ruling on the consignment — received but not
+   * verified, or verified blocked by an open difference. The row is shown with
+   * its figure so Finance can read what the container will come to, and left
+   * out of what one press confirms. See darConfirmationGap.
+   */
+  darConfirmed: boolean;
+  /** Why it is still with Dar, in the words the row shows. Null once signed off. */
+  darWaiting: string | null;
   totalUsd: string | null;
   totalLabel: string | null;
   totalTzsLabel: string | null;
@@ -168,6 +179,8 @@ export async function priceListFor(
         null,
       condition: item.darReceiving?.condition ?? null,
       damaged: !!item.darReceiving && item.darReceiving.condition !== "GOOD",
+      darConfirmed: item.darReceiving?.verified === true,
+      darWaiting: darConfirmationGap(item),
       types: item.packages.length === 0 && item.commodity ? [item.commodity] : types,
       mixed: types.length > 1 || (types.length === 1 && untyped),
     };
@@ -250,7 +263,10 @@ export async function priceListFor(
     });
   }
 
-  const ready = rows.filter((r) => !r.blockedReason);
+  /* What one press will actually issue: priced, and signed off by Dar. The band
+     above the list counts and totals these alone, so the figure on the button
+     is the figure that goes out. */
+  const ready = rows.filter((r) => !r.blockedReason && r.darConfirmed);
   const sumUsd = ready.reduce((sum, r) => sum.add(r.totalUsd ?? 0), new Prisma.Decimal(0));
   const sumTzs = fx ? ready.reduce((sum, r) => sum + r.totalTzs, 0) : null;
   return {

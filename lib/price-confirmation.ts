@@ -54,6 +54,30 @@ export function carriesAgreedRate(invoice: {
 }
 
 /**
+ * DAR SIGNS THE COUNT OFF BEFORE ANYBODY IS ASKED FOR MONEY.
+ *
+ * Receiving and verifying are two acts on the Dar floor: boxes come off a
+ * container in a rush and are checked properly afterwards. A receiving row
+ * means the counting has started, not that it is finished, and a bill issued
+ * against a figure the floor is still correcting is a bill that has to be
+ * withdrawn.
+ *
+ * So the same signature the release engine waits for is the one Finance waits
+ * for. It also carries the discrepancy rule for free: a count Dar could not
+ * make agree cannot be verified until the case is closed, so a short or damaged
+ * consignment is never quietly billed as if it had all arrived.
+ */
+export function darConfirmationGap(cargo: {
+  darReceiving: { verified: boolean; discrepancy: boolean } | null;
+}): string | null {
+  if (!cargo.darReceiving) return "Dar has not counted this cargo yet.";
+  if (cargo.darReceiving.verified) return null;
+  return cargo.darReceiving.discrepancy
+    ? "Dar has an open difference on this count. It is priced once the case is closed."
+    : "Dar has not confirmed the count yet.";
+}
+
+/**
  * Raise this consignment's draft from the rate book, or bring an existing
  * draft back into line with it.
  *
@@ -252,6 +276,27 @@ export async function confirmCargoPrice(
   cargoId: string,
   ctx: ConfirmContext
 ): Promise<ConfirmOutcome> {
+  /* The floor's signature, read before anything is priced. Blocking here rather
+     than filtering the list earlier is deliberate: the row stays on Finance's
+     screen with its figure on it, named as waiting on Dar, instead of vanishing
+     and leaving nobody able to say why the container will not confirm. */
+  const counted = await client.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    select: {
+      reference: true,
+      darReceiving: { select: { verified: true, discrepancy: true } },
+    },
+  });
+  if (!counted) return { kind: "skipped", reference: null };
+  const gap = darConfirmationGap(counted);
+  if (gap) {
+    /* Nothing counted at all is not Finance's problem to be told about twice —
+       the list never offered it. An unconfirmed count is, and is named. */
+    return counted.darReceiving
+      ? { kind: "blocked", reference: counted.reference, reason: gap }
+      : { kind: "skipped", reference: counted.reference };
+  }
+
   const priced = await priceWaitingCargo(client, actor, cargoId, {
     reason: "Re-priced from the rate book on confirmation",
     keepAgreedRate: true,

@@ -18,6 +18,7 @@ import {
   companySettings,
   currentExchangeRate,
 } from "@/lib/pricing";
+import { darConfirmationGap } from "@/lib/price-confirmation";
 import { can } from "@/lib/rbac";
 import { authorize } from "@/lib/session";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
@@ -308,12 +309,25 @@ export async function issueInvoice(
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    include: { cargo: { select: { reference: true, senderId: true } } },
+    include: {
+      cargo: {
+        select: {
+          reference: true,
+          senderId: true,
+          darReceiving: { select: { verified: true, discrepancy: true } },
+        },
+      },
+    },
   });
   if (!invoice) return { error: "That invoice no longer exists." };
   if (invoice.status !== "DRAFT") {
     return { error: "That invoice has already been issued." };
   }
+  /* The same signature the price list waits for. A draft may be raised and
+     corrected while the floor is still counting; asking the customer for the
+     money may not, or the figure moves under a bill they are holding. */
+  const gap = darConfirmationGap(invoice.cargo);
+  if (gap) return { error: `${invoice.cargo.reference}: ${gap}` };
 
   const dueAt = new Date();
   dueAt.setDate(dueAt.getDate() + (Number.isFinite(dueDays) ? dueDays : 7));
