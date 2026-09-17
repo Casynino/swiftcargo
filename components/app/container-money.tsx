@@ -96,7 +96,7 @@ export async function ContainerMoney({
               _count: { select: { photos: true } },
               invoices: {
                 where: { status: { not: "CANCELLED" } },
-                include: { payments: true },
+                include: { payments: true, items: true },
                 orderBy: { createdAt: "desc" },
               },
             },
@@ -212,6 +212,9 @@ export async function ContainerMoney({
   const mayTellCustomers =
     can(user.role, "conversation.reply") || can(user.role, "payment.submit");
   const mayTakePayment = can(user.role, "payment.record");
+  /* Moving a figure the customer has already been given. Finance's, and the
+     counter's, which is where the conversation about it happens. */
+  const mayMovePricedBill = can(user.role, "invoice.discount");
   const [locale, correction, priceList, cargoTypes] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
@@ -375,11 +378,51 @@ export async function ContainerMoney({
       conditionLabel: c.darReceiving
         ? (CONDITION_LABEL[c.darReceiving.condition] ?? null)
         : null,
-      /* Only what is still waiting can be re-priced here. A bill the customer
-         is holding is changed on the bill, with a reason. */
+      /*
+        THE PRICE STAYS CORRECTABLE UNTIL MONEY LANDS.
+
+        A bill that has gone out is still Finance's to correct, with a reason,
+        on the row it is being read on — the air side keeps the same door open
+        and closes it the moment a payment is recorded, because a total that
+        moves under a receipt leaves the receipt describing a bill that no
+        longer exists. From then on it is a discount or a credit note.
+      */
       edit: (() => {
+        const bill = r.live[0];
+        if (bill) {
+          if (!mayMovePricedBill) return null;
+          /* Verified money, matching the server: an unverified claim must not
+             freeze a bill nobody has been paid for yet. */
+          const anyMoney = bill.payments.some((pay) => pay.status === "VERIFIED");
+          if (anyMoney) return null;
+          const freight = bill.items
+            .filter((i) => i.category === "Freight")
+            .reduce((sum, i) => sum + Number(i.amount), 0);
+          const extra = bill.items
+            .filter((i) => i.category === "Charge")
+            .reduce((sum, i) => sum + Number(i.amount), 0);
+          const off = bill.items
+            .filter((i) => i.category === "Discount")
+            .reduce((sum, i) => sum - Number(i.amount), 0);
+          const agreed =
+            bill.appliedRate !== null &&
+            (bill.standardRate === null || !bill.appliedRate.equals(bill.standardRate));
+          return {
+            standardRate: bill.standardRate === null ? null : Number(bill.standardRate),
+            agreedRate: agreed ? Number(bill.appliedRate) : null,
+            /* The bill carries one basis; the book's own is what the waiting
+               list worked out, where the consignment is still on it. */
+            bookBasis: waiting.get(c.id)?.bookBasis ?? bill.rateBasis,
+            basis: bill.rateBasis,
+            cbm: bill.billableCbm === null ? null : Number(bill.billableCbm),
+            weightKg: bill.billableKg === null ? null : Number(bill.billableKg),
+            freight,
+            extra,
+            discount: off,
+          };
+        }
         const w = waiting.get(c.id);
-        if (!w || r.live.length > 0) return null;
+        if (!w || !mayConfirm) return null;
         return {
           standardRate: w.standardRate === null ? null : Number(w.standardRate),
           agreedRate: w.agreed && w.rate !== null ? Number(w.rate) : null,

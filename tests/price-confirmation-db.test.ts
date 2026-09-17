@@ -419,7 +419,7 @@ describe("the price for one cargo, set from the row", () => {
     });
   });
 
-  test("a bill that has gone out is not reached from the price list", async () => {
+  test("a bill that has gone out still corrects, at its own pinned rate", async () => {
     await inRollback(async (tx) => {
       await rateBook(tx);
       const me = await actor(tx);
@@ -428,11 +428,125 @@ describe("the price for one cargo, set from the row", () => {
       await lib.setWaitingPrice(tx, me, {
         cargoId: cargo.id,
         basis: "PER_CBM",
-        rate: new Prisma.Decimal(350),
+        rate: null,
         freight: null,
         extra: null,
         discount: null,
-        reason: "Agreed",
+        reason: "From the book",
+      });
+      await tx.invoice.updateMany({
+        where: { cargoId: cargo.id },
+        data: {
+          status: "ISSUED",
+          issuedAt: new Date(),
+          fxRate: new Prisma.Decimal(2700),
+          totalTzs: new Prisma.Decimal(1_080_000),
+        },
+      });
+
+      const before = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      const corrected = await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: new Prisma.Decimal(350),
+        freight: null,
+        extra: null,
+        discount: new Prisma.Decimal(50),
+        reason: "Agreed with the customer after the bill went out",
+      });
+      assert.equal(corrected.issued, true);
+      assert.equal(corrected.total.toString(), (await withVat(tx, "300")).toString());
+
+      const after = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      assert.equal(after.status, "ISSUED", "it is still the same bill");
+      assert.equal(after.appliedRate?.toString(), "350");
+      assert.equal(
+        after.fxRate?.toString(),
+        "2700",
+        "the rate it was agreed at is never re-read"
+      );
+      assert.equal(
+        after.totalTzs?.toString(),
+        corrected.total.mul(2700).toString(),
+        "the shillings are re-struck at that same pinned rate"
+      );
+      assert.ok(
+        await tx.fieldChange.count({
+          where: { entityId: after.id, field: "total", newValue: after.total.toString() },
+        }),
+        "the old total is on the record"
+      );
+      assert.notEqual(before.total.toString(), after.total.toString());
+    });
+  });
+
+  test("money on the bill closes the door", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo, customer } = await darCargo(tx, "ROW6", {
+        cargoType: "TEST Shoes",
+        cbm: "1",
+      });
+
+      await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: null,
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "From the book",
+      });
+      const invoice = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { status: "ISSUED", issuedAt: new Date() },
+      });
+      await tx.payment.create({
+        data: {
+          reference: `TEST-PAY-${cargo.id.slice(-6)}`,
+          invoiceId: invoice.id,
+          customerId: customer.id,
+          amount: new Prisma.Decimal(100),
+          currency: "USD",
+          method: "CASH",
+          status: "VERIFIED",
+        },
+      });
+
+      await assert.rejects(
+        () =>
+          lib.setWaitingPrice(tx, me, {
+            cargoId: cargo.id,
+            basis: "PER_CBM",
+            rate: new Prisma.Decimal(100),
+            freight: null,
+            extra: null,
+            discount: null,
+            reason: "Second thoughts",
+          }),
+        (error: unknown) =>
+          error instanceof lib.PriceListRefused &&
+          /Money has already been taken/.test(error.message)
+      );
+    });
+  });
+
+  test("an issued bill will not move without a reason", async () => {
+    await inRollback(async (tx) => {
+      await rateBook(tx);
+      const me = await actor(tx);
+      const { cargo } = await darCargo(tx, "ROW7", { cargoType: "TEST Shoes", cbm: "1" });
+
+      await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: null,
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "From the book",
       });
       await tx.invoice.updateMany({
         where: { cargoId: cargo.id },
@@ -448,9 +562,10 @@ describe("the price for one cargo, set from the row", () => {
             freight: null,
             extra: null,
             discount: null,
-            reason: "Second thoughts",
+            reason: "",
           }),
-        (error: unknown) => error instanceof lib.PriceListRefused
+        (error: unknown) =>
+          error instanceof lib.PriceListRefused && /Say why/.test(error.message)
       );
     });
   });

@@ -519,8 +519,11 @@ export async function setWaitingPrice(
   client: TxClient,
   actor: Actor,
   input: WaitingPriceInput
-): Promise<{ invoiceNumber: string; total: Prisma.Decimal }> {
-  const reason = input.reason?.trim() || "Price agreed on the price list";
+): Promise<{ invoiceNumber: string; total: Prisma.Decimal; issued: boolean }> {
+  /* What the desk actually typed, kept apart from the default: a draft may be
+     re-priced without a sentence, a bill the customer is holding may not. */
+  const given = input.reason?.trim() ?? "";
+  const reason = given || "Price agreed on the price list";
 
   const release = await client.release.findFirst({
     where: { cargoId: input.cargoId },
@@ -533,6 +536,31 @@ export async function setWaitingPrice(
   }
   if (input.freight !== null && input.freight.lessThan(0)) {
     throw new PriceListRefused("A freight total cannot be below zero.");
+  }
+
+  /*
+    A BILL THAT HAS GONE OUT IS STILL FINANCE'S TO CORRECT.
+
+    The rule is that an issued figure does not move by itself — no measurement,
+    no re-count and no rate-book change reaches it. What does reach it is a
+    person, with a reason, and that is this door: the same dialog on the same
+    row, because making somebody find the bill on another screen to change a
+    figure they are looking at is how the wrong bill gets edited.
+
+    It stops the moment money lands. A total that moves under a payment leaves
+    a receipt describing a bill that no longer exists, and there is no honest
+    way back from that — from then on it is a discount or a credit note.
+  */
+  const issuedBill = await client.invoice.findFirst({
+    where: {
+      cargoId: input.cargoId,
+      status: { notIn: ["DRAFT", "CANCELLED"] },
+    },
+    include: { payments: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (issuedBill) {
+    return repriceIssuedBill(client, actor, issuedBill, input, given);
   }
 
   /* Both boxes empty is the request to go back to the book, and that is the
@@ -802,7 +830,245 @@ export async function setWaitingPrice(
     client
   );
 
-  return { invoiceNumber: invoice.number, total };
+  return { invoiceNumber: invoice.number, total, issued: false };
+}
+
+/**
+ * THE SAME FOUR FIGURES, ON A BILL THE CUSTOMER IS ALREADY HOLDING.
+ *
+ * Deliberately narrower than the draft path in three ways, and identical in
+ * every other:
+ *
+ *  - It refuses once any money has been taken. A receipt names a total.
+ *  - It never re-reads a measurement. "Both boxes empty" on a draft means
+ *    "price it from the rate book again", which re-derives the volume; here it
+ *    means "back to the rate this bill itself recorded as the book's", because
+ *    an issued bill is never moved by a measurement.
+ *  - It never touches the exchange rate or the collection accounts. The
+ *    shilling figure is re-struck at the rate PINNED on the bill, not today's,
+ *    so a correction of two dollars does not quietly restate the whole total
+ *    at a rate the customer was never quoted.
+ */
+async function repriceIssuedBill(
+  client: TxClient,
+  actor: Actor,
+  invoice: Prisma.InvoiceGetPayload<{ include: { payments: true } }>,
+  input: WaitingPriceInput,
+  reason: string
+): Promise<{ invoiceNumber: string; total: Prisma.Decimal; issued: boolean }> {
+  if (reason.length < 3) {
+    throw new PriceListRefused(
+      "Say why this bill is changing — the customer has already been given it."
+    );
+  }
+  /* VERIFIED money only. A PENDING claim is somebody SAYING money moved and
+     nobody having checked; refusing on it would leave a bill frozen by an
+     unverified sentence, which is the opposite of what verification is for.
+     The claim is still matched against the bill when it is verified, and an
+     overpayment is shown as one. */
+  const taken = invoice.payments.filter((p) => p.status === "VERIFIED");
+  if (taken.length > 0) {
+    throw new PriceListRefused(
+      `Money has already been taken against ${invoice.number}. Correct it with a discount or a credit note.`
+    );
+  }
+
+  const items = await client.invoiceItem.findMany({ where: { invoiceId: invoice.id } });
+  const freightItems = items.filter((i) => i.category === "Freight");
+  let appliedRate = invoice.appliedRate;
+  let rateBasis = invoice.rateBasis;
+  let billableCbm = invoice.billableCbm;
+  let billableKg = invoice.billableKg;
+
+  if (input.rate !== null) {
+    const unit = FREIGHT_UNIT[input.basis];
+    const sameUnit =
+      freightItems.length > 0 && freightItems.every((i) => i.unit === unit);
+    const quantity = sameUnit
+      ? freightItems.reduce((sum, i) => sum.add(i.quantity), new Prisma.Decimal(0))
+      : /* The bill's own billable figure, never a fresh measurement. */
+        (input.basis === "PER_CBM" ? invoice.billableCbm : invoice.billableKg);
+    if (!quantity || quantity.lessThanOrEqualTo(0)) {
+      throw new PriceListRefused(
+        input.basis === "PER_CBM"
+          ? `${invoice.number} carries no volume to charge per cubic metre. Type the freight instead.`
+          : `${invoice.number} carries no weight to charge per kilo. Type the freight instead.`
+      );
+    }
+    if (sameUnit) {
+      for (const item of freightItems) {
+        await client.invoiceItem.update({
+          where: { id: item.id },
+          data: {
+            unitPrice: input.rate,
+            amount: item.quantity.mul(input.rate).toDecimalPlaces(2),
+          },
+        });
+      }
+    } else {
+      await client.invoiceItem.deleteMany({
+        where: { id: { in: freightItems.map((i) => i.id) } },
+      });
+      await client.invoiceItem.create({
+        data: {
+          invoiceId: invoice.id,
+          description: `Sea freight — re-priced ${unit === "kg" ? "per kg" : "per CBM"}`,
+          quantity,
+          unit,
+          unitPrice: input.rate,
+          amount: quantity.mul(input.rate).toDecimalPlaces(2),
+          category: "Freight",
+          taxable: true,
+        },
+      });
+    }
+    appliedRate = input.rate;
+    rateBasis = input.basis;
+    billableCbm = input.basis === "PER_CBM" ? quantity : null;
+    billableKg = input.basis === "PER_KG" ? quantity : null;
+  } else if (input.freight !== null) {
+    await client.invoiceItem.deleteMany({
+      where: { id: { in: freightItems.map((i) => i.id) } },
+    });
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: "Sea freight — agreed for this consignment",
+        quantity: new Prisma.Decimal(1),
+        unit: "consignment",
+        unitPrice: input.freight,
+        amount: input.freight,
+        category: "Freight",
+        taxable: true,
+      },
+    });
+    appliedRate = null;
+    rateBasis = "FLAT";
+    billableCbm = null;
+    billableKg = null;
+  } else {
+    /* Back to the book, as the bill itself recorded the book — not as the rate
+       book reads today, and not on a volume re-measured since. */
+    if (!invoice.standardRate) {
+      throw new PriceListRefused(
+        `${invoice.number} does not carry the rate book's own figure, so there is nothing to go back to. Type the rate or the freight.`
+      );
+    }
+    for (const item of freightItems) {
+      await client.invoiceItem.update({
+        where: { id: item.id },
+        data: {
+          unitPrice: invoice.standardRate,
+          amount: item.quantity.mul(invoice.standardRate).toDecimalPlaces(2),
+        },
+      });
+    }
+    appliedRate = invoice.standardRate;
+  }
+
+  const extras = items.filter((i) => i.category === "Charge");
+  if (extras.length > 0) {
+    await client.invoiceItem.deleteMany({ where: { id: { in: extras.map((i) => i.id) } } });
+  }
+  if (input.extra && input.extra.greaterThan(0)) {
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: `Additional charge — ${reason}`,
+        quantity: new Prisma.Decimal(1),
+        unit: null,
+        unitPrice: input.extra,
+        amount: input.extra,
+        category: "Charge",
+        taxable: true,
+      },
+    });
+  }
+
+  const offs = items.filter((i) => i.category === "Discount");
+  if (offs.length > 0) {
+    await client.invoiceItem.deleteMany({ where: { id: { in: offs.map((i) => i.id) } } });
+  }
+  const off = input.discount && input.discount.greaterThan(0) ? input.discount : null;
+  if (off) {
+    await client.invoiceItem.create({
+      data: {
+        invoiceId: invoice.id,
+        description: `Discount — ${reason}`,
+        quantity: new Prisma.Decimal(1),
+        unit: null,
+        unitPrice: off.negated(),
+        amount: off.negated(),
+        category: "Discount",
+        taxable: true,
+      },
+    });
+  }
+
+  const now = await client.invoiceItem.findMany({ where: { invoiceId: invoice.id } });
+  const subtotal = now.reduce((sum, i) => sum.add(i.amount), new Prisma.Decimal(0));
+  if (subtotal.lessThan(0)) {
+    throw new PriceListRefused("That takes the bill below nothing. Lower the discount.");
+  }
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+
+  for (const [field, before, after] of [
+    ["appliedRate", invoice.appliedRate?.toString() ?? "from the rate book", appliedRate?.toString() ?? "typed as a total"],
+    ["total", invoice.total.toString(), total.toString()],
+  ] as const) {
+    if (before === after) continue;
+    await recordFieldChange(
+      { actor, entity: "Invoice", entityId: invoice.id, field, oldValue: before, newValue: after, reason },
+      client
+    );
+  }
+
+  /* Conditional on the bill still standing exactly as it was read: a payment
+     verified or a cancellation in the same second must win. */
+  const claim = await client.invoice.updateMany({
+    where: { id: invoice.id, status: invoice.status, total: invoice.total },
+    data: {
+      appliedRate,
+      rateBasis,
+      billableCbm,
+      billableKg,
+      discount: off ?? new Prisma.Decimal(0),
+      subtotal,
+      vatAmount,
+      total,
+      /* The rate this bill was agreed at, never today's. */
+      totalTzs: invoice.fxRate ? usdToTzs(total, invoice.fxRate) : invoice.totalTzs,
+    },
+  });
+  if (claim.count === 0) {
+    throw new PriceListRefused(`${invoice.number} changed a moment ago. Open it again.`);
+  }
+
+  await recordAudit(
+    {
+      actor,
+      action: "invoice.reprice",
+      entity: "Invoice",
+      entityId: invoice.id,
+      summary: `Re-priced issued ${invoice.number} from ${invoice.currency} ${invoice.total} to ${invoice.currency} ${total}: ${reason}`,
+      metadata: {
+        from: invoice.total.toString(),
+        to: total.toString(),
+        oldRate: invoice.appliedRate?.toString() ?? null,
+        rate: appliedRate?.toString() ?? null,
+        basis: rateBasis,
+        extra: input.extra?.toString() ?? null,
+        discount: off?.toString() ?? null,
+        /* Untouched, and said so: the bill keeps the rate and the accounts it
+           was issued with. */
+        fxRate: invoice.fxRate?.toString() ?? null,
+        reason,
+      },
+    },
+    client
+  );
+
+  return { invoiceNumber: invoice.number, total, issued: true };
 }
 
 /**

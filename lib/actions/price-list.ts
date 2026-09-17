@@ -13,6 +13,7 @@ import {
   setWaitingRate,
 } from "@/lib/price-confirmation";
 import { WAITING_ON_CONTAINER } from "@/lib/price-list";
+import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/session";
 import { UNSAILED_TO_PRICE } from "@/lib/unsailed-pricing";
@@ -211,6 +212,21 @@ export async function savePriceListPrice(
   const actor = await authorize("invoice.priceConfirm");
 
   const cargoId = String(formData.get("cargoId") ?? "");
+  /*
+    A BILL THE CUSTOMER IS HOLDING IS A SECOND AUTHORITY.
+
+    Confirming a price turns the rate book's figure into a demand for money.
+    Changing one afterwards is a different act — it is moving a figure somebody
+    has already been given — and it is Finance's, held as `invoice.discount`.
+    Asked here rather than inside the transaction so the refusal is the plain
+    one the permission system writes.
+  */
+  const billed = await prisma.invoice.findFirst({
+    where: { cargoId, status: { notIn: ["DRAFT", "CANCELLED"] } },
+    select: { id: true },
+  });
+  if (billed) await authorize("invoice.discount");
+
   const basisRaw = String(formData.get("basis") ?? "PER_CBM");
   const basis: RateBasis = basisRaw === "PER_KG" ? "PER_KG" : "PER_CBM";
   const reason = String(formData.get("reason") ?? "");
@@ -229,6 +245,8 @@ export async function savePriceListPrice(
       (tx) => setWaitingPrice(tx, actor, input),
       { timeout: 20_000 }
     );
+    /* A bill a discount has settled is not left reading ISSUED. */
+    if (result.issued) await refreshInvoiceStatus(billed!.id);
     const line = await prisma.containerCargo.findFirst({
       where: { cargoId },
       orderBy: { createdAt: "desc" },

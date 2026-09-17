@@ -437,7 +437,15 @@ function CargoTableRow({
           </span>
         </TableCell>
         <TableCell className="max-w-[16rem] text-sm text-muted-foreground">
-          {canConfirm && !row.typeMixed && row.edit && cargoTypes.length > 0 ? (
+          {/* The type is what the goods ARE, and it re-prices from the rate
+              book — which is a thing to do to a draft, not to a bill somebody
+              is holding. Once a bill has gone out the type is corrected on the
+              consignment, and the price on the bill. */}
+          {canConfirm &&
+          !row.typeMixed &&
+          row.edit &&
+          !row.invoiceId &&
+          cargoTypes.length > 0 ? (
             <CargoTypeCell
               cargoId={row.id}
               reference={row.reference}
@@ -480,7 +488,7 @@ function CargoTableRow({
                 iconOnly
               />
             ) : null}
-            {canConfirm && row.edit ? (
+            {row.edit ? (
               <RowPriceEditor
                 cargoId={row.id}
                 reference={row.reference}
