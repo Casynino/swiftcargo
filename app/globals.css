@@ -324,67 +324,296 @@
 }
 
 /**
- * THE SEA LANE ON THE TRACKING PAGE.
+ * THE SEA ON THE TRACKING PAGE.
  *
- * See components/site/sea-lane.tsx. Everything here is transform, opacity or
- * stroke-dashoffset — all three run on the compositor, so the chart costs a
- * phone nothing to keep on screen while somebody types a reference.
+ * See components/site/sea-scene.tsx. Everything here is a transform or an
+ * opacity — both run on the compositor, so the scene costs a phone nothing to
+ * keep on screen while somebody types a reference.
  *
  * Nothing in here is fast. The slowest thing on the page is a container ship
- * that takes a month to cross, and the motion is pitched to say that.
+ * that takes a month to cross, and the motion is pitched to say that. The
+ * periods are deliberately not multiples of each other: swell that repeats on
+ * the beat stops being swell and becomes a carousel.
  */
-@keyframes sea-drift {
+
+/* The water passes her. The band is drawn twice end to end and slides by
+   exactly one copy, so the loop has no seam to see. */
+@keyframes ss-scroll {
+  from {
+    transform: translateX(-1200px);
+  }
   to {
-    stroke-dashoffset: -24;
+    transform: translateX(0);
   }
 }
 
-@keyframes sea-ping {
-  0% {
-    transform: scale(0.65);
-    opacity: 0.85;
-  }
-  70%,
+@keyframes ss-heave {
+  0%,
   100% {
-    transform: scale(2.7);
-    opacity: 0;
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
   }
 }
 
-/* The dashes crawl towards Dar, which is the direction the cargo is going. */
-.sea-lane-dash {
-  stroke-dasharray: 3 9;
-  animation: sea-drift 3.6s linear infinite;
+@keyframes ss-pitch {
+  0%,
+  100% {
+    transform: rotate(-0.55deg);
+  }
+  50% {
+    transform: rotate(0.7deg);
+  }
 }
 
-/* transform-box keeps the ping centred on its own circle rather than on the
-   viewBox origin, which is where an SVG transform lands by default. */
-.sea-ping {
+@keyframes ss-surge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes ss-foam {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes ss-wash {
+  to {
+    stroke-dashoffset: -72;
+  }
+}
+
+@keyframes ss-glint {
+  0%,
+  100% {
+    opacity: calc(var(--glint, 0.4) * 0.25);
+  }
+  50% {
+    opacity: var(--glint, 0.4);
+  }
+}
+
+@keyframes ss-mastlight {
+  0%,
+  46% {
+    opacity: 0.25;
+  }
+  50%,
+  96% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes ss-haze {
+  from {
+    transform: translate3d(-3%, 0, 0);
+  }
+  to {
+    transform: translate3d(3%, 0, 0);
+  }
+}
+
+.ss-band {
+  animation: ss-scroll linear infinite;
+}
+
+/* transform-box keeps the roll centred on the ship's own box rather than on the
+   viewBox origin, which is where an SVG transform lands by default. The pivot
+   sits near the waterline amidships, where a hull actually turns. */
+.ss-pitch {
   transform-box: fill-box;
-  transform-origin: center;
-  animation: sea-ping 3.8s ease-out infinite;
+  transform-origin: 56% 88%;
+  animation: ss-pitch 13s ease-in-out infinite;
 }
 
-/* SMIL cannot read a media query, so the moving ships and the still ones are
-   both in the document and CSS chooses. `visibility` rather than `display`:
-   an animation in a display:none subtree is not reliably ticked, and the still
-   ships are placed by a frozen animateMotion — hide them that way and they can
-   appear at the top-left corner of the chart instead of on the lane. */
-.sea-ships-still {
-  visibility: hidden;
+.ss-heave {
+  animation: ss-heave 9.5s ease-in-out infinite;
 }
 
+.ss-surge {
+  animation: ss-surge 19s ease-in-out infinite;
+}
+
+.ss-foam {
+  animation: ss-foam 6.5s ease-in-out infinite;
+}
+
+.ss-wash {
+  animation: ss-wash 9s linear infinite;
+}
+
+.ss-glint {
+  opacity: calc(var(--glint, 0.4) * 0.6);
+  animation: ss-glint ease-in-out infinite;
+}
+
+.ss-mastlight {
+  animation: ss-mastlight 4.6s steps(1, end) infinite;
+}
+
+.ss-haze-a {
+  animation: ss-haze 96s ease-in-out infinite alternate;
+}
+
+.ss-haze-b {
+  animation: ss-haze 152s ease-in-out infinite alternate-reverse;
+}
+
+.ss-haze-c {
+  animation: ss-haze 210s ease-in-out infinite alternate;
+}
+
+.ss-rays {
+  animation: ss-breathe 17s ease-in-out infinite;
+}
+
+@keyframes ss-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* A camera that settles as the page moves under it. Scroll-driven, so there is
+   no listener and no frame budget: a browser without it simply holds still. */
+@supports (animation-timeline: scroll()) {
+  .ss-parallax {
+    animation: ss-sink linear both;
+    animation-timeline: scroll();
+    animation-range: 0 70vh;
+  }
+}
+
+@keyframes ss-sink {
+  to {
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
+/* Fractal noise, generated once by the browser. Without it the gradients band
+   on a cheap panel and the whole scene looks rendered rather than photographed. */
+.ss-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+
+/* A reader who has asked their phone to hold still gets a photograph: the ship
+   parked on a flat sea, every light on, nothing moving. */
 @media (prefers-reduced-motion: reduce) {
-  .sea-lane-dash,
-  .sea-ping {
+  .ss-band,
+  .ss-pitch,
+  .ss-heave,
+  .ss-surge,
+  .ss-foam,
+  .ss-wash,
+  .ss-mastlight,
+  .ss-haze-a,
+  .ss-haze-b,
+  .ss-haze-c,
+  .ss-rays,
+  .ss-parallax {
     animation: none;
   }
 
-  .sea-ships-moving {
-    visibility: hidden;
+  .ss-glint {
+    animation: none;
+    opacity: calc(var(--glint, 0.4) * 0.7);
   }
+}
 
-  .sea-ships-still {
-    visibility: visible;
+/**
+ * THE SEARCH, AND THE WORDS OVER THE WATER.
+ *
+ * The hero is the same ink panel in both themes, so everything here is fixed
+ * rather than tokenised: contrast that is checked once stays checked.
+ */
+
+/* The heading. A gradient that only just leaves white — enough to give the
+   letters a light source, not enough to cost them contrast. */
+.hero-display {
+  background-image: linear-gradient(180deg, #ffffff 0%, #eaf6ff 46%, #b9dcf2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* One control, at every width: the shell is the field, and the button lives
+   inside it. Glass over moving water needs the inner highlight — without it the
+   panel reads as a grey rectangle sitting on the picture. */
+.track-shell {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
+    0 24px 50px -24px rgba(0, 10, 20, 0.9);
+  backdrop-filter: saturate(150%) blur(14px);
+  transition:
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.track-shell:focus-within {
+  border-color: rgba(79, 201, 240, 0.6);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+    0 0 0 3px rgba(41, 182, 232, 0.22),
+    0 24px 50px -24px rgba(0, 10, 20, 0.9);
+}
+
+/* The button. A gradient rather than a flat fill, a millimetre of lift under
+   the cursor, and the lift taken away again on press — the whole of what makes
+   a control feel like a control. */
+.track-go {
+  background-image: linear-gradient(180deg, #ff9455 0%, #f4611f 52%, #dc4e12 100%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+    0 10px 22px -10px rgba(244, 97, 31, 0.75);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.track-go:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(112%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.34),
+    0 16px 30px -12px rgba(244, 97, 31, 0.8);
+}
+
+.track-go:active:not(:disabled) {
+  transform: translateY(0.5px);
+  box-shadow:
+    inset 0 2px 5px 0 rgba(88, 26, 0, 0.35),
+    0 6px 14px -8px rgba(244, 97, 31, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track-go,
+  .track-go:hover:not(:disabled),
+  .track-go:active:not(:disabled) {
+    transform: none;
   }
+}
+
+/* The telemetry line under the search: hairlines and tracked caps, the register
+   a bridge display is written in. */
+.hero-rule {
+  background-image: linear-gradient(to right, rgba(79, 201, 240, 0.55), rgba(79, 201, 240, 0));
 }

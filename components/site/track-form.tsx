@@ -53,15 +53,22 @@ export function TrackForm({
         if (!clean || pending) return;
         startTransition(() => router.push(`/track/${encodeURIComponent(clean)}`));
       }}
-      className={cn("flex gap-2", pill && "flex-col gap-2.5 sm:flex-row")}
+      /* One control rather than two. The shell carries the border, the glass
+         and the focus ring; the field and the button live inside it, so at
+         every width — stacked on a phone, side by side from `sm` — this still
+         reads as a single thing to press rather than a form. */
+      className={cn(
+        "flex gap-2",
+        pill && "track-shell flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center"
+      )}
     >
       <div className={cn("relative min-w-0 flex-1", !pill && "contents")}>
         {pill ? (
           <PackageSearch
             aria-hidden
             className={cn(
-              "pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2",
-              dark ? "text-white/40" : "text-muted-foreground"
+              "pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2",
+              dark ? "text-white/45" : "text-muted-foreground"
             )}
           />
         ) : null}
@@ -77,10 +84,12 @@ export function TrackForm({
           required
           className={cn(
             "tnum h-11 min-w-0 flex-1",
+            /* The shell owns the focus ring. Two rings, one inside the other,
+               is the look of a component nobody finished. */
             pill &&
-              "h-14 w-full rounded-xl pl-12 text-base uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal",
-            dark &&
-              "border-white/20 bg-white/10 text-white placeholder:text-white/40"
+              "h-12 w-full rounded-xl border-0 bg-transparent pl-11 text-base uppercase tracking-wide shadow-none ring-offset-0 placeholder:normal-case placeholder:tracking-normal focus-visible:ring-0 focus-visible:ring-offset-0",
+            dark && "text-white placeholder:text-white/40",
+            dark && !pill && "border-white/20 bg-white/10"
           )}
         />
       </div>
@@ -90,7 +99,7 @@ export function TrackForm({
         variant={dark ? "accent" : "default"}
         disabled={pending}
         aria-label={t(locale, "Track")}
-        className={cn(pill && "h-14 rounded-xl px-8 text-base")}
+        className={cn(pill && "track-go h-12 w-full rounded-xl px-7 text-base sm:w-auto")}
       >
         {pending ? <Loader2 className="animate-spin" /> : <Search />}
         <span className={cn(pill ? "inline" : "hidden sm:inline")}>
