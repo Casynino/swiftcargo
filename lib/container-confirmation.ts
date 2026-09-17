@@ -132,7 +132,32 @@ export async function confirmContainerAtDar(
 ) {
   const { container } = input;
   const reason = input.overrideReason.trim();
+
+  /*
+    A BOX IS CONFIRMED WHERE IT WAS EMPTIED.
+
+    The dock only ever links a landed container, so this is not a button anybody
+    can reach — and a server action is a public endpoint whether or not a button
+    renders for it. Confirming one still being filled in Guangzhou would sign
+    off cargo nobody in Dar has stood in front of, and close a box that has not
+    sailed.
+  */
+  if (container.status !== "ARRIVED" && container.status !== "CLOSED") {
+    throw new ConfirmationRefused(
+      `${container.reference} has not been discharged yet. A container is confirmed once it has landed and been emptied.`
+    );
+  }
+
   const counts = tally(await linesOf(tx, container.id));
+
+  /* Nothing on the manifest is not a container that checked out clean — it is a
+     container nothing was ever loaded into, and saying "confirmed" about it puts
+     a sign-off in the history of an empty box. */
+  if (counts.expected.length === 0) {
+    throw new ConfirmationRefused(
+      `There is no cargo on ${container.reference} to confirm.`
+    );
+  }
 
   let overridden = false;
   if (counts.unchecked.length > 0) {

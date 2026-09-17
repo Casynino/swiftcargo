@@ -314,6 +314,47 @@ describe("confirming a container at Dar", () => {
     });
   });
 
+  test("a container still being filled in Guangzhou cannot be confirmed", async () => {
+    await inRollback(async (tx) => {
+      const container = await landedContainer(tx);
+      await tx.container.update({ where: { id: container.id }, data: { status: "LOADING" } });
+      await consignment(tx, container.id, "counted");
+
+      await assert.rejects(
+        async () =>
+          confirmLib.confirmContainerAtDar(tx, await actor(tx, "DAR_WAREHOUSE"), {
+            container: { ...container, status: "LOADING" },
+            overrideReason: "",
+            mayOverride: false,
+          }),
+        (error: Error) => {
+          assert.ok(error instanceof confirmLib.ConfirmationRefused);
+          assert.match(error.message, /not been discharged/i);
+          return true;
+        }
+      );
+    });
+  });
+
+  test("an empty box is not a container that checked out clean", async () => {
+    await inRollback(async (tx) => {
+      const container = await landedContainer(tx);
+      await assert.rejects(
+        async () =>
+          confirmLib.confirmContainerAtDar(tx, await actor(tx, "DAR_WAREHOUSE"), {
+            container,
+            overrideReason: "",
+            mayOverride: false,
+          }),
+        (error: Error) => {
+          assert.ok(error instanceof confirmLib.ConfirmationRefused);
+          assert.match(error.message, /no cargo/i);
+          return true;
+        }
+      );
+    });
+  });
+
   test("missing and damaged never block it", async () => {
     await inRollback(async (tx) => {
       const container = await landedContainer(tx);
