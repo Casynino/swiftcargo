@@ -86,14 +86,18 @@ export async function generateMetadata({
 
   The page publishes the bill and the counter photographs now, so walking the
   sequence is worth more than it was and the allowance is tighter for it: enough
-  for an office checking a handful of consignments for a customer on the
-  telephone, far too slow to read four thousand references. The short window on
-  top catches the shape a script has and a person does not — eight lookups in a
-  minute is somebody typing, forty is somebody counting.
+  for an office checking a customer's consignments over the telephone, far too
+  slow to read four thousand references. The short window on top catches the
+  shape a script has and a person does not — ten lookups in a minute is somebody
+  typing, sixty is somebody counting.
+
+  It is a floor and not a wall, and it is meant to be: see lib/rate-limit.ts,
+  where the counts live in one server's memory. Set too low it stops the owner
+  checking his own consignments before it stops anybody else.
 */
-const LOOKUPS_PER_WINDOW = 20;
+const LOOKUPS_PER_WINDOW = 30;
 const WINDOW_MS = 10 * 60 * 1000;
-const BURST = 8;
+const BURST = 10;
 const BURST_MS = 60 * 1000;
 
 /* The outline button carries no colour of its own, so on the ink field it
