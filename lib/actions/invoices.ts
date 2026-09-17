@@ -48,6 +48,9 @@ function issueSnapshot(
   };
 }
 
+/** A second bill for the same boxes, caught inside the lock. Never shown raw. */
+class DuplicateInvoice extends Error {}
+
 /** "TZS 36,450 (USD 13.50 at 1 USD = 2,700 TZS)" */
 function amountDueLine(totalUsd: Prisma.Decimal, rate: Prisma.Decimal) {
   return `${formatCurrency(usdToTzs(totalUsd, rate), "TZS")} (${formatCurrency(totalUsd, "USD")} at ${formatRate(rate)})`;
@@ -124,9 +127,20 @@ export async function generateInvoice(
   try {
     invoice = await prisma.$transaction(async (tx) => {
       /* Two people on the invoices screen pressing "Raise invoice" at the same
-         second both pass the check above. The unique constraint on the sailing is
-         what actually decides it, and the loser is told plainly rather than shown
-         a stack trace. */
+         second both pass the check above. On a sailing the unique constraint on
+         the container line decides it and the loser is told plainly rather than
+         shown a stack trace; a consignment with no sailing has no such line, so
+         the lock is what serialises them. */
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${cargo.id}, 0))`;
+      const again = await tx.invoice.findFirst({
+        where: {
+          cargoId: cargo.id,
+          status: { not: "CANCELLED" },
+          containerCargoId: line?.id ?? null,
+        },
+        select: { id: true },
+      });
+      if (again) throw new DuplicateInvoice();
       const number = await nextInvoiceNumber(tx);
       return tx.invoice.create({
         data: {
@@ -156,8 +170,8 @@ export async function generateInvoice(
     });
   } catch (error) {
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
+      error instanceof DuplicateInvoice ||
+      (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")
     ) {
       return {
         error:

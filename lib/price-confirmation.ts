@@ -54,6 +54,24 @@ export function carriesAgreedRate(invoice: {
 }
 
 /**
+ * ONE CONSIGNMENT IS PRICED BY ONE TRANSACTION AT A TIME.
+ *
+ * Everything below reads "has this cargo got a bill yet?" and then writes one.
+ * Two presses of Confirm landing in the same second both read "none" and both
+ * write, and the customer is handed two bills for one lot of boxes. A
+ * consignment on a sailing is caught by the unique constraint on its container
+ * line; one that reached Dar with no container has no line and no constraint,
+ * so nothing was stopping it.
+ *
+ * The lock is held to the end of the CALLER'S transaction and released when it
+ * commits or rolls back — never a session lock, which a pooled connection
+ * would hand to the next request still held.
+ */
+async function lockCargoForPricing(client: TxClient, cargoId: string) {
+  await client.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${cargoId}, 0))`;
+}
+
+/**
  * DAR SIGNS THE COUNT OFF BEFORE ANYBODY IS ASKED FOR MONEY.
  *
  * Receiving and verifying are two acts on the Dar floor: boxes come off a
@@ -94,6 +112,8 @@ export async function priceWaitingCargo(
   cargoId: string,
   options: { reason: string; keepAgreedRate: boolean }
 ): Promise<PriceOutcome> {
+  await lockCargoForPricing(client, cargoId);
+
   const cargo = await client.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },
     include: {
