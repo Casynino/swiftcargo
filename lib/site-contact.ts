@@ -39,14 +39,12 @@ export function whatsappLink(
   return `${base}?text=${encodeURIComponent(text)}`;
 }
 
-/** The openers, in one place so every entrance to the desk sounds the same. */
-export const WHATSAPP_OPENER = {
-  /** No reference to hand — the footer, the contact page. */
-  general: "Habari Swift Cargo! Mambo vipi? Naomba msaada kuhusu usafirishaji wa mzigo.",
-  /** Asking about one consignment. */
-  cargo: (reference: string) =>
-    `Habari Swift Cargo! Mambo vipi? Naomba msaada kuhusu mzigo ${reference}.`,
-  /** Sending the slip for a bill. */
-  paymentProof: (reference: string) =>
-    `Habari Swift Cargo! Mambo vipi? Nimelipia mzigo ${reference} — huu hapa uthibitisho wa malipo.`,
-} as const;
+/**
+ * The greeting every WhatsApp link opens with.
+ *
+ * The owner's own words, spacing and all. It was carrying the reference and a
+ * line about the payment slip until he read one on his phone: what he wants in
+ * the box is a greeting and nothing else, so the customer opens the chat, sends
+ * it, and says the rest themselves.
+ */
+export const WHATSAPP_OPENER = "Habari !! Mambo vipi ?";

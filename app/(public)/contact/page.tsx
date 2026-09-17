@@ -22,9 +22,8 @@ export default async function ContactPage() {
   const company = await prisma.companySetting.findUnique({
     where: { id: "singleton" },
   });
-  /* Opens with the greeting already written, so what reaches the desk is a
-     person asking about something rather than a bare "Hi". */
-  const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER.general);
+  /* Opens with the greeting already in the box — see lib/site-contact.ts. */
+  const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER);
 
   return (
     <div className="container max-w-5xl py-16">

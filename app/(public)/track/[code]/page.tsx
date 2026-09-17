@@ -239,17 +239,9 @@ export default async function TrackResultPage({
 function TrackingCard({ result }: { result: PublicTracking }) {
   const locale = DEFAULT_LOCALE;
   const { journey, charge, storage } = result;
-  /* Both links open WhatsApp with the message written: the customer presses
-     send once, and the desk reads the reference before it reads anything
-     else. See lib/site-contact.ts. */
-  const waProof = whatsappLink(
-    result.whatsapp,
-    WHATSAPP_OPENER.paymentProof(result.reference)
-  );
-  const waAbout = whatsappLink(
-    result.whatsapp,
-    WHATSAPP_OPENER.cargo(result.reference)
-  );
+  /* Opens with the greeting already in the box, so the customer presses send
+     once and says the rest in their own words. See lib/site-contact.ts. */
+  const wa = whatsappLink(result.whatsapp, WHATSAPP_OPENER);
   const settled = charge?.status === "PAID";
   const ready = journey.headline === "Ready for collection";
 
@@ -594,9 +586,9 @@ function TrackingCard({ result }: { result: PublicTracking }) {
                   {result.reference}
                 </span>{" "}
                 kama kumbukumbu ya malipo. Baada ya kulipa, tuma uthibitisho kwa{" "}
-                {waProof ? (
+                {wa ? (
                   <a
-                    href={waProof}
+                    href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-brand hover:underline"
@@ -663,9 +655,9 @@ function TrackingCard({ result }: { result: PublicTracking }) {
             : t(locale, "Loose cargo")}
           {result.vessel ? ` · ${result.vessel}` : ""}
         </span>
-        {waAbout ? (
+        {wa ? (
           <a
-            href={waAbout}
+            href={wa}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 font-medium text-foreground hover:text-brand"
