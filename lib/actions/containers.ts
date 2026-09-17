@@ -11,11 +11,12 @@ import { setCargoStatus, setCargoStatusBulk } from "@/lib/cargo";
 import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
 import {
   nextContainerReference,
+  nextExceptionReference,
   nextPackingListNumber,
   nextShipmentReference,
 } from "@/lib/ids";
-import { notifyCustomer } from "@/lib/notify";
-import { prisma } from "@/lib/prisma";
+import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
+import { prisma, type TxClient } from "@/lib/prisma";
 import { formMessage } from "@/lib/safe-error";
 import { authorize } from "@/lib/session";
 
@@ -836,6 +837,90 @@ const STILL_AT_SEA: CargoStatus[] = [
 ];
 
 /**
+ * A MANIFEST CORRECTION IS A DISCOVERY, AND SOMEBODY HAS TO ANSWER FOR IT.
+ *
+ * The two amendments below put the paper right, which is necessary and is not
+ * the whole job. A consignment that was listed and never came off is a customer
+ * whose goods are somewhere nobody has looked; a bale that came off and was on
+ * nobody's list is cargo about to be billed against a sailing the office has no
+ * record of it taking. Correcting the manifest and saying nothing left both of
+ * those as a line in an audit log that no queue reads, and the consignment went
+ * back to being Guangzhou's with nobody chasing it.
+ *
+ * So the correction opens a case, exactly as a short count or a wet carton
+ * does: cargo, customer and container named on it, the floor's own reason as
+ * its description, and Support, management and Guangzhou told. It does not stop
+ * the container — the rest of the box carries on being checked in — and it does
+ * not stop the pricing; it is the reason a person looks before the bill goes.
+ *
+ * One live case per consignment per kind. A bale moved twice in an afternoon is
+ * one argument, and two cases is two people each answering half of it.
+ */
+async function openManifestCase(
+  tx: TxClient,
+  actor: { id: string },
+  input: {
+    type: "WRONG_CONTAINER" | "UNIDENTIFIED_CARGO";
+    cargo: { id: string; reference: string; senderId: string };
+    containerId: string | null;
+    title: string;
+    description: string;
+    note: string;
+    body: string;
+  }
+) {
+  const open = await tx.exceptionCase.findFirst({
+    where: {
+      cargoId: input.cargo.id,
+      type: input.type,
+      status: { notIn: ["RESOLVED", "CLOSED"] },
+    },
+    select: { id: true, reference: true },
+  });
+  if (open) {
+    await tx.exceptionEvent.create({
+      data: { caseId: open.id, to: "OPEN", note: input.note, actorId: actor.id },
+    });
+    return open.reference;
+  }
+
+  const reference = await nextExceptionReference(tx);
+  const created = await tx.exceptionCase.create({
+    data: {
+      reference,
+      type: input.type,
+      priority: "NORMAL",
+      cargoId: input.cargo.id,
+      customerId: input.cargo.senderId,
+      containerId: input.containerId,
+      department: "DAR_WAREHOUSE",
+      title: input.title,
+      description: input.description,
+      raisedById: actor.id,
+    },
+    select: { id: true },
+  });
+  await tx.exceptionEvent.create({
+    data: { caseId: created.id, to: "OPEN", note: input.note, actorId: actor.id },
+  });
+  await notifyStaff(
+    [
+      ...(await staffInDepartment("CUSTOMER_SUPPORT", tx)),
+      ...(await staffInDepartment("MANAGEMENT", tx)),
+      ...(await staffInDepartment("CHINA_WAREHOUSE", tx)),
+    ],
+    {
+      kind: "exception.raised",
+      title: input.title,
+      body: input.body,
+      href: "/app/exceptions",
+    },
+    tx
+  );
+  return reference;
+}
+
+/**
  * A CONSIGNMENT THAT WAS ON THE MANIFEST AND NOT IN THE BOX.
  *
  * The packing list is written in Guangzhou and read in Dar, and the first
@@ -886,6 +971,7 @@ export async function takeOffArrivedContainer(
       id: true,
       reference: true,
       status: true,
+      senderId: true,
       darReceiving: { select: { id: true, containerId: true } },
       invoices: {
         where: { status: { notIn: ["CANCELLED"] } },
@@ -915,7 +1001,7 @@ export async function takeOffArrivedContainer(
     };
   }
 
-  await prisma.$transaction(async (tx) => {
+  const caseRef = await prisma.$transaction(async (tx) => {
     await recordFieldChange(
       {
         actor,
@@ -962,6 +1048,19 @@ export async function takeOffArrivedContainer(
         actorId: actor.id,
       },
     });
+
+    /* The boxes are now nowhere: off this sailing, and not on the Guangzhou
+       shelf in any sense anybody has checked. Somebody has to go and look, and
+       an audit line is not somebody. */
+    return openManifestCase(tx, actor, {
+      type: "WRONG_CONTAINER",
+      cargo,
+      containerId: container.id,
+      title: `${cargo.reference} was listed on ${container.reference} and did not come off it`,
+      description: reason,
+      note: `Taken off ${container.reference} at Dar: ${reason}`,
+      body: `${cargo.reference} was on the packing list for ${container.reference} and was not in the box.`,
+    });
   });
 
   await recordAudit({
@@ -970,14 +1069,17 @@ export async function takeOffArrivedContainer(
     entity: "Container",
     entityId: container.id,
     summary: `Took ${cargo.reference} off ${container.reference} after arrival — ${reason}`,
-    metadata: { cargoId: cargo.id, reference: cargo.reference, reason },
+    metadata: { cargoId: cargo.id, reference: cargo.reference, reason, caseRef },
   });
 
   revalidatePath(`/app/containers/${container.id}`);
   revalidatePath(`/app/receive/dar/${container.id}`);
   revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/exceptions");
   revalidatePath(`/app/cargo/${cargo.id}`);
-  return { ok: `${cargo.reference} is off ${container.reference} and back on the Guangzhou floor.` };
+  return {
+    ok: `${cargo.reference} is off ${container.reference} and back on the Guangzhou floor. Case ${caseRef} is open on where it is.`,
+  };
 }
 
 /**
@@ -1023,6 +1125,7 @@ export async function putOnArrivedContainer(
       id: true,
       reference: true,
       status: true,
+      senderId: true,
       chinaReceiving: { select: { packagesCount: true, cbm: true, weightKg: true } },
       darReceiving: {
         select: { id: true, containerId: true, packagesCount: true, cbm: true, weightKg: true },
@@ -1089,7 +1192,7 @@ export async function putOnArrivedContainer(
     : (measured?.packagesCount ?? 0);
   const was = cargo.containerLines[0]?.container.reference ?? null;
 
-  await prisma.$transaction(async (tx) => {
+  const caseRef = await prisma.$transaction(async (tx) => {
     await recordFieldChange(
       {
         actor,
@@ -1151,6 +1254,25 @@ export async function putOnArrivedContainer(
         actorId: actor.id,
       },
     });
+
+    /* Cargo the frozen packing list does not carry, about to be counted, priced
+       and billed against this sailing. The list itself is never rewritten — it
+       is what Guangzhou sealed — so the discovery lives beside it as a case,
+       and whoever confirms the price sees that somebody found this bale rather
+       than shipped it. */
+    return openManifestCase(tx, actor, {
+      type: was ? "WRONG_CONTAINER" : "UNIDENTIFIED_CARGO",
+      cargo,
+      containerId: container.id,
+      title: was
+        ? `${cargo.reference} came off ${container.reference}, not ${was}`
+        : `${cargo.reference} came off ${container.reference} and is on no packing list`,
+      description: reason,
+      note: `Added to ${container.reference} at Dar: ${reason}`,
+      body: was
+        ? `${cargo.reference} was listed on ${was} and came off ${container.reference}.`
+        : `${cargo.reference} came off ${container.reference} and the packing list does not carry it.`,
+    });
   });
 
   await recordAudit({
@@ -1159,12 +1281,15 @@ export async function putOnArrivedContainer(
     entity: "Container",
     entityId: container.id,
     summary: `Added ${cargo.reference} to ${container.reference} after arrival — ${reason}`,
-    metadata: { cargoId: cargo.id, reference: cargo.reference, was, reason },
+    metadata: { cargoId: cargo.id, reference: cargo.reference, was, reason, caseRef },
   });
 
   revalidatePath(`/app/containers/${container.id}`);
   revalidatePath(`/app/receive/dar/${container.id}`);
   revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/exceptions");
   revalidatePath(`/app/cargo/${cargo.id}`);
-  return { ok: `${cargo.reference} is on ${container.reference}. Check it in with the rest.` };
+  return {
+    ok: `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`,
+  };
 }
