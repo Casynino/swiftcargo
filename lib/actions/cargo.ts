@@ -7,6 +7,7 @@ import { Prisma, type MeasurementUnit, type PackageType } from "@prisma/client";
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
 import { calculateCbm } from "@/lib/cbm";
+import { readIntakeLines } from "@/lib/intake-lines";
 import { cargoTypeOptions, loadRateBook, valueWith } from "@/lib/valuation";
 import {
   generateQrToken,
@@ -673,6 +674,10 @@ const intakeSchema = z.object({
   shippingMark: z.string().trim().optional(),
 
   paperReceiptNo: z.string().trim().optional(),
+  /* Where on the floor it was put down. Not derivable — the building knows it
+     and the database cannot work it out — and it is the one question that makes
+     a consignment findable between receiving and loading. */
+  location: z.string().trim().max(60, "Keep the location short.").optional(),
   notes: z.string().trim().optional(),
   unit: z.enum(["CM", "M"]),
 });
@@ -685,78 +690,6 @@ function normalisePhone(raw: string) {
   return digits;
 }
 
-type IntakeLine = {
-  /** The carbon page this kind of goods was written on. */
-  paperReceiptNo: string | null;
-  description: string;
-  descriptionZh: string | null;
-  cargoType: string | null;
-  packageType: PackageType;
-  quantity: number;
-  pieces: number | null;
-  /** Typed straight in, the way the paper book records it. */
-  cbm: number | null;
-  length: number | null;
-  width: number | null;
-  height: number | null;
-  weightKg: number | null;
-};
-
-/**
- * Read the item rows off the form.
- *
- * Posted as parallel arrays rather than as JSON, so the form still works with
- * JavaScript disabled and a half-typed row cannot corrupt the whole payload.
- * A row with no description is somebody who added a line and changed their
- * mind; it is dropped rather than saved empty.
- */
-function readLines(formData: FormData): IntakeLine[] {
-  const get = (name: string) => formData.getAll(name).map(String);
-
-  const descriptions = get("itemDescription");
-  const zh = get("itemDescriptionZh");
-  const cargoTypes = get("itemCargoType");
-  const cbms = get("itemCbm");
-  const types = get("itemPackageType");
-  const quantities = get("itemQuantity");
-  const pieces = get("itemPieces");
-  const lengths = get("itemLength");
-  const widths = get("itemWidth");
-  const heights = get("itemHeight");
-  const weights = get("itemWeightKg");
-  const receiptNos = get("itemReceiptNo");
-
-  const num = (v: string | undefined) => {
-    if (!v || v.trim() === "") return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-
-  const lines: IntakeLine[] = [];
-  for (let i = 0; i < descriptions.length; i++) {
-    const description = descriptions[i]?.trim();
-    if (!description) continue;
-
-    const quantity = num(quantities[i]) ?? 1;
-    lines.push({
-      paperReceiptNo: receiptNos[i]?.trim() || null,
-      description,
-      descriptionZh: zh[i]?.trim() || null,
-      cargoType: cargoTypes[i]?.trim() || null,
-      packageType: ((PACKAGE_TYPES as readonly string[]).includes(types[i])
-        ? types[i]
-        : "CARTON") as PackageType,
-      quantity: quantity > 0 ? Math.round(quantity) : 1,
-      pieces: num(pieces[i]),
-      cbm: num(cbms[i]),
-      length: num(lengths[i]),
-      width: num(widths[i]),
-      height: num(heights[i]),
-      weightKg: num(weights[i]),
-    });
-  }
-  return lines;
-}
 
 /**
  * THE GUANGZHOU COUNTER, IN ONE ACT.
@@ -799,6 +732,7 @@ export async function receiveNewCargo(
     newCustomerPhone: formData.get("newCustomerPhone") || undefined,
     shippingMark: formData.get("shippingMark") || undefined,
     paperReceiptNo: headlineNote || undefined,
+    location: formData.get("location") || undefined,
     notes: formData.get("notes") || undefined,
     unit: formData.get("unit") || "CM",
   });
@@ -815,7 +749,25 @@ export async function receiveNewCargo(
     return { error: "A new customer needs a phone number." };
   }
 
-  const lines = readLines(formData);
+  /* An id off a form is a claim, not a customer. A stale tab, a merged record
+     or a customer removed while the counter was busy all arrive here as a
+     string that looks fine; without this the transaction fails halfway with
+     "That did not save" and the clerk retypes the whole delivery. */
+  if (data.customerId) {
+    const chosen = await prisma.customer.findFirst({
+      where: { id: data.customerId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!chosen) {
+      return {
+        error:
+          "That customer is no longer on the books. Search for them again, or enter them as new.",
+      };
+    }
+  }
+
+  const { lines, error: lineError } = readIntakeLines(formData);
+  if (lineError) return { error: lineError };
   if (lines.length === 0) {
     return { error: "Add at least one item — what did the driver bring?" };
   }
@@ -1120,6 +1072,7 @@ export async function receiveNewCargo(
           /* Damage is reported as a case, with photographs, by the person who
              saw it — not chosen from a dropdown at the moment of receiving. */
           condition: "GOOD",
+          location: data.location || null,
           notes: data.notes || null,
           receivedById: actor.id,
         },
@@ -1158,6 +1111,7 @@ export async function receiveNewCargo(
             supplierRef: null,
             description: summary,
             warehouse: warehouse.name,
+            location: data.location || null,
             receivedAt: new Date().toISOString(),
             packagesCount: totalPackages,
             piecesCount: totalPieces > 0 ? totalPieces : null,
@@ -1223,7 +1177,10 @@ export async function receiveNewCargo(
   });
 
   revalidatePath("/app/inventory");
-  revalidatePath("/app/inventory");
+  /* The loading bay draws its floor list from the same rows. A consignment
+     received while a clerk had the container open was invisible to them until
+     they reloaded by hand, and cargo nobody can see is cargo nobody loads. */
+  revalidatePath("/app/containers/loading");
   revalidatePath("/app/dashboard");
 
   return {

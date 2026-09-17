@@ -785,9 +785,34 @@ export function IntakeForm({
             mark and anything damaged are the two that matter later.
           </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" name="notes" rows={2} />
+          {/*
+            WHERE IT WAS PUT DOWN.
+
+            The one fact about a consignment the building knows and the database
+            cannot work out. Between receiving and loading somebody has to walk
+            to it, and "row C, bay 4" is the difference between that walk and a
+            search of the whole floor. Optional, because a driver at the door
+            waiting on a shelf number is the worse trade.
+          */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="location">
+                Location 位置{" "}
+                <span className="font-normal text-muted-foreground">
+                  optional
+                </span>
+              </Label>
+              <Input
+                id="location"
+                name="location"
+                maxLength={60}
+                placeholder="Row C, bay 4"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" name="notes" rows={2} />
+            </div>
           </div>
         </CardContent>
       </Card>
