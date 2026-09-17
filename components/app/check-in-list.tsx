@@ -27,6 +27,7 @@ import {
   verifyContainer,
   type ActionState,
 } from "@/lib/actions/dar";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
@@ -57,6 +58,8 @@ export type CheckInRow = {
   condition: string | null;
   damaged: boolean;
   hasCase: boolean;
+  /** Put on this manifest at Dar, not loaded into the box in Guangzhou. */
+  added: boolean;
   china: {
     packagesCount: number;
     piecesCount: number | null;
@@ -75,6 +78,49 @@ export type CheckInRow = {
     warehouseId: string;
   } | null;
 };
+
+/** The questions the floor asks of one container, in the order it asks them. */
+type Lens =
+  | "all"
+  | "unchecked"
+  | "checked"
+  | "verified"
+  | "damaged"
+  | "missing"
+  | "discrepancies"
+  | "added";
+
+const LENSES: { key: Lens; label: string }[] = [
+  { key: "all", label: "Expected" },
+  { key: "unchecked", label: "Unchecked" },
+  { key: "checked", label: "Received" },
+  { key: "verified", label: "Signed off" },
+  { key: "damaged", label: "Damaged" },
+  { key: "missing", label: "Missing" },
+  { key: "discrepancies", label: "Discrepancies" },
+  { key: "added", label: "Added here" },
+];
+
+function matchesLens(row: CheckInRow, lens: Lens) {
+  switch (lens) {
+    case "unchecked":
+      return row.arrivedPackages === null && !row.missing;
+    case "checked":
+      return row.arrivedPackages !== null;
+    case "verified":
+      return row.verified;
+    case "damaged":
+      return row.damaged;
+    case "missing":
+      return row.missing;
+    case "discrepancies":
+      return row.discrepancy || row.hasCase;
+    case "added":
+      return row.added;
+    default:
+      return true;
+  }
+}
 
 /**
  * CHECKING A CONTAINER OFF.
@@ -97,6 +143,7 @@ export function CheckInList({
   otherContainers,
   addable,
   canAmend,
+  canConfirmUnchecked,
 }: {
   containerId: string;
   rows: CheckInRow[];
@@ -109,13 +156,38 @@ export function CheckInList({
   /** Consignments that could be added to this manifest. */
   addable: { id: string; label: string }[];
   canAmend: boolean;
+  /** May this desk sign the box off over cargo nobody counted? */
+  canConfirmUnchecked: boolean;
 }) {
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [lens, setLens] = useState<Lens>("all");
 
   const checked = rows.filter((r) => r.arrivedPackages !== null || r.missing).length;
   const flagged = rows.filter((r) => r.discrepancy || r.missing || r.hasCase).length;
   const open = rows.filter((r) => r.arrivedPackages === null && !r.missing);
   const pickedOpen = open.filter((r) => picked.has(r.id));
+
+  /*
+    THE SAME LIST, SEEN THROUGH ONE QUESTION AT A TIME.
+
+    A container of ninety is worked as a series of small jobs — tick the clean
+    ones, photograph the wet ones, chase the three nobody can find — and hunting
+    for them in one flat table of ninety is how a bale gets missed. These are
+    not other lists: they are the rows already on screen, with everything that
+    is not the current question hidden. The counts are the answer to "how much
+    of each is there", which is the question the floor is asked on the phone.
+  */
+  const counts: Record<Lens, number> = {
+    all: rows.length,
+    unchecked: open.length,
+    checked: rows.filter((r) => r.arrivedPackages !== null).length,
+    verified: rows.filter((r) => r.verified).length,
+    damaged: rows.filter((r) => r.damaged).length,
+    missing: rows.filter((r) => r.missing).length,
+    discrepancies: rows.filter((r) => r.discrepancy || r.hasCase).length,
+    added: rows.filter((r) => r.added).length,
+  };
+  const shown = rows.filter((r) => matchesLens(r, lens));
 
   const pick = (id: string) =>
     setPicked((current) => {
@@ -158,7 +230,33 @@ export function CheckInList({
               rows.filter((r) => r.arrivedPackages !== null && !r.verified && !r.discrepancy)
                 .length
             }
+            canConfirmUnchecked={canConfirmUnchecked}
           />
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-1.5 border-t pt-3">
+          {LENSES.map((option) => {
+            const n = counts[option.key];
+            if (option.key !== "all" && n === 0) return null;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setLens(option.key)}
+                aria-pressed={lens === option.key}
+                className={cn(
+                  "focus-ring inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                  lens === option.key
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "text-muted-foreground hover:bg-secondary"
+                )}
+              >
+                {option.label}
+                <span className="tnum rounded-full bg-secondary px-1.5 text-[0.7rem] text-foreground">
+                  {n}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -189,7 +287,7 @@ export function CheckInList({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {shown.map((row) => (
                 <CheckInRowView
                   key={row.id}
                   containerId={containerId}
@@ -226,72 +324,139 @@ export function CheckInList({
 /**
  * THE LAST PRESS OF THE JOB.
  *
- * Everything still untouched is recorded as present and undamaged, then every
- * clean line is signed off and the container is closed. It is said plainly in
- * the confirmation, because this is the half a clerk forgets: the rows nobody
- * looked at are being ruled on too, and that is a statement about real cartons
- * sitting on a real floor.
+ * Confirming the container is the floor saying every consignment on the
+ * manifest has been accounted for. Signing off what is counted and shutting the
+ * box are both that one sentence, so they are one press.
  *
- * Anything already flagged keeps its flag — the two actions run in sequence
- * rather than merged, so neither one's guards move.
+ * IT DOES NOT RULE ON ROWS NOBODY LOOKED AT. This press used to record every
+ * untouched consignment as present and undamaged on its way past, warned about
+ * in small type that read like a footnote rather than a decision about real
+ * cartons on a real floor. Ticking them through is still one press — it is just
+ * a press that says what it is doing, and the clerk chooses it.
+ *
+ * The confirmation refuses while anything is unchecked; the server decides
+ * that, not this component, and the override below only puts a reason in front
+ * of a desk that already holds the authority for it.
  */
 function FinishCheckIn({
   containerId,
   remaining,
   toVerify,
+  canConfirmUnchecked,
 }: {
   containerId: string;
   remaining: string[];
   toVerify: number;
+  canConfirmUnchecked: boolean;
 }) {
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
   const [pending, start] = useTransition();
 
   if (remaining.length === 0 && toVerify === 0) return null;
 
-  function finish() {
+  /** Tick the untouched rows through as sent, then confirm the container. */
+  function tickThroughAndConfirm() {
     setError(null);
     start(async () => {
-      if (remaining.length > 0) {
-        const body = new FormData();
-        for (const id of remaining) body.append("cargoIds", id);
-        const accepted = await acceptAsExpected({}, body);
-        if (accepted.error) {
-          setError(accepted.error);
-          return;
-        }
-      }
-      const sign = new FormData();
-      sign.set("containerId", containerId);
-      const signed = await verifyContainer({}, sign);
-      if (signed.error) {
-        setError(signed.error);
+      const body = new FormData();
+      for (const id of remaining) body.append("cargoIds", id);
+      const accepted = await acceptAsExpected({}, body);
+      if (accepted.error) {
+        setError(accepted.error);
         return;
       }
-      setAsking(false);
+      await confirm();
     });
+  }
+
+  async function confirm(overrideReason?: string) {
+    const sign = new FormData();
+    sign.set("containerId", containerId);
+    if (overrideReason) sign.set("overrideReason", overrideReason);
+    const signed = await verifyContainer({}, sign);
+    if (signed.error) {
+      setError(signed.error);
+      return;
+    }
+    setAsking(false);
   }
 
   return (
     <div className="flex flex-col items-end gap-2">
       {asking ? (
-        <div className="w-72 rounded-lg border bg-card p-3 shadow-raised">
-          <p className="text-sm font-medium">Finish checking this container?</p>
+        <div className="w-80 rounded-lg border bg-card p-3 shadow-raised">
+          <p className="text-sm font-medium">Confirm this container?</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Confirm that what you have checked is correct and safe to proceed.
+            Everything counted and clean is signed off, and the box is closed.
+            Anything missing or damaged keeps its case and does not hold the rest
+            up.
           </p>
+
           {remaining.length > 0 ? (
-            <p className="mt-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-              <span className="font-semibold">
-                {remaining.length} not yet checked
-              </span>{" "}
-              will be recorded as present and undamaged.
-            </p>
+            <>
+              <p className="mt-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+                <span className="font-semibold">
+                  {remaining.length} not yet checked.
+                </span>{" "}
+                They are either on the floor or they are a case, and the
+                container cannot be confirmed until somebody says which.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mt-2 w-full"
+                onClick={tickThroughAndConfirm}
+                disabled={pending}
+              >
+                {pending
+                  ? "Checking in…"
+                  : `Tick the ${remaining.length} through as sent, then confirm`}
+              </Button>
+              {canConfirmUnchecked ? (
+                /* The evening decision, with a name on it. Every consignment it
+                   rules over keeps a case, so none of them leaves the dock
+                   without a list it is still on. */
+                <div className="mt-3 border-t pt-3">
+                  <label
+                    htmlFor="override-reason"
+                    className="text-xs font-medium"
+                  >
+                    Or confirm over them, and say why
+                  </label>
+                  <Input
+                    id="override-reason"
+                    value={reason}
+                    onChange={(event) => setReason(event.target.value)}
+                    placeholder="Why the box is being signed off unchecked"
+                    className="mt-1.5 h-8 text-xs"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="mt-2 w-full"
+                    disabled={pending || reason.trim().length < 3}
+                    onClick={() => {
+                      setError(null);
+                      start(async () => {
+                        await confirm(reason.trim());
+                      });
+                    }}
+                  >
+                    Confirm over {remaining.length} unchecked
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : null}
+
           {error ? (
             <p className="mt-2 text-xs font-medium text-destructive">{error}</p>
           ) : null}
+
           <div className="mt-3 flex justify-end gap-2">
             <Button
               type="button"
@@ -302,15 +467,27 @@ function FinishCheckIn({
             >
               Cancel
             </Button>
-            <Button type="button" size="sm" onClick={finish} disabled={pending}>
-              {pending ? "Finishing…" : "Yes, finish"}
-            </Button>
+            {remaining.length === 0 ? (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setError(null);
+                  start(async () => {
+                    await confirm();
+                  });
+                }}
+                disabled={pending}
+              >
+                {pending ? "Confirming…" : "Yes, confirm"}
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : (
         <Button type="button" size="sm" onClick={() => setAsking(true)}>
           <CheckCheck />
-          Finish check-in
+          Confirm container
         </Button>
       )}
       {!asking && error ? (
@@ -509,6 +686,14 @@ function CheckInRowView({
         </td>
 
         <td className="hidden px-3 py-2 md:table-cell">
+          {/* Not on the paper Guangzhou sealed. It is said on the row as well
+              as in the counters, because the person confirming the box needs
+              to know which bale they are being asked to vouch for. */}
+          {row.added ? (
+            <Badge tone="warn" className="mr-1">
+              Added here
+            </Badge>
+          ) : null}
           {row.missing ? (
             <Badge tone="bad">Missing</Badge>
           ) : row.damaged ? (

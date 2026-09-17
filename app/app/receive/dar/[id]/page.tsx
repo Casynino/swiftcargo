@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ClipboardList } from "lucide-react";
+import {
+  ClipboardCheck,
+  ClipboardList,
+  PackageOpen,
+  PackagePlus,
+  PackageX,
+  ScanSearch,
+  TriangleAlert,
+} from "lucide-react";
 
 import { CheckInList } from "@/components/app/check-in-list";
 import { PageHeader } from "@/components/app/page-header";
-import { VerifyContainerButton } from "@/components/app/verify-buttons";
+import { StatStrip } from "@/components/app/stat-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCbm, formatDate } from "@/lib/format";
@@ -54,7 +62,7 @@ export default async function CheckInContainerPage({
                 },
                 exceptions: {
                   where: { status: { notIn: ["RESOLVED", "CLOSED"] } },
-                  select: { id: true },
+                  select: { id: true, type: true },
                 },
                 packages: {
                   where: { deletedAt: null },
@@ -131,18 +139,56 @@ export default async function CheckInContainerPage({
       : Promise.resolve([]),
   ]);
 
-  const selectedCargo = cargoId
-    ? await prisma.cargo.findFirst({
-        where: { id: cargoId, deletedAt: null },
-        include: { chinaReceiving: true, darReceiving: true, sender: true },
-      })
-    : null;
-
   const done = container.cargoLines.filter((l) => l.cargo.darReceiving).length;
   const missing = container.cargoLines.filter(
     (l) => l.cargo.status === "MISSING_AT_DAR"
   ).length;
   const waiting = container.cargoLines.length - done - missing;
+
+  /*
+    EXPECTED AGAINST CONFIRMED, FOR THE WHOLE BOX.
+
+    The rows say it consignment by consignment; this says it for the container,
+    which is the number the floor is asked about — "did it all come off?" — and
+    the one a clerk was working out on paper from ninety rows. China's side is
+    what Guangzhou measured into the box; Dar's side is what has actually been
+    counted out of it so far, so the two only meet when the job is finished.
+    Neither column is corrected by the other.
+  */
+  const expected = container.cargoLines.reduce(
+    (sum, l) => ({
+      packages: sum.packages + (l.cargo.chinaReceiving?.packagesCount ?? l.cargo.declaredPackages ?? 0),
+      pieces:
+        sum.pieces +
+        (l.cargo.chinaReceiving?.piecesCount ??
+          l.cargo.packages.reduce((n, k) => n + (k.pieces ?? 0), 0)),
+      cbm: sum.cbm + Number(l.cargo.chinaReceiving?.cbm ?? l.cbm),
+    }),
+    { packages: 0, pieces: 0, cbm: 0 }
+  );
+  const confirmed = container.cargoLines.reduce(
+    (sum, l) => ({
+      packages: sum.packages + (l.cargo.darReceiving?.packagesCount ?? 0),
+      pieces: sum.pieces + (l.cargo.darReceiving?.piecesCount ?? 0),
+      cbm: sum.cbm + Number(l.cargo.darReceiving?.cbm ?? 0),
+    }),
+    { packages: 0, pieces: 0, cbm: 0 }
+  );
+
+  const damaged = container.cargoLines.filter(
+    (l) => l.cargo.darReceiving && l.cargo.darReceiving.condition !== "GOOD"
+  ).length;
+  const discrepancies = container.cargoLines.filter(
+    (l) => l.cargo.darReceiving?.discrepancy
+  ).length;
+  /* Cargo the frozen packing list does not carry, or carries against another
+     box: put on this manifest at Dar, and each one holding the case that says
+     so. The case IS the flag — nothing else on the row would tell them apart. */
+  const additional = container.cargoLines.filter((l) =>
+    l.cargo.exceptions.some(
+      (e) => e.type === "UNIDENTIFIED_CARGO" || e.type === "WRONG_CONTAINER"
+    )
+  ).length;
   /* Counted, but nobody has signed it off yet. Verifying was a screen of its
      own once; it is the last move of checking a container in, so it happens
      here, on the row that was just counted. A line with an open case cannot be
@@ -153,6 +199,7 @@ export default async function CheckInContainerPage({
       !l.cargo.darReceiving.verified &&
       l.cargo.exceptions.length === 0
   ).length;
+  const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
 
   return (
     <div className="space-y-6">
@@ -173,16 +220,82 @@ export default async function CheckInContainerPage({
                 Packing list
               </Link>
             </Button>
-            {/* The last move of checking a container in: sign off everything
-                counted and clean. Anything flagged stays flagged. */}
-            {toVerify > 0 ? (
-              <VerifyContainerButton
-                containerId={container.id}
-                pending={toVerify}
-              />
-            ) : null}
           </>
         }
+      />
+
+      {/*
+        THE CONTAINER'S OWN ARITHMETIC, ABOVE THE ROWS THAT MAKE IT.
+
+        Expected against confirmed, then every category the floor has to answer
+        for before it signs the box off. Counted off the rows already loaded:
+        these figures describe exactly the list underneath, and a strip that
+        disagreed with the list below it would be worse than no strip.
+      */}
+      <StatStrip
+        chips={[
+          {
+            label: "Packages",
+            /* The gap is named only once the box is worked through: until then
+               it is the job in progress, not a shortage. */
+            value:
+              waiting === 0 && confirmed.packages !== expected.packages
+                ? `${confirmed.packages} / ${expected.packages} (${sign(confirmed.packages - expected.packages)})`
+                : `${confirmed.packages} / ${expected.packages}`,
+            icon: PackageOpen,
+            tone:
+              waiting > 0
+                ? "neutral"
+                : confirmed.packages === expected.packages
+                  ? "success"
+                  : "warning",
+          },
+          ...(expected.pieces > 0
+            ? [
+                {
+                  label: "Pieces",
+                  value: `${confirmed.pieces} / ${expected.pieces}`,
+                  icon: PackageOpen,
+                },
+              ]
+            : []),
+          {
+            label: "Volume",
+            value: `${formatCbm(confirmed.cbm)} / ${formatCbm(expected.cbm)}`,
+            icon: ScanSearch,
+          },
+          { label: "Received", value: String(done), icon: ClipboardCheck, tone: "success" },
+          {
+            label: "Unchecked",
+            value: String(waiting),
+            icon: ClipboardCheck,
+            tone: waiting > 0 ? "warning" : "success",
+          },
+          {
+            label: "Missing",
+            value: String(missing),
+            icon: PackageX,
+            tone: missing > 0 ? "danger" : "neutral",
+          },
+          {
+            label: "Damaged",
+            value: String(damaged),
+            icon: TriangleAlert,
+            tone: damaged > 0 ? "danger" : "neutral",
+          },
+          {
+            label: "Discrepancies",
+            value: String(discrepancies),
+            icon: TriangleAlert,
+            tone: discrepancies > 0 ? "warning" : "neutral",
+          },
+          {
+            label: "Added here",
+            value: String(additional),
+            icon: PackagePlus,
+            tone: additional > 0 ? "warning" : "neutral",
+          },
+        ]}
       />
 
       <CheckInList
@@ -192,6 +305,7 @@ export default async function CheckInContainerPage({
         cargoTypes={cargoTypes}
         otherContainers={otherContainers}
         canAmend={mayAmend}
+        canConfirmUnchecked={can(user.role, "container.confirmUnchecked")}
         addable={addable.map((c) => ({
           id: c.id,
           label: `${c.reference} · ${c.shippingMark ?? c.sender.fullName} · ${c.description}`,
@@ -242,6 +356,11 @@ export default async function CheckInContainerPage({
             damaged:
               !!c.darReceiving && c.darReceiving.condition !== "GOOD",
             hasCase: c.exceptions.length > 0,
+            /* Put on this manifest at Dar rather than loaded in Guangzhou. The
+               case the amendment opened is the only mark it carries. */
+            added: c.exceptions.some(
+              (e) => e.type === "UNIDENTIFIED_CARGO" || e.type === "WRONG_CONTAINER"
+            ),
             /* Decimals are formatted to strings here: a Prisma Decimal must
                never cross into a client component as a float. */
             china: c.chinaReceiving

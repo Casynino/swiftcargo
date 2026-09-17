@@ -11,6 +11,7 @@ import { nextExceptionReference } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { applyDarMeasurement, CorrectionRefused } from "@/lib/cargo-corrections";
+import { advanceContainer } from "@/lib/actions/containers";
 import {
   priceOnCheckIn,
   PriceListRefused,
@@ -435,7 +436,28 @@ export async function verifyCargo(
   return { ok: "Verified." };
 }
 
-/** Verify a whole container's worth in one go, skipping anything flagged. */
+/**
+ * CONFIRMING THE CONTAINER.
+ *
+ * The last act of a discharge: the floor says every consignment on the manifest
+ * has been accounted for, signs off the clean ones and shuts the box.
+ *
+ * IT REFUSES WHILE ANYTHING IS STILL UNCHECKED. The press used to sign off
+ * whatever had been counted and say nothing about the rest, and the screen in
+ * front of it quietly recorded every untouched row as present and undamaged
+ * first — ninety cartons ruled on by a button nobody read as a ruling. A
+ * consignment nobody looked at is not a consignment that arrived; it is either
+ * on the floor, or it is a case, and somebody has to say which.
+ *
+ * Missing and damaged NEVER block it. That is the whole reason they are their
+ * own states: a bale that did not come off, or came off wet, has already been
+ * answered for, and a hundred boxes are not held hostage by one.
+ *
+ * The override exists because containers really are confirmed at six in the
+ * evening with three marks nobody could read. It is held above the counting
+ * desk, it asks why, it opens a case on every consignment it rules over so none
+ * of them is lost, and it goes to the audit log with a name on it.
+ */
 export async function verifyContainer(
   _prev: ActionState,
   formData: FormData
@@ -443,19 +465,160 @@ export async function verifyContainer(
   const actor = await authorize("receiving.verify");
 
   const containerId = String(formData.get("containerId") ?? "");
+  const overrideReason = String(formData.get("overrideReason") ?? "").trim();
+
   const container = await prisma.container.findFirst({
     where: { id: containerId, deletedAt: null },
-    select: { id: true, reference: true },
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      cargoLines: {
+        select: {
+          cargo: {
+            select: {
+              id: true,
+              reference: true,
+              status: true,
+              senderId: true,
+              darReceiving: {
+                select: {
+                  id: true,
+                  verified: true,
+                  discrepancy: true,
+                  condition: true,
+                },
+              },
+              exceptions: {
+                where: { status: { notIn: ["RESOLVED", "CLOSED"] } },
+                select: { id: true },
+              },
+            },
+          },
+        },
+      },
+    },
   });
   if (!container) return { error: "That container no longer exists." };
 
-  const result = await prisma.darReceiving.updateMany({
-    where: { containerId, verified: false, discrepancy: false },
-    data: { verified: true, verifiedAt: new Date() },
-  });
+  const cargo = container.cargoLines.map((line) => line.cargo);
+  const missing = cargo.filter((c) => c.status === "MISSING_AT_DAR");
+  const counted = cargo.filter((c) => c.darReceiving !== null);
+  const unchecked = cargo.filter(
+    (c) => c.darReceiving === null && c.status !== "MISSING_AT_DAR"
+  );
+  const damaged = counted.filter((c) => c.darReceiving!.condition !== "GOOD");
+  /* A signature is of a clean count. A row carrying a case is what the case is
+     for — resolving it is how it gets signed, not confirming the box over it. */
+  const toSign = counted.filter(
+    (c) =>
+      !c.darReceiving!.verified &&
+      !c.darReceiving!.discrepancy &&
+      c.exceptions.length === 0
+  );
+  const flagged = counted.filter(
+    (c) => c.darReceiving!.discrepancy || c.exceptions.length > 0
+  );
 
-  const flagged = await prisma.darReceiving.count({
-    where: { containerId, discrepancy: true, verified: false },
+  let overridden = false;
+  if (unchecked.length > 0) {
+    const named = unchecked
+      .slice(0, 5)
+      .map((c) => c.reference)
+      .join(", ");
+    if (!overrideReason) {
+      return {
+        error: `${unchecked.length} consignment(s) on ${container.reference} have not been checked in — ${named}${
+          unchecked.length > 5 ? " and others" : ""
+        }. Check them in, or report them missing.`,
+      };
+    }
+    if (overrideReason.length < 3) {
+      return {
+        error: "Say why the container is being confirmed over cargo nobody counted.",
+      };
+    }
+    try {
+      await authorize("container.confirmUnchecked");
+    } catch {
+      return {
+        error:
+          "Confirming a container over cargo nobody counted is a manager's decision. Check the rest in, or report them missing.",
+      };
+    }
+    overridden = true;
+  }
+
+  const stranded: string[] = [];
+  await prisma.$transaction(async (tx) => {
+    if (toSign.length > 0) {
+      await tx.darReceiving.updateMany({
+        where: { id: { in: toSign.map((c) => c.darReceiving!.id) } },
+        data: { verified: true, verifiedAt: new Date() },
+      });
+    }
+
+    /* Ruled over, not forgotten. Each one leaves the dock with the container
+       and keeps a case that says nobody counted it, so it is still on a list
+       somebody reads. */
+    for (const item of unchecked) {
+      if (item.exceptions.length > 0) continue;
+      const reference = await nextExceptionReference(tx);
+      const opened = await tx.exceptionCase.create({
+        data: {
+          reference,
+          type: "OTHER",
+          priority: "HIGH",
+          cargoId: item.id,
+          customerId: item.senderId,
+          containerId: container.id,
+          department: "DAR_WAREHOUSE",
+          title: `${item.reference} was never checked off ${container.reference}`,
+          description: overrideReason,
+          raisedById: actor.id,
+        },
+        select: { id: true },
+      });
+      await tx.exceptionEvent.create({
+        data: {
+          caseId: opened.id,
+          to: "OPEN",
+          note: `${container.reference} was confirmed with this consignment still unchecked: ${overrideReason}`,
+          actorId: actor.id,
+        },
+      });
+      stranded.push(item.reference);
+    }
+
+    if (stranded.length > 0) {
+      await notifyStaff(
+        [
+          ...(await staffInDepartment("CUSTOMER_SUPPORT", tx)),
+          ...(await staffInDepartment("MANAGEMENT", tx)),
+        ],
+        {
+          kind: "exception.raised",
+          title: `${container.reference} confirmed with ${stranded.length} consignment(s) unchecked`,
+          body: overrideReason,
+          href: "/app/exceptions",
+        },
+        tx
+      );
+    }
+
+    /* The confirmation itself, on the container's own history, whether or not
+       anything was signed off by it. */
+    await tx.containerEvent.create({
+      data: {
+        containerId: container.id,
+        from: container.status,
+        to: container.status,
+        note: overridden
+          ? `Confirmed at Dar over ${unchecked.length} unchecked consignment(s): ${overrideReason}`
+          : `Confirmed at Dar — ${counted.length} counted, ${missing.length} missing, ${damaged.length} damaged`,
+        actorId: actor.id,
+      },
+    });
   });
 
   await recordAudit({
@@ -463,16 +626,60 @@ export async function verifyContainer(
     action: "container.verify",
     entity: "Container",
     entityId: container.id,
-    summary: `Verified ${result.count} consignment(s) on ${container.reference}${
-      flagged ? `, ${flagged} left flagged` : ""
+    summary: `Confirmed ${container.reference} at Dar — ${toSign.length} signed off, ${counted.length} counted, ${missing.length} missing, ${damaged.length} damaged, ${flagged.length} flagged${
+      overridden ? `, ${unchecked.length} unchecked (${overrideReason})` : ""
     }`,
+    metadata: {
+      expected: cargo.length,
+      counted: counted.length,
+      signedOff: toSign.length,
+      missing: missing.length,
+      damaged: damaged.length,
+      flagged: flagged.length,
+      unchecked: unchecked.length,
+      overridden,
+      overrideReason: overridden ? overrideReason : null,
+      stranded,
+    },
   });
 
+  /*
+    AND THE BOX IS SHUT.
+
+    Confirming is the end of the discharge, so the container reaches its closed
+    state here rather than waiting for somebody to find the container page —
+    through the same door and the same permission as pressing Close there, so
+    there is one set of rules about when a container may close and not two.
+    Never over an override: a box with cargo nobody counted still has work on
+    it, and it stays on the dock where that work is listed.
+  */
+  let closed = false;
+  if (!overridden && container.status === "ARRIVED") {
+    const close = new FormData();
+    close.set("containerId", container.id);
+    close.set("to", "CLOSED");
+    const result = await advanceContainer({}, close);
+    closed = !result.error;
+  }
+
   revalidatePath("/app/receive/dar");
+  revalidatePath(`/app/receive/dar/${container.id}`);
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath("/app/exceptions");
+
   return {
-    ok: flagged
-      ? `${result.count} verified. ${flagged} still has an open issue.`
-      : `${result.count} verified.`,
+    ok: [
+      `${container.reference} confirmed.`,
+      toSign.length ? `${toSign.length} signed off.` : "",
+      flagged.length ? `${flagged.length} left flagged.` : "",
+      missing.length ? `${missing.length} missing.` : "",
+      stranded.length
+        ? `${stranded.length} unchecked, each with a case: ${stranded.join(", ")}.`
+        : "",
+      closed ? "The container is closed." : "",
+    ]
+      .filter(Boolean)
+      .join(" "),
   };
 }
 

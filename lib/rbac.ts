@@ -85,6 +85,17 @@ export type Permission =
    * every use writes the old container and the new one to FieldChange.
    */
   | "container.amendArrived"
+  /**
+   * SIGNING A CONTAINER OFF OVER CARGO NOBODY COUNTED.
+   *
+   * Confirming a container is the floor saying every consignment on the
+   * manifest was looked at. Where some were not — the lorry left, the shift
+   * ended, half the marks are unreadable — that is a decision with a person's
+   * name on it, not a clerk's shortcut, so it sits above the desk that does the
+   * counting. It asks for a reason, it opens a case on every consignment nobody
+   * checked so none of them is lost, and it is written to the audit log.
+   */
+  | "container.confirmUnchecked"
   | "packingList.view"
   | "packingList.issue"
   | "shipment.view"
@@ -400,6 +411,8 @@ const ALL: Permission[] = Array.from(
     "cargo.amendDar",
     "cargo.delete",
     "cbm.override",
+    /* Above the floor that counts, for the reason the permission itself gives. */
+    "container.confirmUnchecked",
     "container.delete",
     "customer.merge",
     "delivery.manage",

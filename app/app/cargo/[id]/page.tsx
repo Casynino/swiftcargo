@@ -308,6 +308,13 @@ export default async function CargoDetailPage({
   );
   const settled = billed && owing <= 0;
 
+  /* What the Dar bench wrote on the condition. GOOD says nothing worth a tag;
+     anything else is the fact about these boxes, whatever else is true. */
+  const damageTag =
+    dar && dar.condition !== "GOOD"
+      ? CONDITION_LABEL[dar.condition] ?? "Damaged"
+      : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -357,9 +364,15 @@ export default async function CargoDetailPage({
       ) : null}
 
       {cargo.operationalHold ||
+      damageTag ||
       cargo.exceptions.some((e) => e.status !== "RESOLVED" && e.status !== "CLOSED") ? (
         <div className="flex flex-wrap items-center gap-2">
           {cargo.operationalHold ? <Badge tone="bad">On hold</Badge> : null}
+          {/* THE TAG TRAVELS WITH THE CARGO. The bale that came off wet is
+              tagged on the check-in row, on the container's list and on the
+              price list Finance reads; this page was the one place it was not,
+              so a clerk opening the record saw a clean consignment. */}
+          {damageTag ? <Badge tone="bad">{damageTag}</Badge> : null}
           {cargo.exceptions.some((e) => e.status !== "RESOLVED" && e.status !== "CLOSED") ? (
             <Badge tone="warn">Open case</Badge>
           ) : null}
@@ -949,3 +962,11 @@ export default async function CargoDetailPage({
     </div>
   );
 }
+
+/** What the Dar floor wrote on the receiving row, said in words. */
+const CONDITION_LABEL: Record<string, string> = {
+  MINOR_DAMAGE: "Minor damage",
+  DAMAGED: "Damaged",
+  WET: "Arrived wet",
+  REPACKED: "Repacked",
+};
