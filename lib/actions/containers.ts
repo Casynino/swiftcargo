@@ -749,7 +749,22 @@ export async function updateVoyage(
       );
     }
 
-    await tx.shipment.update({ where: { id: shipment.id }, data: next });
+    /*
+      ONLY THE FIELDS THAT MOVED ARE WRITTEN.
+
+      The dates are compared by day, because that is the granularity the form
+      offers and the granularity anybody reads. Writing the whole object back
+      would take a departure recorded at 14:32 by the milestone button and
+      quietly reset it to midnight whenever somebody corrected the vessel —
+      a change to a stored fact with no FieldChange behind it, which is the one
+      thing this function exists to prevent.
+    */
+    await tx.shipment.update({
+      where: { id: shipment.id },
+      data: Object.fromEntries(
+        moved.map(([field]) => [field, next[field]])
+      ) as Prisma.ShipmentUpdateInput,
+    });
 
     if (sailed) {
       await tx.containerEvent.create({
