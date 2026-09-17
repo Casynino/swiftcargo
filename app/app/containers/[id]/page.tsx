@@ -605,6 +605,7 @@ export default async function ContainerPage({
             <CardContent>
               <VoyageForm
                 containerId={container.id}
+                sailed={sailed}
                 shipment={
                   container.shipment
                     ? {

@@ -357,8 +357,11 @@ export function AdvancePanel({
 export function VoyageForm({
   containerId,
   shipment,
+  sailed = false,
 }: {
   containerId: string;
+  /** The box has already left China. Changing a sailing fact now needs a reason. */
+  sailed?: boolean;
   shipment: {
     shippingLine: string | null;
     vessel: string | null;
@@ -422,6 +425,25 @@ export function VoyageForm({
         <Label htmlFor="notes">Notes</Label>
         <Textarea id="notes" name="notes" defaultValue={shipment?.notes ?? ""} />
       </div>
+      {/* A bill of lading arriving after departure is routine and needs no
+          explanation. Changing a vessel or a departure date that was already
+          recorded is a correction to a fact other desks are working from, and
+          the server asks for the reason rather than trusting the form. */}
+      {sailed ? (
+        <div className="space-y-2">
+          <Label htmlFor="voyage-reason">
+            Why the change?{" "}
+            <span className="font-normal text-muted-foreground">
+              needed to alter a vessel, voyage or departure already recorded
+            </span>
+          </Label>
+          <Input
+            id="voyage-reason"
+            name="reason"
+            placeholder="Line moved us to the next sailing"
+          />
+        </div>
+      ) : null}
       <FormMessage error={state.error} ok={state.ok} />
       <SubmitButton variant="outline">Save voyage</SubmitButton>
     </form>
