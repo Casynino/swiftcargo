@@ -583,6 +583,7 @@ function CargoTableRow({
           )}
         </TableCell>
         <TableCell className="p-0">
+          <span className="flex items-center justify-end gap-1 pr-1">
           {row.takesPayment && row.invoiceId ? (
             /* The customer at the counter with the money is looking at this
                screen over somebody's shoulder. One press from the row to the
@@ -591,7 +592,7 @@ function CargoTableRow({
               type="button"
               onClick={() => openRecordPayment(row.invoiceId ?? undefined)}
               title={`${t(locale, "Record a payment on")} ${row.reference}`}
-              className="focus-ring float-left ml-2 mt-3 inline-flex items-center rounded-md border border-success/40 p-1.5 text-success hover:bg-success/10"
+              className="focus-ring inline-flex shrink-0 items-center rounded-md border border-success/40 p-1.5 text-success hover:bg-success/10"
             >
               <Banknote className="size-3.5" />
               <span className="sr-only">
@@ -601,11 +602,12 @@ function CargoTableRow({
           ) : null}
           <Link
             href={row.href}
-            className="flex items-center justify-end gap-1 px-4 py-3 text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1 py-3 pl-2 pr-3 text-sm text-muted-foreground hover:text-foreground"
           >
             {t(locale, "Open")}
             <ChevronRight className="size-4" />
           </Link>
+          </span>
         </TableCell>
       </TableRow>
 
