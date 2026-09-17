@@ -14,8 +14,10 @@ import { chartPoint } from "@/lib/sea-chart";
  * the run down the estuary out of Guangzhou, which is the river, the curve
  * never touches land.
  *
- * Geography only. Nothing here knows where any particular container is — see
- * `laneFraction` for what the result page is allowed to say about that.
+ * Geography only. Nothing here knows where any particular container is, and
+ * nothing is allowed to claim it does: there is no AIS feed on this service,
+ * and a chart that looked like one would be a lie told in pixels. The lane is
+ * the route the business sails, drawn behind the hero on /track.
  */
 const WAYPOINTS: ReadonlyArray<readonly [number, number]> = [
   [113.26, 23.13], // Guangzhou
@@ -174,43 +176,3 @@ export const BRIDGE_PATH = "M -7 -2.2 L -3.8 -2.2 L -3.8 2.2 L -7 2.2 Z";
 /** The water the hull has just left, trailing astern. */
 export const WAKE_PATH = "M -9 -2.7 L -46 -7 L -46 7 L -9 2.7 Z";
 
-export type LaneStage = {
-  loaded: boolean;
-  departed: boolean;
-  arrived: boolean;
-};
-
-/**
- * How far along the lane the drawing puts the marker.
- *
- * THIS IS NOT A POSITION. Nobody on this service has an AIS feed, and a chart
- * that looks like one would be a lie told in pixels. What it is, is the two
- * dates already printed on the page — the day the container sailed and the day
- * it is expected — read as a fraction of the crossing. The page says so under
- * the picture, because a customer who thinks this dot is their ship will ring
- * the office the day it stops moving.
- *
- * Clamped away from both ends while the box is at sea: a ship drawn in port is
- * a ship that has arrived, and it has not.
- */
-export function laneFraction(input: {
-  stage: LaneStage;
-  departedAt: Date | null;
-  eta: Date | null;
-  now: Date;
-}): number {
-  const { stage, departedAt, eta, now } = input;
-  if (stage.arrived) return 1;
-  if (!stage.departed) return stage.loaded ? 0.06 : 0.02;
-
-  if (departedAt && eta) {
-    const total = eta.getTime() - departedAt.getTime();
-    if (total > 0) {
-      const gone = (now.getTime() - departedAt.getTime()) / total;
-      return Math.min(0.9, Math.max(0.14, 0.12 + gone * 0.8));
-    }
-  }
-  /* Sailed, with no promised date to measure against. Half way is the only
-     honest answer, and the caption says where the figure comes from. */
-  return 0.5;
-}

@@ -141,16 +141,7 @@ function Ships({ prefix }: { prefix: string }) {
   );
 }
 
-function Chart({
-  prefix,
-  showShips,
-  marker,
-}: {
-  prefix: string;
-  showShips: boolean;
-  /** 0 at Guangzhou, 1 at Dar. Draws one still ship instead of two moving. */
-  marker?: number;
-}) {
+function Chart({ prefix, showShips }: { prefix: string; showShips: boolean }) {
   return (
     <>
       <Defs prefix={prefix} />
@@ -180,10 +171,6 @@ function Chart({
       />
 
       {showShips ? <Ships prefix={prefix} /> : null}
-
-      {marker !== undefined ? (
-        <StillShip prefix={prefix} fraction={marker} />
-      ) : null}
 
       {LANE_PORTS.map((port) => {
         const [x, y] = chartPoint(port.lon, port.lat);
@@ -307,41 +294,3 @@ export function SeaLaneBackdrop() {
     </div>
   );
 }
-
-/**
- * The same chart, small, above one consignment.
- *
- * The ship is drawn where the sailing dates put it — see `laneFraction`, and
- * the caption the caller prints under this, which says so. One still ship, no
- * motion at all: this is a status reading, and a status reading that moves is
- * a status reading somebody will watch instead of trusting.
- */
-export function SeaLaneStrip({
-  fraction,
-  className,
-}: {
-  fraction: number;
-  className?: string;
-}) {
-  return (
-    <div
-      aria-hidden
-      className={cn(
-        "relative overflow-hidden rounded-xl bg-ink ring-1 ring-white/10",
-        className
-      )}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,hsl(var(--marine)/0.26),transparent_60%),radial-gradient(ellipse_at_8%_90%,hsl(var(--signal)/0.2),transparent_58%)]" />
-      <svg
-        viewBox={CHART_VIEW}
-        preserveAspectRatio="xMidYMid meet"
-        className="relative h-full w-full"
-      >
-        <Chart prefix="seastrip" showShips={false} marker={fraction} />
-      </svg>
-    </div>
-  );
-}
-
-/** Exported so a caller can size a box against the drawing without guessing. */
-export const CHART_RATIO = `${CHART_W}/${VIEW_HEIGHT}`;

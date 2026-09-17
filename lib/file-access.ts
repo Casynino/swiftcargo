@@ -18,6 +18,16 @@ import type { SessionUser } from "@/lib/session";
  *
  * "public" means anybody, signed in or not; "private" means this viewer only,
  * and the response must not be cached by anything shared.
+ *
+ * A TRACKING REFERENCE OPENS ONE THING AND ONE THING ONLY.
+ *
+ * Public tracking shows a consignment's own counter photographs — the owner's
+ * decision, written down in lib/tracking.ts — so a request may carry the
+ * reference of the cargo a photograph belongs to instead of a session. It opens
+ * that cargo's photographs, of the customer-facing kinds, and nothing else: a
+ * receipt, a payment slip, a counter signature, a shipment document and a case
+ * file are reachable by no reference at all, and a reference never opens a
+ * photograph belonging to different cargo.
  */
 
 /**
@@ -31,7 +41,9 @@ export type FileAccess = "public" | "private" | null;
 
 export async function fileAccess(
   url: string,
-  viewer: SessionUser | null
+  viewer: SessionUser | null,
+  /** The cargo reference the request carried, if it carried one. */
+  reference?: string | null
 ): Promise<FileAccess> {
   const staff = viewer && isStaff(viewer.role) ? viewer : null;
   const customerId = viewer?.role === "CUSTOMER" ? viewer.customerId : null;
@@ -63,6 +75,26 @@ export async function fileAccess(
   ]);
 
   if (markets > 0) return "public";
+
+  /*
+    THE TRACKING REFERENCE, ASKED AS ITS OWN QUESTION.
+
+    A query of its own rather than a test against the rows above: those are
+    narrowed to a signed-in customer's cargo, so a reference checked against
+    them would answer "no" for the very visitor it exists for. The where clause
+    is the whole rule — this url, a customer-facing kind, on the cargo that
+    reference names, not deleted.
+  */
+  if (reference) {
+    const onTracking = await prisma.cargoPhoto.count({
+      where: {
+        url,
+        kind: { in: CUSTOMER_PHOTO_KINDS },
+        cargo: { reference, deletedAt: null },
+      },
+    });
+    if (onTracking > 0) return "public";
+  }
 
   /* A counter photograph shows what somebody owns and what it is worth, so it
      is not public even though its name is unguessable: the owner sees it on

@@ -7,20 +7,26 @@ import { TrackForm } from "@/components/site/track-form";
 import { Card } from "@/components/ui/card";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
+import { SHARE_CARD_TEXT } from "@/lib/share-card-text";
 
-/* Swahili first, English after. The customer reading this on a phone in Dar is
-   the person the page is for; the lengths are set by the WhatsApp preview card,
-   which cuts a title around 55 characters and a description around 110. */
+/* The browser tab keeps the customer's own words. The share card sells the
+   service instead: most of the people who ever see it are not tracking
+   anything — they are everybody else in the group the link was pasted into.
+   lib/share-card-text.ts owns both those words and the picture's, so the two
+   cannot drift apart. */
 export const metadata: Metadata = {
   title: "Fuatilia mzigo wako — Track your cargo",
-  description:
-    "Mzigo wako kwa meli, Guangzhou hadi Dar es Salaam. Enter your reference and see where your cargo has reached.",
+  description: SHARE_CARD_TEXT.description,
   alternates: { canonical: "/track" },
   openGraph: {
     type: "website",
-    title: "Swift Cargo — Fuatilia mzigo wako",
-    description:
-      "Mzigo wako kwa meli, Guangzhou → Dar es Salaam. Fungua kiungo uone umefika wapi — track your cargo.",
+    title: SHARE_CARD_TEXT.title,
+    description: SHARE_CARD_TEXT.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SHARE_CARD_TEXT.title,
+    description: SHARE_CARD_TEXT.description,
   },
 };
 
@@ -33,7 +39,7 @@ const JOURNEY = [
   ["At sea", "Around 28–30 days, with an expected arrival date"],
   ["Arrived in Dar es Salaam", "At the port"],
   ["Received at our Dar warehouse", "Counted again against what left China"],
-  ["Invoice issued", "Sign in to see it and pay"],
+  ["Invoice issued", "The amount, the lines and where to pay it"],
   ["Ready for collection", "Once the invoice is settled and checks are complete"],
   ["Collected", "Or delivered to your address"],
 ] as const;
@@ -133,18 +139,20 @@ export default function TrackPage() {
           </ol>
         </Card>
 
-        {/* Said out loud rather than left to be discovered. A customer who
-            expects to see their invoice here will otherwise read a working page
-            as a broken one. */}
+        {/* Said out loud rather than left to be discovered — in both
+            directions. A customer who expects to see their invoice here would
+            otherwise read a working page as a broken one; a customer who does
+            not expect their reference to show it should hear that from us
+            first. See lib/tracking.ts for the decision and its limits. */}
         <Card className="mt-6 p-6 sm:p-7">
           <p className="flex items-center gap-2 text-sm font-medium">
             <Lock aria-hidden className="size-4 shrink-0 text-marine" />
-            {t(locale, "What tracking does not show")}
+            {t(locale, "What a reference shows, and what it does not")}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             {t(
               locale,
-              "A reference alone shows where your cargo is, and nothing else. What we received, the photographs taken at our counter, your invoice and your payments are on your own account, behind your sign-in."
+              "Your reference opens that one consignment: what we received, the photographs taken at our counter, your invoice and what is still to pay. It never shows a telephone number, a full name, or any other cargo — sign in to see everything under your account."
             )}
           </p>
         </Card>

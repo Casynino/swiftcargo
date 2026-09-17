@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 import { CHART_LAND_PATH, CHART_W, chartPoint } from "@/lib/sea-chart";
+import { SHARE_CARD_TEXT } from "@/lib/share-card-text";
 import {
   BRIDGE_PATH,
   DECK_PATH,
@@ -16,8 +17,13 @@ import {
  *
  * Almost every customer meets this business through a link pasted into a chat,
  * and until this file existed that link arrived as a grey rectangle with a
- * tracking number in it. What arrives now is the company's name, a greeting in
- * the customer's language and the lane their goods are on.
+ * tracking number in it. What arrives now is the company's name, what it does
+ * and the lane the goods are on.
+ *
+ * IT SELLS THE SERVICE, NOT THE FORM. The card is seen mostly by people who are
+ * not tracking anything — everybody else in the group the link landed in — so
+ * the headline is the route the business runs rather than an instruction to
+ * type a reference into a box.
  *
  * NOTHING ABOUT THE CONSIGNMENT IS ON IT. This one image is inherited by
  * /track and by every /track/<reference>, and WhatsApp renders it on their
@@ -29,7 +35,7 @@ import {
  * uses, turned into one SVG, so a 1200×630 card costs a few kilobytes of path
  * data instead of a photograph in the repository.
  */
-export const alt = "Swift Cargo — sea freight from Guangzhou to Dar es Salaam";
+export const alt = "Swift Cargo — shipping from China to Tanzania";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -154,23 +160,26 @@ export default async function TrackShareCard() {
             style={{
               display: "flex",
               marginTop: 26,
-              fontSize: 68,
+              maxWidth: 780,
+              fontSize: 62,
               fontWeight: 700,
               color: "#ffffff",
               lineHeight: 1.05,
             }}
           >
-            Fuatilia mzigo wako
+            {SHARE_CARD_TEXT.headline}
           </div>
           <div
             style={{
               display: "flex",
-              marginTop: 12,
-              fontSize: 36,
-              color: "rgba(255,255,255,0.68)",
+              marginTop: 14,
+              maxWidth: 880,
+              fontSize: 30,
+              color: "rgba(255,255,255,0.7)",
+              lineHeight: 1.25,
             }}
           >
-            Track your cargo from China
+            {SHARE_CARD_TEXT.subline}
           </div>
 
           <div
