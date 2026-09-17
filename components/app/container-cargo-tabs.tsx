@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useMemo, useRef, useState } from "react";
 import {
   ArrowRightLeft,
+  Banknote,
   ChevronRight,
   Clock,
   Download,
@@ -14,6 +15,7 @@ import {
 
 import { useUrlState } from "@/components/app/use-url-state";
 import { MoveCargo } from "@/components/app/move-cargo";
+import { openRecordPayment } from "@/components/app/record-payment-dialog";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { RowPriceEditor } from "@/components/app/row-price-editor";
 import { SubmitButton } from "@/components/app/submit-button";
@@ -67,6 +69,8 @@ export type CargoRow = {
    * number to send to, or no authority to send.
    */
   send: { phone: string; message: string } | null;
+  /** True where a bill exists, is unpaid, and the viewer may take money. */
+  takesPayment: boolean;
   /** The single cargo type on the lines, for the picker on the row. */
   cargoType: string | null;
   /** Lines at more than one type — changed on the consignment, not here. */
@@ -571,6 +575,22 @@ function CargoTableRow({
           )}
         </TableCell>
         <TableCell className="p-0">
+          {row.takesPayment && row.invoiceId ? (
+            /* The customer at the counter with the money is looking at this
+               screen over somebody's shoulder. One press from the row to the
+               till, on the bill it is standing on. */
+            <button
+              type="button"
+              onClick={() => openRecordPayment(row.invoiceId ?? undefined)}
+              title={`${t(locale, "Record a payment on")} ${row.reference}`}
+              className="focus-ring float-left ml-2 mt-3 inline-flex items-center rounded-md border border-success/40 p-1.5 text-success hover:bg-success/10"
+            >
+              <Banknote className="size-3.5" />
+              <span className="sr-only">
+                {t(locale, "Record a payment")} {row.reference}
+              </span>
+            </button>
+          ) : null}
           <Link
             href={row.href}
             className="flex items-center justify-end gap-1 px-4 py-3 text-sm text-muted-foreground hover:text-foreground"

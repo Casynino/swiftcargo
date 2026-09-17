@@ -86,7 +86,7 @@ export async function ContainerMoney({
               pickupNote: true,
               packages: {
                 where: { deletedAt: null },
-                select: { cargoType: true },
+                select: { cargoType: true, descriptionZh: true },
               },
               photos: {
                 select: { url: true },
@@ -211,6 +211,7 @@ export async function ContainerMoney({
      so the send button is not rendered for them and the action refuses them. */
   const mayTellCustomers =
     can(user.role, "conversation.reply") || can(user.role, "payment.submit");
+  const mayTakePayment = can(user.role, "payment.record");
   const [locale, correction, priceList, cargoTypes] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
@@ -298,7 +299,7 @@ export async function ContainerMoney({
       receivedAt: receivedAt.getTime(),
       customer: c.receiver.fullName,
       phone: c.receiver.phone,
-      goods: types.length > 0 ? types.join(", ") : (c.description ?? "—"),
+      goods: goodsLabel(types, c.packages, c.description),
       category: types[0] ?? "",
       volumeLabel: formatCbm(measured?.cbm),
       countedAs: `${measured?.packagesCount ?? 0} pkg`,
@@ -344,6 +345,7 @@ export async function ContainerMoney({
         ? `/app/finance/invoices/${r.live[0].id}`
         : null,
       invoiceId: r.live[0]?.id ?? null,
+      takesPayment: mayTakePayment && r.live.length > 0 && r.owing > 0,
       send: (() => {
         const bill = r.live[0];
         if (!mayTellCustomers || !bill) return null;
@@ -658,3 +660,26 @@ const CONDITION_LABEL: Record<string, string> = {
   WET: "Wet",
   REPACKED: "Repacked",
 };
+
+/**
+ * WHAT THE GOODS ARE, IN BOTH LANGUAGES THAT HAVE TO READ IT.
+ *
+ * The rate book's own category, and beside it whatever Guangzhou typed on the
+ * box in Chinese. Two different people read this line — the office in Dar and,
+ * when a question goes back up the chain, the floor in Baiyun — and neither
+ * should have to guess which consignment is meant. The Chinese is what the
+ * warehouse typed, not a translation made here.
+ */
+function goodsLabel(
+  types: string[],
+  packages: { descriptionZh: string | null }[],
+  description: string | null
+) {
+  const english = types.length > 0 ? types.join(", ") : (description ?? "—");
+  const chinese = [
+    ...new Set(
+      packages.map((k) => k.descriptionZh?.trim()).filter((v): v is string => Boolean(v))
+    ),
+  ];
+  return chinese.length > 0 ? `${english} (${chinese.join(", ")})` : english;
+}
