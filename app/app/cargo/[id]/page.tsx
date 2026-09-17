@@ -662,7 +662,18 @@ export default async function CargoDetailPage({
             </CardContent>
           </Card>
 
-          {can(user.role, "receiving.china") ? (
+          {/* READING WHAT CHINA WROTE IS NOT RECEIVING.
+
+              The card was gated on `receiving.china`, which is the right to
+              put boxes on the system — so the Dar clerk holding the cargo
+              could not read the measurement they are supposed to be checking
+              theirs against, and the rule that both figures are kept and the
+              difference shown had nobody to show it to. The staff note, the
+              shelf and the clerk's name are internal, so the card asks for
+              `cargo.viewInternal`; the form that writes the row still asks
+              for the right to write it. */}
+          {can(user.role, "receiving.china") ||
+          can(user.role, "cargo.viewInternal") ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">China receiving</CardTitle>
@@ -681,30 +692,35 @@ export default async function CargoDetailPage({
                     <Field label="Notes" value={china.notes} />
                   </dl>
                 ) : null}
-                {amend ? (
-                  <ChinaReceivePanel
-                    cargoId={cargo.id}
-                    warehouses={warehouses}
-                    defaultWarehouseId={user.warehouseId}
-                    existing={
-                      china
-                        ? {
-                            packagesCount: china.packagesCount,
-                            piecesCount: china.piecesCount,
-                            weightKg: china.weightKg?.toString() ?? null,
-                            condition: china.condition,
-                            location: china.location,
-                            notes: china.notes,
-                            warehouseId: china.warehouseId,
-                          }
-                        : null
-                    }
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    This consignment has left China. Dar holds the record now.
-                  </p>
-                )}
+                {/* Custody says whose record it is; the permission says who may
+                    write a receiving row at all. A desk holding one without the
+                    other gets no form rather than a form the action refuses. */}
+                {can(user.role, "receiving.china") ? (
+                  amend ? (
+                    <ChinaReceivePanel
+                      cargoId={cargo.id}
+                      warehouses={warehouses}
+                      defaultWarehouseId={user.warehouseId}
+                      existing={
+                        china
+                          ? {
+                              packagesCount: china.packagesCount,
+                              piecesCount: china.piecesCount,
+                              weightKg: china.weightKg?.toString() ?? null,
+                              condition: china.condition,
+                              location: china.location,
+                              notes: china.notes,
+                              warehouseId: china.warehouseId,
+                            }
+                          : null
+                      }
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      This consignment has left China. Dar holds the record now.
+                    </p>
+                  )
+                ) : null}
               </CardContent>
             </Card>
           ) : null}

@@ -1,0 +1,237 @@
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+import type { Role } from "@prisma/client";
+
+import {
+  ROLE_PERMISSIONS,
+  can,
+  canAmendCargo,
+  cargoCustody,
+  isStaff,
+  type Permission,
+} from "@/lib/rbac";
+
+/**
+ * THE DEPARTMENT BOUNDARIES, WRITTEN DOWN WHERE A CHANGE TO THEM FAILS.
+ *
+ * Not a restatement of the table — these are the rules the business would be
+ * harmed by losing, each one asserted as the sentence an owner would say. A
+ * permission added to the wrong list is a two-character edit and reads as an
+ * improvement; it fails here, with the reason attached.
+ */
+
+const DESKS: Role[] = [
+  "CHINA_WAREHOUSE",
+  "DAR_WAREHOUSE",
+  "CUSTOMER_SUPPORT",
+  "FINANCE",
+];
+
+/** Anything that shows, sets or moves money. */
+const MONEY: Permission[] = [
+  "finance.view",
+  "accounting.view",
+  "accounting.manage",
+  "invoice.create",
+  "invoice.edit",
+  "invoice.issue",
+  "invoice.priceConfirm",
+  "invoice.discount",
+  "invoice.cancel",
+  "rate.view",
+  "rate.manage",
+  "customerRate.manage",
+  "fx.manage",
+  "payment.submit",
+  "payment.record",
+  "payment.verify",
+  "receipt.issue",
+  "expense.view",
+  "expense.record",
+  "profit.view",
+  "payroll.prepare",
+  "payroll.approve",
+];
+
+describe("the warehouses are never shown a price", () => {
+  for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE"] as Role[]) {
+    test(`${role} holds no money permission at all`, () => {
+      /* A clerk who knows a wider box is a bigger bill has a reason to measure
+         it narrower, and the office has no way to tell. The floor is asked to
+         measure honestly, which is easier when measuring has no visible price
+         attached. */
+      const held = MONEY.filter((p) => can(role, p));
+      assert.deepEqual(held, [], `${role} can see or move money: ${held.join(", ")}`);
+    });
+  }
+
+  test("Dar acts on the release answer and cannot influence it", () => {
+    assert.ok(can("DAR_WAREHOUSE", "release.execute"));
+    assert.ok(can("DAR_WAREHOUSE", "release.view"));
+    for (const p of ["invoice.issue", "invoice.discount", "payment.verify"] as Permission[]) {
+      assert.equal(can("DAR_WAREHOUSE", p), false, p);
+    }
+  });
+
+  test("China loads and seals; Dar receives and releases; neither does the other's half", () => {
+    assert.ok(can("CHINA_WAREHOUSE", "container.load"));
+    assert.ok(can("CHINA_WAREHOUSE", "container.seal"));
+    assert.equal(can("CHINA_WAREHOUSE", "receiving.dar"), false);
+    assert.equal(can("CHINA_WAREHOUSE", "release.execute"), false);
+
+    assert.ok(can("DAR_WAREHOUSE", "receiving.dar"));
+    assert.equal(can("DAR_WAREHOUSE", "container.load"), false);
+    assert.equal(can("DAR_WAREHOUSE", "container.seal"), false);
+    assert.equal(can("DAR_WAREHOUSE", "receiving.china"), false);
+  });
+});
+
+describe("the support desk explains; it does not do", () => {
+  /** Everything Support must be refused, and the sentence for why. */
+  const REFUSED: [Permission, string][] = [
+    ["receiving.china", "cannot say what physically arrived in Guangzhou"],
+    ["receiving.dar", "cannot say what physically came off the container"],
+    ["receiving.verify", "cannot sign off somebody else's count"],
+    ["container.create", "cannot open a container"],
+    ["container.load", "cannot pack one"],
+    ["container.seal", "cannot shut one"],
+    ["container.depart", "cannot sail one"],
+    ["container.arrive", "cannot land one"],
+    ["packingList.issue", "cannot freeze a manifest"],
+    ["cargo.scan", "cannot scan cargo in or out"],
+    ["payment.record", "cannot record money as taken"],
+    ["payment.verify", "cannot turn a claim into money"],
+    ["receipt.issue", "cannot issue a receipt"],
+    ["rate.manage", "cannot move the rate book"],
+    ["customerRate.manage", "cannot agree a customer rate"],
+    ["fx.manage", "cannot move the board rate"],
+    ["invoice.create", "cannot raise a bill by hand"],
+    ["invoice.issue", "cannot issue one by hand"],
+    ["invoice.cancel", "cannot cancel one"],
+    ["release.execute", "cannot hand the boxes over"],
+    ["cargo.hold", "cannot stop a release"],
+    ["cbm.override", "cannot overwrite a measured volume"],
+    ["user.manage", "cannot make accounts"],
+    ["settings.manage", "cannot change what the company is"],
+  ];
+
+  for (const [permission, why] of REFUSED) {
+    test(`Support ${why}`, () => {
+      assert.equal(can("CUSTOMER_SUPPORT", permission), false, permission);
+    });
+  }
+
+  test("and can answer every question a customer rings about", () => {
+    /* Without ringing Finance. The desk reads the bill, the rate book, the
+       release answer and the whole company's cargo, and may hand a payment
+       claim up and confirm a waiting price. */
+    for (const p of [
+      "cargo.viewAll",
+      "container.view",
+      "packingList.view",
+      "shipment.view",
+      "finance.view",
+      "rate.view",
+      "release.view",
+      "payment.submit",
+      "invoice.priceConfirm",
+      "invoice.discount",
+      "customer.view",
+      "customer.manage",
+      "conversation.reply",
+      "notification.send",
+      "search.global",
+      "exception.raise",
+      "delivery.manage",
+    ] as Permission[]) {
+      assert.ok(can("CUSTOMER_SUPPORT", p), p);
+    }
+  });
+
+  test("payment.verify is Finance's and nobody else's", () => {
+    const holders = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter((r) =>
+      can(r, "payment.verify")
+    );
+    assert.deepEqual(holders.sort(), ["ADMIN", "FINANCE", "MANAGER"]);
+  });
+});
+
+describe("the manager runs the business; the owner owns it", () => {
+  /** The keys to the system, as opposed to the running of it. */
+  const OWNER_ONLY: Permission[] = [
+    "user.manage",
+    "settings.manage",
+    "fx.manage",
+    "warehouse.manage",
+    "cargo.delete",
+    "container.delete",
+  ];
+
+  for (const p of OWNER_ONLY) {
+    test(`the manager does not hold ${p}`, () => {
+      assert.equal(can("MANAGER", p), false);
+      assert.ok(can("ADMIN", p), "and the owner does");
+    });
+  }
+
+  test("a manager cannot make an account and become the owner through it", () => {
+    /* Every other exclusion is a formality if this one is missing. */
+    assert.equal(can("MANAGER", "user.manage"), false);
+  });
+
+  test("the manager holds oversight and the approvals the split depends on", () => {
+    for (const p of [
+      "record.review",
+      "report.view",
+      "audit.view",
+      "records.viewDeleted",
+      "expense.approve",
+      "payroll.approve",
+      "exception.approve",
+      "exception.close",
+    ] as Permission[]) {
+      assert.ok(can("MANAGER", p), p);
+    }
+    /* Prepared by Finance, agreed by the manager. The split is the control. */
+    assert.equal(can("FINANCE", "payroll.approve"), false);
+    assert.ok(can("FINANCE", "payroll.prepare"));
+  });
+
+  test("the manager is otherwise the owner", () => {
+    const missing = ROLE_PERMISSIONS.ADMIN.filter((p) => !can("MANAGER", p));
+    assert.deepEqual(missing.sort(), [...OWNER_ONLY].sort());
+  });
+});
+
+describe("the customer gate", () => {
+  test("a customer holds no staff permission at all", () => {
+    assert.deepEqual(ROLE_PERMISSIONS.CUSTOMER, []);
+    assert.equal(isStaff("CUSTOMER"), false);
+    for (const role of DESKS) assert.ok(isStaff(role), role);
+  });
+
+  test("no permission is granted by an absent role", () => {
+    assert.equal(can(null, "cargo.view"), false);
+    assert.equal(can(undefined, "finance.view"), false);
+  });
+});
+
+describe("custody follows the cargo", () => {
+  test("Guangzhou holds the outbound half, Dar the landed half", () => {
+    assert.equal(cargoCustody("RECEIVED_CHINA"), "CHINA");
+    assert.equal(cargoCustody("IN_TRANSIT"), "CHINA");
+    assert.equal(cargoCustody("ARRIVED_TANZANIA"), "CHINA");
+    assert.equal(cargoCustody("RECEIVED_DAR"), "DAR");
+    assert.equal(cargoCustody("COLLECTED"), "DAR");
+
+    assert.ok(canAmendCargo("CHINA_WAREHOUSE", "ARRIVED_TANZANIA"));
+    assert.equal(canAmendCargo("CHINA_WAREHOUSE", "RECEIVED_DAR"), false);
+    /* Dar holds both halves: a clerk with a bale in their hands was looking at
+       cargo the system still called Guangzhou's. */
+    assert.ok(canAmendCargo("DAR_WAREHOUSE", "ARRIVED_TANZANIA"));
+    assert.ok(canAmendCargo("DAR_WAREHOUSE", "RECEIVED_DAR"));
+    /* Custody is not the verb. Support has neither half. */
+    assert.equal(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_CHINA"), false);
+    assert.equal(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_DAR"), false);
+  });
+});

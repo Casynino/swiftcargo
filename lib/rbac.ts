@@ -309,7 +309,17 @@ const CUSTOMER_SUPPORT: Permission[] = [
   "cargo.view",
   "cargo.viewAll",
   "cargo.photo",
-  "receiving.china",
+  /*
+    `receiving.china` IS NOT HERE, AND THE ABSENCE IS THE POINT.
+
+    It was, and it is the one thing on this list that would have let the desk
+    say what physically arrived: it opens the intake form, registers a customer
+    at the counter, and writes the ChinaReceiving row carrying the packages,
+    the weight and the volume a bill is priced from. Nobody at a desk in Dar
+    can see boxes in Guangzhou, so every figure entered here would be somebody
+    else's word typed in by a third party — no scale, no photographs, no shelf.
+    The floor measures; this desk explains what the floor measured.
+  */
   "deliveryNote.view",
   "container.view",
   /* The customer rings to say their goods were not on the sailing they were
@@ -437,14 +447,20 @@ const ALL: Permission[] = Array.from(
 /**
  * The manager runs the business; the owner owns it.
  *
- * Everything except the four things that would let an operator rewrite the
- * rules they operate under: who may do what, what the company is configured to
- * be, and the two destructive verbs. Removing these is the entire reason
- * MANAGER exists as a role rather than as a second ADMIN — the owner can hand
- * over the running of the business without handing over the keys to the system.
+ * Everything except the things that would let an operator rewrite the rules
+ * they operate under: who may do what, what the company is configured to be,
+ * and the two destructive verbs. Removing these is the entire reason MANAGER
+ * exists as a role rather than as a second ADMIN — the owner can hand over the
+ * running of the business without handing over the keys to the system.
+ *
+ * `user.manage` is first on that list and was the one missing from it. A
+ * manager who may open the users screen may raise an account with the owner's
+ * role and sign in as it, and every other exclusion below is then a formality.
+ * It is the difference between running the business and owning it.
  */
 const MANAGER: Permission[] = ALL.filter(
   (p) =>
+    p !== "user.manage" &&
     p !== "settings.manage" &&
     /* The rate every new bill is priced at moves only on Finance's word or the
        owner's — the people who answer for the books. */
@@ -547,90 +563,27 @@ export function canAmendCargo(
 }
 
 // ---------------------------------------------------------------------------
-// Routes
+// Where a signed-in person lands
 // ---------------------------------------------------------------------------
 
 /**
- * Which permission opens which door.
+ * THERE IS NO TABLE OF ROUTES HERE, AND THERE WAS.
  *
- * Evaluated longest-prefix-first, so a specific rule always beats the catch-all
- * above it and a misplaced row cannot open a hole. This table is NOT the gate on
- * its own: the /app layout requires a session, every data-bearing page re-asserts
- * its own permission with `requirePermission`, and every server action calls
- * `authorize`. Three layers, and this one is the cheapest.
+ * It listed a permission for every prefix under /app and claimed to be the
+ * cheapest of three layers. Nothing imported it. Middleware decides two things
+ * on the edge, where the database is unreachable — is somebody signed in, and
+ * are they staff — and says in its own words why it will not decide a third
+ * from a role frozen into a token at sign-in. Every page behind /app calls
+ * `requirePermission` against the live row, and every server action calls
+ * `authorize`.
+ *
+ * So the table was not a layer. It was a second opinion nobody asked, and it
+ * had already drifted: it said /app/finance wanted `accounting.view`, which
+ * Support does not hold, while the page itself wants `finance.view`, which
+ * Support does. Anybody wiring it up in good faith would have shut the support
+ * desk out of the screens it exists to read. A map that is never walked stops
+ * matching the ground, and the only safe thing to do with one is not keep it.
  */
-export const ROUTE_PERMISSIONS: { prefix: string; permission: Permission }[] = [
-  { prefix: "/app/scan", permission: "cargo.scan" },
-  { prefix: "/app/cargo", permission: "cargo.view" },
-
-  { prefix: "/app/receive/dar", permission: "receiving.dar" },
-  { prefix: "/app/receive", permission: "receiving.china" },
-  { prefix: "/app/inventory", permission: "inventory.view" },
-  { prefix: "/app/release", permission: "release.execute" },
-  { prefix: "/app/deliveries", permission: "delivery.manage" },
-  { prefix: "/app/reports", permission: "warehouse.reports" },
-
-  /* Longest prefix wins, so the money view of a finished sailing is gated on
-     the books rather than on the warehouse's right to see a container. */
-  { prefix: "/app/containers/closed", permission: "accounting.view" },
-  { prefix: "/app/containers", permission: "container.view" },
-  { prefix: "/app/packing-lists", permission: "packingList.view" },
-
-  /* Every desk can see a case, because a case concerns all of them at once.
-     What each may DO to one is gated action by action inside — so a China clerk
-     and a Dar clerk reach the same page and are offered different buttons. */
-  { prefix: "/app/exceptions", permission: "exception.view" },
-
-  /* The company's own money, ahead of /app/finance: `finance.view` is a
-     customer's bill and is held by Support and both warehouses, but the books
-     are not theirs. */
-  { prefix: "/app/finance/expenses", permission: "expense.view" },
-  { prefix: "/app/finance/reports", permission: "profit.view" },
-  { prefix: "/app/finance/rates", permission: "rate.view" },
-  { prefix: "/app/finance/exchange-rate", permission: "fx.manage" },
-  { prefix: "/app/finance/verify", permission: "payment.verify" },
-  { prefix: "/app/finance/payments", permission: "payment.submit" },
-  { prefix: "/app/finance/containers", permission: "finance.view" },
-  { prefix: "/app/finance/accounts", permission: "accounting.view" },
-  { prefix: "/app/finance/ledger", permission: "accounting.view" },
-  { prefix: "/app/finance/audit", permission: "accounting.view" },
-  { prefix: "/app/finance/credit", permission: "finance.view" },
-  { prefix: "/app/finance/payroll", permission: "payroll.prepare" },
-  { prefix: "/app/finance/collections", permission: "finance.view" },
-  { prefix: "/app/finance/pickup-notes", permission: "finance.view" },
-  { prefix: "/app/finance/invoices", permission: "finance.view" },
-  { prefix: "/app/finance/receipts", permission: "finance.view" },
-  { prefix: "/app/finance", permission: "accounting.view" },
-
-  { prefix: "/app/support/requests", permission: "request.view" },
-  { prefix: "/app/support", permission: "conversation.view" },
-
-  { prefix: "/app/customers", permission: "customer.view" },
-  { prefix: "/app/search", permission: "search.global" },
-
-  { prefix: "/app/admin/users", permission: "user.manage" },
-  { prefix: "/app/admin/audit", permission: "audit.view" },
-  { prefix: "/app/admin/deleted", permission: "records.viewDeleted" },
-  { prefix: "/app/admin/rates", permission: "rate.manage" },
-  { prefix: "/app/admin/warehouses", permission: "warehouse.manage" },
-  { prefix: "/app/admin/content", permission: "content.manage" },
-  { prefix: "/app/admin/markets", permission: "content.manage" },
-  { prefix: "/app/admin/settings", permission: "settings.manage" },
-  { prefix: "/app/admin", permission: "report.view" },
-
-  /* Guarded on the reviewer's permission rather than report.view: Finance also
-     reads reports, and the desk this workspace exists to check must not be able
-     to stand inside it. */
-  { prefix: "/app/manager/payroll", permission: "payroll.approve" },
-  { prefix: "/app/manager", permission: "record.review" },
-];
-
-export function permissionForPath(pathname: string): Permission | null {
-  const match = ROUTE_PERMISSIONS.filter(
-    (r) => pathname === r.prefix || pathname.startsWith(`${r.prefix}/`)
-  ).sort((a, b) => b.prefix.length - a.prefix.length)[0];
-  return match?.permission ?? null;
-}
 
 /** The dashboard renders the right department view, so there is one landing. */
 export const POST_LOGIN_PATH = "/app/dashboard";
