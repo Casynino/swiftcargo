@@ -31,6 +31,30 @@ const resolve = (Module as unknown as { _resolveFilename: (...args: unknown[]) =
     return resolve.call(this, request, ...rest);
   };
 
+/**
+ * THE TWO THINGS A SERVER ACTION NEEDS THAT A TEST HAS NOT GOT.
+ *
+ * A session, and Next's cache. Both are answered before any project file is
+ * loaded, so an action can be called here exactly as a form calls it — and the
+ * permission check is the real one out of lib/rbac.ts, so a refusal in this
+ * file is the refusal the desk would be given.
+ */
+const nodeRequire = Module.createRequire(__filename);
+let signedIn: { id: string; name: string; role: string } | null = null;
+
+function preload(request: string, exports: Record<string, unknown>) {
+  const filename = nodeRequire.resolve(request);
+  nodeRequire.cache[filename] = {
+    id: filename,
+    filename,
+    path: path.dirname(filename),
+    loaded: true,
+    exports,
+    children: [],
+    paths: [],
+  } as unknown as NodeJS.Module;
+}
+
 const prisma = new PrismaClient();
 const ROLLBACK = new Error("rollback");
 
@@ -39,19 +63,63 @@ type List = typeof import("@/lib/price-list");
 type Balance = typeof import("@/lib/invoice-balance");
 type Note = typeof import("@/lib/pickup-note");
 type Rbac = typeof import("@/lib/rbac");
+type PriceActions = typeof import("@/lib/actions/price-list");
 let confirmLib: Confirm;
 let listLib: List;
 let balanceLib: Balance;
 let noteLib: Note;
 let rbac: Rbac;
+let priceActions: PriceActions;
 
 before(async () => {
+  rbac = await import("@/lib/rbac");
+  preload("next/cache", {
+    revalidatePath: () => {},
+    revalidateTag: () => {},
+    unstable_cache: (fn: unknown) => fn,
+  });
+  preload("@/lib/session", {
+    currentUser: async () => signedIn,
+    requireUser: async () => signedIn,
+    requireStaff: async () => signedIn,
+    requirePermission: authorizeAs,
+    authorize: authorizeAs,
+    authorizeAny: async (permissions: string[]) => {
+      if (!signedIn) throw new Error("Not signed in.");
+      if (!permissions.some((p) => rbac.can(signedIn!.role as never, p as never))) {
+        throw new Error("You do not have permission to do that.");
+      }
+      return signedIn;
+    },
+    authorizeCustomer: async () => {
+      throw new Error("Not permitted.");
+    },
+    requireCustomer: async () => {
+      throw new Error("Not permitted.");
+    },
+  });
   confirmLib = await import("@/lib/price-confirmation");
   listLib = await import("@/lib/price-list");
   balanceLib = await import("@/lib/invoice-balance");
   noteLib = await import("@/lib/pickup-note");
-  rbac = await import("@/lib/rbac");
+  priceActions = await import("@/lib/actions/price-list");
 });
+
+async function authorizeAs(permission: string) {
+  if (!signedIn) throw new Error("Not signed in.");
+  if (!rbac.isStaff(signedIn.role as never)) throw new Error("Not permitted.");
+  if (!rbac.can(signedIn.role as never, permission as never)) {
+    throw new Error("You do not have permission to do that.");
+  }
+  return signedIn;
+}
+
+/** A form as the browser posts it. */
+function form(fields: Record<string, string>) {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(fields)) data.append(key, value);
+  return data;
+}
 
 after(() => prisma.$disconnect());
 
@@ -304,6 +372,107 @@ describe("Finance prices nothing Dar has not confirmed", () => {
         invoice.total.mul(ctx.fx.rate).toDecimalPlaces(0).toString()
       );
     });
+  });
+});
+
+describe("a measurement goes back to the floor, not into Finance's hands", () => {
+  /* Through the real server action, session and all: this one commits, so it
+     clears up after itself like the race does. */
+  test("the signature comes off, a case goes to Dar, and it returns priced", async () => {
+    const me = await actor(prisma);
+    const { cargo, customer } = await landed(prisma, "BACK", { confirmed: true });
+    try {
+      signedIn = { id: me.id, name: me.name ?? "Finance", role: "FINANCE" };
+      const sent = await priceActions.queryCountWithDar(
+        {},
+        form({
+          cargoId: cargo.id,
+          kind: "CBM_DIFFERENCE",
+          reason: "6 CBM for four cartons cannot be right",
+        })
+      );
+      assert.ok(sent.ok, sent.error);
+
+      const back = await prisma.darReceiving.findUniqueOrThrow({
+        where: { cargoId: cargo.id },
+      });
+      assert.equal(back.verified, false, "Dar's signature is off");
+      assert.equal(back.verifiedAt, null);
+      assert.equal(back.discrepancy, false, "and the floor's own flag is untouched");
+
+      const opened = await prisma.exceptionCase.findFirstOrThrow({
+        where: { cargoId: cargo.id },
+      });
+      assert.equal(opened.department, "DAR_WAREHOUSE", "addressed to the floor");
+      assert.equal(opened.type, "CBM_DIFFERENCE", "named for the figure to re-check");
+      assert.equal(opened.status, "OPEN");
+
+      const changed = await prisma.fieldChange.findFirstOrThrow({
+        where: { entity: "DarReceiving", entityId: back.id, field: "verified" },
+      });
+      assert.equal(changed.oldValue, "true", "old value first");
+      assert.equal(changed.actorId, me.id);
+
+      const waiting = await listLib.priceListFor({ id: cargo.id });
+      assert.equal(waiting.ready, 0, "and it is out of the press meanwhile");
+
+      /* Dar re-measures and signs it off; it comes back onto the list. */
+      await prisma.darReceiving.update({
+        where: { cargoId: cargo.id },
+        data: { verified: true, verifiedAt: new Date() },
+      });
+      const returned = await listLib.priceListFor({ id: cargo.id });
+      assert.equal(returned.ready, 1);
+    } finally {
+      signedIn = null;
+      await prisma.exceptionEvent.deleteMany({
+        where: { case: { cargoId: cargo.id } },
+      });
+      await prisma.exceptionCase.deleteMany({ where: { cargoId: cargo.id } });
+      await unseed(cargo.id, customer.id);
+    }
+  });
+
+  test("a bill already out is corrected on the bill, never by a re-measure", async () => {
+    const me = await actor(prisma);
+    const { cargo, customer } = await landed(prisma, "BILLD", { confirmed: true });
+    try {
+      const ctx = await confirmLib.confirmContext(7);
+      assert.ok(ctx);
+      await prisma.$transaction((tx) => confirmLib.confirmCargoPrice(tx, me, cargo.id, ctx), {
+        timeout: 30_000,
+      });
+
+      signedIn = { id: me.id, name: me.name ?? "Finance", role: "FINANCE" };
+      const refused = await priceActions.queryCountWithDar(
+        {},
+        form({ cargoId: cargo.id, kind: "CBM_DIFFERENCE", reason: "looks high" })
+      );
+      assert.ok(refused.error, "refused");
+      assert.match(refused.error!, /already billed/);
+      const still = await prisma.darReceiving.findUniqueOrThrow({
+        where: { cargoId: cargo.id },
+      });
+      assert.equal(still.verified, true, "and nothing moved");
+    } finally {
+      signedIn = null;
+      await unseed(cargo.id, customer.id);
+    }
+  });
+
+  test("neither warehouse can send a measurement back — they have no price to read", async () => {
+    const me = await actor(prisma);
+    for (const role of ["DAR_WAREHOUSE", "CHINA_WAREHOUSE"] as const) {
+      signedIn = { id: me.id, name: "floor", role };
+      await assert.rejects(
+        priceActions.queryCountWithDar(
+          {},
+          form({ cargoId: "whatever", kind: "OTHER", reason: "because" })
+        ),
+        /permission/
+      );
+    }
+    signedIn = null;
   });
 });
 
