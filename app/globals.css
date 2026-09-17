@@ -1,0 +1,254 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 45% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 45% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 45% 12%;
+
+    --primary: 209 82% 29%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 34% 96%;
+    --secondary-foreground: 209 50% 22%;
+
+    --muted: 210 34% 96%;
+    --muted-foreground: 213 16% 45%;
+
+    --accent: 210 34% 95%;
+    --accent-foreground: 209 50% 22%;
+
+    --destructive: 0 72% 46%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 212 26% 90%;
+    --input: 212 26% 90%;
+    --ring: 209 82% 34%;
+
+    /* Brand — sampled from the logo: navy hull, cyan containers, orange sun.
+       Navy carries structure; orange is the action colour, exactly as it is the
+       loudest thing in the artwork. */
+    --brand: 209 82% 29%;
+    --brand-foreground: 0 0% 100%;
+    --brand-muted: 209 70% 96%;
+
+    --signal: 19 90% 54%;
+    --signal-foreground: 0 0% 100%;
+
+    /* The deep field the public hero panels sit on. Independent of the
+       light/dark theme: these panels are the same colour in both, the way a
+       printed cover is. */
+    --ink: 210 60% 9%;
+
+    /* Marine cyan. The finish that separates a freight company from a software
+       product — eyebrows, rules, numerals, the quiet marks of quality. Orange
+       stays the call to action; cyan is the polish on it. */
+    --marine: 196 82% 48%;
+    --marine-foreground: 210 60% 9%;
+
+    /* Elevation as tokens rather than one-off greys, so a card is the same card
+       on every screen. */
+    --surface-1: 210 40% 99%;
+    --surface-2: 210 34% 97%;
+    --surface-3: 210 30% 94%;
+    --glass: 0 0% 100% / 0.72;
+    --glass-border: 212 26% 88% / 0.9;
+
+    /* Status */
+    --success: 152 58% 33%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 92% 43%;
+    --warning-foreground: 0 0% 100%;
+    --info: 196 82% 40%;
+    --info-foreground: 0 0% 100%;
+
+    --radius: 0.75rem;
+
+    /* Data visualisation, ordered by first use so a two-series chart is always
+       navy against cyan — never two colours that read as the same thing. Each
+       adjacent pair differs in lightness as well as hue, so the series stay
+       separable without relying on colour alone. */
+    --chart-1: 209 76% 34%;
+    --chart-2: 196 78% 45%;
+    --chart-3: 19 90% 54%;
+    --chart-4: 174 62% 36%;
+    --chart-5: 262 56% 58%;
+    --chart-6: 212 16% 55%;
+
+    /* Motion as tokens, so "fast" means the same thing everywhere. */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-fast: 140ms;
+    --dur-base: 240ms;
+    --dur-slow: 420ms;
+  }
+
+  /* Near-black operational surfaces. Warehouse screens run at full brightness
+     for hours; deep neutrals with quiet elevation are easier to sit in front of
+     than a mid-navy, and status colour reads louder against them. */
+  .dark {
+    --background: 213 26% 6%;
+    --foreground: 210 24% 96%;
+
+    /* Three points of lightness between page and card is not separation, it is
+       a rumour. Surfaces have to read as surfaces or every screen flattens into
+       one grey field. */
+    --card: 213 20% 11%;
+    --card-foreground: 210 24% 96%;
+
+    --popover: 213 21% 10%;
+    --popover-foreground: 210 24% 96%;
+
+    --primary: 210 24% 96%;
+    --primary-foreground: 213 26% 7%;
+
+    --secondary: 213 17% 14%;
+    --secondary-foreground: 210 24% 96%;
+
+    --muted: 213 17% 14%;
+    --muted-foreground: 214 14% 63%;
+
+    --accent: 213 17% 16%;
+    --accent-foreground: 210 24% 96%;
+
+    --destructive: 0 68% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 213 14% 22%;
+    --input: 213 14% 22%;
+    --ring: 199 74% 60%;
+
+    --brand: 202 76% 60%;
+    --brand-foreground: 213 30% 9%;
+    --brand-muted: 210 32% 16%;
+
+    --signal: 19 90% 60%;
+    --signal-foreground: 0 0% 100%;
+
+    /* Cyan has to lift off navy without going pale, so it brightens slightly
+       and keeps its saturation in the dark theme. */
+    --marine: 196 84% 62%;
+    --marine-foreground: 213 30% 9%;
+
+    --surface-1: 213 20% 11%;
+    --surface-2: 213 19% 14%;
+    --surface-3: 213 18% 18%;
+    --glass: 213 26% 12% / 0.64;
+    --glass-border: 210 40% 98% / 0.12;
+
+    --success: 152 50% 46%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 88% 56%;
+    --warning-foreground: 213 30% 9%;
+    --info: 196 78% 56%;
+    --info-foreground: 0 0% 100%;
+
+    --chart-1: 205 80% 60%;
+    --chart-2: 190 78% 52%;
+    --chart-3: 19 90% 62%;
+    --chart-4: 174 58% 48%;
+    --chart-5: 262 66% 70%;
+    --chart-6: 212 16% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Numbers compared against other numbers must not shift width as they change,
+     or a column of figures shimmers on every refresh. */
+  .tnum,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: hsl(var(--brand) / 0.18);
+  }
+}
+
+@layer components {
+  /* Every raised surface picks from these, so cards, chips and popovers sit at
+     the same visual height instead of each inventing its own shadow. */
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px -1px hsl(210 45% 20% / 0.07),
+      0 2px 8px -3px hsl(210 45% 20% / 0.07);
+  }
+
+  .shadow-raised {
+    box-shadow:
+      0 1px 2px -1px hsl(210 45% 20% / 0.08),
+      0 8px 24px -8px hsl(210 45% 20% / 0.14);
+  }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* The frosted header over a scrolling page. */
+  .glass {
+    background: hsl(var(--glass));
+    backdrop-filter: saturate(180%) blur(12px);
+    border-color: hsl(var(--glass-border));
+  }
+
+  /* The small capitalised line above a hero or a section on the public site. */
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.18em];
+  }
+}
+
+@layer utilities {
+  /* The entrance every card and section uses. `both` holds the opening frame
+     during the stagger delay, so a row of five cards arrives in order rather
+     than all at once — and prefers-reduced-motion turns the whole thing off
+     rather than merely shortening it. */
+  .animate-in-up {
+    animation: fade-up var(--dur-slow) var(--ease-out) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-in-up {
+      animation: none;
+    }
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media print {
+  /* A printed document is the document, not the app around it. */
+  aside,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+}

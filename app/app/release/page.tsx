@@ -1,0 +1,156 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { EmptyState } from "@/components/app/empty-state";
+import { PageHeader } from "@/components/app/page-header";
+import { SectionTabs } from "@/components/app/section-tabs";
+import { ReleaseForm } from "@/components/app/release-panel";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { prisma } from "@/lib/prisma";
+import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
+import { requirePermission } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Pickup list" };
+
+/**
+ * THE COUNTER, AND ONLY WHAT MAY LEAVE IT.
+ *
+ * Cleared consignments only. The page once listed the blocked ones too, with a
+ * checklist of what each was missing — which meant the floor read five reasons
+ * for every one thing it could actually hand over, and the money owed was
+ * printed on a screen the warehouse is deliberately kept away from.
+ *
+ * Why a consignment is not here is a question for its own page, where the
+ * timeline and the case live. This list answers one question: who is standing
+ * at the counter, and may they take their goods.
+ *
+ * Clearance is computed on every read — verified, invoiced, paid, no case, no
+ * hold. Nothing on this screen can grant it.
+ */
+export default async function ReleasePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  await requirePermission("release.execute");
+  const { q } = await searchParams;
+  const query = q?.trim() ?? "";
+
+  const cargo = await prisma.cargo.findMany({
+    where: {
+      deletedAt: null,
+      status: { in: ["RECEIVED_DAR", "READY_FOR_RELEASE"] },
+      ...(query
+        ? {
+            OR: [
+              { reference: { contains: query, mode: "insensitive" as const } },
+              { shippingMark: { contains: query, mode: "insensitive" as const } },
+              {
+                receiver: {
+                  OR: [
+                    { fullName: { contains: query, mode: "insensitive" as const } },
+                    { phone: { contains: query } },
+                  ],
+                },
+              },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { updatedAt: "asc" },
+    take: 60,
+    include: {
+      ...RELEASE_INCLUDE,
+      receiver: { select: { fullName: true, phone: true } },
+      sender: { select: { fullName: true } },
+    },
+  });
+
+  const checked = cargo.map((item) => ({ item, check: checkRelease(item) }));
+  const ready = checked.filter((c) => c.check.ok);
+
+  return (
+    <div className="space-y-6">
+      {/*
+        THE PICKUP LIST, NOT "RELEASE".
+
+        The word on the counter is pickup: a customer rings to ask whether their
+        goods are ready to collect, and this is the list that answers. The screen
+        is named after the question rather than after the database operation.
+
+        What may go is computed, never asserted — verified, invoiced, paid, no
+        case and no hold. Nobody here can overrule it; settling what is missing
+        is what clears it.
+      */}
+      <PageHeader
+        title="Pickup list"
+        description="Customers who have paid and whose cargo is cleared to collect. Open a row to hand it over."
+      />
+      <SectionTabs />
+
+      <form className="max-w-md">
+        <Input
+          name="q"
+          defaultValue={query}
+          placeholder="Reference, mark, customer or phone…"
+          aria-label="Find cargo"
+        />
+      </form>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          Ready to collect ({ready.length})
+        </h2>
+        {ready.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon="DoorOpen"
+              title="Nobody is waiting to collect"
+              description="Cargo joins this list the moment it is verified, invoiced and paid in full."
+            />
+          </Card>
+        ) : (
+          ready.map(({ item }) => (
+            <Card key={item.id}>
+              <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+                {/* The person at the counter leads. A pickup list is read by
+                    somebody looking for a name, and the tracking number is what
+                    confirms it once they have found them. */}
+                <div>
+                  <CardTitle className="text-base">
+                    {item.receiver.fullName}
+                  </CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    <span className="tnum">{item.receiver.phone}</span>
+                    {" · "}
+                    <Link
+                      href={`/app/cargo/${item.id}`}
+                      className="tnum hover:underline"
+                    >
+                      {item.reference}
+                    </Link>
+                    {item.receiverId !== item.senderId
+                      ? ` · sent by ${item.sender.fullName}`
+                      : ""}
+                  </p>
+                </div>
+                <Badge tone="good">cleared</Badge>
+              </CardHeader>
+              <CardContent>
+                <ReleaseForm
+                  cargoId={item.id}
+                  packages={item.darReceiving?.packagesCount ?? 1}
+                  receiverName={item.receiver.fullName}
+                  receiverPhone={item.receiver.phone}
+                />
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </section>
+
+    </div>
+  );
+}

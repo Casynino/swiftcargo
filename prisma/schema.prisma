@@ -1,0 +1,2602 @@
+// Swift Cargo — sea freight operations schema. China → Tanzania.
+//
+// Design notes
+// ------------
+// * THE CARGO IS THE ATOM. One `Cargo` row is created once, against a customer,
+//   and carries the SAME identity (reference + qrToken) from the Guangzhou
+//   counter to the moment it is handed over in Dar. China receiving, the
+//   container, the packing list, the invoice, the payment and the release all
+//   hang off that one row. No department gets its own copy.
+//
+// * A CONTAINER HOLDS MANY CUSTOMERS. That is the whole difference from an air
+//   cargo batch. The physical fact is `CargoPackage.containerId` — packages of
+//   one consignment can split across two sailings, and the live business does
+//   this. `ContainerCargo` is the commercial rollup on top: one line per
+//   customer per container, which is exactly a packing list line.
+//
+// * TWO MEASUREMENTS, BOTH KEPT. `ChinaReceiving` and `DarReceiving` are
+//   separate rows with their own weight, count and CBM. Neither ever overwrites
+//   the other. The difference between them is the audit.
+//
+// * MONEY IS DERIVED, NEVER STORED. There is no balance column anywhere.
+//   Outstanding = invoice total − sum of VERIFIED payments, computed at read.
+//   Every money column is Decimal; nothing financial is a Float.
+//
+// * PRICED IN USD, COLLECTED IN TZS. An invoice pins the `ExchangeRate` row it
+//   used. Re-reading today's rate against last month's invoice is how a bill
+//   silently changes after the customer agreed to it.
+//
+// * SEQUENCE NUMBERS (SWC-, DN-, PL-, INV-, RCT-, REL-) come from the Counter
+//   table inside a transaction, so two clerks can never mint the same one.
+//
+// * EVERY STATE CHANGE IS APPENDED (CargoStatusHistory, ExceptionEvent,
+//   FieldChange, AuditLog). None of those tables is ever updated or deleted.
+//
+// * NOTHING THAT IS EVIDENCE OR MONEY GOES WITH ITS PARENT. Cargo, containers,
+//   customers, payments and accounts are soft-deleted (`deletedAt`, `active`)
+//   and never removed, so their history, receivings, photos, expenses, proofs
+//   and notes are `onDelete: Restrict`: a hard delete issued by mistake fails
+//   rather than silently erasing the trail. Cascade is kept only where the child
+//   is a working copy of its parent and nothing else points at it — invoice and
+//   payroll lines, a customer's negotiated rates, notifications.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// People and access
+// ---------------------------------------------------------------------------
+
+enum Role {
+  /// Owner. Full access, including who may do what. Still audited.
+  ADMIN
+
+  /// Runs the operation day to day. Sees everything ADMIN sees and approves
+  /// what needs a second signature, but cannot change WHO CAN DO WHAT: no
+  /// roles, no permissions, no company configuration. That line is the reason
+  /// the role exists separately — full oversight, no power to rewrite the rules
+  /// being operated under.
+  MANAGER
+
+  /// Talks to customers. Sees the whole chain read-only so it can answer
+  /// "where is my cargo" without asking another desk, and can chase money —
+  /// but never verifies a payment, never sets a rate, never releases cargo.
+  CUSTOMER_SUPPORT
+
+  CHINA_WAREHOUSE
+  DAR_WAREHOUSE
+  FINANCE
+
+  /// Not staff. A customer signing in to their own portal. Holds no department
+  /// and reaches nothing under /app. Every query on their behalf is scoped by
+  /// the customerId on their own row, never by anything in a URL.
+  CUSTOMER
+}
+
+enum Department {
+  MANAGEMENT
+  CUSTOMER_SUPPORT
+  CHINA_WAREHOUSE
+  DAR_WAREHOUSE
+  FINANCE
+}
+
+/// Whether an account may be used. SUSPENDED is a temporary block (an
+/// investigation, a lost phone); INACTIVE is somebody who has left. Neither can
+/// sign in — the difference is what a manager reads on the screen.
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+model User {
+  id String @id @default(cuid())
+
+  name         String
+  email        String  @unique
+  phone        String?
+  passwordHash String
+
+  role       Role
+  /// Null for CUSTOMER, who is not staff and belongs to no department.
+  department Department?
+
+  /// Which floor this person works on, when it matters. A China clerk and a Dar
+  /// clerk hold different permissions by role; this narrows a warehouse user to
+  /// one physical site for the screens that ask.
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+
+  /// The customer this login belongs to. Set only for role CUSTOMER, and it is
+  /// the ONLY thing that decides which cargo they may see.
+  customerId String?   @unique
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  status UserStatus @default(ACTIVE)
+  active Boolean    @default(true)
+
+  locale String @default("en")
+
+  /// What this person is paid a month, in USD like the rate book.
+  /// Null means "not on the payroll" — a run skips them rather than guessing
+  /// zero, because a zero line on a salary slip is a statement, not a silence.
+  baseSalary Decimal? @db.Decimal(14, 2)
+
+  lastLoginAt  DateTime?
+  lastActiveAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdById  String?
+  createdBy    User?   @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers User[]  @relation("UserCreatedBy")
+
+  auditLogs          AuditLog[]
+  loginEvents        LoginEvent[]
+  notifications      Notification[]
+  fieldChanges       FieldChange[]
+  cargoCreated       Cargo[]              @relation("CargoCreatedBy")
+  chinaReceivings    ChinaReceiving[]
+  darReceivings      DarReceiving[]
+  deliveryNotes      DeliveryNote[]
+  photosUploaded     CargoPhoto[]
+  packingLists       PackingList[]
+  containerEvents    ContainerEvent[]
+  invoicesIssued     Invoice[]            @relation("InvoiceIssuedBy")
+  paymentsRecorded   Payment[]            @relation("PaymentRecordedBy")
+  transfersRecorded  AccountTransfer[]    @relation("TransferRecordedBy")
+  cashCounts         CashCount[]
+  reviewsGiven       ManagerReview[]      @relation("ManagerReviewBy")
+  paymentsVerified   Payment[]            @relation("PaymentVerifiedBy")
+  receiptsIssued     Receipt[]
+  releasesDone       Release[]
+  exceptionsRaised   ExceptionCase[]      @relation("ExceptionRaisedBy")
+  exceptionsAssigned ExceptionCase[]      @relation("ExceptionAssignedTo")
+  exceptionEvents    ExceptionEvent[]
+  messagesSent       Message[]
+  conversations      Conversation[]       @relation("ConversationAssignee")
+  sourcingAssigned   SourcingRequest[]    @relation("SourcingAssignee")
+  sourcingCreated    SourcingRequest[]    @relation("SourcingCreator")
+  expensesRecorded   ContainerExpense[]
+  cargoStatusEvents  CargoStatusHistory[]
+  pickupNotesIssued  PickupNote[]         @relation("PickupNoteIssuedBy")
+  contactsSent       CustomerContact[]    @relation("ContactSentBy")
+  payrollPrepared    PayrollRun[]         @relation("PayrollPreparedBy")
+  payrollApproved    PayrollRun[]         @relation("PayrollApprovedBy")
+  payrollPaid        PayrollRun[]         @relation("PayrollPaidBy")
+  payrollLines       PayrollItem[]        @relation("PayrollItemStaff")
+
+  @@index([role, status])
+  @@index([department])
+}
+
+/// Every sign-in attempt, including the ones against an address nobody owns.
+/// Five failures overnight is the thing worth seeing, and it is invisible if
+/// only successes are stored.
+model LoginEvent {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  email     String
+  ok        Boolean
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Customers and suppliers
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id   String @id @default(cuid())
+  /// CUS-000125. Minted from Counter, quoted on the phone.
+  code String @unique
+
+  fullName     String
+  businessName String?
+  email        String?
+  phone        String
+  /// Second number. A customer who is not reachable is a container that cannot
+  /// be released, so more than one is worth the column.
+  altPhone     String?
+
+  address String?
+  city    String?
+  country String? @default("Tanzania")
+
+  /// The mark the customer's supplier writes on the boxes in China, and the
+  /// only way the Guangzhou floor knows whose cargo just arrived: SWC-NINO-125.
+  /// Unique, because two customers sharing one mark is precisely the mix-up the
+  /// mark exists to prevent.
+  shippingMark String? @unique
+
+  /// TIN / VRN, for customers who need a VAT invoice.
+  taxId String?
+
+  notes String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  login User?
+
+  cargoSent     Cargo[] @relation("CargoSender")
+  cargoReceived Cargo[] @relation("CargoReceiver")
+
+  invoices          Invoice[]
+  pickupNotes       PickupNote[]
+  payments          Payment[]
+  receipts          Receipt[]
+  conversations     Conversation[]
+  sourcingRequests  SourcingRequest[]
+  notifications     Notification[]
+  exceptions        ExceptionCase[]
+  pickupRequests    PickupRequest[]
+  containerBookings ContainerBooking[]
+  quoteRequests     QuoteRequest[]
+  deliveryRequests  DeliveryRequest[]
+  customerRates     CustomerRate[]
+  billedExpenses    ContainerExpense[]
+  contacts          CustomerContact[]
+
+  @@index([phone])
+  @@index([fullName])
+  @@index([deletedAt, createdAt])
+}
+
+/// Who actually handed the boxes over in Guangzhou. Not a customer — Swift
+/// Cargo has no relationship with them and never bills them — but the warehouse
+/// needs to record which factory delivered what, because when a mark is missing
+/// the supplier's name is the only thread back to an owner.
+model Supplier {
+  id   String @id @default(cuid())
+  name String
+
+  contactName String?
+  phone       String?
+  wechat      String?
+  address     String?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cargo Cargo[]
+
+  @@index([name])
+}
+
+enum WarehouseKind {
+  CHINA
+  TANZANIA
+}
+
+model Warehouse {
+  id   String        @id @default(cuid())
+  code String        @unique
+  name String
+  kind WarehouseKind
+
+  /// Shown to customers so they can pass it to their supplier — in the local
+  /// script, because a Guangzhou driver cannot read a romanisation.
+  addressLocal   String?
+  addressEnglish String?
+  city           String?
+  country        String?
+  phone          String?
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  chinaReceivings ChinaReceiving[]
+  darReceivings   DarReceiving[]
+}
+
+// ---------------------------------------------------------------------------
+// Cargo — the spine of the system
+// ---------------------------------------------------------------------------
+
+/// The eleven milestones a customer is shown, in order. CANCELLED is an
+/// administrative exit and is never part of the happy path.
+///
+/// These are DERIVED from container and warehouse events, not typed per piece.
+/// A container carries three hundred consignments; nobody ticks three hundred
+/// boxes to say a ship sailed.
+enum CargoStatus {
+  /// A record exists; the boxes have not arrived in Guangzhou yet.
+  REGISTERED
+  RECEIVED_CHINA
+  ASSIGNED_TO_CONTAINER
+  CONTAINER_LOADED
+  DEPARTED_CHINA
+  IN_TRANSIT
+  ARRIVED_TANZANIA
+  RECEIVED_DAR
+  READY_FOR_RELEASE
+  COLLECTED
+  DELIVERED
+  /// ON THE MANIFEST, NOT ON THE FLOOR.
+  ///
+  /// The container was unloaded and this consignment did not come off it. It is
+  /// deliberately NOT a kind of received: putting it into Dar inventory as if it
+  /// had arrived is how a box that is still in Guangzhou — or on the next
+  /// vessel, or on somebody else's lorry — gets promised to a customer.
+  MISSING_AT_DAR
+  CANCELLED
+}
+
+/// Which service the consignment travelled on. Swift Cargo sells exactly two,
+/// and they price differently.
+enum ServiceType {
+  /// Loose cargo consolidated with other customers into a shared container.
+  LCL
+  /// The customer's own container.
+  FCL
+}
+
+/// What the packages are, for the manifest. Loose cargo out of Guangzhou is
+/// mostly baled; calling twenty bales twenty cartons makes the packing list
+/// disagree with what is on the floor.
+enum PackageType {
+  CARTON
+  BALE
+  BAG
+  PALLET
+  CRATE
+  DRUM
+  PIECE
+  OTHER
+}
+
+/// The unit the dimensions were TYPED IN. Stored beside the numbers because
+/// a CBM is meaningless without it — 60 × 40 × 40 is 0.096 m³ in centimetres
+/// and 96,000 m³ in metres, and the second one has been invoiced before.
+enum MeasurementUnit {
+  CM
+  M
+}
+
+model Cargo {
+  id String @id @default(cuid())
+
+  /// Public identity: SWC-2026-000125. Printed on the delivery note, quoted to
+  /// the customer, typed into the tracking box.
+  reference String @unique
+
+  /// Opaque secret behind the QR on the label. Deliberately NOT the reference —
+  /// references are sequential and public, so anyone could guess one and present
+  /// a forged label at the Dar counter. The QR is the credential; the reference
+  /// is only a name.
+  qrToken String @unique
+
+  /// WHO SHIPS AND WHO COLLECTS ARE NOT ALWAYS THE SAME PERSON.
+  ///
+  /// The sender owns the shipping mark and dealt with the factory in China. The
+  /// receiver is who the invoice is addressed to and who may walk out of the Dar
+  /// warehouse with the boxes. In most consignments they are the same customer
+  /// row; when they are not, releasing to the sender is releasing to the wrong
+  /// person, and there is no way back from that.
+  senderId   String
+  sender     Customer @relation("CargoSender", fields: [senderId], references: [id], onDelete: Restrict)
+  receiverId String
+  receiver   Customer @relation("CargoReceiver", fields: [receiverId], references: [id], onDelete: Restrict)
+
+  /// Copied onto the cargo at creation from the sender, and then frozen. A
+  /// customer may change their mark; the boxes already in Guangzhou still carry
+  /// the old one written in marker pen.
+  shippingMark String?
+
+  /**
+   * THE SERIAL FROM THE PAPER BOOK: 0002989.
+   * Guangzhou writes a carbon-copy "Receiving Goods" note for every delivery,
+   * and its pre-printed number is what the packing list has always referenced
+   * (the "Inquiry Number" column). Recording it here is what keeps the paper in
+   * the customer's hand and the row in this database provably the same event.
+   * Optional, because a consignment entered without the book to hand is still a
+   * consignment. Not unique, because a book can be reprinted and two warehouses
+   * could one day run their own series — a clash should be a thing somebody
+   * notices, not a save that fails at the counter with a driver waiting.
+   */
+  paperReceiptNo String?
+
+  /// WHAT THE RATE BOOK SAID ON THE DAY IT WAS RECEIVED.
+  ///
+  /// Not a balance, and nothing is ever billed from it — an invoice pins its
+  /// own rates and is the only demand for money. This is the figure the office
+  /// reads before anything has landed, and the record of what the price list
+  /// said when the goods were taken in, which is the argument nobody can
+  /// otherwise settle once a rate has moved.
+  ///
+  /// The snapshot holds the per-line working: cargo type, volume, rate, amount.
+  estimatedValue    Decimal?  @db.Decimal(14, 2)
+  estimatedCurrency String?
+  estimatedAt       DateTime?
+  valuationSnapshot Json?
+
+  supplierId  String?
+  supplier    Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  /// The factory's own reference on the delivery, so a customer chasing their
+  /// supplier can be matched to a consignment nobody could name.
+  supplierRef String?
+
+  service     ServiceType @default(LCL)
+  description String
+  /// Commodity, for the rate book and for customs. It does NOT decide a route —
+  /// there is one sea lane.
+  commodity   String?
+
+  status CargoStatus @default(REGISTERED)
+
+  /// Declared at booking, before anything is on a scale. What the warehouse
+  /// actually counts lives on ChinaReceiving; the two disagreeing is normal and
+  /// is not an error.
+  declaredPackages Int?
+  declaredCbm      Decimal? @db.Decimal(12, 4)
+
+  /// Stops the release engine dead regardless of money. Set by a warehouse or a
+  /// manager: a customs question, a dispute, a case open on the boxes.
+  operationalHold       Boolean @default(false)
+  operationalHoldReason String?
+
+  notes         String?
+  /// Never shown to a customer, on the portal or on public tracking.
+  internalNotes String?
+
+  createdById String?
+  createdBy   User?   @relation("CargoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete. The record leaves every normal view and keeps its photos, its
+  /// packages and its history.
+  deletedAt DateTime?
+
+  packages        CargoPackage[]
+  photos          CargoPhoto[]
+  chinaReceiving  ChinaReceiving?
+  darReceiving    DarReceiving?
+  deliveryNote    DeliveryNote?
+  containerLines  ContainerCargo[]
+  invoices        Invoice[]
+  pickupNote      PickupNote?
+  release         Release?
+  deliveryRequest DeliveryRequest?
+  exceptions      ExceptionCase[]
+  history         CargoStatusHistory[]
+  conversations   Conversation[]
+  contacts        CustomerContact[]
+
+  @@index([shippingMark])
+  @@index([createdAt])
+  @@index([status, deletedAt])
+  @@index([senderId, createdAt])
+  @@index([receiverId, createdAt])
+  @@index([deletedAt])
+}
+
+/// One line of the consignment: a bale, a carton, a pallet. CBM is computed
+/// here and nowhere else.
+model CargoPackage {
+  id String @id @default(cuid())
+
+  cargoId String
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  /// SWC-2026-000125-P3. Readable and orderable, so a clerk holding two bales
+  /// can tell which is which without a scanner.
+  reference String @unique
+
+  packageType PackageType @default(CARTON)
+  description String?
+
+  /**
+   * The same goods in Chinese: 搅拌机 beside BLENDER.
+   * The packing list carries both columns because two different people read
+   * it — a clerk in Baiyun and a customs officer in Dar — and neither should
+   * have to guess. Kept as its own column rather than translated on the fly:
+   * the warehouse types what the supplier wrote on the box.
+   */
+  descriptionZh String?
+
+  /// Packages. A carton of fifty toothpastes is one package.
+  quantity Int @default(1)
+
+  /**
+   * Pieces inside the packages, which is what the customer counts.
+   * One carton, fifty pieces. Recorded separately because the two numbers
+   * answer different questions and conflating them makes a manifest disagree
+   * with what is on the pallet.
+   */
+  pieces Int?
+
+  /// THE UNIT IS PART OF THE MEASUREMENT.
+  /// Never mix centimetres and metres in one column and hope the magnitude
+  /// gives it away. 1 × 1 × 1 is a plausible crate in metres and a plausible
+  /// trinket in centimetres.
+  unit   MeasurementUnit @default(CM)
+  length Decimal?        @db.Decimal(10, 2)
+  width  Decimal?        @db.Decimal(10, 2)
+  height Decimal?        @db.Decimal(10, 2)
+
+  /// Written by the server from the dimensions above, never accepted from a
+  /// form. When it disagrees with length × width × height, an override happened
+  /// and cbmOverridden says so.
+  cbm Decimal @default(0) @db.Decimal(12, 4)
+
+  /// A manual CBM, set by somebody with cbm.override. The old value, the new
+  /// value, the actor and the reason are in FieldChange — this flag exists so a
+  /// screen can mark the figure as not-computed without joining to find out.
+  cbmOverridden Boolean @default(false)
+
+  weightKg Decimal? @db.Decimal(12, 3)
+
+  /**
+   * THE CODE PRINTED ON THIS BOX'S LABEL.
+   * One per package, not one per consignment: five cartons get five stickers,
+   * each with its own code and its own "3 of 5". A single code copied onto five
+   * boxes is exactly what makes a missing box invisible until the customer is
+   * at the counter in Dar.
+   * Random, never the reference. Tracking numbers run in sequence — SC0042 tells
+   * you SC0043 exists — and this same code is what the Dar counter scans to
+   * identify a box before releasing it. A guessable one is a way to walk in and
+   * claim somebody else's cargo.
+   */
+  qrToken String @unique @default(cuid())
+
+  /// The bale number the Guangzhou floor wrote on the outside, when the boxes
+  /// were consolidated into one. Not a reference this system minted.
+  balerNumber String?
+
+  /**
+   * THE LINE'S OWN NOTE NUMBER.
+   * The carbon book is written per kind of goods, not per delivery: a customer
+   * who brings a fridge and thirty cartons of shoes leaves with two numbered
+   * pages, and each one has to lead back to its own line here. Holding a single
+   * number on the consignment meant the second page pointed at nothing, and a
+   * clerk searching the number the customer was actually holding found no cargo.
+   * The consignment keeps the first of them, so a delivery still has one number
+   * to be known by. Optional and not unique, for the same reasons as the one on
+   * Cargo.
+   */
+  paperReceiptNo String?
+
+  /**
+   * WHICH LINE OF THE RATE BOOK THIS IS.
+   * A cubic metre of iron coil is not a cubic metre of shoes, so the price
+   * follows the goods rather than the consignment: one delivery can be a
+   * television, a bicycle and a box of toys, each at its own rate.
+   * Matched against ShippingRate.cargoType by name rather than by a foreign
+   * key, because a rate is superseded by a NEW row when the price changes — a
+   * relation would either pin the package to a dead rate or cascade a change
+   * backwards into cargo that was priced under the old one.
+   * The warehouse chooses this. It never sees what it costs.
+   */
+  cargoType String?
+
+  /// THE PHYSICAL FACT: which container this package actually went into.
+  /// Nullable while it sits on the Guangzhou shelf. Per-package rather than
+  /// per-cargo because a consignment that misses a sailing by two bales gets
+  /// split, and the live business does this.
+  containerId String?
+  container   Container? @relation(fields: [containerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([containerId])
+  @@index([paperReceiptNo])
+  @@index([cargoId, deletedAt])
+  @@index([cargoType])
+}
+
+enum PhotoKind {
+  PACKAGE
+  SHIPPING_MARK
+  LABEL
+  CONDITION
+  DAMAGE
+  RECEIVING_EVIDENCE
+  RELEASE_EVIDENCE
+  OTHER
+}
+
+/// Photos belong to the cargo, never to a folder. A file with no consignment
+/// behind it is evidence of nothing.
+model CargoPhoto {
+  id String @id @default(cuid())
+
+  cargoId String
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  kind    PhotoKind @default(PACKAGE)
+  url     String
+  caption String?
+
+  /// Which side of the journey took it. A Guangzhou photo and a Dar photo of
+  /// the same bale are the whole damage argument, and telling them apart by
+  /// timestamp alone has failed.
+  takenAt       DateTime       @default(now())
+  warehouseKind WarehouseKind?
+
+  uploadedById String?
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cargoId, kind])
+}
+
+/// Append-only. Every milestone the cargo passed, with who or what moved it.
+model CargoStatusHistory {
+  id String @id @default(cuid())
+
+  cargoId String
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  from CargoStatus?
+  to   CargoStatus
+
+  /// Free text: "container SWC-CN-2026-005 sealed", "verified at Dar".
+  reason String?
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([cargoId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Warehouse receiving — China, then Dar. Two rows, both kept.
+// ---------------------------------------------------------------------------
+
+enum CargoCondition {
+  GOOD
+  MINOR_DAMAGE
+  DAMAGED
+  WET
+  REPACKED
+}
+
+model ChinaReceiving {
+  id String @id @default(cuid())
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+
+  packagesCount Int
+  /// Pieces inside the packages, when the two differ. Twenty phones in one
+  /// carton is one package and twenty pieces.
+  piecesCount   Int?
+  weightKg      Decimal? @db.Decimal(12, 3)
+  cbm           Decimal  @default(0) @db.Decimal(12, 4)
+
+  condition CargoCondition @default(GOOD)
+  location  String?
+  notes     String?
+
+  receivedAt   DateTime @default(now())
+  receivedById String?
+  receivedBy   User?    @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([receivedAt])
+}
+
+model DarReceiving {
+  id String @id @default(cuid())
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+
+  containerId String?
+  container   Container? @relation(fields: [containerId], references: [id], onDelete: SetNull)
+
+  /// DAR'S OWN COUNT. It does not correct China's and it is not corrected by
+  /// it. China says 5.0 kg and Dar says 5.4 kg: both are true statements about
+  /// different moments, the screen shows the difference, and that difference is
+  /// the only reason anyone can tell what happened on the water.
+  packagesCount Int
+  piecesCount   Int?
+  weightKg      Decimal? @db.Decimal(12, 3)
+  cbm           Decimal? @db.Decimal(12, 4)
+
+  condition CargoCondition @default(GOOD)
+
+  /// Set when the count is short, damaged or otherwise not what the packing
+  /// list promised. An ExceptionCase is raised alongside; this flag is what
+  /// stops release without needing to join to find out.
+  discrepancy      Boolean @default(false)
+  discrepancyNotes String?
+
+  location String?
+  notes    String?
+
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+
+  receivedAt   DateTime @default(now())
+  receivedById String?
+  receivedBy   User?    @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([containerId])
+  @@index([receivedAt])
+  @@index([discrepancy, verified])
+}
+
+/// Swift Cargo's signature that the boxes were received in Guangzhou. Printable,
+/// downloadable, permanent — this is the evidence the customer holds when a
+/// supplier says they delivered and nobody can find it.
+model DeliveryNote {
+  id String @id @default(cuid())
+
+  number String @unique // DN-2026-000125
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  issuedAt   DateTime @default(now())
+  issuedById String?
+  issuedBy   User?    @relation(fields: [issuedById], references: [id], onDelete: SetNull)
+
+  /// What the note SAID when it was printed. The cargo can be corrected
+  /// afterwards; the paper the customer is holding cannot, so a note that no
+  /// longer matches the record must still be able to explain itself.
+  snapshot Json
+
+  notes String?
+
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Containers, packing lists and the voyage
+// ---------------------------------------------------------------------------
+
+enum ContainerStatus {
+  /// Accepting cargo.
+  OPEN
+  LOADING
+  LOADED
+  /// Sealed. Nothing may be added or removed, and the seal number is recorded.
+  SEALED
+  DEPARTED
+  IN_TRANSIT
+  ARRIVED
+  /// Discharged, everything on it received in Dar, nothing left to do.
+  CLOSED
+}
+
+enum ContainerType {
+  GP_20
+  GP_40
+  HQ_40
+  HQ_45
+  LCL_CONSOLIDATED
+}
+
+model Container {
+  id String @id @default(cuid())
+
+  /// Our own reference: SWC-CN-2026-005. Minted here, never typed.
+  reference String @unique
+
+  /// The shipping line's box number: MSCU1234567. Unknown until the box is
+  /// actually allocated, which is after loading starts.
+  containerNumber String?
+
+  type ContainerType @default(HQ_40)
+
+  originWarehouseId String?
+  originPort        String? @default("Guangzhou")
+  destinationPort   String? @default("Dar es Salaam")
+
+  status ContainerStatus @default(OPEN)
+
+  /// Nothing may be added after this is set. Recorded with the seal.
+  sealNumber String?
+  sealedAt   DateTime?
+
+  loadingStartedAt DateTime?
+  loadedAt         DateTime?
+
+  /// The date the Guangzhou floor stops accepting cargo for this sailing. It is
+  /// published on the website, so it is a commitment, not a note.
+  cargoDeadline DateTime?
+
+  /// Nominal capacity, for the loading screen's fill bar. LCL consolidation is
+  /// sold on it.
+  capacityCbm Decimal? @db.Decimal(12, 4)
+
+  notes String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  shipment      Shipment?
+  packages      CargoPackage[]
+  cargoLines    ContainerCargo[]
+  packingList   PackingList?
+  expenses      ContainerExpense[]
+  darReceivings DarReceiving[]
+  events        ContainerEvent[]
+
+  @@index([containerNumber])
+  @@index([status, deletedAt])
+}
+
+/// ONE LINE PER CUSTOMER PER CONTAINER — which is exactly a packing list line.
+///
+/// The physical fact of what went in the box is CargoPackage.containerId. This
+/// is the commercial rollup over it: the CBM being charged for this consignment
+/// on this sailing, and the rate that was agreed. It exists as its own row
+/// because a consignment split across two containers is billed twice, once per
+/// sailing, and there is nowhere else to hang the second figure.
+model ContainerCargo {
+  id String @id @default(cuid())
+
+  containerId String
+  container   Container @relation(fields: [containerId], references: [id], onDelete: Restrict)
+
+  cargoId String
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  packagesCount Int      @default(0)
+  weightKg      Decimal? @db.Decimal(12, 3)
+  /// Summed from the packages of this cargo that are in this container.
+  cbm           Decimal  @default(0) @db.Decimal(12, 4)
+
+  /// What the rate book said on the day, and what was actually applied. Both,
+  /// because a discount nobody can see is a discount nobody can question.
+  standardRate Decimal?   @db.Decimal(12, 4)
+  appliedRate  Decimal?   @db.Decimal(12, 4)
+  rateBasis    RateBasis?
+  currency     String     @default("USD")
+
+  notes String?
+
+  loadedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  invoice Invoice?
+
+  @@unique([containerId, cargoId])
+  @@index([cargoId, createdAt])
+  @@index([createdAt])
+}
+
+/// The document. Its lines ARE the ContainerCargo rows — deliberately not
+/// copied into a second table, because two tables describing one packing list
+/// is exactly how the manifest and the invoice come to disagree.
+model PackingList {
+  id String @id @default(cuid())
+
+  number String @unique // PL-2026-000012
+
+  containerId String    @unique
+  container   Container @relation(fields: [containerId], references: [id], onDelete: Restrict)
+
+  issuedAt   DateTime @default(now())
+  issuedById String?
+  issuedBy   User?    @relation(fields: [issuedById], references: [id], onDelete: SetNull)
+
+  /// Frozen totals as printed, for the same reason DeliveryNote keeps one.
+  snapshot Json
+
+  createdAt DateTime @default(now())
+}
+
+enum ShipmentStatus {
+  PREPARING
+  READY
+  DEPARTED_CHINA
+  IN_TRANSIT
+  ARRIVED_TANZANIA
+  CLEARANCE
+  CLEARED
+  DAR_WAREHOUSE
+  COMPLETED
+}
+
+/// The voyage. One container, one shipment — separated from Container because a
+/// box is a physical thing with a seal and a fill level, and a sailing is a
+/// commercial event with a vessel, a line and dates that slip.
+model Shipment {
+  id String @id @default(cuid())
+
+  reference String @unique // SHP-2026-000012
+
+  containerId String    @unique
+  container   Container @relation(fields: [containerId], references: [id], onDelete: Restrict)
+
+  shippingLine String?
+  vessel       String?
+  voyage       String?
+  billOfLading String?
+
+  originPort      String?
+  destinationPort String?
+
+  departureDate DateTime?
+  /// The promise. Public tracking measures progress against it.
+  eta           DateTime?
+  actualArrival DateTime?
+  clearedAt     DateTime?
+
+  status ShipmentStatus @default(PREPARING)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents ShipmentDocument[]
+
+  @@index([status])
+  @@index([eta])
+}
+
+enum DocumentKind {
+  BILL_OF_LADING
+  PACKING_LIST
+  COMMERCIAL_INVOICE
+  CUSTOMS_ENTRY
+  ARRIVAL_NOTICE
+  DELIVERY_ORDER
+  OTHER
+}
+
+model ShipmentDocument {
+  id String @id @default(cuid())
+
+  shipmentId String
+  shipment   Shipment @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+
+  kind  DocumentKind @default(OTHER)
+  name  String
+  url   String
+  notes String?
+
+  uploadedAt DateTime @default(now())
+
+  @@index([shipmentId])
+}
+
+/// Append-only log of what happened to the box. Distinct from AuditLog: this is
+/// operational history a customer's timeline is built from, not a security
+/// record.
+model ContainerEvent {
+  id String @id @default(cuid())
+
+  containerId String
+  container   Container @relation(fields: [containerId], references: [id], onDelete: Restrict)
+
+  from ContainerStatus?
+  to   ContainerStatus
+  note String?
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([containerId, createdAt])
+  @@index([actorId, containerId])
+}
+
+// ---------------------------------------------------------------------------
+// Money
+// ---------------------------------------------------------------------------
+
+/// How the freight charge is derived. Sea freight out of China is sold per CBM;
+/// dense cargo is sold per kilogram, and a whole container is a flat price.
+enum RateBasis {
+  PER_CBM
+  PER_KG
+  FLAT
+}
+
+model ShippingRate {
+  id String @id @default(cuid())
+
+  origin      String      @default("China")
+  destination String      @default("Tanzania")
+  service     ServiceType
+  /// Commodity band this rate covers. Null is the general rate everything falls
+  /// back to.
+  cargoType   String?
+
+  basis    RateBasis @default(PER_CBM)
+  rate     Decimal   @db.Decimal(12, 4)
+  currency String    @default("USD")
+
+  /// Sea freight has a floor: half a cubic metre is charged as one. Null means
+  /// no minimum.
+  minimumCbm Decimal? @db.Decimal(12, 4)
+  minimumKg  Decimal? @db.Decimal(12, 3)
+
+  /// Shown on the public rates page. An internal-only rate is still a rate.
+  published Boolean @default(true)
+
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  active        Boolean   @default(true)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customerRates CustomerRate[]
+
+  @@index([service, active, effectiveFrom])
+}
+
+/// A rate agreed with one customer. It does NOT edit the standard rate — the
+/// standard is what the discount is measured against, and overwriting it
+/// destroys the only evidence that a discount was given.
+model CustomerRate {
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  shippingRateId String?
+  shippingRate   ShippingRate? @relation(fields: [shippingRateId], references: [id], onDelete: SetNull)
+
+  service   ServiceType
+  cargoType String?
+
+  basis    RateBasis @default(PER_CBM)
+  rate     Decimal   @db.Decimal(12, 4)
+  currency String    @default("USD")
+
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  active        Boolean   @default(true)
+
+  approvedById String?
+  reason       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId, active])
+}
+
+/// USD → TZS on a given day. An invoice pins the row it used; nothing ever
+/// re-reads today's rate against yesterday's bill.
+model ExchangeRate {
+  id String @id @default(cuid())
+
+  /// 1 `fromCurrency` = `rate` `toCurrency`. Always USD → TZS today.
+  fromCurrency String  @default("USD") @map("base")
+  toCurrency   String  @default("TZS") @map("quote")
+  rate         Decimal @db.Decimal(14, 6)
+
+  /// A row is never edited into a different rate. Publishing a new one closes
+  /// this one (`effectiveTo`, `active = false`), so the history reads as a line.
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  active        Boolean   @default(true)
+
+  createdById String? @map("setById")
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  invoices Invoice[]
+  payments Payment[]
+
+  @@index([fromCurrency, toCurrency, effectiveFrom])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+/// The customer's bill for one consignment on one sailing.
+///
+/// There is NO balance column and there never will be. Outstanding is
+/// `total − Σ(payments where status = VERIFIED)`, computed when it is read. A
+/// stored balance is a number that drifts the first time a payment is reversed.
+model Invoice {
+  id String @id @default(cuid())
+
+  number String @unique // INV-2026-000125
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  cargoId String
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  /// Which sailing this bill covers. A consignment split across two containers
+  /// gets two invoices, and this is what tells them apart.
+  containerCargoId String?         @unique
+  /// A real foreign key, so the sailing a live bill names cannot be deleted from
+  /// under it: taking a consignment back off a container removes its line, and
+  /// a bill left pointing at nothing would be billed again on the next load.
+  containerCargo   ContainerCargo? @relation(fields: [containerCargoId], references: [id], onDelete: Restrict)
+
+  status InvoiceStatus @default(DRAFT)
+
+  /// Billable volume/weight as invoiced. Frozen: re-deriving it from the
+  /// packages later would silently reprice a bill the customer already agreed.
+  billableCbm Decimal? @db.Decimal(12, 4)
+  billableKg  Decimal? @db.Decimal(12, 3)
+
+  /// What the book said, and what was charged. The gap is the discount.
+  standardRate Decimal?   @db.Decimal(12, 4)
+  appliedRate  Decimal?   @db.Decimal(12, 4)
+  rateBasis    RateBasis?
+  discount     Decimal    @default(0) @db.Decimal(14, 2)
+
+  subtotal   Decimal @default(0) @db.Decimal(14, 2)
+  vatPercent Decimal @default(0) @db.Decimal(5, 2)
+  vatAmount  Decimal @default(0) @db.Decimal(14, 2)
+  total      Decimal @default(0) @db.Decimal(14, 2)
+
+  currency String @default("USD")
+
+  /// THE RATE THIS BILL WAS AGREED AT. Pinned at issue. `totalTzs` is the
+  /// figure the customer was quoted in shillings and is a snapshot, not a live
+  /// conversion.
+  exchangeRateId String?
+  exchangeRate   ExchangeRate? @relation(fields: [exchangeRateId], references: [id], onDelete: SetNull)
+  fxRate         Decimal?      @db.Decimal(14, 6)
+  totalTzs       Decimal?      @db.Decimal(16, 2)
+
+  /// The collection accounts as they stood when this invoice was issued.
+  ///
+  /// An invoice is a legal document: the account a customer paid into must be
+  /// reproducible from the invoice, not from a settings table somebody edited
+  /// afterwards. Now that an administrator can change a Lipa number without a
+  /// deploy, re-rendering last month's bill would otherwise print this month's
+  /// accounts and quietly contradict the copy the customer is holding.
+  ///
+  /// Null on drafts and on invoices issued before the copy was kept — those
+  /// print the live accounts. See lib/invoice-accounts.ts.
+  paymentSnapshot Json?
+
+  issuedAt   DateTime?
+  dueAt      DateTime?
+  issuedById String?
+  issuedBy   User?     @relation("InvoiceIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  cancelledAt     DateTime?
+  cancelledReason String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items    InvoiceItem[]
+  payments Payment[]
+  receipts Receipt[]
+  contacts CustomerContact[]
+
+  @@index([customerId, status])
+  @@index([status, dueAt])
+  @@index([cargoId, status])
+  @@index([status, issuedAt])
+  @@index([status, createdAt])
+}
+
+model InvoiceItem {
+  id String @id @default(cuid())
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Decimal @default(1) @db.Decimal(12, 4)
+  unit        String? // "CBM", "kg", "container"
+  unitPrice   Decimal @default(0) @db.Decimal(14, 4)
+  amount      Decimal @default(0) @db.Decimal(14, 2)
+
+  /**
+   * WHAT THE CUSTOMER IS HOLDING, COPIED ONTO THE BILL.
+   * The printed invoice puts the receipt page number, the package count and the
+   * piece count beside each charge, because that is how a customer checks a
+   * bill: against the paper they were given at the counter, not against a
+   * volume they have no way to verify.
+   * Copied at issue rather than joined at print time. A later correction to the
+   * warehouse line must not silently redraw an invoice the customer has already
+   * been sent.
+   */
+  paperReceiptNo String?
+  packages       Int?
+  pieces         Int?
+
+  /// Freight, transport, storage, customs. Charges the customer did not agree
+  /// to in advance need a reason on the line, not a note somewhere else.
+  category String?
+  taxable  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MOBILE_MONEY
+  CHEQUE
+  OTHER
+}
+
+enum PaymentStatus {
+  /// Somebody says money moved. Nobody has checked.
+  PENDING
+  VERIFIED
+  REJECTED
+  /// Verified and then taken back. Never deleted — a reversal is a fact too.
+  REVERSED
+  /// A claim withdrawn before anybody verified it — entered twice, or against
+  /// the wrong bill. The row stays so the claim can still be asked about; it
+  /// simply never counts and never shows on a working queue again.
+  CANCELLED
+}
+
+/// A claim that money arrived, and separately, whether Finance believes it.
+///
+/// A customer uploading a screenshot creates a PENDING row and nothing else.
+/// An invoice is never paid, and cargo is never released, on the strength of an
+/// image.
+model Payment {
+  /// Which of the company's accounts the money actually reached. Null until
+  /// somebody says; a payment with no account is money nobody can point at.
+  accountId String?
+  account   BankAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  /**
+   * DELIVERY THE CUSTOMER ADDED, INSIDE THE SAME TRANSFER.
+   * They send one figure covering the freight and the driver who will bring it
+   * to them. Only the freight half settles the bill — counting the whole
+   * transfer against the invoice overstates what they have paid by exactly the
+   * delivery fare, and that is how a bill reads settled while it is not.
+   */
+  deliveryAdded       Decimal? @db.Decimal(14, 2)
+  deliverySettledFrom String?
+
+  id String @id @default(cuid())
+
+  reference String @unique // PAY-2026-000125
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  amount   Decimal @db.Decimal(14, 2)
+  currency String  @default("USD")
+
+  /// When a customer pays shillings against a dollar invoice, this is what the
+  /// payment was worth against the bill, at the rate pinned here.
+  exchangeRateId     String?
+  exchangeRate       ExchangeRate? @relation(fields: [exchangeRateId], references: [id], onDelete: SetNull)
+  fxRate             Decimal?      @db.Decimal(14, 6)
+  creditedAmount     Decimal?      @db.Decimal(14, 2)
+  /// What this payment is worth in shillings, at `fxRate`. Balances are kept in
+  /// shillings, so this — not `creditedAmount` — is what settles a bill.
+  baseCurrencyAmount Decimal?      @db.Decimal(16, 0)
+  /// One press of "Record" is one payment, however many times the request lands.
+  idempotencyKey     String?       @unique
+  /// Set only when somebody knowingly took more than the bill owed.
+  overpaymentReason  String?
+  /// The desk agreed to write off what this payment leaves short, up to this
+  /// many shillings. Applied when Finance verifies it, never before.
+  clearShortfallTzs  Decimal?      @db.Decimal(16, 0)
+  /// A shortfall written off, not money. Counts against the bill; never in an
+  /// account, a ledger or a cash figure.
+  writtenOff         Boolean       @default(false)
+  writeOffOfId       String?
+
+  method         PaymentMethod @default(BANK_TRANSFER)
+  transactionRef String?
+
+  payerName    String?
+  payerAccount String?
+  payerBank    String?
+
+  status PaymentStatus @default(PENDING)
+
+  paidAt DateTime?
+
+  recordedById        String?
+  recordedBy          User?   @relation("PaymentRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  /// Customer-submitted payments have no staff recorder. This says so.
+  submittedByCustomer Boolean @default(false)
+
+  verifiedById   String?
+  verifiedBy     User?     @relation("PaymentVerifiedBy", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt     DateTime?
+  rejectedReason String?
+
+  reversedAt     DateTime?
+  reversedReason String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  proofs   PaymentProof[]
+  receipts Receipt[]
+
+  @@index([invoiceId, status])
+  @@index([customerId])
+  @@index([status, createdAt])
+  @@index([status, writtenOff, accountId])
+  @@index([accountId, paidAt])
+  @@index([status, paidAt])
+  @@index([status, verifiedAt])
+  @@index([writeOffOfId])
+  @@index([recordedById])
+}
+
+model PaymentProof {
+  id String @id @default(cuid())
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  url  String
+  name String?
+
+  uploadedAt DateTime @default(now())
+
+  @@index([paymentId])
+}
+
+/// Issued only after a payment is VERIFIED. The official document.
+model Receipt {
+  id String @id @default(cuid())
+
+  number String @unique // RCT-2026-000125
+
+  paymentId String  @unique
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  amount   Decimal @db.Decimal(14, 2)
+  currency String  @default("USD")
+
+  /// The balance AS PRINTED. Derived at issue and frozen onto the paper,
+  /// because the customer is holding a document that made a claim on a date.
+  balanceAfter Decimal @db.Decimal(14, 2)
+
+  issuedAt   DateTime @default(now())
+  issuedById String?
+  issuedBy   User?    @relation(fields: [issuedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([customerId])
+  @@index([invoiceId])
+  @@index([issuedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Container costs — how the business knows whether a sailing made money
+// ---------------------------------------------------------------------------
+
+model Vendor {
+  id String @id @default(cuid())
+
+  name    String
+  service String?
+  phone   String?
+  email   String?
+  notes   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  expenses ContainerExpense[]
+
+  @@index([name])
+}
+
+model ExpenseType {
+  id     String  @id @default(cuid())
+  name   String  @unique // Ocean freight, Clearing, Port charges, Transport, Handling
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  expenses ContainerExpense[]
+}
+
+enum ExpenseStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+/// What a cost belongs to. A container cost is part of one sailing's margin;
+/// the rest are the business's own running costs and never touch a sailing.
+enum ExpenseScope {
+  CONTAINER
+  OFFICE
+  SPECIAL
+  EXECUTIVE
+}
+
+model ContainerExpense {
+  id String @id @default(cuid())
+
+  reference String @unique // EXP-2026-000125
+
+  /**
+   * CONTAINER COSTS AND THE BUSINESS'S OWN COSTS, IN ONE REGISTER.
+   * Rent, the office tin's printer ink and a director's travel are real money
+   * out and belong on the same expenses list and the same ledger as ocean
+   * freight — but they are not a sailing's cost, and charging them to one would
+   * make that container's margin a lie. So the container is optional, and the
+   * scope says which kind of cost this is.
+   */
+  scope ExpenseScope @default(CONTAINER)
+
+  containerId String?
+  container   Container? @relation(fields: [containerId], references: [id], onDelete: Restrict)
+
+  expenseTypeId String?
+  expenseType   ExpenseType? @relation(fields: [expenseTypeId], references: [id], onDelete: SetNull)
+
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  amount   Decimal @db.Decimal(14, 2)
+  currency String  @default("USD")
+  fxRate   Decimal @default(1) @db.Decimal(14, 6)
+
+  status      ExpenseStatus @default(PENDING)
+  expenseDate DateTime?
+  paidDate    DateTime?
+
+  /// Some costs are recharged to one customer (an oversize handling fee), most
+  /// are the container's own. A billable expense that names no customer is a
+  /// cost of the sailing.
+  billable         Boolean   @default(false)
+  billedCustomerId String?
+  billedCustomer   Customer? @relation(fields: [billedCustomerId], references: [id], onDelete: SetNull)
+  billedAmount     Decimal?  @db.Decimal(14, 2)
+
+  /// Which of the company's accounts the money actually left. Null means
+  /// nobody said, and the account balances cannot account for it.
+  accountId String?
+  account   BankAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  referenceNumber String?
+  description     String?
+  receiptUrl      String?
+  notes           String?
+
+  cancelledAt     DateTime?
+  cancelledReason String?
+
+  /// Set when this cost IS a month's salaries being paid.
+  payrollRun PayrollRun?
+
+  recordedById String?
+  recordedBy   User?   @relation(fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([containerId])
+  @@index([status])
+  @@index([accountId, paidDate])
+  @@index([deletedAt, createdAt])
+  @@index([expenseDate])
+  @@index([billedCustomerId])
+}
+
+// ---------------------------------------------------------------------------
+// Payroll — Finance prepares it, the manager agrees it, then it is money out
+// ---------------------------------------------------------------------------
+
+/// Where a month's salary run has got to.
+///
+/// Two desks, on purpose. Finance knows the figures and the manager signs for
+/// them; one desk doing both is how a salary quietly becomes whatever that desk
+/// typed, and payroll is the largest regular payment this company makes.
+enum PayrollStatus {
+  /// Finance is still building it. Editable, and nothing has been claimed.
+  DRAFT
+  /// Sent up. Frozen while it waits — a run somebody is agreeing must not move
+  /// under them.
+  PENDING_APPROVAL
+  /// Agreed, and not yet paid. The money has not left any account.
+  APPROVED
+  /// Paid. A Salaries cost exists from this moment, and the run is final.
+  PAID
+  /// Sent back with a reason. Returns to Finance, editable again.
+  REJECTED
+}
+
+/// One salary run, normally one month.
+///
+/// Paying it books a Salaries cost against a real account, so payroll lands in
+/// the profit and loss, the general ledger and the account balances without
+/// anybody re-keying it — the same route every other cost takes.
+model PayrollRun {
+  id     String        @id @default(cuid())
+  code   String        @unique // PR-2026-08
+  month  Int // 1-12
+  year   Int
+  status PayrollStatus @default(DRAFT)
+
+  preparedById String
+  preparedBy   User     @relation("PayrollPreparedBy", fields: [preparedById], references: [id], onDelete: Restrict)
+  preparedAt   DateTime @default(now())
+
+  /// Set the moment it leaves Finance's hands, so "waiting since" is real.
+  submittedAt DateTime?
+
+  approvedById String?
+  approvedBy   User?     @relation("PayrollApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime?
+  /// Why it was sent back, when somebody said.
+  decisionNote String?
+
+  paidAt   DateTime?
+  paidById String?
+  paidBy   User?     @relation("PayrollPaidBy", fields: [paidById], references: [id], onDelete: SetNull)
+
+  /// Which account it is paid from. Named before approval so the manager is
+  /// agreeing to a payment out of a specific account, not to a number.
+  accountId String?
+  account   BankAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  /// The cost this run became. One run, one cost — unique, so paying twice is a
+  /// database error rather than a doubled salary bill.
+  expenseId String?           @unique
+  expense   ContainerExpense? @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+
+  note String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items PayrollItem[]
+
+  /// One live run per month. A second is either a mistake or a correction, and
+  /// a correction is a new month's line, not a duplicate of this one.
+  @@unique([year, month])
+  @@index([status])
+}
+
+/// One person's line on a run.
+///
+/// Name and amounts are SNAPSHOTTED at the moment the run is built. A salary
+/// slip is a statement about a month that has already happened; re-reading it
+/// through today's staff register would silently restate what somebody was paid
+/// when they get a raise, or blank their name when they leave.
+model PayrollItem {
+  id    String     @id @default(cuid())
+  runId String
+  run   PayrollRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation("PayrollItemStaff", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Snapshots, deliberately not read through the relation above.
+  name      String
+  roleLabel String
+
+  /// USD, like the salary on the staff record. Shillings are struck at the
+  /// published rate, and frozen onto the cost when the run is paid.
+  gross     Decimal @db.Decimal(14, 2)
+  allowance Decimal @default(0) @db.Decimal(14, 2)
+  deduction Decimal @default(0) @db.Decimal(14, 2)
+  net       Decimal @db.Decimal(14, 2)
+
+  note String?
+
+  @@unique([runId, userId])
+  @@index([runId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Release — the end of the chain
+// ---------------------------------------------------------------------------
+
+enum ReleaseMethod {
+  COLLECTION
+  DELIVERY
+}
+
+/// The handover. One per cargo, created at the moment the boxes leave the Dar
+/// floor, and never before — the decision that they MAY leave is computed, not
+/// stored.
+model Release {
+  id String @id @default(cuid())
+
+  number String @unique // REL-2026-000125
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  method ReleaseMethod
+
+  packagesReleased Int
+
+  /// Who physically took them. Not necessarily the receiver — a driver, a
+  /// relative, a clearing agent — so the name and ID are recorded separately
+  /// from the customer row.
+  collectedByName  String?
+  collectedByPhone String?
+  collectedByIdNo  String?
+  relationship     String?
+
+  signatureUrl String?
+
+  releasedAt   DateTime @default(now())
+  releasedById String?
+  releasedBy   User?    @relation(fields: [releasedById], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([releasedAt])
+}
+
+enum DeliveryStatus {
+  REQUESTED
+  CONFIRMED
+  ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+model DeliveryRequest {
+  id String @id @default(cuid())
+
+  reference String @unique // DEL-2026-000125
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  address       String
+  contactName   String
+  contactPhone  String
+  preferredDate DateTime?
+  notes         String?
+
+  charge   Decimal? @db.Decimal(14, 2)
+  currency String   @default("TZS")
+
+  status DeliveryStatus @default(REQUESTED)
+
+  driverName   String?
+  driverPhone  String?
+  dispatchedAt DateTime?
+  deliveredAt  DateTime?
+  failedReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([customerId])
+}
+
+// ---------------------------------------------------------------------------
+// Exceptions
+// ---------------------------------------------------------------------------
+
+enum ExceptionType {
+  MISSING_CARGO
+  DAMAGED_CARGO
+  PACKAGE_MISMATCH
+  WEIGHT_DIFFERENCE
+  CBM_DIFFERENCE
+  WRONG_CUSTOMER
+  WRONG_CONTAINER
+  UNIDENTIFIED_CARGO
+  CUSTOMS_HOLD
+  SHIPMENT_DELAY
+  PAYMENT_DISCREPANCY
+  CUSTOMER_COMPLAINT
+  DELIVERY_FAILURE
+  OTHER
+}
+
+enum ExceptionStatus {
+  OPEN
+  INVESTIGATING
+  WAITING_CUSTOMER
+  WAITING_FINANCE
+  WAITING_WAREHOUSE
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum ExceptionPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model ExceptionCase {
+  id String @id @default(cuid())
+
+  reference String @unique // EXC-2026-000125
+
+  type     ExceptionType
+  status   ExceptionStatus   @default(OPEN)
+  priority ExceptionPriority @default(NORMAL)
+
+  cargoId String?
+  cargo   Cargo?  @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  containerId String?
+
+  /// Which desk owns this now.
+  department Department?
+
+  title       String
+  description String
+
+  /// Photos and documents supporting the case.
+  evidence Json?
+
+  raisedById String?
+  raisedBy   User?   @relation("ExceptionRaisedBy", fields: [raisedById], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User?   @relation("ExceptionAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  resolution   String?
+  managerNotes String?
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events ExceptionEvent[]
+
+  @@index([status, priority])
+  @@index([cargoId])
+  @@index([department, status])
+  @@index([status, createdAt])
+  @@index([assignedToId, status])
+  @@index([customerId])
+  @@index([containerId])
+}
+
+/// Append-only history of a case.
+model ExceptionEvent {
+  id String @id @default(cuid())
+
+  caseId String
+  case   ExceptionCase @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  from ExceptionStatus?
+  to   ExceptionStatus?
+  note String
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([caseId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Customer communication
+// ---------------------------------------------------------------------------
+
+enum ConversationStatus {
+  OPEN
+  WAITING_CUSTOMER
+  WAITING_STAFF
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Conversation {
+  id String @id @default(cuid())
+
+  reference String @unique // TKT-2026-000125
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  /// What it is about, when it is about something. A general question has none.
+  cargoId String?
+  cargo   Cargo?  @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+
+  subject  String
+  status   ConversationStatus @default(OPEN)
+  /// How soon somebody should answer. Urgent reaches the top of the desk.
+  priority TicketPriority     @default(NORMAL)
+
+  assignedToId String?
+  assignedTo   User?   @relation("ConversationAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  lastMessageAt  DateTime @default(now())
+  /// Unread by staff. The support inbox is ordered on this.
+  staffUnread    Boolean  @default(true)
+  customerUnread Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@index([status, lastMessageAt])
+  @@index([customerId, lastMessageAt])
+}
+
+model Message {
+  id String @id @default(cuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+
+  /// Staff author. Null means the customer wrote it.
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  body String
+
+  /// NEVER SHOWN TO THE CUSTOMER. A note staff leave each other on the thread,
+  /// in the thread, because the alternative is WhatsApp.
+  internal Boolean @default(false)
+
+  attachments Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+/// Addressed to a staff user OR a customer, never broadcast. A notification
+/// with no clear reader is an announcement, and announcements are addressed
+/// explicitly.
+/// WHAT WE TOLD A CUSTOMER, AND WHO TOLD THEM.
+///
+/// The system does not deliver anything. It composes the wording and opens
+/// WhatsApp with it; a person presses send. So a row here means "we contacted
+/// them" and never "the system notified them" — anything stronger would be a
+/// claim the code cannot back up when a customer says nobody rang.
+///
+/// Kept because the question "did anyone tell them the cargo landed" is asked
+/// constantly, and the honest answer has to be findable on the cargo record
+/// rather than in somebody's phone.
+model CustomerContact {
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  cargoId String?
+  cargo   Cargo?  @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  /// "cargo.received_china", "invoice.issued", "payment.reminder", …
+  kind    String
+  /// WHATSAPP, PHONE, SMS, EMAIL, IN_PERSON.
+  channel String @default("WHATSAPP")
+
+  /// Exactly what was put in front of the customer, as sent.
+  body String
+
+  sentById String?
+  sentBy   User?   @relation("ContactSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([cargoId, createdAt])
+  @@index([invoiceId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  kind  String // "cargo.received", "container.departed", "invoice.issued", …
+  title String
+  body  String?
+  /// Where "open" goes. Null when there is nowhere to go.
+  href  String?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([customerId, readAt])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([customerId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Requests off the public website
+// ---------------------------------------------------------------------------
+
+/// A request is NOT cargo and NOT a booking. It is a promise typed by somebody
+/// who is not standing in the warehouse, and it becomes real only when a member
+/// of staff acts on it. Keeping the two apart is what stops the operation from
+/// having to trust a number a stranger entered.
+enum RequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum BookingType {
+  FULL_CONTAINER
+  SHARED_CARGO
+}
+
+model ContainerBooking {
+  id String @id @default(cuid())
+
+  reference String @unique // BK-000125
+
+  type BookingType
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  contactName  String
+  contactPhone String
+  contactEmail String?
+
+  pickupAddress String?
+  destination   String?
+  commodity     String?
+
+  containerType  ContainerType?
+  dangerousGoods Boolean        @default(false)
+
+  packages          Int?
+  quantity          Int?
+  dimensions        String?
+  estimatedWeightKg Decimal? @db.Decimal(12, 3)
+  estimatedCbm      Decimal? @db.Decimal(12, 4)
+
+  preferredShipment String?
+  requirements      String?
+  termsAccepted     Boolean @default(false)
+
+  status     RequestStatus @default(SUBMITTED)
+  staffNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId])
+}
+
+model PickupRequest {
+  id String @id @default(cuid())
+
+  reference String @unique // PU-000125
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  pickupLocation String
+  contactName    String
+  contactPhone   String
+
+  cargoDescription String?
+  packages         Int?
+  commodity        String?
+
+  preferredDate DateTime?
+  preferredTime String?
+  notes         String?
+
+  status     RequestStatus @default(SUBMITTED)
+  staffNotes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId])
+}
+
+model QuoteRequest {
+  id String @id @default(cuid())
+
+  reference String @unique // QT-000125
+
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  contactName  String
+  contactPhone String
+  contactEmail String?
+
+  service           ServiceType @default(LCL)
+  commodity         String?
+  originCity        String?
+  destination       String?
+  estimatedCbm      Decimal?    @db.Decimal(12, 4)
+  estimatedWeightKg Decimal?    @db.Decimal(12, 3)
+  hazardous         Boolean     @default(false)
+  fragile           Boolean     @default(false)
+  notes             String?
+
+  quotedAmount   Decimal?  @db.Decimal(14, 2)
+  quotedCurrency String    @default("USD")
+  quotedAt       DateTime?
+  quoteExpiresAt DateTime?
+  responseNotes  String?
+
+  status RequestStatus @default(SUBMITTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId])
+}
+
+/// What the website publishes about upcoming sailings. Controlled by staff; it
+/// is a commitment to a deadline, so it is not derived from a container that
+/// may not exist yet.
+model ShipmentSchedule {
+  id String @id @default(cuid())
+
+  origin      String @default("Guangzhou")
+  destination String @default("Dar es Salaam")
+
+  /// Last day the Guangzhou warehouse accepts cargo for this sailing.
+  cargoDeadline    DateTime
+  closingDate      DateTime?
+  departureDate    DateTime
+  estimatedArrival DateTime
+
+  vessel       String?
+  voyage       String?
+  shippingLine String?
+
+  /// Linked once the box exists. Null while the sailing is only announced.
+  containerId String?
+
+  status    ShipmentStatus @default(PREPARING)
+  published Boolean        @default(true)
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, departureDate])
+}
+
+/// Guangzhou market and sourcing information for the public site.
+enum SourcingStatus {
+  NEW
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  SUPPLIER_FOUND
+  COMPLETED
+  CANCELLED
+}
+
+/// A customer asks us to find something in China. Support works it from first
+/// call to a supplier found; nothing here is a price or a payment.
+model SourcingRequest {
+  id        String @id @default(cuid())
+  reference String @unique // SRC-2026-000001
+
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  /// Somebody not yet on the books.
+  contactName  String?
+  contactPhone String?
+
+  product  String
+  details  String?
+  quantity String?
+  budget   String?
+  market   String?
+
+  status   SourcingStatus @default(NEW)
+  priority TicketPriority @default(NORMAL)
+
+  assignedToId String?
+  assignedTo   User?   @relation("SourcingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User?   @relation("SourcingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  outcome String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId])
+}
+
+model MarketInformation {
+  id String @id @default(cuid())
+
+  slug     String  @unique
+  name     String
+  city     String? @default("Guangzhou")
+  category String?
+
+  summary  String?
+  body     String?
+  imageUrl String?
+
+  published Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Audit and system
+// ---------------------------------------------------------------------------
+
+/// Append-only. Who did what, and what the figures were on either side.
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId    String?
+  actor      User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?
+  actorRole  Role?
+
+  action   String // "cargo.received", "payment.verified", "cbm.override"
+  entity   String
+  entityId String?
+
+  summary  String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([entity, entityId, createdAt])
+  @@index([entity, action, createdAt])
+  @@index([createdAt])
+}
+
+/// A single field changing, with both values. Separate from AuditLog because a
+/// weight correction is asked about by field ("what has this weight been?"),
+/// and searching a summary string for it does not work.
+model FieldChange {
+  id String @id @default(cuid())
+
+  entity   String
+  entityId String
+  field    String
+
+  oldValue String?
+  newValue String?
+  reason   String?
+
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId, createdAt])
+}
+
+/**
+ * WHERE THE MONEY IS PAID IN.
+ * Printed on every invoice, four at a time — shillings and dollars at two
+ * banks, because a customer paying in the wrong currency at the wrong bank is a
+ * week of reconciling. Rows rather than settings columns: banks are opened and
+ * closed, and a closed account must stop printing without a deploy.
+ */
+enum AccountKind {
+  BANK
+  MOBILE_MONEY
+  CASH
+}
+
+model BankAccount {
+  id String @id @default(cuid())
+
+  bankName      String
+  accountName   String
+  accountNumber String
+  branch        String?
+
+  /// A bank, a mobile-money line or a tin on a desk. They behave differently
+  /// enough that the screen names which it is: a tin can be counted against
+  /// what the ledger says, and a bank cannot.
+  kind AccountKind @default(BANK)
+
+  /**
+   * WHAT WAS IN IT WHEN IT WAS PUT ON THE SYSTEM.
+   * Every balance here is the ledger added up, so an account that existed
+   * before this software did would start at zero and disagree with the bank
+   * forever. This is the one figure somebody types, and it is dated so the
+   * disagreement has a beginning.
+   */
+  openingBalance   Decimal   @default(0) @db.Decimal(14, 2)
+  openingBalanceAt DateTime?
+
+  /// "TZS" or "USD". Printed beside the bank so nobody guesses.
+  currency String @default("TZS")
+
+  /// Lowest first, so the order on paper is the order somebody chose.
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments     Payment[]
+  expenses     ContainerExpense[]
+  transfersOut AccountTransfer[]  @relation("TransferFrom")
+  transfersIn  AccountTransfer[]  @relation("TransferTo")
+  counts       CashCount[]
+  payrollRuns  PayrollRun[]
+
+  @@index([active, sortOrder])
+}
+
+/**
+ * MONEY CHANGING SHELVES.
+ * Banking the day's takings, topping up the tin, converting dollars. Neither
+ * income nor a cost — the business is no richer afterwards — but both accounts
+ * move, and an account balance that ignores this disagrees with the bank the
+ * first time somebody makes a deposit.
+ * The charge is kept apart from the amount because it IS a cost: the money that
+ * left the first account is not all the money that reached the second, and the
+ * difference is the bank's.
+ */
+model AccountTransfer {
+  id String @id @default(cuid())
+
+  reference String @unique // TRF-2026-000125
+
+  fromAccountId String
+  fromAccount   BankAccount @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+
+  toAccountId String
+  toAccount   BankAccount @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+
+  /// What left the first account.
+  amount        Decimal @db.Decimal(14, 2)
+  /// What the bank took. Zero when there was none.
+  charge        Decimal @default(0) @db.Decimal(14, 2)
+  /// What reached the second. Defaults to amount − charge, but a currency
+  /// conversion makes the two unrelated, so it is stored rather than derived.
+  amountArrived Decimal @db.Decimal(14, 2)
+
+  purpose      String?
+  transferDate DateTime @default(now())
+
+  recordedById String?
+  recordedBy   User?   @relation("TransferRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  cancelledAt     DateTime?
+  cancelledReason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([fromAccountId])
+  @@index([toAccountId])
+  @@index([transferDate])
+}
+
+/**
+ * WHAT IS PHYSICALLY IN THE TIN, AGAINST WHAT THE LEDGER SAYS.
+ * The count never changes a balance. The balance is the ledger added up and it
+ * cannot disagree with its own history — so a count that comes up short is
+ * evidence of a movement nobody recorded, and the fix is to record it, not to
+ * overwrite the total.
+ */
+model CashCount {
+  id String @id @default(cuid())
+
+  accountId String
+  account   BankAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  /// What was on the desk.
+  counted  Decimal @db.Decimal(14, 2)
+  /// What the ledger said at that moment, kept so a later correction to the
+  /// history cannot quietly rewrite what the count found.
+  expected Decimal @db.Decimal(14, 2)
+
+  note String?
+
+  countedById String?
+  countedBy   User?   @relation(fields: [countedById], references: [id], onDelete: SetNull)
+
+  countedAt DateTime @default(now())
+
+  @@index([accountId, countedAt])
+}
+
+/// Where a record stands with the manager. PENDING is the absence of a verdict
+/// and is never written; it is here so the screens and the filter share one
+/// vocabulary with the table.
+enum ReviewState {
+  PENDING
+  /// Asked the desk that recorded it a question. Nothing is disputed yet — the
+  /// record is not understood.
+  QUERIED
+  /// The system figure and the figure from outside it disagree. Says nothing
+  /// about whose fault.
+  MISMATCH
+  /// Handed back to the desk that recorded it, with a reason. The record itself
+  /// is untouched; only this says it is disputed.
+  SENT_BACK
+  /// Being looked into. Parked deliberately rather than forgotten.
+  UNDER_REVIEW
+  /// Looked at, and it agrees with the evidence.
+  RECONCILED
+}
+
+/**
+ * A MANAGER'S VERDICT ON A RECORD, KEPT BESIDE IT AND NEVER INSIDE IT.
+ * Sending a payment back does not edit the payment — Finance still sees exactly
+ * what they entered, and this row says a manager disputes it and why. The desk
+ * corrects it through its own path (a reversal, a cancellation), which already
+ * leaves both versions on the books.
+ * Append-only: "sent back on Monday, reconciled on Friday" is two rows, because
+ * the sequence is what somebody asks about six months later. The current
+ * standing of a record is its newest row.
+ * `entity` is polymorphic ("Payment", "Expense", "Transfer", "Container") on
+ * purpose — four nullable foreign keys would answer the same question worse.
+ * `actualAmount` is the figure from outside the system when the manager has
+ * one: the slip, the statement line, the till. It is evidence beside the
+ * record, never a correction of it.
+ */
+model ManagerReview {
+  id String @id @default(cuid())
+
+  entity   String
+  entityId String
+
+  verdict ReviewState
+
+  actualAmount Decimal? @db.Decimal(14, 2)
+  /// The currency `actualAmount` was read in — the record's own.
+  currency     String?
+
+  note String?
+
+  reviewerId String
+  reviewer   User   @relation("ManagerReviewBy", fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId, createdAt])
+  @@index([verdict])
+}
+
+enum PickupNoteStatus {
+  ACTIVE
+  USED
+  CANCELLED
+}
+
+/**
+ * THE CUSTOMER'S PERMISSION TO COLLECT.
+ * Issued by Finance the moment a consignment is paid in full, and it is what
+ * the customer brings — or shows on a phone — to the Dar counter. The warehouse
+ * does not decide whether goods may go; it reads the note and checks the box.
+ * The amount is a SNAPSHOT, not a live figure. A note in somebody's hand has to
+ * stay truthful about what was settled on the day it was issued, even if the
+ * invoice is adjusted afterwards.
+ * One per consignment, because a consignment is what gets handed over. Marked
+ * USED when the cargo is released, so the same note cannot walk in twice.
+ */
+model PickupNote {
+  id         String @id @default(cuid())
+  noteNumber String @unique // PN-2026-000123
+
+  cargoId String @unique
+  cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  /// What the customer had settled when the note was written.
+  amountPaid Decimal  @db.Decimal(14, 2)
+  currency   String   @default("USD")
+  /// The shillings figure they actually handed over, when one was recorded.
+  amountTzs  Decimal? @db.Decimal(16, 2)
+
+  /// Scanned at the counter. Random, for the same reason a label's code is.
+  qrToken String @unique @default(cuid())
+
+  status PickupNoteStatus @default(ACTIVE)
+
+  /**
+   * LET GO BEFORE THE MONEY ARRIVED.
+   * The rule is that nothing leaves unpaid, and this is the recorded exception
+   * to it: a named person decided, for a stated reason, and the debt stays on
+   * the books. It is never a silent override — a note that says "on credit"
+   * reads differently at the counter, and the customer still owes.
+   */
+  onCredit     Boolean   @default(false)
+  creditReason String?
+  /// When the customer agreed to have paid by, on a credit release.
+  creditDueAt  DateTime?
+
+  issuedById String?
+  issuedBy   User?    @relation("PickupNoteIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  issuedAt   DateTime @default(now())
+
+  usedAt       DateTime?
+  cancelledAt  DateTime?
+  cancelReason String?
+
+  @@index([status, issuedAt])
+  @@index([customerId])
+  @@index([onCredit, status, issuedAt])
+}
+
+/// Document number sequences. Incremented inside the caller's transaction, so
+/// two clerks pressing Save in the same second cannot collide.
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Company details that appear on printed documents and the public site.
+model CompanySetting {
+  id String @id @default("singleton")
+
+  name     String  @default("Swift Cargo")
+  tagline  String? @default("On time, Every time")
+  email    String?
+  phone    String?
+  altPhone String?
+  whatsapp String?
+
+  darAddress   String?
+  chinaAddress String?
+
+  /**
+   * THE TWO LEGAL ENTITIES.
+   * "Swift Cargo" is the trading name; the companies that actually sign for
+   * goods are different at each end, and both appear on printed documents.
+   * The Guangzhou entity receives in China; the Tanzanian one is the consignee
+   * every container is addressed to.
+   */
+  chinaEntity String?
+  darEntity   String?
+
+  /// Postal address printed under the consignee on the packing list.
+  darPostal String?
+
+  tin String?
+  vrn String?
+
+  /// The VAT percentage applied to new invoices. On the row rather than in code
+  /// because a tax rate is a thing that changes by law, not by deploy.
+  vatPercent Decimal @default(18) @db.Decimal(5, 2)
+
+  /// Free storage days at the Dar warehouse before charges begin.
+  freeStorageDays Int @default(7)
+
+  /**
+   * WHAT A DAY ON THE DAR FLOOR COSTS, PER CONSIGNMENT.
+   * Zero means storage is not charged, and that is the default: a rate nobody
+   * has agreed is a rate that must not appear on a customer's bill. Set it in
+   * settings and the charge becomes available on the invoice, never automatic —
+   * a clerk presses "Add storage" and can waive it, because whether to charge a
+   * customer who was three days late is a commercial decision, not arithmetic.
+   */
+  storagePerDay   Decimal @default(0) @db.Decimal(12, 2)
+  /// The currency that rate is quoted in. Billed in the invoice's currency.
+  storageCurrency String  @default("USD")
+
+  /**
+   * THE TERMS PRINTED UNDER EVERY INVOICE.
+   * One line each, newline separated. On the row and not in the code because
+   * the payment window, the storage charge and the complaints window are
+   * commercial decisions somebody changes without asking a programmer.
+   */
+  invoiceTerms String?
+
+  updatedAt DateTime @updatedAt
+}

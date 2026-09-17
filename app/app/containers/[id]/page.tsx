@@ -1,0 +1,723 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { Prisma } from "@prisma/client";
+import {
+  Boxes,
+  ClipboardList,
+  Container as ContainerIcon,
+  Layers,
+  Lock,
+  Package,
+  Scale,
+  Users,
+} from "lucide-react";
+
+import {
+  AdvancePanel,
+  LoadedTable,
+  LoadPanel,
+  SealPanel,
+  VoyageForm,
+} from "@/components/app/container-controls";
+import { EmptyState } from "@/components/app/empty-state";
+import { Field } from "@/components/app/field";
+import { PackingListButton } from "@/components/app/packing-list-button";
+import { KpiCard } from "@/components/app/kpi-card";
+import { ContainerMoney } from "@/components/app/container-money";
+import { PageHeader } from "@/components/app/page-header";
+import { SectionLabel } from "@/components/app/section-label";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  CONTAINER_STATUS_LABELS,
+  LOADABLE_CONTAINER_STATUSES,
+  SHIPMENT_STATUS_LABELS,
+} from "@/lib/constants";
+import {
+  formatCbm,
+  formatDate,
+  formatDateTime,
+  formatWeight,
+} from "@/lib/format";
+import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/rbac";
+import { requirePermission } from "@/lib/session";
+import { cn } from "@/lib/utils";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const c = await prisma.container.findUnique({
+    where: { id },
+    select: { reference: true, containerNumber: true },
+  });
+  return { title: c?.reference ?? "Container" };
+}
+
+const asDate = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+
+export default async function ContainerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>;
+}) {
+  const user = await requirePermission("container.view");
+  const { id } = await params;
+  const { edit } = await searchParams;
+
+  /* The paperwork shelf turns into the voyage form and back, so the sailing has
+     one home rather than a read-only copy and an editable one somewhere else. */
+  const editingVoyage = edit === "voyage" && can(user.role, "shipment.edit");
+
+  const container = await prisma.container.findFirst({
+    where: { id, deletedAt: null },
+    include: {
+      shipment: true,
+      packingList: true,
+      cargoLines: {
+        include: {
+          cargo: {
+            include: {
+              sender: { select: { fullName: true, code: true } },
+              /* The container's totals are added up from the goods themselves.
+                 Nobody types a total anywhere, and a corrected line changes the
+                 box's figures the moment it is corrected. */
+              packages: {
+                where: { deletedAt: null },
+                select: {
+                  quantity: true,
+                  pieces: true,
+                  weightKg: true,
+                  cbm: true,
+                  cargoType: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
+      events: { include: { actor: true }, orderBy: { createdAt: "desc" } },
+    },
+  });
+  if (!container) notFound();
+
+  const open = LOADABLE_CONTAINER_STATUSES.includes(container.status);
+
+  /* The money half appears once the box has left China. A container still
+     taking cargo has nothing billed against it, so an overview of zeros would
+     only be six empty cells above the loading bay's actual work. */
+  const sailed = ["DEPARTED", "IN_TRANSIT", "ARRIVED", "CLOSED"].includes(
+    container.status
+  );
+  const showMoney = sailed && can(user.role, "finance.view");
+
+  /* Everything received in Guangzhou and not yet on a box. Only offered while
+     this container can still take cargo. */
+  const waiting = open
+    ? await prisma.cargo.findMany({
+        where: { deletedAt: null, status: "RECEIVED_CHINA" },
+        orderBy: { createdAt: "asc" },
+        take: 200,
+        include: {
+          sender: { select: { fullName: true } },
+          packages: {
+            where: { deletedAt: null },
+            select: { cbm: true, quantity: true, cargoType: true },
+          },
+        },
+      })
+    : [];
+
+  /*
+    NO CARD FOR A STEP THIS DESK CANNOT TAKE.
+
+    "Move it along" rendered for everyone and, for the desk that could not take
+    the next step, held a single sentence explaining that somebody else would —
+    a card-sized apology sitting beside the voyage form. The step belongs to one
+    end of the route; if it is not yours, the card is not there.
+  */
+  const nextStep =
+    container.status === "SEALED"
+      ? can(user.role, "container.depart")
+      : container.status === "DEPARTED" || container.status === "IN_TRANSIT"
+        ? can(user.role, "container.arrive")
+        : container.status === "ARRIVED"
+          ? can(user.role, "container.close")
+          : false;
+
+  const waitingCbm = waiting.reduce(
+    (sum, w) =>
+      sum.add(w.packages.reduce((n, p) => n.add(p.cbm), new Prisma.Decimal(0))),
+    new Prisma.Decimal(0),
+  );
+  const waitingCustomers = new Set(waiting.map((w) => w.senderId)).size;
+
+  const loadedCbm = container.cargoLines.reduce(
+    (sum, l) => sum.add(l.cbm),
+    new Prisma.Decimal(0),
+  );
+  const customers = new Set(container.cargoLines.map((l) => l.cargo.senderId));
+
+  const totals = container.cargoLines.reduce(
+    (acc, line) => {
+      const items = line.cargo.packages;
+      acc.packages += items.length
+        ? items.reduce((sum, k) => sum + k.quantity, 0)
+        : line.packagesCount;
+      acc.pieces += items.reduce((sum, k) => sum + (k.pieces ?? 0), 0);
+      acc.weightKg = acc.weightKg.add(
+        line.weightKg ??
+          items.reduce(
+            (sum, k) => sum.add(k.weightKg ?? 0),
+            new Prisma.Decimal(0),
+          ),
+      );
+      return acc;
+    },
+    { packages: 0, pieces: 0, weightKg: new Prisma.Decimal(0) },
+  );
+
+  /*
+    THE LOADER GOES FIRST WHILE THE BOX IS EMPTY.
+
+    An empty container opened with a large "Empty" panel at the top and the
+    thing you actually came to do — pick cargo off the floor and load it —
+    below the fold. The order follows the work: nothing in it yet, so the floor
+    list leads; once there is something in it, what is inside leads and the
+    floor list sits underneath.
+  */
+  const loader =
+    open && can(user.role, "container.load") ? (
+      <Card className="flex min-h-0 flex-1 flex-col">
+        <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+          <CardTitle className="text-base">Waiting in Guangzhou</CardTitle>
+          {/* The same summary the box carries, for the pile it draws from. */}
+          {waiting.length > 0 ? (
+            <span className="tnum shrink-0 text-right text-xs text-muted-foreground">
+              <span className="block text-sm font-semibold text-foreground">
+                {formatCbm(waitingCbm)}
+              </span>
+              {waiting.length} waiting · {waitingCustomers} customer
+              {waitingCustomers === 1 ? "" : "s"}
+            </span>
+          ) : null}
+        </CardHeader>
+        <CardContent className="flex min-h-0 flex-1 flex-col">
+          <LoadPanel
+            containerId={container.id}
+            loadedCbm={Number(loadedCbm)}
+            capacityCbm={
+              container.capacityCbm ? Number(container.capacityCbm) : null
+            }
+            waiting={waiting.map((w) => ({
+              id: w.id,
+              reference: w.reference,
+              customer: w.sender.fullName,
+              shippingMark: w.shippingMark,
+              description: w.description,
+              category:
+                [
+                  ...new Set(
+                    w.packages.map((k) => k.cargoType).filter(Boolean),
+                  ),
+                ].join(", ") || null,
+              packages: w.packages.reduce((n, k) => n + k.quantity, 0),
+              cbm: w.packages
+                .reduce((sum, p) => sum.add(p.cbm), new Prisma.Decimal(0))
+                .toString(),
+            }))}
+          />
+        </CardContent>
+      </Card>
+    ) : null;
+
+  return (
+    <div className="space-y-6">
+      {/* OUR NUMBER IS THE CONTAINER'S NAME. It runs from one, it is the same
+          on the list, the packing list and the whiteboard, and it exists the
+          moment the box is opened. The line's own MSCU… number is allocated
+          late, changes every sailing and belongs in the paperwork below. */}
+      <PageHeader
+        title={container.reference}
+        description={
+          container.containerNumber
+            ? `${container.containerNumber} · ${container.originPort} → ${container.destinationPort}`
+            : `${container.originPort} → ${container.destinationPort}`
+        }
+        back={{ href: "/app/containers", label: "Containers" }}
+        actions={
+          <>
+            <Badge tone={container.status === "ARRIVED" ? "good" : "progress"}>
+              {CONTAINER_STATUS_LABELS[container.status]}
+            </Badge>
+            {can(user.role, "packingList.view") ? (
+              <PackingListButton
+                containerId={container.id}
+                existing={container.packingList}
+                canIssue={
+                  can(user.role, "packingList.issue") &&
+                  container.cargoLines.length > 0
+                }
+              />
+            ) : null}
+          </>
+        }
+      />
+
+      {/*
+        THE BOX, IN SIX FIGURES.
+
+        All six are added up from the consignments inside — nobody types a total
+        anywhere — and the volume card carries a ring, because "4.8 m³" means
+        nothing on its own and "4.8 of 67" is the only question the loading bay
+        is actually asking.
+      */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        <KpiCard
+          index={0}
+          label="Consignments"
+          numeric={container.cargoLines.length}
+          icon={Package}
+          tone="brand"
+          hint={open ? "Still taking cargo" : undefined}
+        />
+        <KpiCard
+          index={1}
+          label="Customers"
+          numeric={customers.size}
+          icon={Users}
+          tone="marine"
+          hint="Sharing this box"
+        />
+        <KpiCard
+          index={2}
+          label="Packages"
+          numeric={totals.packages}
+          icon={Boxes}
+          tone="signal"
+        />
+        {/* Nothing counted is not the same as none. A box whose pieces were
+            never tallied says so, rather than claiming zero. */}
+        <KpiCard
+          index={3}
+          label="Pieces"
+          {...(totals.pieces > 0
+            ? { numeric: totals.pieces }
+            : { value: "—", hint: "Not tallied" })}
+          icon={Layers}
+          tone="marine"
+        />
+        <KpiCard
+          index={4}
+          label="Weight"
+          {...(totals.weightKg.greaterThan(0)
+            ? {
+                numeric: Number(totals.weightKg),
+                decimals: 0,
+                suffix: " kg",
+              }
+            : { value: "—", hint: "Nothing weighed" })}
+          icon={Scale}
+          tone="warning"
+        />
+        <KpiCard
+          index={5}
+          label="Volume loaded"
+          numeric={Number(loadedCbm)}
+          decimals={3}
+          suffix=" m³"
+          icon={ContainerIcon}
+          tone="success"
+          hint={
+            container.capacityCbm
+              ? `of ${formatCbm(container.capacityCbm)}`
+              : "No capacity set"
+          }
+          ring={
+            container.capacityCbm
+              ? {
+                  value: Number(loadedCbm),
+                  total: Number(container.capacityCbm),
+                }
+              : undefined
+          }
+        />
+      </div>
+
+      {/*
+        THE MONEY, ON THE SAME SCREEN AS THE BOX.
+
+        One container, one page. The floor reads the contents and Finance reads
+        the margin, and neither has to know a second address to find the other's
+        half. It sits below the six figures because those describe the box, and
+        a box has to be described before it can be valued.
+
+        Renders nothing without `finance.view`: the warehouse never sees a price.
+      */}
+      {showMoney ? <ContainerMoney id={container.id} user={user} /> : null}
+
+      {/*
+        A SEALED BOX IS ONE PAGE, NOT TWO COLUMNS.
+
+        The split exists so a loader can pick from the floor on the left and
+        watch it land in the box on the right. Once the seal is on nothing goes
+        in or comes out — there is no floor list to show, and half the width
+        spent on an empty half is half a page wasted. The manifest takes the
+        whole page, and the voyage and the next milestone sit beneath it.
+      */}
+      {open ? (
+        <div className="grid grid-cols-1 items-stretch gap-6 xl:h-[36rem] xl:grid-cols-2">
+          <div className="flex min-h-0 flex-col gap-6">{loader}</div>
+
+          <div className="flex min-h-0 flex-col gap-6">
+            <Card className="flex min-h-0 flex-1 flex-col">
+              <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+                <CardTitle className="text-base">
+                  What is in this container
+                </CardTitle>
+                {/* The running total, where the eye already is. It was a bar
+                          under the table, which meant scrolling to read the one figure
+                          a loader checks every time they add a pallet. */}
+                {container.cargoLines.length > 0 ? (
+                  <span className="tnum shrink-0 text-right text-xs text-muted-foreground">
+                    <span className="block text-sm font-semibold text-foreground">
+                      {formatCbm(loadedCbm)}
+                    </span>
+                    {container.cargoLines.length} consignment
+                    {container.cargoLines.length === 1 ? "" : "s"} ·{" "}
+                    {totals.packages} pkg · {customers.size} customer
+                    {customers.size === 1 ? "" : "s"}
+                  </span>
+                ) : null}
+              </CardHeader>
+              {container.cargoLines.length === 0 ? (
+                <EmptyState
+                  icon="Boxes"
+                  title="Empty"
+                  description="Load cargo from the Guangzhou floor to start filling it."
+                />
+              ) : (
+                <CardContent className="flex min-h-0 flex-1 flex-col">
+                  <LoadedTable
+                    containerId={container.id}
+                    canEdit={open && can(user.role, "container.load")}
+                    lines={container.cargoLines.map((line) => ({
+                      cargoId: line.cargoId,
+                      reference: line.cargo.reference,
+                      shippingMark: line.cargo.shippingMark,
+                      customer: line.cargo.sender.fullName,
+                      packages: line.packagesCount,
+                      category:
+                        [
+                          ...new Set(
+                            line.cargo.packages
+                              .map((k) => k.cargoType)
+                              .filter(Boolean),
+                          ),
+                        ].join(", ") || null,
+                      cbm: line.cbm.toString(),
+                    }))}
+                  />
+
+                  {/* The box's own action, at the foot of the box's own card —
+                            where Load sits under the floor list beside it. */}
+                  {open && can(user.role, "container.seal") ? (
+                    <div className="mt-3">
+                      <SealPanel
+                        containerId={container.id}
+                        containerNumber={container.containerNumber}
+                        lineCount={container.cargoLines.length}
+                      />
+                    </div>
+                  ) : null}
+                </CardContent>
+              )}
+            </Card>
+          </div>
+        </div>
+      ) : showMoney ? null : (
+        <div className="space-y-6">
+          <Card className="flex min-h-0 flex-1 flex-col">
+            <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
+              <CardTitle className="text-base">
+                What is in this container
+              </CardTitle>
+              {/* The running total, where the eye already is. It was a bar
+                        under the table, which meant scrolling to read the one figure
+                        a loader checks every time they add a pallet. */}
+              {container.cargoLines.length > 0 ? (
+                <span className="tnum shrink-0 text-right text-xs text-muted-foreground">
+                  <span className="block text-sm font-semibold text-foreground">
+                    {formatCbm(loadedCbm)}
+                  </span>
+                  {container.cargoLines.length} consignment
+                  {container.cargoLines.length === 1 ? "" : "s"} ·{" "}
+                  {totals.packages} pkg · {customers.size} customer
+                  {customers.size === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </CardHeader>
+            {container.cargoLines.length === 0 ? (
+              <EmptyState
+                icon="Boxes"
+                title="Empty"
+                description="Load cargo from the Guangzhou floor to start filling it."
+              />
+            ) : (
+              <CardContent className="flex min-h-0 flex-1 flex-col">
+                <LoadedTable
+                  containerId={container.id}
+                  canEdit={open && can(user.role, "container.load")}
+                  lines={container.cargoLines.map((line) => ({
+                    cargoId: line.cargoId,
+                    reference: line.cargo.reference,
+                    shippingMark: line.cargo.shippingMark,
+                    customer: line.cargo.sender.fullName,
+                    packages: line.packagesCount,
+                    category:
+                      [
+                        ...new Set(
+                          line.cargo.packages
+                            .map((k) => k.cargoType)
+                            .filter(Boolean),
+                        ),
+                      ].join(", ") || null,
+                    cbm: line.cbm.toString(),
+                  }))}
+                />
+
+                {/* The box's own action, at the foot of the box's own card —
+                          where Load sits under the floor list beside it. */}
+                {open && can(user.role, "container.seal") ? (
+                  <div className="mt-3">
+                    <SealPanel
+                      containerId={container.id}
+                      containerNumber={container.containerNumber}
+                      lineCount={container.cargoLines.length}
+                    />
+                  </div>
+                ) : null}
+              </CardContent>
+            )}
+          </Card>
+
+          <div className="grid gap-6">
+            {/*
+                    AN OPEN BOX HAS NOWHERE TO GO YET.
+
+                    The next milestone only exists once the container is sealed, so on
+                    an open one this rendered as a card with a heading and nothing
+                    underneath — a promise of a control that was never coming.
+                  */}
+            {nextStep ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Move it along</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* EACH MILESTONE BELONGS TO A DIFFERENT END OF THE ROUTE.
+                            Guangzhou records the departure; Dar records the arrival and
+                            closes the box. Showing a clerk a button their desk cannot
+                            press only teaches them the system is broken. */}
+                  <AdvancePanel
+                    containerId={container.id}
+                    status={container.status}
+                    canDepart={can(user.role, "container.depart")}
+                    canArrive={can(user.role, "container.arrive")}
+                    canClose={can(user.role, "container.close")}
+                  />
+                  {container.status === "CLOSED" ? (
+                    <p className="text-sm text-muted-foreground">
+                      This container is closed. Everything on it has been
+                      received in Dar.
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/*
+        ONE PLACE FOR THE PAPERWORK, READ OR WRITTEN.
+
+        The voyage details had their own form on the page — eight editable
+        fields over a container that may have sailed a month ago — while the
+        same facts sat read-only on the shelf below. Two places for one truth.
+        The shelf is now the only place: it reads at a glance, and whoever books
+        the space opens it to write.
+      */}
+      <section>
+        <SectionLabel
+          action={
+            can(user.role, "shipment.edit") && container.shipment
+              ? editingVoyage
+                ? {
+                    href: `/app/containers/${container.id}`,
+                    label: "Done",
+                    keepScroll: true,
+                  }
+                : {
+                    href: `?edit=voyage`,
+                    label: "Edit the voyage",
+                    keepScroll: true,
+                  }
+              : undefined
+          }
+        >
+          The paperwork
+        </SectionLabel>
+
+        {/*
+        THE PAPERWORK, AT THE FOOT.
+
+        Reference numbers, the seal, the sailing: looked up when somebody is
+        filling in a customs form or answering a shipping line, and never while
+        loading. They sat across the top for a while, which put ten things
+        nobody was looking for above the two things everybody was.
+      */}
+        {editingVoyage ? (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">Voyage</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Whoever books the space fills this in. It prints on the packing
+                list and is what the customer is told about the sailing.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <VoyageForm
+                containerId={container.id}
+                shipment={
+                  container.shipment
+                    ? {
+                        shippingLine: container.shipment.shippingLine,
+                        vessel: container.shipment.vessel,
+                        voyage: container.shipment.voyage,
+                        billOfLading: container.shipment.billOfLading,
+                        departureDate: asDate(container.shipment.departureDate),
+                        eta: asDate(container.shipment.eta),
+                        notes: container.shipment.notes,
+                      }
+                    : null
+                }
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card>
+          <CardContent className="flex flex-wrap gap-x-8 gap-y-4 py-4">
+            {[
+              ["Our reference", container.reference, true],
+              ["Container no.", container.containerNumber ?? "—", true],
+              ["Type", container.type.replace("_", " "), false],
+              ["Seal", container.sealNumber ?? "—", true],
+              ["Sealed", formatDateTime(container.sealedAt) ?? "—", false],
+              [
+                "Cargo deadline",
+                formatDate(container.cargoDeadline) ?? "—",
+                false,
+              ],
+              ...(container.shipment
+                ? ([
+                    ["Shipment", container.shipment.reference, true],
+                    [
+                      "Voyage",
+                      SHIPMENT_STATUS_LABELS[container.shipment.status],
+                      false,
+                    ],
+                    ["ETA", formatDate(container.shipment.eta) ?? "—", false],
+                    [
+                      "Arrived",
+                      formatDate(container.shipment.actualArrival) ?? "—",
+                      false,
+                    ],
+                  ] as [string, string, boolean][])
+                : []),
+            ].map(([label, value, mono]) => (
+              <div key={label as string}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {label}
+                </p>
+                <p className={cn("mt-0.5 text-sm", mono && "tnum font-medium")}>
+                  {value}
+                </p>
+              </div>
+            ))}
+            {container.notes ? (
+              <p className="w-full rounded-md bg-secondary px-3 py-2 text-sm">
+                {container.notes}
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/*
+        THE BOX'S LIFE, ACROSS THE FOOT OF THE PAGE.
+
+        A vertical list of four events sat alone at the bottom of a column and
+        left half the screen empty beneath it. Laid out along the route it
+        reads as what it is — a journey with dates on it — and it closes the
+        page instead of trailing off.
+
+        Hidden for anybody reading the money half, whose Timeline tab is the
+        same events. One page, one copy of each fact.
+      */}
+      <section className={showMoney ? "hidden" : undefined}>
+        <SectionLabel>History</SectionLabel>
+        <Card>
+          <CardContent className="py-5">
+            <ol className="flex flex-wrap gap-x-10 gap-y-5">
+              {[...container.events].reverse().map((event, index) => (
+                <li key={event.id} className="relative min-w-[10rem] flex-1">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "size-2.5 shrink-0 rounded-full",
+                        index === container.events.length - 1
+                          ? "bg-brand"
+                          : "bg-border",
+                      )}
+                    />
+                    <p className="text-sm font-medium">
+                      {CONTAINER_STATUS_LABELS[event.to]}
+                    </p>
+                  </div>
+                  <p className="mt-1 pl-[1.125rem] text-xs text-muted-foreground">
+                    {formatDateTime(event.createdAt)}
+                  </p>
+                  {event.actor || event.note ? (
+                    <p className="pl-[1.125rem] text-xs text-muted-foreground">
+                      {[event.actor?.name, event.note]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
