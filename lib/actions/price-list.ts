@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, type RateBasis } from "@prisma/client";
 
-import { recordAudit } from "@/lib/audit";
+import { recordAudit, recordFieldChange } from "@/lib/audit";
+import { nextExceptionReference } from "@/lib/ids";
+import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import {
   confirmContext,
   confirmPriceList,
@@ -113,6 +115,173 @@ export async function confirmPrices(
   }
   return {
     ok: `${summary.issued} invoice(s) confirmed and sent to the customers.${left}`,
+  };
+}
+
+/*
+  WHAT A DESK QUERYING A MEASUREMENT IS ACTUALLY QUERYING.
+
+  The case is named for the figure, because that is what the floor has to go
+  and look at. A case called "wrong" sends somebody to the shelf with nothing
+  to check.
+*/
+const QUERY_KINDS = {
+  CBM_DIFFERENCE: "the volume",
+  WEIGHT_DIFFERENCE: "the weight",
+  PACKAGE_MISMATCH: "the package count",
+  OTHER: "the measurement",
+} as const;
+type QueryKind = keyof typeof QUERY_KINDS;
+
+/**
+ * THE FIGURE IS WRONG, AND IT IS NOT FINANCE'S FIGURE TO CHANGE.
+ *
+ * A price list is read against boxes standing in a warehouse, and sometimes the
+ * two disagree: a volume that cannot be right for four cartons, a customer on
+ * the phone saying they shipped half of that. The tempting fix is to let
+ * whoever is looking at the money type a better number — which is the one thing
+ * that must not happen, because then the bill and the warehouse record disagree
+ * and only one of them was ever anywhere near the cargo.
+ *
+ * So this sends it back instead. It takes Dar's signature off the count, flags
+ * the receiving row the way the floor's own short-count does, and opens a case
+ * addressed to the Dar floor naming the consignment and the figure. From there
+ * it is the path that already exists: Dar re-measures, the case is resolved —
+ * which clears the flag — Dar confirms again, and the consignment comes back
+ * onto this list at the figure the floor now stands behind.
+ *
+ * It refuses once a bill has gone out. A figure the customer is holding is
+ * moved by Finance, with a reason, on the bill.
+ */
+export async function queryCountWithDar(
+  _prev: PriceListState,
+  formData: FormData
+): Promise<PriceListState> {
+  const actor = await authorize("invoice.priceConfirm");
+
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const raw = String(formData.get("kind") ?? "OTHER");
+  const kind: QueryKind = raw in QUERY_KINDS ? (raw as QueryKind) : "OTHER";
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length < 4) {
+    return { error: "Say what looks wrong, so the floor knows what to re-check." };
+  }
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    select: {
+      id: true,
+      reference: true,
+      senderId: true,
+      darReceiving: { select: { id: true, verified: true, discrepancy: true } },
+      release: { select: { id: true } },
+      containerLines: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { containerId: true },
+      },
+      invoices: {
+        where: { status: { notIn: ["DRAFT", "CANCELLED"] } },
+        select: { number: true },
+      },
+    },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+  if (!cargo.darReceiving) {
+    return { error: `${cargo.reference} has not been counted in Dar yet.` };
+  }
+  if (cargo.release) {
+    return { error: `${cargo.reference} has already been collected.` };
+  }
+  if (cargo.invoices.length > 0) {
+    return {
+      error: `${cargo.reference} is already billed on ${cargo.invoices[0].number}. Correct the bill instead — the customer is holding that figure.`,
+    };
+  }
+
+  const containerId = cargo.containerLines[0]?.containerId ?? null;
+  const figure = QUERY_KINDS[kind];
+  const title = `${cargo.reference}: ${figure} is queried`;
+
+  const opened = await prisma.$transaction(async (tx) => {
+    /* The signature comes off before anything else: from this moment the
+       consignment is out of the price list's press and back on Dar's floor. */
+    if (cargo.darReceiving!.verified) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "DarReceiving",
+          entityId: cargo.darReceiving!.id,
+          field: "verified",
+          oldValue: "true",
+          newValue: "false",
+          reason,
+        },
+        tx
+      );
+    }
+    await tx.darReceiving.update({
+      where: { id: cargo.darReceiving!.id },
+      data: {
+        verified: false,
+        verifiedAt: null,
+        /* The same flag a short count sets, so it stops verification until the
+           case is closed and clears itself when the case is. */
+        discrepancy: true,
+        discrepancyNotes: reason,
+      },
+    });
+
+    const reference = await nextExceptionReference(tx);
+    const item = await tx.exceptionCase.create({
+      data: {
+        reference,
+        type: kind,
+        priority: "NORMAL",
+        department: "DAR_WAREHOUSE",
+        cargoId: cargo.id,
+        customerId: cargo.senderId,
+        containerId,
+        title,
+        description: `${actor.name} queried ${figure} recorded for ${cargo.reference} before it was priced: ${reason}`,
+        raisedById: actor.id,
+      },
+    });
+    await tx.exceptionEvent.create({
+      data: { caseId: item.id, to: "OPEN", note: reason, actorId: actor.id },
+    });
+
+    await notifyStaff(
+      [
+        ...(await staffInDepartment("DAR_WAREHOUSE", tx)),
+        ...(await staffInDepartment("MANAGEMENT", tx)),
+      ],
+      {
+        kind: "exception.raised",
+        title: `${reference}: ${title}`,
+        body: reason.slice(0, 160),
+        href: `/app/exceptions/${item.id}`,
+      },
+      tx
+    );
+
+    return item;
+  });
+
+  await recordAudit({
+    actor,
+    action: "cargo.queryCount",
+    entity: "Cargo",
+    entityId: cargo.id,
+    summary: `Sent ${cargo.reference} back to Dar over ${figure} — case ${opened.reference}: ${reason}`,
+    metadata: { caseId: opened.id, kind, reason },
+  });
+
+  refreshPriceViews(containerId, cargo.id);
+  revalidatePath("/app/exceptions");
+  revalidatePath("/app/receive/dar");
+  return {
+    ok: `${cargo.reference} is back with Dar. Case ${opened.reference} opened on ${figure}.`,
   };
 }
 

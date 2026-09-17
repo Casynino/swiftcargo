@@ -2,13 +2,18 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Pencil, Scale, X } from "lucide-react";
+import { Pencil, RotateCcw, Scale, X } from "lucide-react";
 
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { savePriceListPrice, type PriceListState } from "@/lib/actions/price-list";
+import { NativeSelect } from "@/components/ui/native-select";
+import {
+  queryCountWithDar,
+  savePriceListPrice,
+  type PriceListState,
+} from "@/lib/actions/price-list";
 import { t, type Locale } from "@/lib/i18n";
 
 /**
@@ -441,9 +446,99 @@ export function RowPriceEditor({
 
           <FormMessage error={state.error} ok={state.ok} />
         </form>
+
+        <QueryTheCount cargoId={cargoId} reference={reference} locale={locale} />
       </div>
     </div>
   );
 
   return typeof document === "undefined" ? null : createPortal(dialog, document.body);
+}
+
+/**
+ * THE OTHER ANSWER TO A PRICE THAT LOOKS WRONG.
+ *
+ * Every box above this one changes what is charged. None of them changes the
+ * volume, the weight or the count, because those are the warehouse's figures
+ * and a desk reading money is not the desk that can see the boxes. When the
+ * measurement itself is what looks wrong, the honest move is to send it back —
+ * so it sits here, behind one line, under the prices rather than beside them.
+ */
+function QueryTheCount({
+  cargoId,
+  reference,
+  locale,
+}: {
+  cargoId: string;
+  reference: string;
+  locale: Locale;
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, action] = useActionState<PriceListState, FormData>(
+    queryCountWithDar,
+    {}
+  );
+
+  if (!open) {
+    return (
+      <div className="mt-3 border-t pt-3">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="focus-ring inline-flex items-center gap-1.5 rounded text-xs text-muted-foreground underline-offset-2 hover:text-warning hover:underline"
+        >
+          <RotateCcw className="size-3.5" />
+          {t(locale, "The measurement looks wrong — send it back to Dar")}
+        </button>
+        <FormMessage error={state.error} ok={state.ok} />
+      </div>
+    );
+  }
+
+  return (
+    <form action={action} className="mt-3 space-y-2 border-t pt-3">
+      <input type="hidden" name="cargoId" value={cargoId} />
+      <p className="text-xs text-muted-foreground">
+        {t(
+          locale,
+          "Dar's signature comes off the count and a case goes to the floor. It is priced again once they have re-checked it."
+        )}
+      </p>
+      <label className="block space-y-1">
+        <span className="block text-xs font-medium text-muted-foreground">
+          {t(locale, "What looks wrong")}
+        </span>
+        <NativeSelect
+          name="kind"
+          defaultValue="CBM_DIFFERENCE"
+          className="h-8 text-sm"
+          aria-label={`${t(locale, "What looks wrong")} — ${reference}`}
+        >
+          <option value="CBM_DIFFERENCE">{t(locale, "The volume")}</option>
+          <option value="WEIGHT_DIFFERENCE">{t(locale, "The weight")}</option>
+          <option value="PACKAGE_MISMATCH">{t(locale, "The package count")}</option>
+          <option value="OTHER">{t(locale, "Something else")}</option>
+        </NativeSelect>
+      </label>
+      <Input
+        name="reason"
+        placeholder={t(locale, "e.g. 6 CBM for four cartons cannot be right")}
+        className="h-8 text-sm"
+        aria-label={`${t(locale, "Why")} — ${reference}`}
+      />
+      <div className="flex items-center gap-2">
+        <SubmitButton size="sm" variant="ghost" pendingLabel={t(locale, "Sending…")}>
+          {t(locale, "Send it back to Dar")}
+        </SubmitButton>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="focus-ring rounded text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          {t(locale, "Leave it")}
+        </button>
+      </div>
+      <FormMessage error={state.error} ok={state.ok} />
+    </form>
+  );
 }
