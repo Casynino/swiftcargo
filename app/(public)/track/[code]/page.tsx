@@ -415,7 +415,10 @@ function TrackingCard({ result }: { result: PublicTracking }) {
       {charge ? (
         <section className="border-b">
           <div className="flex flex-wrap items-start justify-between gap-6 p-6">
-            <div className="min-w-0">
+            {/* The lines take the width the card has. A column sized to its own
+                longest line leaves the bill huddled against the left edge of a
+                card two thirds empty. */}
+            <div className="min-w-0 flex-1 basis-[20rem]">
               <p className="eyebrow flex items-center gap-1.5 text-muted-foreground">
                 <Wallet className="size-3.5" />
                 {/* "Settled in full", not "Total paid": a bill whose last
