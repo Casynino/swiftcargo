@@ -7,6 +7,7 @@ import * as Icons from "lucide-react";
 import { Bell, ChevronRight, LogOut, Menu, X } from "lucide-react";
 
 import { NavTrail } from "@/components/app/nav-trail";
+import { NewVersionNotice } from "@/components/app/new-version-notice";
 import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
 import { MobileBack } from "@/components/app/smart-back";
 import { NavProvider } from "@/components/app/section-tabs";
@@ -14,6 +15,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions/auth";
+import { BUILD_ID } from "@/lib/build-id";
 import { type NavItem, type NavSection } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
@@ -204,6 +206,9 @@ export function AppShell({
           <Suspense fallback={null}>
             <NavTrail />
           </Suspense>
+          {/* Offered, never forced: a clerk half-way through a consignment must
+              not have the form pulled out from under them. */}
+          <NewVersionNotice build={BUILD_ID} />
           {/* A ceiling on the reading width. On a 2560 screen a table stretched
               edge to edge puts a name and its balance a head-turn apart. */}
           <div className="mx-auto w-full max-w-[1600px]">
