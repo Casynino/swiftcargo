@@ -24,6 +24,7 @@ import {
   RateDialog,
 } from "@/components/app/bill-dialogs";
 import { AskCreditButton } from "@/components/app/ask-for-credit";
+import { GenerateInvoiceButton } from "@/components/app/finance-forms";
 import { FormMessage } from "@/components/app/form-message";
 import { ShortfallNotice } from "@/components/app/shortfall-notice";
 import { SubmitButton } from "@/components/app/submit-button";
@@ -74,6 +75,12 @@ type Props = {
   canChangeBill: boolean;
   canOpenBill: boolean;
   atDar: boolean;
+  /**
+   * Counted at Dar with no container on record, unbilled, and the viewer may
+   * raise a bill. Such cargo never appears in a container's pricing, so its
+   * bill is raised from here or not at all.
+   */
+  raiseBill?: boolean;
   pickupNote: { id: string; number: string; status: string; onCredit: boolean } | null;
 };
 
@@ -103,7 +110,7 @@ export function CargoActions(props: Props) {
       </div>
       <div className="divide-y">
         {payable && props.canPay ? <PaymentPanel {...props} bill={bill!} settled={settled} /> : null}
-        {props.canOpenBill ? <BillPanel bill={bill} atDar={props.atDar} /> : null}
+        {props.canOpenBill ? <BillPanel bill={bill} atDar={props.atDar} cargoId={props.cargoId} raiseBill={props.raiseBill ?? false} /> : null}
         <PickupPanel {...props} settled={settled} />
       </div>
     </section>
@@ -445,7 +452,32 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
   );
 }
 
-function BillPanel({ bill, atDar }: { bill: CargoBill | null; atDar: boolean }) {
+function BillPanel({
+  bill,
+  atDar,
+  cargoId,
+  raiseBill,
+}: {
+  bill: CargoBill | null;
+  atDar: boolean;
+  cargoId: string;
+  raiseBill: boolean;
+}) {
+  if (!bill && raiseBill) {
+    return (
+      <div className="px-4 py-3.5">
+        <p className="flex items-center gap-2 text-sm font-medium">
+          <FileText className="size-4 text-muted-foreground" />
+          Waiting for price confirmation
+        </p>
+        <p className="mt-0.5 mb-2.5 text-xs text-muted-foreground">
+          No container is on record for this consignment, so its bill is raised
+          here from the rate book and confirmed on the invoice.
+        </p>
+        <GenerateInvoiceButton cargoId={cargoId} />
+      </div>
+    );
+  }
   if (!bill) {
     return (
       <div className="px-4 py-3.5">

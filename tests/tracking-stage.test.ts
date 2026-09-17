@@ -126,6 +126,24 @@ describe("public journey", () => {
     assert.equal(state(j, "INVOICED"), "upcoming");
   });
 
+  test("checked in at Dar with no container on record", () => {
+    /* Cargo that was already on the Dar floor when the system started: one
+       history row, no sailing. The earlier steps are implied by being received,
+       and none of them is given a date nobody recorded. */
+    const j = publicJourney(
+      input({ status: "RECEIVED_DAR", stamps: { RECEIVED_DAR: day(-1) } })
+    );
+    for (const key of ["RECEIVED_CHINA", "LOADED", "DEPARTED", "AT_SEA", "ARRIVED_DAR"] as StageKey[]) {
+      assert.equal(state(j, key), "done", key);
+      assert.equal(j.steps.find((s) => s.key === key)!.at, null, key);
+    }
+    assert.equal(state(j, "RECEIVED_DAR"), "current");
+    assert.deepEqual(j.steps.find((s) => s.key === "RECEIVED_DAR")!.at, day(-1));
+    assert.equal(state(j, "INVOICED"), "upcoming");
+    assert.equal(state(j, "HANDED_OVER"), "upcoming");
+    assert.equal(j.eta, null);
+  });
+
   test("ready is only what the release check says", () => {
     const paidButNotReleasable = publicJourney(
       input({

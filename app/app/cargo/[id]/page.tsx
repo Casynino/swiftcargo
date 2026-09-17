@@ -864,6 +864,12 @@ export default async function CargoDetailPage({
               canChangeBill={can(user.role, "invoice.discount")}
               canOpenBill={can(user.role, "finance.view")}
               atDar={Boolean(dar) && ["RECEIVED_DAR", "READY_FOR_RELEASE"].includes(cargo.status)}
+              raiseBill={
+                Boolean(dar) &&
+                !billHere &&
+                cargo.containerLines.length === 0 &&
+                can(user.role, "invoice.create")
+              }
               pickupNote={
                 pickupNote
                   ? {

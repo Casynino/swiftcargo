@@ -20,6 +20,7 @@ import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { unsailedToPrice } from "@/lib/unsailed-pricing";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Arrived containers" };
@@ -131,6 +132,11 @@ export default async function ArrivedContainersPage({
     },
   });
 
+  /* Counted at Dar with no container behind it — cargo that was already on the
+     Dar floor when this system started. The container rows below can never
+     hold it, and the dashboards count it all the same. */
+  const unsailed = await unsailedToPrice();
+
   const rows = containers.map((container) => {
     const cargo = container.cargoLines.map((l) => l.cargo);
     const counted = cargo.filter((c) => c.darReceiving).length;
@@ -224,7 +230,9 @@ export default async function ArrivedContainersPage({
     checked: rows.filter((r) => r.state === "checked").length,
     /* Counted at Dar with nothing billed yet — the containers Finance has to
        open and confirm prices on before anybody can be asked for money. */
-    pricing: rows.filter((r) => r.toPrice > 0).length,
+    /* Plus each consignment with no container behind it: every one of those
+       is opened and priced on its own, so each is a thing on the list. */
+    pricing: rows.filter((r) => r.toPrice > 0).length + unsailed.length,
     history: rows.filter((r) => r.state === "history").length,
     all: rows.length,
   };
@@ -293,9 +301,9 @@ export default async function ArrivedContainersPage({
         : showMoney
   );
 
-  const waitingOnFinance = rows
-    .filter((r) => r.toPrice > 0)
-    .reduce((sum, r) => sum + r.toPrice, 0);
+  const waitingOnFinance =
+    rows.filter((r) => r.toPrice > 0).reduce((sum, r) => sum + r.toPrice, 0) +
+    unsailed.length;
 
   return (
     <div className="space-y-6">
@@ -389,6 +397,83 @@ export default async function ArrivedContainersPage({
         </div>
       </Card>
 
+      {chosen === "pricing" && unsailed.length > 0 ? (
+        <Card>
+          <div className="border-b px-4 py-3">
+            <p className="text-sm font-medium">
+              In Dar with no container on record
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Checked in at Dar before this system held its sailing. Open each
+              one to raise and confirm its bill.
+            </p>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead className="text-right">Packages</TableHead>
+                <TableHead className="text-right">Volume</TableHead>
+                <TableHead className="hidden lg:table-cell">Checked in</TableHead>
+                <TableHead className="w-8" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {unsailed.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="p-0">
+                    <Link
+                      href={`/app/cargo/${item.id}`}
+                      className="block px-4 py-3"
+                    >
+                      <span className="tnum text-sm font-medium">
+                        {item.reference}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {item.description}
+                      </span>
+                      {item.invoices.length > 0 ? (
+                        <span className="mt-1 block w-fit rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
+                          Draft to confirm
+                        </span>
+                      ) : null}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {item.receiver.fullName}
+                    <span className="block text-xs text-muted-foreground">
+                      {item.receiver.code}
+                    </span>
+                  </TableCell>
+                  <TableCell className="tnum text-right text-sm">
+                    {item.darReceiving?.packagesCount ?? "—"}
+                  </TableCell>
+                  <TableCell className="tnum text-right text-sm">
+                    {item.darReceiving?.cbm ? formatCbm(item.darReceiving.cbm) : "—"}
+                  </TableCell>
+                  <TableCell className="tnum hidden whitespace-nowrap text-xs text-muted-foreground lg:table-cell">
+                    {item.darReceiving ? formatDate(item.darReceiving.receivedAt) : "—"}
+                  </TableCell>
+                  <TableCell className="p-0">
+                    <Link
+                      href={`/app/cargo/${item.id}`}
+                      className="flex items-center justify-center px-3 py-3 text-muted-foreground"
+                      aria-label={`Open ${item.reference}`}
+                    >
+                      <ChevronRight className="size-4" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : null}
+
+      {/* Nothing on a container to price, and the consignments above are the
+          whole answer: an empty table under them reads as "nothing to do". */}
+      {chosen === "pricing" && shown.length === 0 && unsailed.length > 0 ? null : (
       <Card>
         {shown.length === 0 ? (
           <EmptyState
@@ -519,6 +604,7 @@ export default async function ArrivedContainersPage({
           </p>
         ) : null}
       </Card>
+      )}
 
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <Boxes className="size-4" />
