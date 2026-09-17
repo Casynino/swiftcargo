@@ -850,7 +850,6 @@ function CheckInRowView({
               containerId={containerId}
               reference={row.reference}
               containers={otherContainers}
-              onDone={() => setMoving(false)}
             />
           </td>
         </tr>

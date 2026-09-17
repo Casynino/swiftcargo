@@ -32,7 +32,6 @@ export function MoveCargo({
   containerId,
   reference,
   containers,
-  onDone,
 }: {
   cargoId: string;
   /** The container it is on now. */
@@ -40,7 +39,6 @@ export function MoveCargo({
   reference: string;
   /** Landed containers it could belong to instead, this one excluded. */
   containers: { id: string; reference: string }[];
-  onDone?: () => void;
 }) {
   const [moveState, move] = useActionState<ActionState, FormData>(
     putOnArrivedContainer,
@@ -95,12 +93,14 @@ export function MoveCargo({
           placeholder="Why it is not on this container"
           className="min-w-[16rem] flex-1"
         />
-        <SubmitButton
-          size="sm"
-          variant="outline"
-          pendingLabel="Taking it off…"
-          onClick={() => onDone?.()}
-        >
+        {/* NOTHING CLOSES THIS PANEL ON THE WAY OUT.
+
+            The button used to collapse the row in its own click handler, which
+            unmounted the form React was about to submit from — so the press
+            looked like it worked and the consignment stayed on the manifest.
+            The row closes when the answer comes back and the page re-renders,
+            and the answer is read here first. */}
+        <SubmitButton size="sm" variant="outline" pendingLabel="Taking it off…">
           <PackageX />
           Take it off the manifest
         </SubmitButton>
