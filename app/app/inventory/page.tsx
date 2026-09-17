@@ -31,6 +31,7 @@ import {
 import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
+import { cargoTypeOptions } from "@/lib/valuation";
 import { requirePermission } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Warehouse floor" };
@@ -43,8 +44,19 @@ export const metadata: Metadata = { title: "Warehouse floor" };
   Keeping loaded cargo here made the floor read as fuller than the building was,
   and a clerk counting shelves against the screen could never make the two
   agree.
+
+  It is still REACHABLE from here, because "where is SC0041" is asked of the
+  floor whether or not the answer is "in a box by the door". The `loaded` filter
+  is that question, and it is the only view in which Guangzhou is shown cargo it
+  has already put into a container.
 */
 const CHINA_STATUSES: CargoStatus[] = ["RECEIVED_CHINA"];
+
+/** In a box in Guangzhou, not yet at sea. */
+const CHINA_LOADED_STATUSES: CargoStatus[] = [
+  "ASSIGNED_TO_CONTAINER",
+  "CONTAINER_LOADED",
+];
 
 const DAR_STATUSES: CargoStatus[] = [
   "ARRIVED_TANZANIA",
@@ -59,19 +71,22 @@ const DAR_STATUSES: CargoStatus[] = [
  * see cargo sitting in Dar es Salaam — everything of theirs was invisible,
  * because the page only ever queried the Tanzanian statuses. The desk decides
  * the question now, and each warehouse sees its own stock.
- *
- * Cargo already loaded into a container is still listed, with its container
- * beside it. It has not left the building; it has moved from a shelf into a
- * box, and a warehouse that cannot see it any more believes it has shipped.
  */
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; state?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    state?: string;
+    type?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const user = await requirePermission("inventory.view");
-  const { q, state } = await searchParams;
+  const { q, state, type, from, to } = await searchParams;
   const query = q?.trim() ?? "";
+  const category = type?.trim() ?? "";
 
   /* Dar's own desk sees Dar. China, and management looking at the origin end,
      see Guangzhou. */
@@ -80,10 +95,32 @@ export default async function InventoryPage({
 
   const statuses = inChina ? CHINA_STATUSES : DAR_STATUSES;
 
-  const filtered: CargoStatus[] =
-    state === "waiting"
+  /* A day typed into a date box means the whole of that day. Read as a bare
+     timestamp, "to 3 March" excluded everything received on 3 March. */
+  const day = (value: string | undefined, endOfDay = false) => {
+    if (!value?.trim()) return null;
+    const parsed = new Date(`${value.trim()}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+  const since = day(from);
+  const until = day(to, true);
+
+  /* The floor a Guangzhou clerk is standing on is the unassigned pile; asking
+     after a consignment already in a box is a different question with its own
+     view, and mixing the two made the volume on the floor read as double the
+     building. */
+  const loadedView = inChina && state === "loaded";
+
+  const filtered: CargoStatus[] = loadedView
+    ? CHINA_LOADED_STATUSES
+    : state === "waiting"
       ? [inChina ? "RECEIVED_CHINA" : "RECEIVED_DAR"]
       : statuses;
+
+  const receivingFilter =
+    since || until
+      ? { receivedAt: { ...(since ? { gte: since } : {}), ...(until ? { lte: until } : {}) } }
+      : null;
 
   const cargo = await prisma.cargo.findMany({
     where: {
@@ -93,24 +130,49 @@ export default async function InventoryPage({
       /* The attention list on the dashboard links straight here: a warning that
          cannot be turned into the actual rows is a warning nobody acts on. */
       ...(state === "nophoto" ? { photos: { none: {} } } : {}),
-      ...(query
-        ? {
-            OR: [
-              { reference: { contains: query, mode: "insensitive" as const } },
-              { shippingMark: { contains: query, mode: "insensitive" as const } },
-              { paperReceiptNo: { contains: query } },
-              { description: { contains: query, mode: "insensitive" as const } },
-              {
-                sender: {
-                  OR: [
-                    { fullName: { contains: query, mode: "insensitive" as const } },
-                    { phone: { contains: query } },
-                  ],
-                },
-              },
-            ],
-          }
+      /* The rate band, as the floor named it on the line. One consignment can
+         carry several, so a match on any line is a match. */
+      ...(category
+        ? { packages: { some: { deletedAt: null, cargoType: category } } }
         : {}),
+      /* Two independent questions, each of which wants an OR of its own — the
+         date can match either receiving row, and the search box matches any of
+         six columns. Side by side as `OR` they would be one key overwriting the
+         other, and the filter that lost would silently do nothing. */
+      AND: [
+        ...(receivingFilter
+          ? [
+              inChina
+                ? { chinaReceiving: receivingFilter }
+                : {
+                    OR: [
+                      { darReceiving: receivingFilter },
+                      { chinaReceiving: receivingFilter },
+                    ],
+                  },
+            ]
+          : []),
+        ...(query
+          ? [
+              {
+                OR: [
+                  { reference: { contains: query, mode: "insensitive" as const } },
+                  { shippingMark: { contains: query, mode: "insensitive" as const } },
+                  { paperReceiptNo: { contains: query } },
+                  { description: { contains: query, mode: "insensitive" as const } },
+                  {
+                    sender: {
+                      OR: [
+                        { fullName: { contains: query, mode: "insensitive" as const } },
+                        { phone: { contains: query } },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
+      ],
     },
     orderBy: { updatedAt: "asc" },
     take: 200,
@@ -178,6 +240,10 @@ export default async function InventoryPage({
     }),
   ]);
 
+  /* The categories the rate book actually prices, so the filter offers what the
+     counter was offered rather than a free-text box nobody spells the same. */
+  const categories = await cargoTypeOptions();
+
   const floorCbm = cargo.reduce((sum, item) => {
     const cbm = inChina
       ? item.chinaReceiving?.cbm
@@ -191,7 +257,9 @@ export default async function InventoryPage({
         title={inChina ? "Guangzhou floor" : "Dar es Salaam floor"}
         description={
           inChina
-            ? "Everything received and still waiting for a container."
+            ? loadedView
+              ? "Received in Guangzhou and already in a container, with the box it went into."
+              : "Everything received and still waiting for a container."
             : "Everything landed in Dar, oldest first."
         }
         actions={
@@ -210,11 +278,11 @@ export default async function InventoryPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
-          label="On the floor"
+          label={loadedView ? "Shown here" : "On the floor"}
           numeric={cargo.length}
           icon={Warehouse}
           tone="brand"
-          hint="Consignments physically here"
+          hint={loadedView ? "Consignments in a box" : "Consignments physically here"}
         />
         <KpiCard
           index={1}
@@ -230,12 +298,12 @@ export default async function InventoryPage({
           numeric={loaded}
           icon={ContainerIcon}
           tone="marine"
-          hint={inChina ? "No longer on the floor" : undefined}
-          href={inChina ? "/app/containers" : undefined}
+          hint={inChina ? "Still in Guangzhou, in a box" : undefined}
+          href={inChina ? "/app/inventory?state=loaded" : undefined}
         />
         <KpiCard
           index={3}
-          label="Volume on the floor"
+          label={loadedView ? "Volume shown" : "Volume on the floor"}
           numeric={floorCbm}
           decimals={2}
           suffix="CBM"
@@ -262,9 +330,48 @@ export default async function InventoryPage({
           <option value="waiting">
             {inChina ? "Waiting for a container" : "Not yet released"}
           </option>
+          {/* The other half of the building's stock. Not mixed into the default
+              view, where it would double the volume on the floor, but reachable
+              — "where is SC0041" is asked of the floor either way. */}
+          {inChina ? <option value="loaded">In a container</option> : null}
           <option value="hold">On hold</option>
           <option value="nophoto">No photograph</option>
         </NativeSelect>
+        {categories.length > 0 ? (
+          <NativeSelect
+            name="type"
+            defaultValue={category}
+            className="w-48"
+            aria-label="Cargo type"
+          >
+            <option value="">Any cargo type</option>
+            {categories.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </NativeSelect>
+        ) : null}
+        {/* Received between two dates. The floor is asked this every time
+            somebody reconciles a week of the paper book against the screen. */}
+        <Input
+          type="date"
+          name="from"
+          defaultValue={from ?? ""}
+          min="2000-01-01"
+          max="2099-12-31"
+          className="w-40"
+          aria-label="Received from"
+        />
+        <Input
+          type="date"
+          name="to"
+          defaultValue={to ?? ""}
+          min="2000-01-01"
+          max="2099-12-31"
+          className="w-40"
+          aria-label="Received up to"
+        />
         <Button type="submit" variant="outline">
           Filter
         </Button>
@@ -282,9 +389,11 @@ export default async function InventoryPage({
               description={
                 query
                   ? "Try a receipt number, or the mark written on the box."
-                  : inChina
-                    ? "Nothing is waiting. Everything received has gone into a container."
-                    : "Nothing landed is still sitting here."
+                  : loadedView
+                    ? "Nothing received in Guangzhou is sitting in a container."
+                    : inChina
+                      ? "Nothing is waiting. Everything received has gone into a container."
+                      : "Nothing landed is still sitting here."
               }
             />
           ) : (
@@ -311,11 +420,14 @@ export default async function InventoryPage({
                       when. Dar keeps it: there a consignment can be landed,
                       booked in or cleared to go, and those are different jobs. */}
                   {inChina ? null : <TableHead>Status</TableHead>}
-                  {/* Nothing on the Guangzhou floor is in a container — that is
-                      what "on the floor" means, and a column of "Not assigned"
-                      was one word repeated twenty-three times. Dar keeps it:
-                      there, the box it came off is how a consignment is found. */}
-                  {inChina ? null : <TableHead>Container</TableHead>}
+                  {/* Nothing in the default Guangzhou view is in a container —
+                      that is what "on the floor" means, and a column of "Not
+                      assigned" was one word repeated twenty-three times. It
+                      comes back for the loaded view, where the box it went into
+                      is the whole reason somebody opened the list, and Dar keeps
+                      it always: there, the box it came off is how a consignment
+                      is found. */}
+                  {!inChina || loadedView ? <TableHead>Container</TableHead> : null}
                   {/* Which warehouse it is in is the title of the page, and a
                       shelf number nobody fills in was two lines of nothing. The
                       date it came in is the fact a clerk actually wants. */}
@@ -412,7 +524,7 @@ export default async function InventoryPage({
                           <CargoStatusBadge status={item.status} />
                         </TableCell>
                       )}
-                      {inChina ? null : (
+                      {!inChina || loadedView ? (
                         <TableCell>
                           {container ? (
                             <Link
@@ -425,7 +537,7 @@ export default async function InventoryPage({
                             <Badge tone="neutral">—</Badge>
                           )}
                         </TableCell>
-                      )}
+                      ) : null}
                       <TableCell className="tnum hidden text-sm text-muted-foreground xl:table-cell">
                         {formatDate(receiving?.receivedAt)}
                       </TableCell>
