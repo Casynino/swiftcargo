@@ -92,6 +92,7 @@ export type MessageContext = {
 function cargoBlock(context: MessageContext): string {
   const lines: string[] = ["*MAELEZO YA MZIGO*"];
   if (context.reference) lines.push(`• Tracking: ${context.reference}`);
+  if (context.invoiceNumber) lines.push(`• Ankara: ${context.invoiceNumber}`);
   if (context.description) lines.push(`• Bidhaa: ${context.description}`);
   if (context.packages) lines.push(`• Vifurushi: ${context.packages}`);
   if (context.cbm) lines.push(`• Ujazo: ${context.cbm} CBM`);
@@ -206,21 +207,18 @@ export function composeMessage(
       );
 
     case "invoice.issued":
+      /* The same shape as the reminder: the customer reads one message layout
+         whichever desk sent it, with the shilling figure in bold and the link
+         to the bill underneath. */
       return (
-        `Habari ${name}, ankara ${context.invoiceNumber ?? ""} ya mzigo ${ref} iko tayari.\n` +
-        (context.amountTzs
-          ? `Kiasi cha kulipa: TZS ${context.amountTzs}\n` +
-            `Sawa na: ${context.currency ?? "USD"} ${context.amount ?? ""}` +
-            (context.fxRate ? ` (1 USD = ${context.fxRate} TZS)` : "")
-          : `Kiasi: ${context.currency ?? "USD"} ${context.amount ?? ""}`) +
-        `\n\nHello ${name}, invoice ${context.invoiceNumber ?? ""} for cargo ${ref} is ready. ` +
-        (context.amountTzs
-          ? `Amount due: TZS ${context.amountTzs} (${context.currency ?? "USD"} ${context.amount ?? ""}` +
-            (context.fxRate ? ` at 1 USD = ${context.fxRate} TZS` : "") +
-            `)`
-          : `Amount due: ${context.currency ?? "USD"} ${context.amount ?? ""}`) +
-        `.` +
-        sign
+        `*${COMPANY.name.toUpperCase()}*\n\n` +
+        `Habari ${name},\n` +
+        `Mzigo wako umefika salama ${ROUTE.destinationCity} na uko tayari ` +
+        `kuchukuliwa baada ya malipo kuthibitishwa.\n\n` +
+        cargoBlock(context) +
+        storageBlock(context) +
+        `\n\n*Angalia invoice yako kamili na njia za malipo:*\n` +
+        `${track}/${ref}`
       );
 
     case "payment.reminder":

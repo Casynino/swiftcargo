@@ -215,7 +215,7 @@ export async function ContainerMoney({
   /* Moving a figure the customer has already been given. Finance's, and the
      counter's, which is where the conversation about it happens. */
   const mayMovePricedBill = can(user.role, "invoice.discount");
-  const [locale, correction, priceList, cargoTypes] = await Promise.all([
+  const [locale, correction, priceList, cargoTypes, settings] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
       ? correctionOptions()
@@ -224,6 +224,12 @@ export async function ContainerMoney({
         >),
     priceListForContainer(container.id),
     mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
+    /* The storage line on the message: a change in Settings reaches every
+       message without anybody editing a template. */
+    prisma.companySetting.findUnique({
+      where: { id: "singleton" },
+      select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+    }),
   ]);
   /* The waiting price for each consignment, worked out once for the whole
      container and read on the row rather than in a table of its own. */
@@ -363,10 +369,34 @@ export async function ContainerMoney({
             reference: c.reference,
             description: c.description,
             invoiceNumber: bill.number,
-            amount: bill.total.toString(),
-            amountTzs: bill.totalTzs?.toString() ?? null,
-            fxRate: bill.fxRate?.toString() ?? null,
+            packages: measured?.packagesCount ?? null,
+            cbm: bill.billableCbm
+              ? Number(bill.billableCbm).toFixed(3)
+              : measured?.cbm
+                ? Number(measured.cbm).toFixed(3)
+                : null,
+            ratePerCbm: bill.appliedRate
+              ? Number(bill.appliedRate).toFixed(2)
+              : bill.standardRate
+                ? Number(bill.standardRate).toFixed(2)
+                : null,
+            /* Raw figures with separators, not formatCurrency: the template
+               writes the currency word itself and would otherwise print two. */
+            amount: Number(bill.total).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            }),
+            amountTzs: bill.totalTzs
+              ? Number(bill.totalTzs).toLocaleString("en-US")
+              : null,
+            fxRate: bill.fxRate ? Number(bill.fxRate).toLocaleString("en-US") : null,
             currency: bill.currency,
+            freeStorageDays: settings?.freeStorageDays ?? null,
+            storagePerDay:
+              settings && Number(settings.storagePerDay) > 0
+                ? Number(settings.storagePerDay).toString()
+                : null,
+            storageCurrency: settings?.storageCurrency ?? "USD",
           }),
         };
       })(),
