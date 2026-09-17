@@ -122,6 +122,18 @@ export async function issuePickupNote(
     summary: owing.greaterThan(0)
       ? `Released ${cargo.reference} ON CREDIT as ${note.noteNumber} — ${cargo.receiver.fullName} still owes ${live[0].currency} ${owing.toFixed(2)}: ${creditReason}`
       : `Issued ${note.noteNumber} for ${cargo.reference} — ${cargo.receiver.fullName}`,
+    /* The one way goods leave before the money does. The credit decision is
+       the thing the books are later reconciled against, so it is a field and
+       not a phrase inside a sentence. */
+    metadata: {
+      cargoId: cargo.id,
+      noteNumber: note.noteNumber,
+      onCredit: owing.greaterThan(0),
+      owing: owing.toFixed(2),
+      currency: live[0]?.currency ?? null,
+      creditDueAt: creditDueAt?.toISOString() ?? null,
+      reason: owing.greaterThan(0) ? creditReason : null,
+    },
   });
 
   revalidatePath("/app/finance/pickup-notes");
@@ -168,6 +180,13 @@ export async function cancelPickupNote(
     entity: "PickupNote",
     entityId: id,
     summary: `Withdrew ${note?.noteNumber ?? id}: ${reason}`,
+    metadata: {
+      cargoId: note?.cargoId ?? null,
+      noteNumber: note?.noteNumber ?? null,
+      oldValue: "ACTIVE",
+      newValue: "CANCELLED",
+      reason,
+    },
   });
 
   revalidatePath("/app/finance/pickup-notes");

@@ -151,6 +151,16 @@ export async function raiseException(
     entity: "ExceptionCase",
     entityId: created.id,
     summary: `Opened ${created.reference} — ${data.title}`,
+    /* Which consignment, which container and what kind of trouble. The
+       sentence above reads well to a person; these are what a question about
+       one consignment's history is actually asked with. */
+    metadata: {
+      type: data.type,
+      priority: data.priority,
+      department: data.department ?? null,
+      cargoId: data.cargoId ?? null,
+      reason: data.description,
+    },
   });
 
   revalidatePath("/app/exceptions");
@@ -316,6 +326,18 @@ export async function updateException(
     summary: `${before.reference}: ${before.status} → ${status}${
       data.note ? ` — ${data.note}` : ""
     }`,
+    metadata: {
+      cargoId: before.cargoId,
+      oldValue: before.status,
+      newValue: status,
+      /* Resolving or closing a case clears the discrepancy flag on the Dar
+         receiving row, which is what was stopping the release. That is a
+         consequence worth being able to find from the case rather than only
+         from the cargo. */
+      clearedDiscrepancy:
+        (status === "RESOLVED" || status === "CLOSED") && Boolean(before.cargoId),
+      reason: data.note || data.resolution || null,
+    },
   });
 
   revalidatePath("/app/exceptions");

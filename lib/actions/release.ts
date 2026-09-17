@@ -190,15 +190,15 @@ export async function markReadyForRelease(
   const check = checkRelease(cargo);
   if (!check.ok) return { error: check.blockedBy ?? "Not ready." };
 
-  await prisma.$transaction(async (tx) => {
-    const moved = await setCargoStatus(
+  const moved = await prisma.$transaction(async (tx) => {
+    const changed = await setCargoStatus(
       tx,
       cargoId,
       "READY_FOR_RELEASE",
       actor,
       "Paid, verified and cleared"
     );
-    if (moved) {
+    if (changed) {
       await notifyCustomer(
         /* The receiver is the one who can collect; telling only the sender sent
            the one useful message to the wrong person. */
@@ -212,7 +212,23 @@ export async function markReadyForRelease(
         tx
       );
     }
+    return changed;
   });
+
+  /* The status history carries the move; this carries the person and the
+     moment they told a customer to come for their goods. A consignment that
+     was announced as ready and then turned away at the counter is a question
+     somebody has to be able to answer by name. */
+  if (moved) {
+    await recordAudit({
+      actor,
+      action: "cargo.readyForRelease",
+      entity: "Cargo",
+      entityId: cargo.id,
+      summary: `${cargo.reference} marked ready to collect and the customer told`,
+      metadata: { oldValue: cargo.status, newValue: "READY_FOR_RELEASE" },
+    });
+  }
 
   revalidatePath("/app/release");
   return { ok: "Marked ready." };
@@ -275,9 +291,9 @@ export async function requestDelivery(
     return { ok: "You have already asked us to deliver this one." };
   }
 
-  await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx) => {
     const reference = await nextDeliveryReference(tx);
-    await tx.deliveryRequest.create({
+    const request = await tx.deliveryRequest.create({
       data: {
         reference,
         cargoId: cargo.id,
@@ -303,6 +319,24 @@ export async function requestDelivery(
       },
       tx
     );
+    return request;
+  });
+
+  /* A customer asking for their goods to be taken somewhere is an instruction
+     about where cargo goes, and the only record of it was the row itself. The
+     desk that later has to answer "who asked for this address" reads the log
+     like every other instruction in the system. */
+  await recordAudit({
+    actor: customer,
+    action: "delivery.request",
+    entity: "DeliveryRequest",
+    entityId: created.id,
+    summary: `${created.reference}: delivery asked for on ${cargo.reference}`,
+    metadata: {
+      cargoId: cargo.id,
+      contactName: data.contactName,
+      preferredDate: data.preferredDate ?? null,
+    },
   });
 
   revalidatePath("/portal");
@@ -389,6 +423,17 @@ export async function updateDelivery(
     summary: moving
       ? `${request.reference}: ${request.status} → ${data.status}`
       : `Updated delivery ${request.reference}`,
+    /* The summary reads well and greps badly. The figures go in beside it, so
+       "what has this delivery been charged" is a question about a field rather
+       than about a sentence. */
+    metadata: {
+      cargoId: request.cargoId,
+      oldValue: request.status,
+      newValue: data.status,
+      charge: data.charge ?? null,
+      driverName: data.driverName ?? null,
+      reason: data.failedReason ?? null,
+    },
   });
 
   revalidatePath("/app/deliveries");

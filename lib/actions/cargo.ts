@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma, type MeasurementUnit, type PackageType } from "@prisma/client";
 
-import { recordAudit, recordFieldChange } from "@/lib/audit";
+import { recordAudit, recordFieldChange, withNote } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
 import { calculateCbm } from "@/lib/cbm";
 import { readIntakeLines } from "@/lib/intake-lines";
@@ -541,16 +541,63 @@ export async function setOperationalHold(
 
   const cargo = await prisma.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },
-    select: { id: true, reference: true },
+    select: {
+      id: true,
+      reference: true,
+      operationalHold: true,
+      operationalHoldReason: true,
+    },
   });
   if (!cargo) return { error: "That cargo no longer exists." };
 
-  await prisma.cargo.update({
-    where: { id: cargo.id },
-    data: {
-      operationalHold: on,
-      operationalHoldReason: on ? reason : null,
-    },
+  /* Already where it is being asked to go. Writing the row again would leave a
+     second lift in the history with nothing behind it. */
+  if (cargo.operationalHold === on) {
+    return { ok: on ? "Already held." : "There was no hold on it." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.cargo.update({
+      where: { id: cargo.id },
+      data: {
+        operationalHold: on,
+        operationalHoldReason: on ? reason : null,
+      },
+    });
+
+    /* A HOLD IS AN OVERRIDE, AND EVERY OVERRIDE KEEPS BOTH VALUES.
+
+       It is the one thing in the system that stops goods a customer has paid
+       for, and the column moved with no before-image: the reason a consignment
+       was held was overwritten with null the moment somebody lifted it, so
+       "why were these boxes held in March" had no answer by April. The old
+       reason is written here before it goes. */
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Cargo",
+        entityId: cargo.id,
+        field: "operationalHold",
+        oldValue: cargo.operationalHold,
+        newValue: on,
+        reason: on ? reason : "Hold lifted",
+      },
+      tx
+    );
+    if (cargo.operationalHoldReason || on) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "Cargo",
+          entityId: cargo.id,
+          field: "operationalHoldReason",
+          oldValue: cargo.operationalHoldReason,
+          newValue: on ? reason : null,
+          reason: on ? "Held" : "Hold lifted",
+        },
+        tx
+      );
+    }
   });
 
   await recordAudit({
@@ -560,7 +607,13 @@ export async function setOperationalHold(
     entityId: cargo.id,
     summary: on
       ? `Held ${cargo.reference} — ${reason}`
-      : `Lifted the hold on ${cargo.reference}`,
+      : withNote(`Lifted the hold on ${cargo.reference}`, reason),
+    metadata: {
+      oldValue: cargo.operationalHold,
+      newValue: on,
+      previousReason: cargo.operationalHoldReason,
+      reason: on ? reason : reason || null,
+    },
   });
 
   revalidatePath(`/app/cargo/${cargo.id}`);

@@ -50,7 +50,7 @@ export async function createRate(
   }
   const data = parsed.data;
 
-  await prisma.$transaction(async (tx) => {
+  const published = await prisma.$transaction(async (tx) => {
     /* Close the rate this one replaces, rather than deleting it. */
     await tx.shippingRate.updateMany({
       where: {
@@ -61,7 +61,7 @@ export async function createRate(
       data: { active: false, effectiveTo: new Date() },
     });
 
-    await tx.shippingRate.create({
+    return tx.shippingRate.create({
       data: {
         service: data.service,
         cargoType: data.cargoType || null,
@@ -79,7 +79,20 @@ export async function createRate(
     actor,
     action: "rate.publish",
     entity: "ShippingRate",
+    /* The row this line is about. Without it the log says a rate was published
+       and cannot say which one — and the rate book is the only thing standing
+       between a measurement and an invoice. */
+    entityId: published.id,
     summary: `Published ${data.service}${data.cargoType ? ` / ${data.cargoType}` : ""} at ${data.currency} ${data.rate} ${data.basis.replace("_", " ").toLowerCase()}`,
+    metadata: {
+      service: data.service,
+      cargoType: data.cargoType || null,
+      basis: data.basis,
+      newValue: `${data.currency} ${data.rate}`,
+      minimumCbm: data.minimumCbm ?? null,
+      minimumKg: data.minimumKg ?? null,
+      published: data.published ?? true,
+    },
   });
 
   revalidatePath("/app/finance/rates");

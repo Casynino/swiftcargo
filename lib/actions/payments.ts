@@ -333,9 +333,9 @@ export async function submitCustomerPayment(
     };
   }
 
-  await prisma.$transaction(async (tx) => {
+  const claim = await prisma.$transaction(async (tx) => {
     const reference = await nextPaymentReference(tx);
-    await tx.payment.create({
+    const created = await tx.payment.create({
       data: {
         reference,
         invoiceId: invoice.id,
@@ -374,6 +374,35 @@ export async function submitCustomerPayment(
       },
       tx
     );
+    return created;
+  });
+
+  /*
+    A CLAIM IS NOT MONEY, AND IT IS STILL AN EVENT.
+
+    Every other way a payment enters the system writes a line saying who said
+    so and when; this one — the customer's own — wrote none, so a claim that was
+    later rejected, or entered twice, or made against the wrong bill had no
+    record of having been made at all. It is worth nothing until Finance
+    verifies it, which is exactly why the moment it arrived has to be findable.
+  */
+  await recordAudit({
+    actor: customer,
+    action: "payment.claim",
+    entity: "Payment",
+    entityId: claim.id,
+    summary: `${claim.reference}: customer says they paid ${formatCurrency(amount, data.currency)} against ${invoice.number}`,
+    metadata: {
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.number,
+      newValue: amount.toString(),
+      currency: data.currency,
+      fxRate: rate.toString(),
+      method: data.method,
+      transactionRef: data.transactionRef || null,
+      proofs: proofs.length,
+      status: "PENDING",
+    },
   });
 
   revalidatePath("/portal/invoices");
