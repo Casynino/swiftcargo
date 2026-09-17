@@ -81,18 +81,21 @@ async function lockCargoForPricing(client: TxClient, cargoId: string) {
  * withdrawn.
  *
  * So the same signature the release engine waits for is the one Finance waits
- * for. It also carries the discrepancy rule for free: a count Dar could not
- * make agree cannot be verified until the case is closed, so a short or damaged
- * consignment is never quietly billed as if it had all arrived.
+ * for — with one deliberate exception. A count Dar has FLAGGED is the floor
+ * having finished and said what it found: eight cartons where the manifest
+ * promised ten, a bale that came off soaked. That figure stands, the shortage
+ * or the damage is a case of its own, and the customer is still billed for what
+ * landed — the price list carries the tag so nobody quotes a clean bill for it.
+ * What stops a bill is a count nobody has been back to: the boxes came off in a
+ * rush, the proper check has not happened, and the figure is still moving.
  */
 export function darConfirmationGap(cargo: {
   darReceiving: { verified: boolean; discrepancy: boolean } | null;
 }): string | null {
   if (!cargo.darReceiving) return "Dar has not counted this cargo yet.";
   if (cargo.darReceiving.verified) return null;
-  return cargo.darReceiving.discrepancy
-    ? "Dar has an open difference on this count. It is priced once the case is closed."
-    : "Dar has not confirmed the count yet.";
+  if (cargo.darReceiving.discrepancy) return null;
+  return "Dar has not confirmed the count yet.";
 }
 
 /**

@@ -65,16 +65,18 @@ export type PriceListRow = {
   condition: CargoCondition | null;
   damaged: boolean;
   /**
-   * DAR HAS SIGNED THE COUNT OFF.
+   * DAR HAS FINISHED WITH THE CONSIGNMENT.
    *
-   * False while the floor is still ruling on the consignment — received but not
-   * verified, or verified blocked by an open difference. The row is shown with
-   * its figure so Finance can read what the container will come to, and left
-   * out of what one press confirms. See darConfirmationGap.
+   * Signed off, or measured and flagged — either way the figure has stopped
+   * moving. False while the floor is still ruling on it, and the row is then
+   * shown with its figure so Finance can read what the container will come to,
+   * and left out of what one press confirms. See darConfirmationGap.
    */
   darConfirmed: boolean;
-  /** Why it is still with Dar, in the words the row shows. Null once signed off. */
+  /** Why it is still with Dar, in the words the row shows. Null once finished. */
   darWaiting: string | null;
+  /** Dar recorded a difference against the manifest — short, over or damaged. */
+  darFlagged: boolean;
   totalUsd: string | null;
   totalLabel: string | null;
   totalTzsLabel: string | null;
@@ -179,8 +181,9 @@ export async function priceListFor(
         null,
       condition: item.darReceiving?.condition ?? null,
       damaged: !!item.darReceiving && item.darReceiving.condition !== "GOOD",
-      darConfirmed: item.darReceiving?.verified === true,
       darWaiting: darConfirmationGap(item),
+      darConfirmed: darConfirmationGap(item) === null,
+      darFlagged: item.darReceiving?.discrepancy === true,
       types: item.packages.length === 0 && item.commodity ? [item.commodity] : types,
       mixed: types.length > 1 || (types.length === 1 && untyped),
     };

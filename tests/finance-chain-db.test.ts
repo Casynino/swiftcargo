@@ -215,22 +215,27 @@ describe("Finance prices nothing Dar has not confirmed", () => {
     });
   });
 
-  test("an open difference says so, so the desk knows it is a case and not a wait", async () => {
+  test("a count Dar flagged is priced on the figure Dar recorded, and says it is flagged", async () => {
+    /* Eight cartons where the manifest promised ten. The floor has finished and
+       said what it found; the shortage is a case of its own and the customer is
+       still billed for what landed. Waiting for that case to close would leave
+       every damaged bale unbillable for as long as the claim takes. */
     await inRollback(async (tx) => {
       const me = await actor(tx);
-      const { cargo } = await landed(tx, "DIS", {
+      const { cargo } = await landed(tx, "FLG", {
         confirmed: false,
         discrepancy: true,
       });
+
+      const list = await listLib.priceListFor({ id: cargo.id }, tx);
+      assert.equal(list.rows[0].darFlagged, true, "the row carries the flag");
+      assert.equal(list.rows[0].darConfirmed, true, "and is Finance's to price");
+      assert.equal(list.ready, 1);
+
       const ctx = await confirmLib.confirmContext(7, tx);
       assert.ok(ctx);
-
       const outcome = await confirmLib.confirmCargoPrice(tx, me, cargo.id, ctx);
-      assert.equal(outcome.kind, "blocked");
-      assert.match(
-        outcome.kind === "blocked" ? outcome.reason : "",
-        /open difference/
-      );
+      assert.equal(outcome.kind, "issued");
     });
   });
 

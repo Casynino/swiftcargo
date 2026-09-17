@@ -143,12 +143,16 @@ type QueryKind = keyof typeof QUERY_KINDS;
  * that must not happen, because then the bill and the warehouse record disagree
  * and only one of them was ever anywhere near the cargo.
  *
- * So this sends it back instead. It takes Dar's signature off the count, flags
- * the receiving row the way the floor's own short-count does, and opens a case
- * addressed to the Dar floor naming the consignment and the figure. From there
- * it is the path that already exists: Dar re-measures, the case is resolved —
- * which clears the flag — Dar confirms again, and the consignment comes back
- * onto this list at the figure the floor now stands behind.
+ * So this sends it back instead. It takes Dar's signature off the count and
+ * opens a case addressed to the Dar floor naming the consignment and the
+ * figure. The consignment leaves the press at once, because an unsigned count
+ * is what the price list waits for; Dar re-measures, confirms again, and it
+ * comes back at the figure the floor now stands behind.
+ *
+ * It does NOT set the warehouse difference flag. That flag is the floor's own
+ * statement about what came off a container and it clears itself when a case
+ * closes; borrowing it for a question from the office would let a clerk answer
+ * Finance's query by resolving somebody else's case.
  *
  * It refuses once a bill has gone out. A figure the customer is holding is
  * moved by Finance, with a reason, on the bill.
@@ -222,14 +226,7 @@ export async function queryCountWithDar(
     }
     await tx.darReceiving.update({
       where: { id: cargo.darReceiving!.id },
-      data: {
-        verified: false,
-        verifiedAt: null,
-        /* The same flag a short count sets, so it stops verification until the
-           case is closed and clears itself when the case is. */
-        discrepancy: true,
-        discrepancyNotes: reason,
-      },
+      data: { verified: false, verifiedAt: null },
     });
 
     const reference = await nextExceptionReference(tx);

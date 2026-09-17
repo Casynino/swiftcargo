@@ -245,6 +245,15 @@ function PriceRow({
             {CONDITION_LABEL[row.condition ?? "DAMAGED"]}
           </Badge>
         ) : null}
+        {row.darFlagged && !row.damaged ? (
+          /* Short or over against the manifest, on boxes that are otherwise
+             sound. Without this the only flagged rows that say anything are the
+             damaged ones, and a count eight against a manifest of ten reads on
+             the list exactly like a count everybody agrees with. */
+          <Badge tone="warn" className="ml-2 align-middle">
+            {t(locale, "Difference")}
+          </Badge>
+        ) : null}
         <span className="block text-xs text-muted-foreground">{row.description}</span>
         <span className="block text-xs text-muted-foreground">
           {row.customer} · {row.customerCode}
