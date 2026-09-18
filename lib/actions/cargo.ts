@@ -19,6 +19,7 @@ import {
 } from "@/lib/ids";
 import { notifyCustomer } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
+import { syncCargoBoxes } from "@/lib/boxes";
 import { canAmendCargo } from "@/lib/rbac";
 import {
   applyCargoDetails,
@@ -1187,6 +1188,8 @@ export async function receiveNewCargo(
           cbmOverridden: m.byHand,
         })),
       });
+      /* One box row, and one label code, for every carton just counted. */
+      await syncCargoBoxes(tx, cargo.id);
 
       await tx.chinaReceiving.create({
         data: {

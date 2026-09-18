@@ -89,6 +89,20 @@ export async function releaseCargo(
         throw new Error(check.blockedBy ?? "This cargo cannot be released.");
       }
 
+      /* Every box goes out under its own scan. A box reported missing that
+         never turned up at Dar is not waited for — it is a case, not a box
+         somebody can carry out. */
+      const boxes = await tx.cargoBox.findMany({
+        where: { cargoId: cargo.id, voidedAt: null },
+        select: { collectedAt: true, missingAt: true, darReceivedAt: true },
+      });
+      const toScan = boxes.filter((b) => !b.collectedAt && !(b.missingAt && !b.darReceivedAt));
+      if (toScan.length > 0) {
+        throw new Error(
+          `Scan every box out first — ${toScan.length} of ${boxes.length} box${boxes.length === 1 ? "" : "es"} still to scan.`
+        );
+      }
+
       /* The note is spent by the handover, claimed rather than assumed: a
          second press, or the same paper at a second counter, finds it USED
          and the transaction unwinds before anything is released twice. */

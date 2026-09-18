@@ -13,6 +13,7 @@ import { Field } from "@/components/app/field";
 import { HoldToggle } from "@/components/app/hold-toggle";
 import { MeasurementCompare } from "@/components/app/measurement-compare";
 import { PackageEditor } from "@/components/app/package-editor";
+import { BoxesCard } from "@/components/app/boxes-card";
 import { PageHeader } from "@/components/app/page-header";
 import { PhotoPanel } from "@/components/app/photo-upload";
 import { CargoStatusBadge } from "@/components/app/status-badge";
@@ -75,11 +76,14 @@ export async function generateMetadata({
  */
 export default async function CargoDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ box?: string }>;
 }) {
   const user = await requirePermission("cargo.view");
   const { id } = await params;
+  const { box: scannedBox } = await searchParams;
 
   /* The rate book's readers get the valuation; the floors never receive it at
      all. See cargoById — this is a strip, not a hidden div. */
@@ -666,6 +670,14 @@ export default async function CargoDetailPage({
               />
             </CardContent>
           </Card>
+
+          <BoxesCard
+            cargoId={cargo.id}
+            highlight={scannedBox ?? null}
+            canReport={can(user.role, "receiving.dar") || can(user.role, "receiving.china")}
+            canMissing={can(user.role, "receiving.dar")}
+            canPrint={can(user.role, "receiving.dar") || can(user.role, "receiving.china")}
+          />
 
           {/* READING WHAT CHINA WROTE IS NOT RECEIVING.
 

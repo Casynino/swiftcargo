@@ -153,6 +153,9 @@ export function LedgerRowFix({
         id={`fix-${key}`}
         value={form[key] ?? ""}
         onChange={(e) => set(key)(e.target.value)}
+        /* An empty box here means nothing was recorded, not that it failed
+           to load — so it says so. */
+        placeholder={t(locale, "Not recorded — type it in")}
         {...props}
       />
     </div>
@@ -225,6 +228,16 @@ export function LedgerRowFix({
                   <p className="text-sm text-muted-foreground">{t(locale, explain)}</p>
                 ) : payment ? (
                   <>
+                    {payment.summary ? (
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 rounded-lg bg-secondary/60 p-3 text-xs">
+                        {payment.summary.map(([label, value]) => (
+                          <div key={label} className="min-w-0">
+                            <dt className="text-muted-foreground">{t(locale, label)}</dt>
+                            <dd className="tnum truncate font-medium">{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : null}
                     <p className="text-xs text-muted-foreground">
                       {t(
                         locale,

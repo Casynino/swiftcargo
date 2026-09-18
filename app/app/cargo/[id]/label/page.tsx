@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { CargoSticker, LABEL_MM, type StickerData } from "@/components/app/cargo-sticker";
 import { PrintButton } from "@/components/app/print-button";
 import { recordAudit } from "@/lib/audit";
-import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { packageQrDataUrl } from "@/lib/qr";
-import { requirePermission } from "@/lib/session";
+import { stickersFor } from "@/lib/box-labels";
+import { requireStaff } from "@/lib/session";
+import { canAny } from "@/lib/rbac";
 import { SmartBack } from "@/components/app/smart-back";
 
 export async function generateMetadata({
@@ -42,13 +42,17 @@ export async function generateMetadata({
  */
 export default async function CargoLabelPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ box?: string }>;
 }) {
   /* Every desk may look a box up; only a desk that handles the boxes may print
      what goes on them. The route table matches on prefixes and /app/cargo
      already resolves to cargo.view, so this guard is the whole gate. */
-  const user = await requirePermission("receiving.china");
+  /* Guangzhou prints them; Dar reprints the one that was torn or soaked. */
+  const user = await requireStaff();
+  if (!canAny(user.role, ["receiving.china", "receiving.dar"])) redirect("/app/no-access");
   const { id } = await params;
   const key = decodeURIComponent(id);
 
@@ -74,31 +78,14 @@ export default async function CargoLabelPage({
     action: "cargo.label.print",
     entity: "Cargo",
     entityId: cargo.id,
-    summary: `Printed ${cargo.packages.length} label(s) for ${cargo.reference}`,
+    summary: `Printed box label(s) for ${cargo.reference}`,
   });
 
-  const received = formatDate(cargo.chinaReceiving?.receivedAt ?? cargo.createdAt);
-
-  const stickers: StickerData[] = await Promise.all(
-    cargo.packages.map(async (pkg, index) => ({
-      reference: cargo.reference,
-      shippingMark: cargo.shippingMark,
-      customerName: cargo.sender.fullName,
-      customerPhone: cargo.sender.phone,
-      description: pkg.description ?? cargo.description,
-      cargoType: pkg.cargoType,
-      sequence: index + 1,
-      total: cargo.packages.length,
-      packageRef: pkg.reference,
-      packagesLabel: `${pkg.quantity} ${pkg.packageType.toLowerCase()}`,
-      weightLabel: pkg.weightKg ? `${Number(pkg.weightKg).toFixed(2)} kg` : null,
-      cbmLabel: formatCbm(pkg.cbm),
-      receivedOn: received,
-      /* 520px across a 58mm square is ~11 pixels per QR module — matched to
-         what a 203dpi thermal head can actually lay down. */
-      qr: await packageQrDataUrl(pkg.qrToken, 520),
-    }))
-  );
+  /* ?box= reprints one sticker — the one that was torn or went missing —
+     without printing the whole consignment again. */
+  const { box } = await searchParams;
+  const stickers: StickerData[] = await stickersFor([cargo.id], box ?? null);
+  if (stickers.length === 0) notFound();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 print:max-w-none print:space-y-0">
@@ -106,7 +93,7 @@ export default async function CargoLabelPage({
         <div>
           <SmartBack fallbackHref={`/app/cargo/${cargo.id}`} fallbackLabel={`${cargo.reference}`} />
           <p className="mt-1 text-xs text-muted-foreground">
-            One code per box — never copy a label onto two. {LABEL_MM.width} ×{" "}
+            One code per physical box — never copy a label onto two. {LABEL_MM.width} ×{" "}
             {LABEL_MM.height} mm.
           </p>
         </div>
@@ -121,7 +108,7 @@ export default async function CargoLabelPage({
       <div className="-mx-4 overflow-x-auto px-4 print:mx-0 print:overflow-visible print:px-0">
         <div className="mx-auto flex w-max flex-col items-center gap-4 print:gap-0">
           {stickers.map((sticker) => (
-            <CargoSticker key={sticker.packageRef} data={sticker} />
+            <CargoSticker key={`${sticker.reference}-${sticker.sequence}`} data={sticker} />
           ))}
         </div>
       </div>

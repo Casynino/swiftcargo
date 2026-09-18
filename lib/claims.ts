@@ -109,6 +109,13 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
         : formatCurrency(owed.outstanding, p.invoice.currency),
       overpayment: p.overpaymentReason,
       transactionRef: p.transactionRef,
+      accountId: p.accountId,
+      paidAt: (p.paidAt ?? p.createdAt).toISOString().slice(0, 10),
+      method: p.method,
+      payerName: p.payerName,
+      payerBank: p.payerBank,
+      payerAccount: p.payerAccount,
+      notes: p.notes,
       proofUrl: p.proofs[0]?.url ?? null,
       reason: p.rejectedReason,
     };

@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { SectionTabs } from "@/components/app/section-tabs";
 import { ReleaseForm } from "@/components/app/release-panel";
+import { BoxScanner } from "@/components/app/box-scanner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,6 +76,14 @@ export default async function ReleasePage({
   });
 
   const checked = cargo.map((item) => ({ item, check: checkRelease(item) }));
+
+  /* How far each cleared consignment's boxes have been scanned out. */
+  const boxRows = await prisma.cargoBox.groupBy({
+    by: ["cargoId"],
+    where: { cargoId: { in: cargo.map((c) => c.id) }, voidedAt: null },
+    _count: { _all: true, collectedAt: true },
+  });
+  const boxesOf = new Map(boxRows.map((r) => [r.cargoId, { done: r._count.collectedAt, total: r._count._all }]));
   const ready = checked.filter((c) => c.check.ok);
   const held = query ? checked.filter((c) => !c.check.ok) : [];
 
@@ -154,10 +163,15 @@ export default async function ReleasePage({
                   <Badge tone="good">cleared</Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Every box goes out under its own scan; the handover is
+                    completed once they all have. */}
+                {boxesOf.get(item.id)?.total ? (
+                  <BoxScanner mode="release" cargoId={item.id} initial={boxesOf.get(item.id)} />
+                ) : null}
                 <ReleaseForm
                   cargoId={item.id}
-                  packages={item.darReceiving?.packagesCount ?? 1}
+                  packages={boxesOf.get(item.id)?.total || item.darReceiving?.packagesCount || 1}
                   receiverName={item.receiver.fullName}
                   receiverPhone={item.receiver.phone}
                 />

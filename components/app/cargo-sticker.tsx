@@ -17,6 +17,8 @@ export type StickerData = {
   receivedOn: string;
   /** Pre-rendered on the server; a Decimal or a token never reaches the client. */
   qr: string;
+  /** The carbon-book number the delivery was written on. */
+  receiptNo?: string | null;
 };
 
 /** 100 × 150 mm — the courier standard every thermal roll is already cut to. */
@@ -54,23 +56,37 @@ export function CargoSticker({ data }: { data: StickerData }) {
         className="flex shrink-0 items-center justify-between border-b-2 border-black/70"
         style={{ paddingBottom: "2.2mm" }}
       >
-        <div>
-          <p
-            className="font-bold uppercase leading-none tracking-widest"
-            style={{ fontSize: "10pt" }}
-          >
-            Swift Cargo
-          </p>
-          <p className="leading-none" style={{ fontSize: "6pt", marginTop: "1mm" }}>
-            Guangzhou → Dar es Salaam
-          </p>
+        <div className="flex items-center" style={{ gap: "2mm" }}>
+          <Image
+            src="/brand/swift-cargo.png"
+            alt=""
+            width={64}
+            height={64}
+            style={{ width: "10mm", height: "10mm", objectFit: "contain" }}
+          />
+          <div>
+            <p
+              className="font-bold uppercase leading-none tracking-widest"
+              style={{ fontSize: "10pt" }}
+            >
+              Swift Cargo
+            </p>
+            <p className="leading-none" style={{ fontSize: "6pt", marginTop: "1mm" }}>
+              Guangzhou → Dar es Salaam
+            </p>
+          </div>
         </div>
         {/* Which box, of how many — read from across a loading bay before
             anyone bends down to pick the carton up. */}
-        <p className="font-bold leading-none" style={{ fontSize: "16pt" }}>
-          {data.sequence}
-          <span style={{ fontSize: "9pt" }}> / {data.total}</span>
-        </p>
+        <div className="text-right leading-none">
+          <p style={{ fontSize: "6pt" }} className="font-semibold uppercase tracking-wider">
+            Box
+          </p>
+          <p className="font-bold" style={{ fontSize: "16pt" }}>
+            {data.sequence}
+            <span style={{ fontSize: "9pt" }}> / {data.total}</span>
+          </p>
+        </div>
       </header>
 
       {/* The name, biggest thing on the card. A clerk sorting a pallet is
@@ -82,11 +98,12 @@ export function CargoSticker({ data }: { data: StickerData }) {
         >
           {data.shippingMark ?? data.customerName}
         </p>
-        {data.customerPhone ? (
-          <p className="leading-none" style={{ fontSize: "9pt", marginTop: "1.6mm" }}>
-            {data.customerPhone}
-          </p>
-        ) : null}
+        <p className="truncate leading-none" style={{ fontSize: "9pt", marginTop: "1.6mm" }}>
+          {data.shippingMark && data.shippingMark.trim().toLowerCase() !== data.customerName.trim().toLowerCase()
+            ? `${data.customerName} · `
+            : ""}
+          {data.customerPhone ?? ""}
+        </p>
       </div>
 
       <div
@@ -108,6 +125,7 @@ export function CargoSticker({ data }: { data: StickerData }) {
           {data.reference}
         </p>
         <p className="leading-none" style={{ fontSize: "7.5pt", marginTop: "1.5mm" }}>
+          {data.receiptNo ? `Receipt ${data.receiptNo} · ` : ""}
           {data.packageRef}
         </p>
       </div>

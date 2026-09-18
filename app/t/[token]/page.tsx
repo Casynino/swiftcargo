@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { can } from "@/lib/rbac";
-import { resolveScanToken } from "@/lib/scan";
+import { recordScan, resolveScanToken } from "@/lib/scan";
 import { currentUser } from "@/lib/session";
 
 /**
@@ -32,15 +32,30 @@ export default async function ScannedLabelPage({
   const token = decodeURIComponent(raw);
 
   const scanned = await resolveScanToken(token);
-  if (!scanned) notFound();
-
   const user = await currentUser();
   const isStaff = Boolean(user && user.role !== "CUSTOMER");
+
+  /* Staff scans are the warehouse's history of the box; a customer opening
+     their own tracking page from a sticker is not a warehouse event. */
+  if (isStaff) {
+    await recordScan({
+      token,
+      user,
+      workflow: "lookup",
+      action: scanned ? (scanned.pickupNote ? "opened-pickup-note" : "opened") : "not-found",
+      result: scanned ? (scanned.box?.voidedAt ? "warning" : "ok") : "unknown",
+      detail: scanned?.box?.voidedAt ? "This box was taken off its line." : null,
+      boxId: scanned?.box?.id ?? null,
+      cargoId: scanned?.cargoId ?? null,
+    });
+  }
+  if (!scanned) notFound();
 
   if (!isStaff) redirect(`/track/${scanned.reference}`);
 
   if (scanned.pickupNote?.status === "ACTIVE" && can(user!.role, "release.execute")) {
     redirect(`/app/release?q=${encodeURIComponent(scanned.reference)}`);
   }
-  redirect(`/app/cargo/${scanned.cargoId}`);
+  /* A box code opens its consignment with that box picked out. */
+  redirect(`/app/cargo/${scanned.cargoId}${scanned.box ? `?box=${scanned.box.id}#boxes` : ""}`);
 }

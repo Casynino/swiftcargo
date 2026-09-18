@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
 import { Search } from "lucide-react";
 
 import { ClaimList } from "@/components/app/claim-list";
@@ -72,6 +73,13 @@ export default async function Page({
 
       <ClaimList
         rows={rows}
+        accounts={(
+          await prisma.bankAccount.findMany({
+            where: { active: true },
+            orderBy: [{ sortOrder: "asc" }, { bankName: "asc" }],
+            select: { id: true, bankName: true, currency: true },
+          })
+        ).map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})`, currency: a.currency }))}
         mode="sentback"
         mayVerify={can(user.role, "payment.verify")}
       />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -78,6 +79,13 @@ export default async function Page({
 
       <ClaimList
         rows={rows}
+        accounts={(
+          await prisma.bankAccount.findMany({
+            where: { active: true },
+            orderBy: [{ sortOrder: "asc" }, { bankName: "asc" }],
+            select: { id: true, bankName: true, currency: true },
+          })
+        ).map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})`, currency: a.currency }))}
         mode="verify"
         mayVerify
       />

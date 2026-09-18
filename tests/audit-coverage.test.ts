@@ -94,6 +94,8 @@ function leavesALine(action: Action): boolean {
 const NO_TRAIL_NEEDED: Record<string, string> = {
   "auth.ts:login": "reads a password; the session itself is the record",
   "auth.ts:logout": "ends a session",
+  "boxes.ts:scanBoxAtDar": "every scan, whatever it found, is a ScanEvent row with the box, the person and the result",
+  "boxes.ts:scanBoxForRelease": "every scan, whatever it found, is a ScanEvent row with the box, the person and the result",
   "cargo.ts:issueDeliveryNote": "the note is the record, and it is numbered",
   "claims.ts:verifyClaims": "delegates to the payment actions, which audit",
   "credit.ts:creditCandidates": "a read",

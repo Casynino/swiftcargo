@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { parseAmount, valuePayment } from "@/lib/payment-value";
 import { prisma } from "@/lib/prisma";
+import { store, UploadError } from "@/lib/storage";
 import { authorize } from "@/lib/session";
 import { verifyPayment } from "@/lib/actions/payments";
 
@@ -95,19 +96,63 @@ export async function editClaim(
   );
 
   const resubmit = payment.status === "REJECTED";
+  const reason = resubmit ? "Fixed and sent again" : "Corrected before verification";
+
+  /* Everything else the record says, as the form sent it back. A field the
+     form did not send stays as it was. */
+  const text = (name: string) => {
+    if (!formData.has(name)) return undefined;
+    const value = String(formData.get(name) ?? "").trim();
+    return value === "" ? null : value.slice(0, 200);
+  };
+  const METHODS = ["CASH", "BANK_TRANSFER", "MOBILE_MONEY", "CHEQUE", "OTHER"] as const;
+  const methodRaw = text("method");
+  const method = methodRaw && (METHODS as readonly string[]).includes(methodRaw)
+    ? (methodRaw as (typeof METHODS)[number])
+    : undefined;
+  const accountRaw = text("accountId");
+  let accountId: string | null | undefined = accountRaw === undefined ? undefined : accountRaw;
+  if (accountId) {
+    const account = await prisma.bankAccount.findFirst({
+      where: { id: accountId, active: true },
+      select: { currency: true, bankName: true },
+    });
+    if (!account) return { error: "That account is not one we collect into." };
+    if (account.currency !== payment.currency) {
+      return { error: `${account.bankName} holds ${account.currency}; this payment is in ${payment.currency}.` };
+    }
+  }
+  const paidAtRaw = text("paidAt");
+  let paidAt: Date | null | undefined = undefined;
+  if (paidAtRaw) {
+    const d = new Date(`${paidAtRaw}T12:00:00Z`);
+    if (Number.isNaN(d.getTime())) return { error: "That date is not a date." };
+    if (d.getTime() > Date.now() + 86400000) return { error: "A payment cannot be dated in the future." };
+    paidAt = d;
+  }
+
+  const files = formData.getAll("proof").filter((f): f is File => f instanceof File && f.size > 0);
+  const proofs: string[] = [];
+  try {
+    for (const file of files.slice(0, 3)) proofs.push(await store(file, "payments"));
+  } catch (error) {
+    return { error: error instanceof UploadError ? error.message : "That upload failed." };
+  }
+
+  const others: [string, string | null, string | null | undefined][] = [
+    ["method", payment.method, method],
+    ["accountId", payment.accountId, accountId],
+    ["paidAt", payment.paidAt?.toISOString().slice(0, 10) ?? null, paidAt === undefined ? undefined : paidAt?.toISOString().slice(0, 10) ?? null],
+    ["payerName", payment.payerName, text("payerName")],
+    ["payerBank", payment.payerBank, text("payerBank")],
+    ["payerAccount", payment.payerAccount, text("payerAccount")],
+    ["notes", payment.notes, text("notes")],
+  ];
 
   const moved = await prisma.$transaction(async (tx) => {
     if (!next.equals(payment.amount)) {
       await recordFieldChange(
-        {
-          entity: "Payment",
-          entityId: payment.id,
-          field: "amount",
-          oldValue: payment.amount,
-          newValue: next,
-          reason: resubmit ? "Fixed and sent again" : "Corrected before verification",
-          actor,
-        },
+        { entity: "Payment", entityId: payment.id, field: "amount", oldValue: payment.amount, newValue: next, reason, actor },
         tx
       );
     }
@@ -119,9 +164,16 @@ export async function editClaim(
           field: "transactionRef",
           oldValue: payment.transactionRef,
           newValue: transactionRef || null,
-          reason: resubmit ? "Fixed and sent again" : "Corrected before verification",
+          reason,
           actor,
         },
+        tx
+      );
+    }
+    for (const [field, from, to] of others) {
+      if (to === undefined || (from ?? null) === (to ?? null)) continue;
+      await recordFieldChange(
+        { entity: "Payment", entityId: payment.id, field, oldValue: from, newValue: to, reason, actor },
         tx
       );
     }
@@ -132,6 +184,13 @@ export async function editClaim(
         baseCurrencyAmount,
         creditedAmount,
         transactionRef: transactionRef || null,
+        ...(method !== undefined ? { method } : {}),
+        ...(accountId !== undefined ? { accountId } : {}),
+        ...(paidAt !== undefined ? { paidAt: paidAt ?? payment.paidAt } : {}),
+        ...(text("payerName") !== undefined ? { payerName: text("payerName") } : {}),
+        ...(text("payerBank") !== undefined ? { payerBank: text("payerBank") } : {}),
+        ...(text("payerAccount") !== undefined ? { payerAccount: text("payerAccount") } : {}),
+        ...(text("notes") !== undefined ? { notes: text("notes") } : {}),
         ...(resubmit
           ? { status: "PENDING", rejectedReason: null, verifiedById: null }
           : {}),
@@ -140,6 +199,9 @@ export async function editClaim(
     /* Throwing rolls back the FieldChange rows written above; the form is told
        in words rather than shown an error page. */
     if (count === 0) throw new StaleClaim();
+    for (const url of proofs) {
+      await tx.paymentProof.create({ data: { paymentId: payment.id, url } });
+    }
     return true;
   }).catch((error) => {
     if (error instanceof StaleClaim) return false;

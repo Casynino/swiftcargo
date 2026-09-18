@@ -34,9 +34,19 @@ export type ClaimRow = {
   owedLabel: string;
   overpayment: string | null;
   transactionRef: string | null;
+  /* Everything else the record says, so the edit starts from it. */
+  accountId: string | null;
+  paidAt: string;
+  method: string;
+  payerName: string | null;
+  payerBank: string | null;
+  payerAccount: string | null;
+  notes: string | null;
   proofUrl: string | null;
   reason: string | null;
 };
+
+export type ClaimAccount = { id: string; label: string; currency: string };
 
 /**
  * WHAT CUSTOMERS SAY THEY HAVE SENT, AND WHAT FINANCE SENT BACK.
@@ -50,8 +60,11 @@ export function ClaimList({
   rows,
   mode,
   mayVerify,
+  accounts = [],
 }: {
   rows: ClaimRow[];
+  /** The collection accounts a payment can be moved to while it is waiting. */
+  accounts?: ClaimAccount[];
   /**
    * "waiting" is Support's copy of the verify queue: the same rows, read-only.
    * Nothing on it is theirs to act on until Finance answers.
@@ -115,6 +128,7 @@ export function ClaimList({
               mode={mode}
               mayVerify={false}
               picked={false}
+              accounts={accounts}
               onPick={() => {}}
             />
           ))}
@@ -187,6 +201,7 @@ export function ClaimList({
             mode={mode}
             mayVerify={mayVerify}
             picked={picked.has(row.id)}
+            accounts={accounts}
             onPick={() => toggle(row.id)}
           />
         ))}
@@ -201,7 +216,9 @@ function ClaimRowItem({
   mayVerify,
   picked,
   onPick,
+  accounts,
 }: {
+  accounts: ClaimAccount[];
   row: ClaimRow;
   mode: "verify" | "sentback" | "waiting";
   mayVerify: boolean;
@@ -347,35 +364,81 @@ function ClaimRowItem({
       </div>
 
       {open === "edit" ? (
+        /* The whole record, as saved, ready to put right before it counts —
+           nothing here has been verified or printed on a receipt yet. */
         <form
           action={edit}
-          className="ml-9 mt-3 flex flex-wrap items-end gap-2 rounded-lg border bg-secondary/30 p-3"
+          className="ml-9 mt-3 grid gap-3 rounded-lg border bg-secondary/30 p-3 sm:grid-cols-2 lg:grid-cols-4"
         >
           <input type="hidden" name="paymentId" value={row.id} />
           <label className="space-y-1 text-xs">
             <span className="text-muted-foreground">Amount ({row.currency})</span>
-            <Input
-              name="amount"
-              type="number"
-              step="0.01"
-              min="0.01"
-              defaultValue={row.amount}
-              className="w-40"
-              required
-            />
+            <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={row.amount} required />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Paid into</span>
+            <select
+              name="accountId"
+              defaultValue={row.accountId ?? ""}
+              className="flex h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">— not said —</option>
+              {accounts
+                .filter((a) => a.currency === row.currency || a.id === row.accountId)
+                .map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Date paid</span>
+            <Input name="paidAt" type="date" defaultValue={row.paidAt} max={new Date().toISOString().slice(0, 10)} />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">How it was paid</span>
+            <select
+              name="method"
+              defaultValue={row.method}
+              className="flex h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="BANK_TRANSFER">Bank transfer</option>
+              <option value="MOBILE_MONEY">Mobile money</option>
+              <option value="CASH">Cash</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="OTHER">Other</option>
+            </select>
           </label>
           <label className="space-y-1 text-xs">
             <span className="text-muted-foreground">Their reference</span>
-            <Input
-              name="transactionRef"
-              defaultValue={row.transactionRef ?? ""}
-              placeholder="M-Pesa code, slip number…"
-              className="w-56"
-            />
+            <Input name="transactionRef" defaultValue={row.transactionRef ?? ""} placeholder="M-Pesa code, slip number…" />
           </label>
-          <SubmitButton size="sm">
-            {mode === "verify" ? "Save" : "Send again"}
-          </SubmitButton>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Paid by</span>
+            <Input name="payerName" defaultValue={row.payerName ?? ""} placeholder={row.customer} />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Payer&apos;s bank</span>
+            <Input name="payerBank" defaultValue={row.payerBank ?? ""} />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Payer&apos;s account or number</span>
+            <Input name="payerAccount" defaultValue={row.payerAccount ?? ""} />
+          </label>
+          <label className="space-y-1 text-xs sm:col-span-2">
+            <span className="text-muted-foreground">Note</span>
+            <Input name="notes" defaultValue={row.notes ?? ""} />
+          </label>
+          <label className="space-y-1 text-xs">
+            <span className="text-muted-foreground">Add proof</span>
+            <Input name="proof" type="file" accept="image/*,application/pdf" />
+          </label>
+          <div className="flex items-end">
+            <SubmitButton size="sm" className="w-full">
+              {mode === "verify" ? "Save changes" : "Fix and send again"}
+            </SubmitButton>
+          </div>
         </form>
       ) : null}
 

@@ -13,6 +13,7 @@ import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
 import { nextExceptionReference, packageReference } from "@/lib/ids";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import type { TxClient } from "@/lib/prisma";
+import { syncBoxes } from "@/lib/boxes";
 import { can, canAmendCargo, cargoCustody } from "@/lib/rbac";
 import type { SessionUser } from "@/lib/session";
 
@@ -567,6 +568,7 @@ export async function applyPackageLine(
          the mark says. */
       data: { ...next, cbmOverridden: before.cbmOverridden || byHand },
     });
+    if (changes.some((c) => c.field === "quantity")) await syncBoxes(tx, before.id);
 
     const measurementMoved = changes.some((c) =>
       ["cbm", "weightKg", "quantity", "cargoType"].includes(c.field)
@@ -603,6 +605,7 @@ export async function applyPackageLine(
     data: { ...next, cargoId: cargo.id, reference, cbmOverridden: byHand },
     select: { id: true },
   });
+  await syncBoxes(tx, created.id);
 
   /* A line that did not exist has no old value, but the new one is still a
      change to what this consignment measures — and on Dar's floor it is the
@@ -682,6 +685,7 @@ export async function removePackageLine(
     where: { id: line.id },
     data: { deletedAt: new Date(), containerId: null },
   });
+  await syncBoxes(tx, line.id);
   await syncLineTotals(tx, actor, cargo.id, why);
 
   await recordAudit(

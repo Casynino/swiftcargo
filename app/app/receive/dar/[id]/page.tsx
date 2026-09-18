@@ -7,6 +7,7 @@ import {
   PackageOpen,
   PackagePlus,
   PackageX,
+  ScanLine,
   ScanSearch,
   TriangleAlert,
 } from "lucide-react";
@@ -16,10 +17,12 @@ import { PageHeader } from "@/components/app/page-header";
 import { StatStrip } from "@/components/app/stat-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { BoxScanner } from "@/components/app/box-scanner";
 import { cargoTypeOptions } from "@/lib/valuation";
 
 export const metadata: Metadata = { title: "Check in cargo" };
@@ -206,6 +209,12 @@ export default async function CheckInContainerPage({
   ).length;
   const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
 
+  const [boxesDone, boxesTotal] = await Promise.all([
+    prisma.cargoBox.count({ where: { voidedAt: null, darReceivedAt: { not: null }, darContainerId: container.id } }),
+    prisma.cargoBox.count({ where: { voidedAt: null, package: { containerId: container.id, deletedAt: null } } }),
+  ]);
+  const boxProgress = { done: boxesDone, total: boxesTotal };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -228,6 +237,24 @@ export default async function CheckInContainerPage({
           </>
         }
       />
+
+      {/* Every box off the container, scanned one at a time. Arrival only —
+          each consignment is still checked in below. */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ScanLine className="size-4" />
+            Scan boxes off the container
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Scan the sticker on every box as it comes off. Each box is marked as arrived with your name and the time;
+            a box from another container, one scanned twice or one already handed over is flagged straight away.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <BoxScanner mode="dar" containerId={container.id} initial={boxProgress} />
+        </CardContent>
+      </Card>
 
       {/*
         THE CONTAINER'S OWN ARITHMETIC, ABOVE THE ROWS THAT MAKE IT.

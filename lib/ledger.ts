@@ -34,6 +34,8 @@ export type LedgerFixPayment = {
   payerAccount: string | null;
   payerBank: string | null;
   notes: string | null;
+  /** The record as it stands, shown read-only at the top of the correction. */
+  summary?: [string, string][];
 };
 
 export type LedgerFixExpense = {
@@ -288,6 +290,16 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
           payerAccount: p.payerAccount,
           payerBank: p.payerBank,
           notes: p.notes,
+          summary: [
+            ["Payment", p.reference],
+            ["Receipt", receipt?.number ?? "—"],
+            ["Customer", p.customer.fullName],
+            ["Bill", `${p.invoice.number} · ${p.invoice.cargo.reference}`],
+            ["Amount", `${p.currency} ${Number(p.amount).toLocaleString("en-US")}`],
+            ["Into", e.account ?? "—"],
+            ["Paid on", (p.paidAt ?? p.createdAt).toISOString().slice(0, 10)],
+            ["Recorded by", p.recordedBy?.name ?? "—"],
+          ],
         },
       });
       continue;

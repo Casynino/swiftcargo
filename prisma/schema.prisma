@@ -382,6 +382,10 @@ enum MeasurementUnit {
 model Cargo {
   id String @id @default(cuid())
 
+  /// Every physical box of this consignment, each with its own label and code.
+  boxes      CargoBox[]
+  scanEvents ScanEvent[]
+
   /// Public identity: SWC-2026-000125. Printed on the delivery note, quoted to
   /// the customer, typed into the tracking box.
   reference String @unique
@@ -504,6 +508,9 @@ model Cargo {
 /// here and nowhere else.
 model CargoPackage {
   id String @id @default(cuid())
+
+  /// One row per physical box on this line — see CargoBox.
+  boxes CargoBox[]
 
   cargoId String
   cargo   Cargo  @relation(fields: [cargoId], references: [id], onDelete: Restrict)
@@ -2764,4 +2771,99 @@ model CompanySetting {
   invoiceTerms String?
 
   updatedAt DateTime @updatedAt
+}
+
+/**
+ * ONE PHYSICAL BOX, ONE CODE.
+ * A package line says "74 cartons of filters" — one description, one volume,
+ * one rate. The warehouse handles seventy-four cartons, and each one gets its
+ * own sticker and its own code, so the Dar counter can say which of the
+ * seventy-four has arrived, which is damaged and which has been handed over.
+ * Created with the line and kept in step with its count; never merged, never
+ * shared between two boxes, and never reused.
+ * The consignment (Cargo) is the receipt that groups a customer's boxes; the
+ * container only organises them. Neither has a code of its own on a sticker.
+ * Each physical event is a timestamp with the person who did it, set once. A
+ * box that is found after being reported missing keeps both facts.
+ */
+model CargoBox {
+  id String @id @default(cuid())
+
+  cargoId   String
+  cargo     Cargo        @relation(fields: [cargoId], references: [id], onDelete: Restrict)
+  packageId String
+  package   CargoPackage @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  /// "Box 7 of 12" across the whole consignment, in line order.
+  sequence Int
+
+  /// Random, never the reference, for the same reason as every other label code.
+  qrToken String @unique
+
+  darReceivedAt   DateTime?
+  darReceivedById String?
+  darContainerId  String?
+
+  damagedAt   DateTime?
+  damagedById String?
+  damageNote  String?
+
+  missingAt   DateTime?
+  missingById String?
+
+  collectedAt   DateTime?
+  collectedById String?
+  /// The pickup note it was handed over against, when there was one.
+  pickupNoteId  String?
+
+  /// A box taken off a line before Dar ever saw it (a count corrected down in
+  /// Guangzhou). Kept, never deleted, so a printed sticker still scans to an
+  /// answer rather than to nothing.
+  voidedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scans ScanEvent[]
+
+  @@unique([cargoId, sequence])
+  @@index([packageId])
+}
+
+/**
+ * EVERY SCAN, INCLUDING THE ONES THAT FAILED.
+ * Who pointed a scanner at what, where, and what the system said back. A code
+ * that resolves to nothing is recorded too — a run of unknown codes at a
+ * counter is the first sign of a forged or reprinted label.
+ */
+model ScanEvent {
+  id String @id @default(cuid())
+
+  /// Exactly what was scanned, so a failed scan can be looked into.
+  token String
+
+  boxId   String?
+  box     CargoBox? @relation(fields: [boxId], references: [id], onDelete: SetNull)
+  cargoId String?
+  cargo   Cargo?    @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+
+  userId     String?
+  role       String?
+  department String?
+
+  /// Where it was scanned: lookup, dar-receiving, release, damage…
+  workflow String
+  /// What was done: opened, received, released, marked-damaged…
+  action   String
+  /// ok, warning, refused, unknown
+  result   String
+  detail   String?
+
+  containerId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([boxId, createdAt])
+  @@index([cargoId, createdAt])
+  @@index([createdAt])
 }
