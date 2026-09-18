@@ -600,6 +600,76 @@ describe("one consignment, one bill", () => {
       assert.equal(await tx.invoice.count({ where: { cargoId: cargo.id } }), 1);
     });
   });
+
+  /*
+    AND THE DATABASE HOLDS IT WITHOUT THE APPLICATION'S HELP.
+
+    The lock is the defence that gives the loser a sentence to read. This is the
+    one that holds when nobody takes the lock — a script, a console, a caller
+    written next year that does not know about it.
+  */
+  test("the database itself refuses a second live bill on an unsailed consignment", async () => {
+    await inRollback(async (tx) => {
+      const me = await actor(tx);
+      const { cargo, customer } = await landed(tx, "IDX", { confirmed: true });
+      const rate = await tx.exchangeRate.findFirstOrThrow({
+        where: { active: true },
+        orderBy: { effectiveFrom: "desc" },
+      });
+      const bill = (number: string, status: "ISSUED" | "CANCELLED") => ({
+        number,
+        customerId: customer.id,
+        cargoId: cargo.id,
+        status,
+        total: new Prisma.Decimal("13.50"),
+        currency: "USD",
+        exchangeRateId: rate.id,
+        fxRate: rate.rate,
+        issuedById: me.id,
+      });
+
+      await tx.invoice.create({ data: bill(`FCT-IDX-1-${cargo.id.slice(-6)}`, "ISSUED") });
+      await assert.rejects(
+        tx.invoice.create({ data: bill(`FCT-IDX-2-${cargo.id.slice(-6)}`, "ISSUED") }),
+        (error: unknown) =>
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002" &&
+          /* Named, so this cannot pass one day because some other constraint
+             happened to fire on the same row. */
+          String((error.meta as { target?: string[] })?.target).includes("cargoId"),
+        "a second live bill is refused by the index, not by the application"
+      );
+    });
+  });
+
+  test("a bill cancelled in error leaves the consignment billable again", async () => {
+    await inRollback(async (tx) => {
+      const me = await actor(tx);
+      const { cargo, customer } = await landed(tx, "CANX", { confirmed: true });
+      const rate = await tx.exchangeRate.findFirstOrThrow({
+        where: { active: true },
+        orderBy: { effectiveFrom: "desc" },
+      });
+      const bill = (number: string, status: "ISSUED" | "CANCELLED") => ({
+        number,
+        customerId: customer.id,
+        cargoId: cargo.id,
+        status,
+        total: new Prisma.Decimal("13.50"),
+        currency: "USD",
+        exchangeRateId: rate.id,
+        fxRate: rate.rate,
+        issuedById: me.id,
+      });
+
+      /* Two cancelled bills and a live one: a bill raised in error is cancelled,
+         never deleted, and none of that may stop the right bill being raised. */
+      await tx.invoice.create({ data: bill(`FCT-CANX-1-${cargo.id.slice(-6)}`, "CANCELLED") });
+      await tx.invoice.create({ data: bill(`FCT-CANX-2-${cargo.id.slice(-6)}`, "CANCELLED") });
+      await tx.invoice.create({ data: bill(`FCT-CANX-3-${cargo.id.slice(-6)}`, "ISSUED") });
+      assert.equal(await tx.invoice.count({ where: { cargoId: cargo.id } }), 3);
+    });
+  });
 });
 
 describe("a bill paid in two currencies", () => {
