@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Calculator } from "lucide-react";
 
 import { CbmCalculator } from "@/components/site/cbm-calculator";
+import { PageHero } from "@/components/site/page-hero";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -51,25 +52,23 @@ export default async function CalculatorPage() {
     }));
 
   return (
-    <div className="container max-w-5xl py-12 sm:py-16">
-      <span className="grid size-12 place-items-center rounded-xl bg-brand/8 text-brand">
-        <Calculator className="size-6" />
-      </span>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">
-        {t(locale, "CBM calculator")}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        {t(
+    <>
+      <PageHero
+        eyebrow={t(locale, "Measure it yourself")}
+        eyebrowIcon={Calculator}
+        lead={t(locale, "Work out")}
+        trail={t(locale, "your CBM")}
+        body={t(
           locale,
           "Sea freight is sold by the cubic metre. Measure your boxes, put the numbers in, choose what you are shipping, and we will work out the volume and roughly what it costs."
         )}
-      </p>
+      />
 
-      <div className="mt-10">
-        <CbmCalculator rates={rates} />
-      </div>
+      <div className="bg-field py-14 sm:py-20">
+      <div className="container max-w-5xl">
+      <CbmCalculator rates={rates} />
 
-      <div className="mt-12 rounded-xl border bg-surface-2 p-5 sm:p-7">
+      <div className="mt-12 rounded-3xl border border-field-edge bg-card p-6 sm:p-8">
         <h2 className="font-semibold">{t(locale, "How the maths works")}</h2>
         <p className="mt-3 text-sm text-muted-foreground">
           {t(
@@ -77,7 +76,7 @@ export default async function CalculatorPage() {
             "Volume is length × width × height × number of boxes. In centimetres, divide by 1,000,000 to get cubic metres; in metres, the answer is already in cubic metres."
           )}
         </p>
-        <p className="tnum mt-3 rounded-md bg-card px-3 py-2 text-sm">
+        <p className="tnum mt-3 rounded-lg bg-secondary px-3 py-2 text-sm">
           60 × 40 × 40 cm × 12 = 1.152 CBM
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -89,6 +88,8 @@ export default async function CalculatorPage() {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+      </div>
+    </>
   );
 }

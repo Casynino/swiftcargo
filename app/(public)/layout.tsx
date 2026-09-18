@@ -8,7 +8,8 @@ export default function PublicLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <SiteHeader />
+      {/* Every page in this group opens on one of the dark panels. */}
+      <SiteHeader overDark />
       <main className="flex-1">{children}</main>
       <SiteFooter />
     </div>

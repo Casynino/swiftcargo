@@ -21,11 +21,24 @@ const LINKS = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({
+  /**
+   * The page under this header opens on one of the dark panels.
+   *
+   * Every page in app/(public) does, so the bar starts transparent with white
+   * type sitting on the picture, and only becomes glass once the reader has
+   * scrolled past it. The 404 has no such panel and does not pass this, which
+   * is why it is a prop and not something the header assumes.
+   */
+  overDark = false,
+}: {
+  overDark?: boolean;
+}) {
   const locale = DEFAULT_LOCALE;
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [signedIn, setSignedIn] = useState<"staff" | "customer" | null>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   /*
     A HINT, NOT A CREDENTIAL.
@@ -49,10 +62,37 @@ export function SiteHeader() {
     setOpen(false);
   }, [pathname]);
 
+  /* The bar earns its background at the first pixel of scroll. Passive, because
+     this listener must never be the reason a phone drops a frame while the
+     reader is flicking down the page. */
+  useEffect(() => {
+    if (!overDark) return;
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [overDark]);
+
+  /* Transparent only while it is actually over the picture: an open menu needs
+     a surface under it whatever the page is doing. */
+  const onPicture = overDark && !scrolled && !open;
+
   return (
-    <header className="glass sticky top-0 z-40 border-b">
+    <header
+      className={cn(
+        "z-40 border-b transition-colors duration-300",
+        /* Over a picture the bar has to be out of the flow, or "transparent"
+           only shows the page behind it and the hero starts underneath. The
+           pages in that group reserve the 4rem themselves, at the top of their
+           own hero. Everywhere else the bar keeps its place in the column. */
+        overDark ? "fixed inset-x-0 top-0" : "sticky top-0",
+        onPicture ? "border-transparent bg-transparent text-white" : "glass"
+      )}
+    >
       <div className="container flex h-16 items-center gap-3 sm:gap-6">
-        <Link href="/" className="focus-ring shrink-0 rounded">
+        {/* Over the picture the mark borrows the dark theme's colours, the way
+            the footer's does, so the wordmark does not go navy on navy. */}
+        <Link href="/" className={cn("focus-ring shrink-0 rounded", onPicture && "dark")}>
           <BrandMark size={34} />
         </Link>
 
@@ -63,9 +103,13 @@ export function SiteHeader() {
               href={link.href}
               className={cn(
                 "focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                pathname === link.href
-                  ? "text-brand"
-                  : "text-foreground/70 hover:text-foreground"
+                onPicture
+                  ? pathname === link.href
+                    ? "text-white"
+                    : "text-white/70 hover:text-white"
+                  : pathname === link.href
+                    ? "text-brand"
+                    : "text-foreground/70 hover:text-foreground"
               )}
             >
               {t(locale, link.label)}
@@ -76,10 +120,23 @@ export function SiteHeader() {
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
           {/* The toggle gives way first on the narrowest phones; the menu and
               sign-in are what somebody at 320 pixels came for. */}
-          <span className="hidden min-[360px]:contents">
+          <span
+            className={cn(
+              "hidden min-[360px]:contents",
+              onPicture && "[&_button]:text-white [&_button:hover]:bg-white/15"
+            )}
+          >
             <ThemeToggle />
           </span>
-          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "hidden sm:inline-flex",
+              onPicture && "text-white hover:bg-white/15 hover:text-white"
+            )}
+          >
             <Link href="/track">{t(locale, "Track cargo")}</Link>
           </Button>
           <Button asChild size="sm">
@@ -90,7 +147,10 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className={cn(
+              "lg:hidden",
+              onPicture && "text-white hover:bg-white/15 hover:text-white"
+            )}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t(locale, "Close menu") : t(locale, "Open menu")}
             aria-expanded={open}

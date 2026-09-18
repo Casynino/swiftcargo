@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Coins } from "lucide-react";
 
+import { PageHero } from "@/components/site/page-hero";
+import { PillLink } from "@/components/site/display";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -62,25 +65,37 @@ export default async function RatesPage() {
   };
 
   return (
-    <div className="container max-w-4xl py-12 sm:py-16">
-      <p className="eyebrow text-marine">{t(locale, "Guangzhou to Dar es Salaam")}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        {t(locale, "Shipping rates")}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        {t(
+    <>
+      <PageHero
+        eyebrow={t(locale, "Guangzhou to Dar es Salaam")}
+        eyebrowIcon={Coins}
+        lead={t(locale, "What it costs")}
+        trail={t(locale, "to ship by sea")}
+        body={t(
           locale,
           "These are our current published rates. Each kind of goods is charged at its own rate, on the measurements taken at our warehouse. Duty, VAT and clearing are not included."
         )}
-      </p>
+        scene="crane"
+      >
+        <div className="flex flex-wrap gap-3">
+          <PillLink href="/calculator" tone="accent">
+            {t(locale, "Work out my CBM")}
+          </PillLink>
+          <PillLink href="/quote" tone="glass">
+            {t(locale, "Get a quote")}
+          </PillLink>
+        </div>
+      </PageHero>
 
+      <div className="bg-field py-14 sm:py-20">
+      <div className="container max-w-4xl">
       {[
         { title: "Loose cargo (LCL)", rows: lcl, note: "Shared container, charged by volume or weight." },
         { title: "Full container (FCL)", rows: fcl, note: "The whole box to yourself." },
       ]
         .filter((group) => group.rows.length > 0)
         .map((group) => (
-          <Card key={group.title} className="mt-10">
+          <Card key={group.title} className="mt-10 rounded-3xl border-field-edge first:mt-0">
             <div className="border-b p-5 sm:p-6">
               <h2 className="font-semibold">{t(locale, group.title)}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{t(locale, group.note)}</p>
@@ -124,12 +139,12 @@ export default async function RatesPage() {
         ))}
 
       {rates.length === 0 ? (
-        <Card className="mt-10 p-10 text-center text-muted-foreground">
+        <Card className="rounded-3xl border-field-edge p-10 text-center text-muted-foreground">
           {t(locale, "Our rate card is being updated. Please ask us for a quote.")}
         </Card>
       ) : null}
 
-      <div className="mt-10 rounded-xl border bg-surface-2 p-5 sm:p-7">
+      <div className="mt-10 rounded-3xl border border-field-edge bg-card p-6 sm:p-8">
         <h2 className="font-semibold">{t(locale, "What is not included")}</h2>
         <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
           {[
@@ -151,7 +166,7 @@ export default async function RatesPage() {
             {t(locale, "Your invoice pins the rate on the day it is issued.")}
           </p>
         ) : null}
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/quote">{t(locale, "Get a quote")}</Link>
           </Button>
@@ -160,6 +175,8 @@ export default async function RatesPage() {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+      </div>
+    </>
   );
 }

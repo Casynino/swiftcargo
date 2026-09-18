@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Ship } from "lucide-react";
 
+import { PageHero } from "@/components/site/page-hero";
+import { PillLink } from "@/components/site/display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,20 +64,27 @@ export default async function SchedulePage() {
     );
 
   return (
-    <div className="container max-w-4xl py-12 sm:py-16">
-      <p className="eyebrow text-marine">{t(locale, "Guangzhou to Dar es Salaam")}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        {t(locale, "Sailing schedule")}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        {t(
+    <>
+      <PageHero
+        eyebrow={t(locale, "Guangzhou to Dar es Salaam")}
+        eyebrowIcon={Ship}
+        lead={t(locale, "When the next")}
+        trail={t(locale, "container closes")}
+        body={t(
           locale,
           "Get your cargo to our Guangzhou warehouse before the deadline and it goes on that sailing."
         )}
-      </p>
+        scene="port"
+      >
+        <PillLink href="/book" tone="accent">
+          {t(locale, "Book space on a sailing")}
+        </PillLink>
+      </PageHero>
 
+      <div className="bg-field py-14 sm:py-20">
+      <div className="container max-w-4xl">
       {sailings.length === 0 ? (
-        <Card className="mt-10 p-12 text-center">
+        <Card className="rounded-3xl border-field-edge p-12 text-center">
           <Ship className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-4 font-medium">{t(locale, "No sailings published at the moment")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -88,10 +97,10 @@ export default async function SchedulePage() {
       ) : (
         <>
           {/* Cards on a phone: five columns of dates do not fit 375 pixels. */}
-          <ul className="mt-10 grid gap-3 sm:hidden">
+          <ul className="grid gap-3 sm:hidden">
             {sailings.map((sailing) => (
               <li key={sailing.id}>
-                <Card className="p-5">
+                <Card className="rounded-2xl border-field-edge p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-medium">
@@ -122,7 +131,7 @@ export default async function SchedulePage() {
             ))}
           </ul>
 
-          <Card className="mt-10 hidden sm:block">
+          <Card className="hidden rounded-3xl border-field-edge sm:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -170,6 +179,8 @@ export default async function SchedulePage() {
           "Dates are indicative. Sailings slip for weather, port congestion and customs, and we will tell you when one does."
         )}
       </p>
-    </div>
+      </div>
+      </div>
+    </>
   );
 }
