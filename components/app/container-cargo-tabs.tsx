@@ -619,7 +619,6 @@ function CargoTableRow({
               containerId={containerId}
               reference={row.reference}
               containers={otherContainers}
-              onDone={() => setMoving(false)}
             />
           </TableCell>
         </TableRow>
