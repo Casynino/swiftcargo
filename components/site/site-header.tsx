@@ -16,7 +16,7 @@ const LINKS = [
   { href: "/rates", label: "Rates" },
   { href: "/calculator", label: "CBM calculator" },
   { href: "/schedule", label: "Sailings" },
-  { href: "/china", label: "China sourcing" },
+  { href: "/china", label: "Explore China" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -49,11 +49,29 @@ export function SiteHeader() {
     setOpen(false);
   }, [pathname]);
 
+  /* Every public page opens on a dark photograph, and the header floats over
+     it in white until the page is scrolled; then it turns to frosted paper so
+     it reads over whatever is underneath. */
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const solid = scrolled || open;
+
   return (
-    <header className="glass sticky top-0 z-40 border-b">
-      <div className="container flex h-16 items-center gap-3 sm:gap-6">
-        <Link href="/" className="focus-ring shrink-0 rounded">
-          <BrandMark size={34} />
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-40 border-b transition-[background-color,border-color,color] duration-300",
+        solid ? "glass text-foreground" : "border-transparent bg-transparent text-white"
+      )}
+    >
+      <div className="container flex h-[4.5rem] items-center gap-3 sm:gap-6">
+        {/* Over the photograph the mark is drawn in its dark-theme colours. */}
+        <Link href="/" className={cn("focus-ring shrink-0 rounded", !solid && "dark")}>
+          <BrandMark size={36} />
         </Link>
 
         <nav className="ml-auto hidden items-center gap-0.5 lg:flex">
@@ -62,10 +80,14 @@ export function SiteHeader() {
               key={link.href}
               href={link.href}
               className={cn(
-                "focus-ring rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "focus-ring relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
                 pathname === link.href
-                  ? "text-brand"
-                  : "text-foreground/70 hover:text-foreground"
+                  ? solid
+                    ? "bg-brand/10 text-brand"
+                    : "bg-white/15 text-white"
+                  : solid
+                    ? "text-foreground/70 hover:text-foreground"
+                    : "text-white/80 hover:text-white"
               )}
             >
               {t(locale, link.label)}
@@ -76,13 +98,21 @@ export function SiteHeader() {
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
           {/* The toggle gives way first on the narrowest phones; the menu and
               sign-in are what somebody at 320 pixels came for. */}
-          <span className="hidden min-[360px]:contents">
+          <span className={cn("hidden min-[360px]:contents", !solid && "[&_button]:text-white [&_button:hover]:bg-white/15")}>
             <ThemeToggle />
           </span>
-          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "hidden rounded-full sm:inline-flex",
+              !solid && "text-white hover:bg-white/15 hover:text-white"
+            )}
+          >
             <Link href="/track">{t(locale, "Track cargo")}</Link>
           </Button>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="track-go rounded-full border-0 px-4 text-white">
             <Link href={signedIn ? home : "/login"}>
               {signedIn ? t(locale, "My account") : t(locale, "Sign in")}
             </Link>
@@ -90,7 +120,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className={cn("lg:hidden", !solid && "text-white hover:bg-white/15 hover:text-white")}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t(locale, "Close menu") : t(locale, "Open menu")}
             aria-expanded={open}

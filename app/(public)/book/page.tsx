@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { FormShell, FormSide } from "@/components/site/form-shell";
+import { PageHero } from "@/components/site/kit";
 import { BookingForm } from "@/components/site/request-forms";
 import { formatDate } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
@@ -57,18 +59,23 @@ export default async function Page({
     }));
 
   return (
-    <div className="container max-w-3xl py-12 sm:py-16">
-      <p className="eyebrow text-marine">Swift Cargo</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-        {t(locale, "Book a service")}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        {t(
-          locale,
-          "Tell us what you are moving and we will come back with space, a price and the sailing it goes on."
-        )}
-      </p>
-      <div className="mt-10">
+    <>
+      <PageHero
+        overlap
+        photo="shipAerial"
+        eyebrow={t(locale, "Book a service")}
+        lead={t(locale, "Book your space")}
+        trail={t(locale, "on the next ship.")}
+        body={
+          <p>
+            {t(
+              locale,
+              "Tell us what you are moving and we will come back with space, a price and the sailing it goes on."
+            )}
+          </p>
+        }
+      />
+      <FormShell side={<FormSide photo="craneLift" />}>
         <BookingForm
           sailings={options}
           cargoTypes={rates.map((rate) => rate.cargoType)}
@@ -79,8 +86,8 @@ export default async function Page({
             cbm: first("cbm"),
           }}
         />
-      </div>
-      <p className="mt-6 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT)}</p>
-    </div>
+        <p className="mt-6 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT)}</p>
+      </FormShell>
+    </>
   );
 }

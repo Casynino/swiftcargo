@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Camera, MapPin, Scale, ShieldCheck, Ship } from "lucide-react";
 
-import { HeroArtwork } from "@/components/site/hero-artwork";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { CtaBand, PageHero, PhotoFrame, SectionHead, heroButton } from "@/components/site/kit";
+import { Reveal } from "@/components/site/motion";
+import { RouteMap } from "@/components/site/route-map";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -68,87 +68,135 @@ export default async function AboutPage() {
 
   return (
     <>
-      <section className="relative isolate overflow-hidden border-b bg-ink py-16 text-white sm:py-20">
-        <HeroArtwork name="hero-about" />
-        <div className="container relative">
-          <p className="eyebrow text-marine">{t(locale, "About us")}</p>
-          <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            {name}
-          </h1>
-          {company?.tagline ? (
-            <p className="mt-2 text-lg text-marine">{company.tagline}</p>
-          ) : null}
-          <p className="mt-5 max-w-2xl text-lg text-white/70">
+      <PageHero
+        photo="craneLift"
+        eyebrow={t(locale, "About us")}
+        lead={name}
+        trail={company?.tagline ?? undefined}
+        body={
+          <p>
             {t(
               locale,
               "We ship goods by sea from China to Tanzania for traders and businesses — shared containers for loose cargo, whole containers for those who fill them, and sourcing help in Guangzhou for those still looking for a supplier."
             )}
           </p>
-        </div>
-      </section>
-
-      <section className="container py-16">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          {t(locale, "How we work")}
-        </h2>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          {principles.map((item) => (
-            <Card key={item.title} className="p-6">
-              <span className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand">
-                <item.icon className="size-5" />
-              </span>
-              <h3 className="mt-4 font-semibold">{t(locale, item.title)}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {t(locale, item.body)}
-              </p>
-            </Card>
-          ))}
-        </div>
-
-        {company?.chinaAddress || company?.darAddress ? (
+        }
+        actions={
           <>
-            <h2 className="mt-16 text-2xl font-semibold tracking-tight">
-              {t(locale, "Where we are")}
-            </h2>
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              {[
-                ["Guangzhou, China", company?.chinaEntity, company?.chinaAddress],
-                ["Dar es Salaam, Tanzania", company?.darEntity, company?.darAddress],
-              ]
-                .filter(([, , address]) => address)
-                .map(([place, entity, address]) => (
-                  <Card key={place} className="p-6">
-                    <p className="flex items-center gap-2 text-sm font-semibold">
-                      <MapPin className="size-4 text-signal" />
-                      {t(locale, place!)}
-                    </p>
-                    {entity ? (
-                      <p className="mt-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {entity}
-                      </p>
-                    ) : null}
-                    <p className="mt-2 text-sm leading-relaxed">{address}</p>
-                  </Card>
-                ))}
-            </div>
-            {company?.tin ? (
-              <p className="tnum mt-4 text-xs text-muted-foreground">TIN {company.tin}</p>
-            ) : null}
-          </>
-        ) : null}
-
-        <div className="mt-12 flex flex-wrap gap-3">
-          <Button asChild size="lg">
-            <Link href="/quote">
+            <Link href="/quote" className={heroButton.primary}>
               {t(locale, "Get a quote")}
-              <ArrowRight />
+              <ArrowRight className="size-4" />
             </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/contact">{t(locale, "Contact us")}</Link>
-          </Button>
+            <Link href="/contact" className={heroButton.ghost}>
+              {t(locale, "Contact us")}
+            </Link>
+          </>
+        }
+      />
+
+      <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
+        <Reveal className="grid grid-cols-2 gap-4">
+          <PhotoFrame name="warehouseTeam" className="col-span-2 aspect-[16/10] rounded-[2rem]" />
+          <PhotoFrame name="portYard" sizes="25vw" className="aspect-square rounded-[1.6rem]" />
+          <PhotoFrame name="shipAerial" sizes="25vw" className="aspect-square rounded-[1.6rem]" />
+        </Reveal>
+        <div>
+          <SectionHead
+            eyebrow={t(locale, "How we work")}
+            lead={t(locale, "Nothing on this page")}
+            trail={t(locale, "is a promise we cannot keep.")}
+            body={t(
+              locale,
+              "What we tell you is how the operation actually runs — which is what a trader choosing a forwarder is really trying to find out."
+            )}
+          />
+          <ul className="mt-9 grid gap-4 sm:grid-cols-2">
+            {principles.map((item, i) => (
+              <Reveal as="li" key={item.title} delay={i * 80} className="rounded-2xl border bg-card p-5 shadow-soft">
+                <span className="grid size-10 place-items-center rounded-xl bg-brand text-brand-foreground">
+                  <item.icon className="size-5" />
+                </span>
+                <h3 className="mt-4 font-semibold">{t(locale, item.title)}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t(locale, item.body)}</p>
+              </Reveal>
+            ))}
+          </ul>
         </div>
       </section>
+
+      <section className="relative isolate overflow-hidden bg-ink py-20 text-white sm:py-28">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_80%_20%,hsl(var(--marine)/0.25),transparent_55%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.18),transparent_50%)]"
+        />
+        <div className="container grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+          <SectionHead
+            dark
+            eyebrow={t(locale, "One route")}
+            lead={`${ROUTE.originCity} → ${ROUTE.destinationCity},`}
+            trail={`${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} ${t(locale, "days at sea.")}`}
+            body={t(locale, "A ship every week. Cargo in Guangzhou by Friday sails on Monday.")}
+          />
+          <Reveal className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-8">
+            <RouteMap />
+          </Reveal>
+        </div>
+      </section>
+
+      {company?.chinaAddress || company?.darAddress ? (
+        <section className="container py-20 sm:py-28">
+          <SectionHead
+            eyebrow={t(locale, "Where we are")}
+            lead={t(locale, "Two warehouses,")}
+            trail={t(locale, "one company.")}
+          />
+          <div className="mt-12 grid gap-6 md:grid-cols-2">
+            {(
+              [
+                ["Guangzhou, China", company?.chinaEntity, company?.chinaAddress, "guangzhouDusk"],
+                ["Dar es Salaam, Tanzania", company?.darEntity, company?.darAddress, "portCranes"],
+              ] as const
+            )
+              .filter(([, , address]) => address)
+              .map(([place, entity, address, photo], i) => (
+                <Reveal key={place} delay={i * 100}>
+                  <PhotoFrame name={photo} className="min-h-[22rem] rounded-[2rem]">
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/40 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-7 text-white">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
+                        <MapPin className="size-4" />
+                        {t(locale, place)}
+                      </p>
+                      {entity ? (
+                        <p className="mt-3 text-xs font-medium uppercase tracking-wide text-white/60">{entity}</p>
+                      ) : null}
+                      <p className="mt-1.5 max-w-md leading-relaxed">{address}</p>
+                    </div>
+                  </PhotoFrame>
+                </Reveal>
+              ))}
+          </div>
+          {company?.tin ? (
+            <p className="tnum mt-4 text-xs text-muted-foreground">TIN {company.tin}</p>
+          ) : null}
+        </section>
+      ) : null}
+
+      <CtaBand
+        lead={t(locale, "Ship with people who count your boxes.")}
+        trail={t(locale, "Twice.")}
+        actions={
+          <>
+            <Link href="/register" className={heroButton.primary}>
+              {t(locale, "Create an account")}
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link href="/contact" className={heroButton.ghost}>
+              {t(locale, "Contact us")}
+            </Link>
+          </>
+        }
+      />
     </>
   );
 }

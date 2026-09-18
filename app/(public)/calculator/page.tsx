@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Calculator } from "lucide-react";
+import { ArrowRight, Calculator } from "lucide-react";
 
 import { CbmCalculator } from "@/components/site/cbm-calculator";
-import { Button } from "@/components/ui/button";
+import { PageHero, heroButton } from "@/components/site/kit";
+import { Reveal } from "@/components/site/motion";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { publicRateBook } from "@/lib/public-estimate";
 
@@ -23,44 +24,59 @@ export default async function CalculatorPage() {
   const rates = await publicRateBook("LCL");
 
   return (
-    <div className="container max-w-5xl py-12 sm:py-16">
-      <span className="grid size-12 place-items-center rounded-xl bg-brand/10 text-brand">
-        <Calculator className="size-6" />
-      </span>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">
-        {t(locale, "CBM calculator")}
-      </h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        {t(
-          locale,
-          "Sea freight is sold by the cubic metre. Measure your boxes, put the numbers in, choose what you are shipping, and we will work out the volume and roughly what it costs."
-        )}
-      </p>
-
-      <div className="mt-10">
-        <CbmCalculator rates={rates} />
-      </div>
-
-      <div className="mt-12 rounded-xl border bg-surface-2 p-5 sm:p-7">
-        <h2 className="font-semibold">{t(locale, "How the maths works")}</h2>
-        <p className="mt-3 text-sm text-muted-foreground">
-          {t(
-            locale,
-            "Volume is length × width × height × number of boxes. In centimetres, divide by 1,000,000 to get cubic metres; in metres, the answer is already in cubic metres."
-          )}
-        </p>
-        <p className="tnum mt-3 rounded-md bg-card px-3 py-2 text-sm">
-          60 × 40 × 40 cm × 12 = 1.152 CBM
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild>
-            <Link href="/quote">{t(locale, "Get a proper quote")}</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/rates">{t(locale, "See all rates")}</Link>
-          </Button>
+    <>
+      <PageHero
+        overlap
+        photo="parcels"
+        eyebrow={t(locale, "CBM calculator")}
+        lead={t(locale, "How much space")}
+        trail={t(locale, "do my boxes take?")}
+        body={
+          <p>
+            {t(
+              locale,
+              "Sea freight is sold by the cubic metre. Measure your boxes, put the numbers in, choose what you are shipping, and we will work out the volume and roughly what it costs."
+            )}
+          </p>
+        }
+      />
+      <section className="container pb-20 sm:pb-28">
+        <div className="relative z-10 -mt-24 rounded-[2rem] border bg-card p-4 shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] sm:p-8">
+          <CbmCalculator rates={rates} />
         </div>
-      </div>
-    </div>
+
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          <Reveal className="rounded-[2rem] bg-ink p-7 text-white lg:col-span-2 sm:p-9">
+            <span className="grid size-12 place-items-center rounded-2xl bg-white/10">
+              <Calculator className="size-6 text-cyan-300" />
+            </span>
+            <h2 className="mt-6 font-display text-2xl font-bold tracking-tight">{t(locale, "How the maths works")}</h2>
+            <p className="mt-3 text-white/70">
+              {t(
+                locale,
+                "Volume is length × width × height × number of boxes. In centimetres, divide by 1,000,000 to get cubic metres; in metres, the answer is already in cubic metres."
+              )}
+            </p>
+            <p className="tnum mt-5 inline-block rounded-xl bg-white/10 px-4 py-2.5 font-mono text-sm">
+              60 × 40 × 40 cm × 12 = 1.152 CBM
+            </p>
+          </Reveal>
+          <Reveal delay={100} className="flex flex-col justify-between gap-6 rounded-[2rem] border bg-card p-7 shadow-soft sm:p-9">
+            <p className="font-display text-2xl font-bold tracking-tight">
+              {t(locale, "Want the exact price?")}
+            </p>
+            <div className="grid gap-3">
+              <Link href="/quote" className={heroButton.solid}>
+                {t(locale, "Get a proper quote")}
+                <ArrowRight className="size-4" />
+              </Link>
+              <Link href="/rates" className={heroButton.outline}>
+                {t(locale, "See all rates")}
+              </Link>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+    </>
   );
 }

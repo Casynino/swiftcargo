@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Archivo, Inter } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { UploadBudget } from "@/components/upload-budget";
@@ -10,6 +10,15 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+});
+
+/* The public site's headlines. Inter carries every figure and every form; a
+   display face is only for the few words a visitor reads first. */
+const display = Archivo({
+  subsets: ["latin"],
+  variable: "--font-display",
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -54,7 +63,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans`}>
+      <body className={`${inter.variable} ${display.variable} font-sans`}>
         <ThemeProvider>{children}</ThemeProvider>
         <UploadBudget limitBytes={UPLOAD_REQUEST_BUDGET} />
       </body>

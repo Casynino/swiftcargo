@@ -1,11 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Container, Package, Search, Truck, Warehouse } from "lucide-react";
+import { ArrowRight, CheckCircle2, Container, Package, Search, Truck, Warehouse } from "lucide-react";
 
-import { DisplayHeadingDark } from "@/components/site/display";
-import { HeroArtwork } from "@/components/site/hero-artwork";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { CtaBand, PageHero, PhotoFrame, heroButton } from "@/components/site/kit";
+import { Reveal } from "@/components/site/motion";
+import type { PhotoName } from "@/components/site/photos";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -23,6 +22,9 @@ const SERVICES = [
   {
     icon: Package,
     title: "Loose cargo (LCL)",
+    photo: "containerStack" as PhotoName,
+    href: "/book?service=SHARED_CARGO",
+    cta: "Book loose cargo",
     body: "Your goods share a container with other customers. You pay for the space you use, by the cubic metre, with no minimum order size beyond our small charging floor.",
     points: [
       "Charged per cubic metre",
@@ -34,6 +36,9 @@ const SERVICES = [
   {
     icon: Container,
     title: "Full container (FCL)",
+    photo: "craneLift" as PhotoName,
+    href: "/book?service=FULL_CONTAINER",
+    cta: "Book a container",
     body: "A 20ft, 40ft or 40ft high-cube container to yourself, sealed at your supplier's factory or at our warehouse. Best when you are filling most of a box.",
     points: [
       "Flat price per container",
@@ -45,6 +50,9 @@ const SERVICES = [
   {
     icon: Search,
     title: "China sourcing",
+    photo: "cnWholesaleHall" as PhotoName,
+    href: "/china",
+    cta: "Explore China",
     body: "Cannot find a supplier, or want somebody on the ground to check the goods before they ship? We buy, inspect and consolidate on your behalf in Guangzhou.",
     points: [
       "Supplier search and price comparison",
@@ -56,6 +64,9 @@ const SERVICES = [
   {
     icon: Warehouse,
     title: "Warehousing",
+    photo: "warehouseRacks" as PhotoName,
+    href: "/china",
+    cta: "Our warehouse address",
     body: "Warehouses at both ends. Your supplier delivers to Guangzhou; your goods wait safely in Dar until you are ready to collect them.",
     points: [
       "Guangzhou receiving warehouse",
@@ -67,6 +78,9 @@ const SERVICES = [
   {
     icon: Truck,
     title: "Delivery in Tanzania",
+    photo: "parcels" as PhotoName,
+    href: "/contact",
+    cta: "Ask about delivery",
     body: "Do not want to come to the warehouse? Ask us to deliver, and we will quote for it and bring it to your address.",
     points: [
       "Delivery anywhere in Dar es Salaam",
@@ -92,66 +106,89 @@ export default async function ServicesPage() {
 
   return (
     <>
-      <section className="relative isolate overflow-hidden border-b bg-ink py-16 text-white sm:py-20">
-        <HeroArtwork name="hero-services" />
-        <div className="container relative">
-          <p className="eyebrow text-marine">
-            {ROUTE.originCity} → {ROUTE.destinationCity}
-          </p>
-          <DisplayHeadingDark
-            as="h1"
-            className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl"
-            lead={t(locale, "Everything between your supplier")}
-            trail={t(locale, "and your shop")}
-          />
-          <p className="mt-5 max-w-2xl text-lg text-white/70">
+      <PageHero
+        photo="portCranes"
+        eyebrow={`${ROUTE.originCity} → ${ROUTE.destinationCity}`}
+        lead={t(locale, "Everything between your supplier")}
+        trail={t(locale, "and your shop.")}
+        body={
+          <p>
             {t(
               locale,
               "We handle the whole journey — receiving in China, loading, the sailing, clearing, storage in Dar and delivery."
             )}
           </p>
-        </div>
-      </section>
+        }
+        actions={
+          <>
+            <Link href="/quote" className={heroButton.primary}>
+              {t(locale, "Get a quote")}
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link href="/book" className={heroButton.ghost}>
+              {t(locale, "Book space on a sailing")}
+            </Link>
+          </>
+        }
+      />
 
-      <section className="container py-16">
-        <div className="grid gap-6 md:grid-cols-2">
-          {SERVICES.map((service, i) => (
-            <Card
-              key={service.title}
-              className="animate-in-up p-7"
-              style={{ animationDelay: `${i * 70}ms` }}
-            >
-              <span className="grid size-11 place-items-center rounded-xl bg-brand/10 text-brand">
-                <service.icon className="size-5" />
+      <section className="container space-y-20 py-20 sm:space-y-28 sm:py-28">
+        {SERVICES.map((service, i) => (
+          <div
+            key={service.title}
+            className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
+          >
+            <Reveal className={i % 2 ? "lg:order-2" : undefined}>
+              <PhotoFrame name={service.photo} className="aspect-[4/3] rounded-[2rem]">
+                <span className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1 font-display text-sm font-bold text-slate-900">
+                  0{i + 1}
+                </span>
+              </PhotoFrame>
+            </Reveal>
+            <Reveal delay={100}>
+              <span className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-foreground">
+                <service.icon className="size-6" />
               </span>
-              <h2 className="mt-5 text-lg font-semibold">{t(locale, service.title)}</h2>
-              <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+              <h2 className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                {t(locale, service.title)}
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
                 {t(locale, service.body)}
               </p>
-              <ul className="mt-5 space-y-2">
+              <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                 {service.points.map((text) => (
-                  <li key={text} className="flex gap-2 text-sm text-muted-foreground">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-marine" />
+                  <li key={text} className="flex items-start gap-2.5 text-sm">
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-signal" />
                     {point(text)}
                   </li>
                 ))}
               </ul>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-12 flex flex-wrap gap-3">
-          <Button asChild size="lg">
-            <Link href="/quote">
-              {t(locale, "Get a quote")}
-              <ArrowRight />
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/book">{t(locale, "Book space on a sailing")}</Link>
-          </Button>
-        </div>
+              <Link href={service.href} className={`${heroButton.solid} mt-8`}>
+                {t(locale, service.cta)}
+                <ArrowRight className="size-4" />
+              </Link>
+            </Reveal>
+          </div>
+        ))}
       </section>
+
+      <CtaBand
+        photo="shipSea"
+        lead={t(locale, "Not sure which one you need?")}
+        trail={t(locale, "Ask us.")}
+        body={t(locale, "Tell us what you are shipping and roughly how much, and we will tell you the cheapest way to move it.")}
+        actions={
+          <>
+            <Link href="/quote" className={heroButton.primary}>
+              {t(locale, "Get a quote")}
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link href="/calculator" className={heroButton.ghost}>
+              {t(locale, "Work out my CBM")}
+            </Link>
+          </>
+        }
+      />
     </>
   );
 }

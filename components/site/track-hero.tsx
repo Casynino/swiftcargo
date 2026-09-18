@@ -52,7 +52,7 @@ export function TrackHero({
           the horizon from the same numbers. It is padding rather than a sibling
           element so the scene can still bleed to the edges of the hero, and it
           is reserved before paint so nothing on the page ever moves. */}
-      <div className="container relative flex min-h-[calc(72vw+26rem)] flex-col justify-start pb-[calc(72vw+1rem)] pt-14 sm:min-h-[calc(42vw+26rem)] sm:pb-[calc(42vw+1.5rem)] sm:pt-20 lg:min-h-[40rem] lg:justify-center lg:py-32 xl:min-h-[44rem] 2xl:min-h-[48rem]">
+      <div className="container relative flex min-h-[calc(72vw+26rem)] flex-col justify-start pb-[calc(72vw+1rem)] pt-28 sm:min-h-[calc(42vw+26rem)] sm:pb-[calc(42vw+1.5rem)] sm:pt-32 lg:min-h-[40rem] lg:justify-center lg:py-32 xl:min-h-[44rem] 2xl:min-h-[48rem]">
         <div className="animate-in-up max-w-xl lg:max-w-[30rem]">
           <p className="eyebrow inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-cyan-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] backdrop-blur-md">
             <Ship aria-hidden className="size-3.5" />

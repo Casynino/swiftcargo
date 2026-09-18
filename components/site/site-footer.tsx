@@ -12,7 +12,7 @@ const SHIP = [
   ["/rates", "Shipping rates"],
   ["/calculator", "CBM calculator"],
   ["/schedule", "Sailing schedule"],
-  ["/china", "China sourcing"],
+  ["/china", "Explore China"],
   ["/track", "Track cargo"],
 ] as const;
 
@@ -34,7 +34,32 @@ export async function SiteFooter() {
   const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER);
 
   return (
-    <footer className="border-t bg-ink text-white/80">
+    <footer className="relative isolate overflow-hidden bg-ink text-white/80">
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_85%_0%,hsl(var(--marine)/0.22),transparent_55%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.14),transparent_50%)]"
+      />
+      <div className="container flex flex-wrap items-end justify-between gap-8 border-b border-white/10 pb-12 pt-16">
+        <p className="font-display text-4xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl">
+          {ROUTE.originCity} <span className="text-signal">→</span>
+          <br />
+          <span className="site-outline">{ROUTE.destinationCity}</span>
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/quote"
+            className="track-go inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold text-white"
+          >
+            {t(locale, "Get a quote")}
+          </Link>
+          <Link
+            href="/track"
+            className="inline-flex h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/20"
+          >
+            {t(locale, "Track cargo")}
+          </Link>
+        </div>
+      </div>
       <div className="container grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           {/* The footer is dark in both themes, so the mark is drawn in its
