@@ -140,7 +140,7 @@ export default async function HomePage() {
               as="h1"
               size="hero"
               tone="dark"
-              className="hero-display mt-6"
+              className="mt-6"
               lead={t(locale, "Your cargo from China")}
               trail={t(locale, "handled properly")}
             />
@@ -276,7 +276,7 @@ export default async function HomePage() {
           {/* One tall picture beside two stacked: the editorial grid. At a phone
               width it unstacks into a single column, tall picture first. */}
           <div className="mt-12 grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-            <PhotoSlot name="crane-lift" scrim className="lg:h-full">
+            <PhotoSlot name="crane-lift" scrim fillRow="lg">
               <PhotoCaption label={t(locale, "Loaded")}>
                 {t(locale, "Your box, on a ship, with a seal number we recorded.")}
               </PhotoCaption>
@@ -367,11 +367,27 @@ export default async function HomePage() {
 
           {/* The lane itself, as a sketch. Named at both ends and nowhere else,
               so nobody is invited to read a position off it. */}
-          <RouteScene
-            className="h-auto w-full"
-            originLabel={ROUTE.originCity}
-            destinationLabel={ROUTE.destinationCity}
-          />
+          <div className="relative">
+            <RouteScene
+              className="h-auto w-full"
+              originLabel={ROUTE.originCity}
+              destinationLabel={ROUTE.destinationCity}
+            />
+
+            {/* Two small pictures laid on the drawing rather than beside it,
+                which is what stops a map reading as a diagram in a slide. They
+                go in the empty corners: on the marks themselves they would
+                cover the only two words the drawing carries. No scrim — at this
+                size a scrim leaves a dark square and no picture. */}
+            <PhotoSlot
+              name="badge-counting"
+              className="absolute left-0 top-[2%] hidden w-24 rounded-2xl shadow-raised ring-1 ring-white/20 sm:block lg:w-28"
+            />
+            <PhotoSlot
+              name="badge-quay"
+              className="absolute bottom-[2%] right-0 hidden w-24 rounded-2xl shadow-raised ring-1 ring-white/20 sm:block lg:w-28"
+            />
+          </div>
         </div>
       </section>
 
@@ -533,7 +549,7 @@ export default async function HomePage() {
           />
 
           <div className="mt-12 grid gap-4 lg:grid-cols-2">
-            <PhotoSlot name="guangzhou-warehouse" scrim className="lg:order-2 lg:h-full">
+            <PhotoSlot name="guangzhou-warehouse" scrim fillRow="lg" className="lg:order-2">
               <PhotoCaption label={t(locale, "Guangzhou")}>
                 {t(locale, "Where your supplier delivers, and where the measuring starts.")}
               </PhotoCaption>

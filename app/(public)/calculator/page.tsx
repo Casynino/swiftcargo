@@ -62,6 +62,7 @@ export default async function CalculatorPage() {
           locale,
           "Sea freight is sold by the cubic metre. Measure your boxes, put the numbers in, choose what you are shipping, and we will work out the volume and roughly what it costs."
         )}
+        scene="warehouse"
       />
 
       <div className="bg-field py-14 sm:py-20">

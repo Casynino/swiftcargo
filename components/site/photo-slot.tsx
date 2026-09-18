@@ -136,12 +136,22 @@ export function PhotoSlot({
   priority,
   /** Laid over: a scrim so white type keeps its contrast on any photograph. */
   scrim,
+  /**
+   * Fill the height of the row instead of keeping the ratio, from this width up.
+   *
+   * It has to drop the ratio to do it. A box with a definite height AND an
+   * aspect-ratio takes its WIDTH from that height, which is how this slot once
+   * grew to 1332 pixels inside a 1024 pixel page — so the two are set together,
+   * here, rather than left to a caller to remember.
+   */
+  fillRow,
   children,
 }: {
   name: PhotoSlotName;
   className?: string;
   priority?: boolean;
   scrim?: boolean;
+  fillRow?: "md" | "lg";
   children?: React.ReactNode;
 }) {
   const slot: Slot = PHOTO_SLOTS[name];
@@ -152,6 +162,8 @@ export function PhotoSlot({
       className={cn(
         "relative isolate overflow-hidden rounded-3xl bg-ink",
         RATIO[slot.ratio],
+        fillRow === "md" && "md:aspect-auto md:h-full",
+        fillRow === "lg" && "lg:aspect-auto lg:h-full",
         className
       )}
     >

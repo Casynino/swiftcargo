@@ -113,7 +113,7 @@ export default async function ChinaPage() {
         ) : null}
 
         <div className="mt-12 grid gap-4 lg:grid-cols-2">
-          <PhotoSlot name="service-sourcing" scrim className="lg:h-full">
+          <PhotoSlot name="service-sourcing" scrim fillRow="lg">
             <PhotoCaption label={t(locale, "Consolidated")}>
               {t(locale, "Several suppliers, one shipment, one set of paperwork.")}
             </PhotoCaption>

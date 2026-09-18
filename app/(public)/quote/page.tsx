@@ -21,6 +21,7 @@ export default function Page() {
         lead={t(locale, "Get")}
         trail={t(locale, "a quote")}
         body={t(locale, "Tell us what you are shipping and we will come back with a price.")}
+        scene="crane"
       />
 
       <div className="bg-field py-14 sm:py-20">
