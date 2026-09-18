@@ -5,7 +5,9 @@ import { ChevronLeft } from "lucide-react";
 
 import { CustomerReplyForm } from "@/components/portal/message-forms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { COMPANY } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
+import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { requireCustomer } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -17,6 +19,7 @@ export default async function PortalConversationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const locale = DEFAULT_LOCALE;
   const user = await requireCustomer();
   const { id } = await params;
 
@@ -32,9 +35,23 @@ export default async function PortalConversationPage({
         thing keeping them off the customer's screen, so it is not optional and
         must never be relaxed to "include everything and hide in the UI".
       */
+      /*
+        AND SO IS THE NAME OF WHOEVER WROTE THE REPLY.
+
+        The thread showed the clerk's own name against every answer. A customer
+        does not need it, and a customer who has it can stand at the Dar counter
+        and say a named member of staff told them the goods could go — which is
+        precisely the conversation the release check exists to end. The company
+        answers; the audit log knows which of us it was.
+      */
       messages: {
         where: { internal: false },
-        include: { author: { select: { name: true } } },
+        select: {
+          id: true,
+          body: true,
+          authorId: true,
+          createdAt: true,
+        },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -78,7 +95,7 @@ export default async function PortalConversationPage({
             >
               <p className="whitespace-pre-wrap text-sm">{message.body}</p>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                {message.author?.name ?? "You"} ·{" "}
+                {message.authorId ? COMPANY.name : t(locale, "You")} ·{" "}
                 {formatDateTime(message.createdAt)}
               </p>
             </div>
