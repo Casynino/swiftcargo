@@ -50,29 +50,32 @@ export async function fileAccess(
   const staffMay = (permissions: Permission[]) =>
     !!staff && canAny(staff.role, permissions);
 
-  const [photos, proofs, expenses, releases, documents, markets] = await Promise.all([
-    /* A customer's lookup is narrowed to their own rows first: the same file can
-       sit behind several records, and a sample of any five could miss theirs. */
-    prisma.cargoPhoto.findMany({
-      where: customerId
-        ? { url, cargo: { OR: [{ senderId: customerId }, { receiverId: customerId }] } }
-        : { url },
-      select: {
-        kind: true,
-        cargo: { select: { deletedAt: true, senderId: true, receiverId: true } },
-      },
-      take: 5,
-    }),
-    prisma.paymentProof.findMany({
-      where: customerId ? { url, payment: { customerId } } : { url },
-      select: { payment: { select: { customerId: true } } },
-      take: 5,
-    }),
-    prisma.containerExpense.count({ where: { receiptUrl: url } }),
-    prisma.release.count({ where: { signatureUrl: url } }),
-    prisma.shipmentDocument.count({ where: { url } }),
-    prisma.marketInformation.count({ where: { imageUrl: url, published: true } }),
-  ]);
+  const [photos, proofs, expenses, releases, documents, markets, requestFiles] =
+    await Promise.all([
+      /* A customer's lookup is narrowed to their own rows first: the same file
+         can sit behind several records, and a sample of any five could miss
+         theirs. */
+      prisma.cargoPhoto.findMany({
+        where: customerId
+          ? { url, cargo: { OR: [{ senderId: customerId }, { receiverId: customerId }] } }
+          : { url },
+        select: {
+          kind: true,
+          cargo: { select: { deletedAt: true, senderId: true, receiverId: true } },
+        },
+        take: 5,
+      }),
+      prisma.paymentProof.findMany({
+        where: customerId ? { url, payment: { customerId } } : { url },
+        select: { payment: { select: { customerId: true } } },
+        take: 5,
+      }),
+      prisma.containerExpense.count({ where: { receiptUrl: url } }),
+      prisma.release.count({ where: { signatureUrl: url } }),
+      prisma.shipmentDocument.count({ where: { url } }),
+      prisma.marketInformation.count({ where: { imageUrl: url, published: true } }),
+      prisma.requestDocument.count({ where: { url } }),
+    ]);
 
   if (markets > 0) return "public";
 
@@ -121,6 +124,11 @@ export async function fileAccess(
   if (expenses > 0 && staffMay(["expense.view", "accounting.view"])) return "private";
   if (releases > 0 && staffMay(["release.view"])) return "private";
   if (documents > 0 && staffMay(["shipment.view"])) return "private";
+  /* A proforma sent in against an enquiry, or the photograph the Guangzhou
+     driver took at the factory gate. Whoever works the queue reads it; nobody
+     outside the company does, including the customer it came from — the copy
+     they sent is the copy they have. */
+  if (requestFiles > 0 && staffMay(["request.view"])) return "private";
 
   /* Case evidence is kept in a JSON column rather than a row per file, so it is
      recognised by the folder `store()` put it in. Only staff read a case. */

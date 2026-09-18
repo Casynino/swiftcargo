@@ -43,7 +43,6 @@ const ENTITY: Record<Kind, string> = {
 
 function paths() {
   revalidatePath("/app/support/requests");
-  revalidatePath("/app/receive/pickups");
 }
 
 const kindOf = (raw: FormDataEntryValue | null): Kind | null => {
