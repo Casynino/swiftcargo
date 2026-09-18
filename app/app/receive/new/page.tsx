@@ -21,8 +21,15 @@ export default async function ReceiveNewPage() {
 
   /* The warehouse is not asked for and so is not fetched — the action files the
      receiving record against the clerk's own posting. See receiveNewCargo. */
-  const [cargoTypes, lastLineNote, lastCargoNote] = await Promise.all([
+  const [cargoTypes, suppliers, lastLineNote, lastCargoNote] = await Promise.all([
     cargoTypeOptions(),
+    /* The factories we already know, to be picked rather than retyped. A name
+       not on the list is still accepted at the counter and registered there. */
+    prisma.supplier.findMany({
+      orderBy: { name: "asc" },
+      select: { name: true },
+      take: 300,
+    }),
     /* The carbon book runs in order, so the next number is almost always the
        last one plus one. Offered filled in; the clerk overwrites it when the
        book has skipped or a pad was started out of sequence.
@@ -60,7 +67,11 @@ export default async function ReceiveNewPage() {
         back={{ href: "/app/inventory", label: "Warehouse floor" }}
       />
       <SectionTabs />
-      <IntakeForm cargoTypes={cargoTypes} nextReceiptNo={nextReceiptNo} />
+      <IntakeForm
+        cargoTypes={cargoTypes}
+        nextReceiptNo={nextReceiptNo}
+        suppliers={suppliers.map((s) => s.name)}
+      />
     </div>
   );
 }

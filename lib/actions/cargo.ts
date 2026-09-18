@@ -7,7 +7,7 @@ import { Prisma, type MeasurementUnit, type PackageType } from "@prisma/client";
 import { recordAudit, recordFieldChange, withNote } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
 import { calculateCbm } from "@/lib/cbm";
-import { readIntakeLines } from "@/lib/intake-lines";
+import { readIntakeLines, readReceivingDate } from "@/lib/intake-lines";
 import { cargoTypeOptions, loadRateBook, valueWith } from "@/lib/valuation";
 import {
   generateQrToken,
@@ -731,6 +731,14 @@ const intakeSchema = z.object({
      and the database cannot work it out — and it is the one question that makes
      a consignment findable between receiving and loading. */
   location: z.string().trim().max(60, "Keep the location short.").optional(),
+  /* WHO DELIVERED IT, AND UNDER WHAT NUMBER OF THEIRS.
+     A customer chasing a factory quotes the factory's own reference, and
+     nothing else in this system can match that sentence to a consignment.
+     Both optional: a walk-in with a taxi full of boxes has neither, and a
+     driver at the door must not be held up by a field. */
+  supplierName: z.string().trim().max(120, "Keep the supplier name short.").optional(),
+  supplierRef: z.string().trim().max(60, "Keep the supplier reference short.").optional(),
+  receivedAt: z.string().trim().optional(),
   notes: z.string().trim().optional(),
   unit: z.enum(["CM", "M"]),
 });
@@ -786,6 +794,9 @@ export async function receiveNewCargo(
     shippingMark: formData.get("shippingMark") || undefined,
     paperReceiptNo: headlineNote || undefined,
     location: formData.get("location") || undefined,
+    supplierName: formData.get("supplierName") || undefined,
+    supplierRef: formData.get("supplierRef") || undefined,
+    receivedAt: formData.get("receivedAt") || undefined,
     notes: formData.get("notes") || undefined,
     unit: formData.get("unit") || "CM",
   });
@@ -801,6 +812,11 @@ export async function receiveNewCargo(
   if (!data.customerId && !data.newCustomerPhone) {
     return { error: "A new customer needs a phone number." };
   }
+
+  /* The rules are in lib/intake-lines.ts, beside the ones about the item rows. */
+  const dated = readReceivingDate(data.receivedAt);
+  if ("error" in dated) return { error: dated.error };
+  const { receivedAt, backdated } = dated;
 
   /* An id off a form is a claim, not a customer. A stale tab, a merged record
      or a customer removed while the counter was busy all arrive here as a
@@ -1019,10 +1035,32 @@ export async function receiveNewCargo(
         });
       }
 
-      /* The counter no longer asks who dropped the boxes off. The Supplier
-         relation stays on the record for consignments booked in from the office
-         and for the day the business decides it wants that back; nothing at
-         this window fills it. */
+      /*
+        WHO DROPPED THE BOXES OFF.
+
+        Matched on the name the clerk typed rather than picked from a list of
+        ids, because the supplier is written on the delivery note in the
+        driver's handwriting and the counter should not have to go and register
+        a factory first. An existing name attaches; a new one is created here,
+        the same trade the customer beside it makes.
+
+        Matched case-insensitively and on the whole name: "Guangzhou Leather
+        Factory" typed twice in two capitalisations is one factory, and two rows
+        for it means a customer chasing their supplier matches neither.
+      */
+      let supplierId: string | null = null;
+      if (data.supplierName) {
+        const existing = await tx.supplier.findFirst({
+          where: { name: { equals: data.supplierName, mode: "insensitive" } },
+          select: { id: true },
+        });
+        supplierId =
+          existing?.id ??
+          (await tx.supplier.create({
+            data: { name: data.supplierName },
+            select: { id: true },
+          })).id;
+      }
 
       // --- the consignment ------------------------------------------------
       const reference = await nextCargoReference(tx);
@@ -1039,6 +1077,8 @@ export async function receiveNewCargo(
           receiverId: customer.id,
           shippingMark: mark,
           paperReceiptNo: data.paperReceiptNo || null,
+          supplierId,
+          supplierRef: data.supplierRef || null,
           service: "LCL",
           description: summary,
           declaredPackages: totalPackages,
@@ -1077,10 +1117,22 @@ export async function receiveNewCargo(
 
       /* Registered and received in the same breath, because they happened in
          the same breath. Both lines are written so the timeline reads as a
-         sequence rather than starting halfway through. */
+         sequence rather than starting halfway through.
+
+         DATED WHEN THE BOXES CAME IN, NOT WHEN THEY WERE TYPED UP. This is the
+         timeline the customer reads, and it has to agree with the note in their
+         hand. The pair is kept a millisecond apart so a list ordered by time
+         cannot put "received" before "registered". That the row was written
+         later, and by whom, is in the audit log, which is where a backdate is
+         looked for. */
       await tx.cargoStatusHistory.createMany({
         data: [
-          { cargoId: cargo.id, to: "REGISTERED", actorId: actor.id },
+          {
+            cargoId: cargo.id,
+            to: "REGISTERED",
+            actorId: actor.id,
+            createdAt: receivedAt,
+          },
           {
             cargoId: cargo.id,
             from: "REGISTERED",
@@ -1089,6 +1141,7 @@ export async function receiveNewCargo(
               ? `Received at Guangzhou against note ${data.paperReceiptNo}`
               : "Received at the Guangzhou warehouse",
             actorId: actor.id,
+            createdAt: new Date(receivedAt.getTime() + 1),
           },
         ],
       });
@@ -1127,6 +1180,7 @@ export async function receiveNewCargo(
           condition: "GOOD",
           location: data.location || null,
           notes: data.notes || null,
+          receivedAt,
           receivedById: actor.id,
         },
       });
@@ -1160,12 +1214,12 @@ export async function receiveNewCargo(
               code: customer.code,
             },
             receiver: { name: customer.fullName, phone: customer.phone },
-            supplier: null,
-            supplierRef: null,
+            supplier: data.supplierName || null,
+            supplierRef: data.supplierRef || null,
             description: summary,
             warehouse: warehouse.name,
             location: data.location || null,
-            receivedAt: new Date().toISOString(),
+            receivedAt: receivedAt.toISOString(),
             packagesCount: totalPackages,
             piecesCount: totalPieces > 0 ? totalPieces : null,
             weightKg: totalWeight.greaterThan(0) ? totalWeight.toString() : null,
@@ -1216,9 +1270,20 @@ export async function receiveNewCargo(
     action: "cargo.receive.intake",
     entity: "Cargo",
     entityId: result.id,
+    /* A DAY OTHER THAN TODAY IS SAID OUT LOUD.
+       The receiving date is the customer's timeline and it may legitimately be
+       last Thursday's page of the book. It is also the one field at this
+       counter somebody could move to make a consignment look older or newer
+       than it is, so when it is not today the summary says so in words — the
+       audit log is read as sentences, and a date buried in metadata is a date
+       nobody notices. */
     summary: `Received ${result.reference} at the counter — ${lines.length} item line(s), ${totalPackages} package(s), ${totalCbm} CBM; note ${result.noteNumber}${
       data.paperReceiptNo ? `, book ${data.paperReceiptNo}` : ""
-    }`,
+    }${
+      backdated
+        ? `; dated ${receivedAt.toISOString().slice(0, 10)}, entered today`
+        : ""
+    }${data.supplierName ? `; from ${data.supplierName}` : ""}`,
     metadata: {
       packages: totalPackages,
       pieces: totalPieces,
@@ -1226,6 +1291,11 @@ export async function receiveNewCargo(
       lines: lines.length,
       photos: stored.length,
       paperReceiptNo: data.paperReceiptNo ?? null,
+      receivedAt: receivedAt.toISOString(),
+      enteredAt: new Date().toISOString(),
+      backdated,
+      supplier: data.supplierName ?? null,
+      supplierRef: data.supplierRef ?? null,
     },
   });
 

@@ -1,5 +1,7 @@
 import type { PackageType } from "@prisma/client";
 
+import { DateOutOfRange, formDate } from "@/lib/dates";
+
 /**
  * THE ITEM ROWS OFF THE RECEIVING FORM, AND WHAT IS REFUSED.
  *
@@ -8,6 +10,47 @@ import type { PackageType } from "@prisma/client";
  * that decides what the Guangzhou counter is allowed to write down is the part
  * most worth being able to test on its own.
  */
+
+/**
+ * THE DAY THE BOXES ARRIVED, WHICH IS NOT ALWAYS TODAY.
+ *
+ * The carbon book is written at the counter and typed up afterwards — an
+ * evening's deliveries entered the next morning are dated the next morning, and
+ * the customer's timeline then says their goods arrived a day after the note in
+ * their hand says so. Blank means now, which is the ordinary case.
+ *
+ * NEVER THE FUTURE. Cargo cannot be received before it gets here; a forward
+ * date puts a consignment at the top of every list sorted by arrival, and it
+ * would quietly buy free days against any clock measured from receiving.
+ *
+ * `backdated` is what the audit line says out loud. A date other than today is
+ * legitimate and is also the one field at this counter somebody could move to
+ * make a consignment look older or newer than it is, so it is reported rather
+ * than inferred later from two timestamps.
+ */
+export function readReceivingDate(
+  raw: string | null | undefined,
+  now: Date = new Date()
+): { receivedAt: Date; backdated: boolean } | { error: string } {
+  let typed: Date | null;
+  try {
+    typed = formDate(raw, "receiving date");
+  } catch (error) {
+    if (error instanceof DateOutOfRange) return { error: error.message };
+    throw error;
+  }
+
+  if (typed && typed.getTime() > now.getTime()) {
+    return {
+      error:
+        "That receiving date is in the future. Cargo cannot be received before it gets here.",
+    };
+  }
+
+  const receivedAt = typed ?? now;
+  const day = (d: Date) => d.toISOString().slice(0, 10);
+  return { receivedAt, backdated: !!typed && day(receivedAt) !== day(now) };
+}
 
 export const PACKAGE_TYPES = [
   "CARTON",

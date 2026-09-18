@@ -95,6 +95,7 @@ const blank = (key: number, receiptNo = ""): Line => ({
 export function IntakeForm({
   cargoTypes,
   nextReceiptNo,
+  suppliers = [],
 }: {
   /** The number after the last one written in the book. A suggestion, not a rule. */
   nextReceiptNo?: string;
@@ -103,8 +104,19 @@ export function IntakeForm({
    * Finance's business and deliberately does not appear on this screen.
    */
   cargoTypes: string[];
+  /**
+   * The factories already known to us, to be picked from rather than retyped.
+   * A name not on the list is still accepted — the counter should not have to
+   * go and register a factory before it can take in its boxes.
+   */
+  suppliers?: string[];
 }) {
   const router = useRouter();
+  /* The browser argues first about a forward date; the server is what actually
+     refuses one. Computed on the client because the clerk's own day is the day
+     they mean, and a server rendering from another timezone would stop them
+     entering this morning's deliveries. */
+  const today = new Date().toLocaleDateString("en-CA");
   const [state, action] = useActionState<ActionState, FormData>(
     receiveNewCargo,
     {},
@@ -424,6 +436,77 @@ export function IntakeForm({
             <UserPlus />
             {newCustomer ? "Pick an existing customer" : "New customer"}
           </Button>
+
+          {/*
+            WHO BROUGHT IT, AND WHEN IT CAME IN.
+
+            The paper book asks both after the customer, and this follows it.
+            All three are optional and none of them holds up a driver at the
+            door: a walk-in with a taxi full of boxes has no factory and no
+            reference, and a delivery being taken in as it happens is today.
+
+            The supplier is typed or picked from the factories already known —
+            a name not on the list is accepted and registered, the same trade
+            the customer above makes, because the counter should not have to go
+            and register a factory before it can take in its boxes.
+          */}
+          <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="supplierName">
+                Supplier 供应商{" "}
+                <span className="font-normal text-muted-foreground">
+                  optional
+                </span>
+              </Label>
+              <Input
+                id="supplierName"
+                name="supplierName"
+                list="known-suppliers"
+                maxLength={120}
+                autoComplete="off"
+                placeholder="Who delivered the boxes"
+              />
+              <datalist id="known-suppliers">
+                {suppliers.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplierRef">
+                Supplier ref{" "}
+                <span className="font-normal text-muted-foreground">
+                  optional
+                </span>
+              </Label>
+              <Input
+                id="supplierRef"
+                name="supplierRef"
+                maxLength={60}
+                placeholder="Their own delivery number"
+              />
+              <p className="text-xs text-muted-foreground">
+                What the factory calls this delivery. It is how a customer
+                chasing their supplier is matched to a consignment.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="receivedAt">Received on</Label>
+              <Input
+                id="receivedAt"
+                name="receivedAt"
+                type="date"
+                min="2000-01-01"
+                max={today}
+                defaultValue=""
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank for today. Set it back for a page of the book being
+                typed up later — never forward, and the date you enter is kept
+                with your name.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
