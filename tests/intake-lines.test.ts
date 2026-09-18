@@ -1,7 +1,30 @@
 import assert from "node:assert/strict";
-import { describe, test } from "node:test";
+import Module from "node:module";
+import path from "node:path";
+import { before, describe, test } from "node:test";
 
-import { readIntakeLines } from "@/lib/intake-lines";
+/* lib/dates is server code and says so; answered with an empty module so the
+   rules that depend on it can be read without a Next server. */
+const resolve = (Module as unknown as { _resolveFilename: (...args: unknown[]) => string })
+  ._resolveFilename;
+(Module as unknown as { _resolveFilename: (...args: unknown[]) => string })._resolveFilename =
+  function (this: unknown, request: unknown, ...rest: unknown[]) {
+    if (request === "server-only") {
+      return path.join(__dirname, "..", "node_modules", "server-only", "empty.js");
+    }
+    return resolve.call(this, request, ...rest);
+  };
+
+/* Imported after the shim is in place, which a hoisted `import` would not be. */
+type Lib = typeof import("@/lib/intake-lines");
+let readIntakeLines: Lib["readIntakeLines"];
+let readReceivingDate: Lib["readReceivingDate"];
+
+before(async () => {
+  const lib = await import("@/lib/intake-lines");
+  readIntakeLines = lib.readIntakeLines;
+  readReceivingDate = lib.readReceivingDate;
+});
 
 /**
  * What the Guangzhou counter is allowed to write down.
@@ -160,5 +183,54 @@ describe("what a good delivery reads as", () => {
     );
     assert.equal(error, undefined);
     assert.equal(lines[0].weightKg, 0);
+  });
+});
+
+describe("the day the boxes arrived", () => {
+  const now = new Date("2026-09-18T11:00:00.000Z");
+
+  test("blank is now, and is not a backdate", () => {
+    const result = readReceivingDate("", now);
+    assert.ok(!("error" in result));
+    assert.equal(result.receivedAt.getTime(), now.getTime());
+    assert.equal(result.backdated, false);
+  });
+
+  test("a page of the book typed up later keeps the day it was written", () => {
+    const result = readReceivingDate("2026-09-15", now);
+    assert.ok(!("error" in result));
+    assert.equal(result.receivedAt.toISOString().slice(0, 10), "2026-09-15");
+    assert.equal(result.backdated, true, "and says so, for the audit line");
+  });
+
+  test("today typed out in full is not a backdate", () => {
+    const result = readReceivingDate("2026-09-18", now);
+    assert.ok(!("error" in result));
+    assert.equal(result.backdated, false);
+  });
+
+  test("tomorrow is refused — cargo cannot be received before it gets here", () => {
+    const result = readReceivingDate("2026-09-19", now);
+    assert.ok("error" in result);
+    assert.match(result.error, /future/);
+  });
+
+  test("a minute from now is refused too, not just a whole day", () => {
+    const result = readReceivingDate(
+      "2026-09-18T11:01:00.000Z",
+      now
+    );
+    assert.ok("error" in result);
+  });
+
+  test("the year 226 is refused rather than stored", () => {
+    const result = readReceivingDate("0226-09-18", now);
+    assert.ok("error" in result);
+    assert.match(result.error, /check the year/);
+  });
+
+  test("nonsense is refused rather than read as now", () => {
+    const result = readReceivingDate("not a date", now);
+    assert.ok("error" in result);
   });
 });

@@ -359,3 +359,147 @@ describe("what Guangzhou measures is kept as Guangzhou measured it", () => {
     );
   });
 });
+
+describe("who delivered it, and when it came in", () => {
+  test("a factory already on the books is matched, not duplicated", async () => {
+    await inRollback(async (tx) => {
+      const name = `Test Factory ${next()}`;
+      const made = await tx.supplier.create({ data: { name }, select: { id: true } });
+
+      /* The counter matches on the name the clerk typed, case and all, because
+         the supplier is read off a delivery note in somebody's handwriting.
+         Two rows for one factory means a customer chasing their supplier
+         matches neither. */
+      const found = await tx.supplier.findFirst({
+        where: { name: { equals: name.toUpperCase(), mode: "insensitive" } },
+        select: { id: true },
+      });
+      assert.equal(found?.id, made.id);
+    });
+  });
+
+  test("a name nobody has seen matches nothing, and is registered at the counter", async () => {
+    await inRollback(async (tx) => {
+      const name = `Unseen Factory ${next()}`;
+      assert.equal(
+        await tx.supplier.findFirst({
+          where: { name: { equals: name, mode: "insensitive" } },
+        }),
+        null
+      );
+      const made = await tx.supplier.create({ data: { name } });
+      assert.equal(made.name, name);
+    });
+  });
+
+  test("the receiving row, the timeline and the note all carry one date", async () => {
+    await inRollback(async (tx) => {
+      const warehouse = await tx.warehouse.findFirstOrThrow({
+        where: { kind: "CHINA" },
+        select: { id: true },
+      });
+      const code = next();
+      const customer = await tx.customer.create({
+        data: {
+          code: `TEST-${code}`,
+          fullName: `Test ${code}`,
+          phone: `+2557001${code.slice(-4)}`,
+        },
+      });
+
+      /* A page of the book typed up three days later. Every place the date
+         lands has to agree, or the customer's timeline argues with the paper
+         in their hand. */
+      const receivedAt = new Date("2026-09-15T08:30:00.000Z");
+      const cargo = await tx.cargo.create({
+        data: {
+          reference: `TEST-${next()}`,
+          qrToken: `TEST-QR-${next()}`,
+          senderId: customer.id,
+          receiverId: customer.id,
+          description: "Shoes",
+          status: "RECEIVED_CHINA",
+        },
+      });
+      await tx.chinaReceiving.create({
+        data: {
+          cargoId: cargo.id,
+          warehouseId: warehouse.id,
+          packagesCount: 4,
+          cbm: new Prisma.Decimal("1.2000"),
+          receivedAt,
+        },
+      });
+      await tx.cargoStatusHistory.createMany({
+        data: [
+          { cargoId: cargo.id, to: "REGISTERED", createdAt: receivedAt },
+          {
+            cargoId: cargo.id,
+            from: "REGISTERED",
+            to: "RECEIVED_CHINA",
+            createdAt: new Date(receivedAt.getTime() + 1),
+          },
+        ],
+      });
+
+      const row = await tx.chinaReceiving.findUniqueOrThrow({
+        where: { cargoId: cargo.id },
+        select: { receivedAt: true },
+      });
+      assert.equal(row.receivedAt.toISOString(), receivedAt.toISOString());
+
+      /* Kept a millisecond apart so a list ordered by time cannot put
+         "received" before "registered". */
+      const history = await tx.cargoStatusHistory.findMany({
+        where: { cargoId: cargo.id },
+        orderBy: { createdAt: "asc" },
+        select: { to: true, createdAt: true },
+      });
+      assert.deepEqual(
+        history.map((h) => h.to),
+        ["REGISTERED", "RECEIVED_CHINA"]
+      );
+      assert.equal(
+        history[0].createdAt.toISOString().slice(0, 10),
+        "2026-09-15",
+        "the timeline says the day the boxes came in"
+      );
+      assert.ok(history[1].createdAt > history[0].createdAt);
+    });
+  });
+
+  test("no consignment is on record as received in the future", async () => {
+    const ahead = await prisma.chinaReceiving.count({
+      where: { receivedAt: { gt: new Date(Date.now() + 86_400_000) } },
+    });
+    assert.equal(ahead, 0, "cargo cannot be received before it gets here");
+  });
+});
+
+describe("a container knows the floor it was opened on", () => {
+  test("the column takes a China warehouse and the packing list still asks the cargo", async () => {
+    await inRollback(async (tx) => {
+      const warehouse = await tx.warehouse.findFirstOrThrow({
+        where: { kind: "CHINA" },
+        select: { id: true, name: true },
+      });
+      const { container } = await loadedContainer(tx);
+      await tx.container.update({
+        where: { id: container.id },
+        data: { originWarehouseId: warehouse.id },
+      });
+
+      const snap = await packing.buildSnapshot(tx, container.id);
+      assert.ok(snap);
+      /* First-hand wins: the goods say which floor they came off, and the
+         column only says where the box was opened. */
+      assert.equal(snap.originWarehouse, warehouse.name);
+
+      const stored = await tx.container.findUniqueOrThrow({
+        where: { id: container.id },
+        select: { originWarehouseId: true },
+      });
+      assert.equal(stored.originWarehouseId, warehouse.id);
+    });
+  });
+});
