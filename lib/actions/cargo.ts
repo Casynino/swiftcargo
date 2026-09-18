@@ -1207,7 +1207,10 @@ export async function receiveNewCargo(
         await tx.cargoPhoto.createMany({
           data: stored.map((url) => ({
             cargoId: cargo.id,
-            kind: "RECEIVING_EVIDENCE" as const,
+            /* The counter's photographs are the customer's: the boxes and
+               their mark, shown on tracking. Evidence of damage or a
+               discrepancy is filed under its own kinds and stays internal. */
+            kind: "PACKAGE" as const,
             url,
             warehouseKind: "CHINA" as const,
             uploadedById: actor.id,

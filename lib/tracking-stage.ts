@@ -558,7 +558,7 @@ export function publicJourney(input: JourneyInput): Journey {
     },
     {
       key: "READY",
-      label: "Ready for collection",
+      label: "Ready for pickup",
       detail: null,
       at: stamps.READY_FOR_RELEASE ?? null,
     },

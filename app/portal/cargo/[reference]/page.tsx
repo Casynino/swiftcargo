@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Check, ChevronLeft, Circle, CircleDot, Ship, TriangleAlert, Truck } from "lucide-react";
 
 import { DeliveryRequestForm } from "@/components/portal/delivery-request-form";
+import { CargoPhotos } from "@/components/site/cargo-photos";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CUSTOMER_PHOTO_KINDS } from "@/lib/file-access";
@@ -310,24 +311,16 @@ export default async function PortalCargoPage({
             <CardTitle className="text-base">{t(locale, "Photos of your cargo")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {cargo.photos.map((photo) => (
-                <li key={photo.id}>
-                  <a href={photo.url} target="_blank" rel="noopener noreferrer">
-                    {/* Plain img: these are uploads from a warehouse phone, of
-                        unknown dimensions, served through the access-checked
-                        file route the image optimiser cannot sign in to. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.url}
-                      alt={photo.caption ?? t(locale, "Photo of your cargo")}
-                      loading="lazy"
-                      className="aspect-square w-full rounded-lg border object-cover"
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+              {t(locale, "Tap to view and download.")}
+            </p>
+            <CargoPhotos
+              reference={cargo.reference}
+              photos={cargo.photos.map((photo) => ({
+                ...photo,
+                url: `${photo.url}?ref=${encodeURIComponent(cargo.reference)}`,
+              }))}
+            />
           </CardContent>
         </Card>
       ) : null}
