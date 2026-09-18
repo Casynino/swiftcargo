@@ -4,7 +4,6 @@ import { AlertTriangle } from "lucide-react";
 
 import { LoginForm } from "@/components/login-form";
 import { AuthScene } from "@/components/site/auth-scene";
-import { ROUTE } from "@/lib/constants";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -21,14 +20,14 @@ export default async function LoginPage({
       welcome="Karibu tena"
       title={
         <>
-          Welcome back to <span className="text-orange-300">Swift Cargo.</span>
+          Welcome back. <span className="text-orange-300">Your cargo is waiting.</span>
         </>
       }
-      subtitle={`Your cargo, from ${ROUTE.originCity} to ${ROUTE.destinationCity} — ${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} days at sea, tracked the whole way.`}
+      subtitle="Track your shipments, see your invoices and the photos of your goods — all in one place."
       points={[
-        "Track every consignment",
-        "Invoices, payments and receipts",
-        "Photos of your goods on arrival",
+        "Track your cargo",
+        "Invoices and receipts",
+        "Photos of your goods",
         "A sailing every Monday",
       ]}
     >
