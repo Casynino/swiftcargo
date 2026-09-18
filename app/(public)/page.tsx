@@ -18,7 +18,6 @@ import {
 import {
   CtaBand,
   Headline,
-  Ribbon,
   PageHero,
   PhotoFrame,
   SectionHead,
@@ -145,17 +144,6 @@ export default async function HomePage() {
       >
       </PageHero>
 
-      <Ribbon
-        items={[
-          ["Ship", t(locale, "Weekly sailings")],
-          ["Package", t(locale, "Loose cargo")],
-          ["Container", t(locale, "Full containers")],
-          ["Search", t(locale, "China sourcing")],
-          ["Truck", t(locale, "Factory pickup")],
-          ["MapPin", "Guangzhou → Dar es Salaam"],
-          ["ScanLine", t(locale, "Every box tracked")],
-        ]}
-      />
 
       {/* ---------------------------------------------------------- Who we are */}
       <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
