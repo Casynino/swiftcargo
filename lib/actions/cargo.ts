@@ -18,6 +18,7 @@ import {
   shippingMarkFor,
 } from "@/lib/ids";
 import { notifyCustomer } from "@/lib/notify";
+import { normaliseTzPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { syncCargoBoxes } from "@/lib/boxes";
 import { canAmendCargo } from "@/lib/rbac";
@@ -762,14 +763,6 @@ const intakeSchema = z.object({
   unit: z.enum(["CM", "M"]),
 });
 
-function normalisePhone(raw: string) {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) return digits;
-  if (digits.startsWith("255")) return `+${digits}`;
-  if (digits.startsWith("0")) return `+255${digits.slice(1)}`;
-  return digits;
-}
-
 
 /**
  * THE GUANGZHOU COUNTER, IN ONE ACT.
@@ -1012,7 +1005,8 @@ export async function receiveNewCargo(
       // --- the customer ---------------------------------------------------
       let customerId = data.customerId ?? "";
       if (!customerId) {
-        const phone = normalisePhone(data.newCustomerPhone!);
+        const phone = normaliseTzPhone(data.newCustomerPhone!);
+        if (!phone) throw new Error("Enter the customer's Tanzanian mobile number: +255 and nine digits.");
         const existing = await tx.customer.findFirst({
           where: { phone, deletedAt: null },
           select: { id: true },

@@ -7,10 +7,17 @@ import { signIn } from "@/auth";
 import { recordAudit } from "@/lib/audit";
 import { nextCustomerCode, shippingMarkFor } from "@/lib/ids";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
+import { normaliseTzPhone, tzPhoneProblem } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { formMessage } from "@/lib/safe-error";
 
-export type ActionState = { error?: string; ok?: string };
+export type ActionState = {
+  error?: string;
+  ok?: string;
+  /* What was typed, handed back with an error so the form is not emptied —
+     never the passwords. */
+  values?: { fullName?: string; businessName?: string; phone?: string; email?: string };
+};
 
 const schema = z
   .object({
@@ -27,14 +34,6 @@ const schema = z
     message: "The two passwords do not match.",
     path: ["confirmPassword"],
   });
-
-function normalisePhone(raw: string) {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) return digits;
-  if (digits.startsWith("255")) return `+${digits}`;
-  if (digits.startsWith("0")) return `+255${digits.slice(1)}`;
-  return digits;
-}
 
 /**
  * A customer signs themselves up.
@@ -60,18 +59,25 @@ export async function registerCustomer(
     confirmPassword: formData.get("confirmPassword"),
   });
 
+  const values = {
+    fullName: String(formData.get("fullName") ?? ""),
+    businessName: String(formData.get("businessName") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    email: String(formData.get("email") ?? ""),
+  };
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form." };
+    return { error: parsed.error.issues[0]?.message ?? "Check the form.", values };
   }
   const data = parsed.data;
-  const phone = normalisePhone(data.phone);
+  const phone = normaliseTzPhone(data.phone);
+  if (!phone) return { error: tzPhoneProblem(data.phone) ?? "Check the phone number.", values };
 
   const takenEmail = await prisma.user.findUnique({
     where: { email: data.email },
     select: { id: true },
   });
   if (takenEmail) {
-    return { error: "There is already an account with that email. Try signing in." };
+    return { error: "There is already an account with that email. Try signing in.", values };
   }
 
   const passwordHash = await bcrypt.hash(data.password, 12);
@@ -118,6 +124,21 @@ export async function registerCustomer(
         );
       }
 
+      /* An email names one customer, as a number does. */
+      const emailOwner = await tx.customer.findFirst({
+        where: {
+          email: { equals: data.email, mode: "insensitive" },
+          deletedAt: null,
+          ...(existing ? { id: { not: existing.id } } : {}),
+        },
+        select: { id: true },
+      });
+      if (emailOwner) {
+        throw new Error(
+          "That email is already on our books for another customer. Use your own email, or contact our office."
+        );
+      }
+
       const customer =
         existing ??
         (await (async () => {
@@ -161,6 +182,7 @@ export async function registerCustomer(
   } catch (error) {
     return {
       error: formMessage(error, "We could not create that account."),
+      values,
     };
   }
 

@@ -5,12 +5,36 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 import { authConfig } from "@/auth.config";
+import { normaliseTzPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 
+/* `email` is the field's historical name; it carries whichever the person
+   typed — an address, or a phone number in any of its Tanzanian spellings. */
 const credentialsSchema = z.object({
-  email: z.string().email().max(200),
+  email: z.string().trim().min(3).max(200),
   password: z.string().min(1).max(200),
 });
+
+/*
+  A CUSTOMER SIGNS IN WITH THEIR NUMBER.
+
+  It is the one thing every customer knows by heart and the office already
+  files them under. The number is normalised first, so 0712…, 712… and
+  +255 712 … are one account. It finds the login of the live customer who owns
+  that number — never a staff account, whose door stays the email address.
+*/
+async function findLogin(identifier: string) {
+  if (identifier.includes("@")) {
+    return prisma.user.findUnique({ where: { email: identifier.toLowerCase() } });
+  }
+  const phone = normaliseTzPhone(identifier);
+  if (!phone) return null;
+  const customer = await prisma.customer.findFirst({
+    where: { phone, deletedAt: null, login: { isNot: null } },
+    select: { login: true },
+  });
+  return customer?.login ?? null;
+}
 
 /*
   A STRANGER MUST NOT BE ABLE TO TELL A REAL ADDRESS FROM A MADE-UP ONE.
@@ -48,8 +72,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
 
-        const email = parsed.data.email.trim().toLowerCase();
-        const user = await prisma.user.findUnique({ where: { email } });
+        const identifier = parsed.data.email.trim();
+        const user = await findLogin(identifier);
+        /* Attempts are counted against the account, however it was named, so
+           switching between its number and its address buys no extra guesses.
+           An identifier that names nobody is counted as typed. */
+        const email = (
+          user?.email ?? (identifier.includes("@") ? identifier : normaliseTzPhone(identifier) ?? identifier)
+        ).toLowerCase();
 
         /* Every attempt is recorded, including the ones against an address
            nobody owns. Five failures overnight is the thing worth seeing, and it

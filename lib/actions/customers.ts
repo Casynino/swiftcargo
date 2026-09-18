@@ -5,23 +5,11 @@ import { z } from "zod";
 
 import { recordAudit } from "@/lib/audit";
 import { nextCustomerCode, shippingMarkFor } from "@/lib/ids";
+import { normaliseAnyPhone, normaliseTzPhone, tzPhoneProblem } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/session";
 
 export type ActionState = { error?: string; ok?: string; customerId?: string };
-
-/**
- * Tanzanian numbers get written six different ways — 0767…, +255767…, 255767…,
- * with spaces, with dashes. Stored in one shape so that looking a customer up by
- * the number they just read out over the phone actually finds them.
- */
-function normalisePhone(raw: string) {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) return digits;
-  if (digits.startsWith("255")) return `+${digits}`;
-  if (digits.startsWith("0")) return `+255${digits.slice(1)}`;
-  return digits;
-}
 
 const customerSchema = z.object({
   fullName: z.string().trim().min(2, "Name is too short."),
@@ -65,7 +53,8 @@ export async function createCustomer(
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
   }
   const data = parsed.data;
-  const phone = normalisePhone(data.phone);
+  const phone = normaliseTzPhone(data.phone);
+  if (!phone) return { error: tzPhoneProblem(data.phone) ?? "Check the phone number." };
 
   const duplicate = await prisma.customer.findFirst({
     where: { phone, deletedAt: null },
@@ -85,7 +74,7 @@ export async function createCustomer(
         fullName: data.fullName,
         businessName: data.businessName || null,
         phone,
-        altPhone: data.altPhone ? normalisePhone(data.altPhone) : null,
+        altPhone: data.altPhone ? normaliseAnyPhone(data.altPhone) : null,
         email: data.email || null,
         address: data.address || null,
         city: data.city || null,
@@ -138,7 +127,8 @@ export async function updateCustomer(
   if (!before) return { error: "That customer no longer exists." };
 
   const data = parsed.data;
-  const phone = normalisePhone(data.phone);
+  const phone = normaliseTzPhone(data.phone);
+  if (!phone) return { error: tzPhoneProblem(data.phone) ?? "Check the phone number." };
   /* Registering refuses a number another customer already uses; an edit must
      too, or the phone lookup at the counter finds two people for one call. */
   const duplicate = await prisma.customer.findFirst({
@@ -157,7 +147,7 @@ export async function updateCustomer(
       fullName: data.fullName,
       businessName: data.businessName || null,
       phone,
-      altPhone: data.altPhone ? normalisePhone(data.altPhone) : null,
+      altPhone: data.altPhone ? normaliseAnyPhone(data.altPhone) : null,
       email: data.email || null,
       address: data.address || null,
       city: data.city || null,
@@ -195,7 +185,9 @@ export async function searchCustomers(query: string) {
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const phone = normalisePhone(q);
+  /* 0712…, 712…, +255 712 … all find the one stored +255712… */
+  const phone = normaliseTzPhone(q);
+  const digits = q.replace(/\D/g, "");
 
   return prisma.customer.findMany({
     where: {
@@ -205,8 +197,18 @@ export async function searchCustomers(query: string) {
         { businessName: { contains: q, mode: "insensitive" } },
         { code: { contains: q, mode: "insensitive" } },
         { shippingMark: { contains: q, mode: "insensitive" } },
-        { phone: { contains: phone.length > 4 ? phone : q } },
-        { altPhone: { contains: phone.length > 4 ? phone : q } },
+        ...(phone
+          ? [{ phone }, { altPhone: phone }]
+          : digits.length >= 4
+            ? [
+                { phone: { contains: digits.replace(/^0/, "") } },
+                { altPhone: { contains: digits.replace(/^0/, "") } },
+              ]
+            : []),
+        { email: { contains: q, mode: "insensitive" } },
+        /* The reference on a receipt or a delivery note leads to its owner. */
+        { cargoSent: { some: { reference: { contains: q, mode: "insensitive" }, deletedAt: null } } },
+        { cargoReceived: { some: { reference: { contains: q, mode: "insensitive" }, deletedAt: null } } },
       ],
     },
     take: 10,
@@ -239,9 +241,9 @@ export async function searchCustomers(query: string) {
 export async function customerByPhone(raw: string) {
   await authorize("customer.view");
 
-  const phone = normalisePhone(raw.trim());
-  /* Fewer digits than any real number: still typing. */
-  if (phone.replace(/\D/g, "").length < 9) return null;
+  /* Not yet a whole Tanzanian number: still typing. */
+  const phone = normaliseTzPhone(raw);
+  if (!phone) return null;
 
   return prisma.customer.findFirst({
     where: {
@@ -280,12 +282,10 @@ export async function registerCustomerAtCounter(input: {
   const actor = await authorize("receiving.china");
 
   const fullName = input.fullName.trim();
-  const phone = normalisePhone(input.phone.trim());
+  const phone = normaliseTzPhone(input.phone);
 
   if (fullName.length < 2) return { error: "A name is needed." };
-  if (phone.replace(/\D/g, "").length < 9) {
-    return { error: "That phone number is too short." };
-  }
+  if (!phone) return { error: tzPhoneProblem(input.phone) ?? "Check the phone number." };
 
   /* The number is the identity. Somebody typing a new name against a number we
      already hold is handed the customer we already hold, not a second one. */

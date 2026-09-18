@@ -17,7 +17,7 @@ export async function login(
   _prev: LoginState,
   formData: FormData
 ): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "");
+  const email = String(formData.get("identifier") ?? formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const callbackUrl = String(formData.get("callbackUrl") ?? "");
 
@@ -30,7 +30,7 @@ export async function login(
     return {};
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "That email and password do not match an active account." };
+      return { error: "That phone number or email and password do not match an active account." };
     }
     /* next-auth signals a successful sign-in by throwing a redirect. Swallowing
        it here would leave the user staring at the form they just completed. */

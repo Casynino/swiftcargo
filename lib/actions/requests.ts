@@ -10,6 +10,7 @@ import {
 } from "@/lib/ids";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
+import { normaliseAnyPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { SERVICE_LABEL } from "@/lib/constants";
 import { clientAddress, hit } from "@/lib/rate-limit";
@@ -48,21 +49,12 @@ const DUPLICATE_WINDOW_MS = 15 * 60 * 1000;
 /** The field a person never sees. See the form. */
 const TRAP_FIELD = "website";
 
-function normalisePhone(raw: string) {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) return digits;
-  if (digits.startsWith("00")) return `+${digits.slice(2)}`;
-  if (digits.startsWith("255")) return `+${digits}`;
-  if (digits.startsWith("0")) return `+255${digits.slice(1)}`;
-  return digits;
-}
-
 const name = z.string().trim().min(2, L("Your name, please.")).max(120, L("That name is too long."));
 const phone = z
   .string()
   .trim()
   .max(40, L("That phone number is too long."))
-  .transform(normalisePhone)
+  .transform(normaliseAnyPhone)
   .refine((v) => /^\+?\d{9,15}$/.test(v), L("Enter a phone number we can call, with the country code if outside Tanzania."));
 const email = z.string().trim().toLowerCase().max(200).email(L("That is not an email address.")).optional().or(z.literal(""));
 const shortText = z.string().trim().max(200, L("Keep that under 200 characters.")).optional();

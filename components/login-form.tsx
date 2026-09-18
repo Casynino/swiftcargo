@@ -27,16 +27,22 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="identifier">Phone number or email</Label>
         <Input
-          id="email"
-          name="email"
-          type="email"
+          id="identifier"
+          name="identifier"
+          type="text"
+          inputMode="email"
           autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
           autoFocus
-          placeholder="you@swiftcargo.co.tz"
+          placeholder="0712 345 678"
         />
+        <p className="text-xs text-muted-foreground">
+          Customers: your Tanzanian number, such as 0712 345 678. Staff: your work email.
+        </p>
       </div>
 
       <div className="space-y-2">
