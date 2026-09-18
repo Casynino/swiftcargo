@@ -6,7 +6,7 @@ import { PrintButton } from "@/components/app/print-button";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { composeMessage, whatsappNumber } from "@/lib/messages";
+import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { qrDataUrl, qrPayload } from "@/lib/qr";
 import { requirePermission } from "@/lib/session";
@@ -112,6 +112,7 @@ export default async function PickupNotePage({
             message={composeMessage("cargo.ready", {
               customerName: note.customer.fullName,
               reference: note.cargo.reference,
+              stage: messageStage({ status: note.cargo.status, hasDarReceiving: note.cargo.darReceiving !== null, clearedAt: note.cargo.clearedAt }),
             })}
           />
           <PrintButton label="Print note" />

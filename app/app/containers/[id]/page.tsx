@@ -27,6 +27,7 @@ import { PackingListButton } from "@/components/app/packing-list-button";
 import { KpiCard } from "@/components/app/kpi-card";
 import { ContainerMoney } from "@/components/app/container-money";
 import { PageHeader } from "@/components/app/page-header";
+import { ClearanceButton } from "@/components/app/clearance-button";
 import { SectionLabel } from "@/components/app/section-label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -209,6 +210,17 @@ export default async function ContainerPage({
   );
   const waitingCustomers = new Set(waiting.map((w) => w.senderId)).size;
 
+  /* Booked in at Dar and still with customs: what "Mark cleared" would clear. */
+  const inClearance = await prisma.cargo.count({
+    where: {
+      deletedAt: null,
+      clearedAt: null,
+      darReceiving: { isNot: null },
+      containerLines: { some: { containerId: container.id } },
+      status: { notIn: ["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"] },
+    },
+  });
+
   const loadedCbm = container.cargoLines.reduce(
     (sum, l) => sum.add(l.cbm),
     new Prisma.Decimal(0),
@@ -338,6 +350,9 @@ export default async function ContainerPage({
                   container.cargoLines.length > 0
                 }
               />
+            ) : null}
+            {can(user.role, "receiving.dar") && inClearance > 0 ? (
+              <ClearanceButton containerId={container.id} waiting={inClearance} />
             ) : null}
             {(can(user.role, "receiving.china") || can(user.role, "receiving.dar")) &&
             container.cargoLines.length > 0 ? (

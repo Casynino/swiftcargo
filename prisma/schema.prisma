@@ -145,6 +145,7 @@ model User {
   notifications      Notification[]
   fieldChanges       FieldChange[]
   cargoCreated       Cargo[]              @relation("CargoCreatedBy")
+  cargoCleared       Cargo[]              @relation("CargoClearedBy")
   chinaReceivings    ChinaReceiving[]
   darReceivings      DarReceiving[]
   deliveryNotes      DeliveryNote[]
@@ -468,6 +469,22 @@ model Cargo {
   operationalHold       Boolean @default(false)
   operationalHoldReason String?
 
+  /**
+   * CUSTOMS CLEARANCE, SEPARATE FROM BEING ON THE DAR FLOOR.
+   * Clearance starts the moment Dar books the boxes in (DarReceiving.receivedAt,
+   * which is also when the storage clock starts) and ends here, when somebody
+   * says it is cleared. Null on a consignment at Dar means clearance is still in
+   * progress, and the release check refuses it: arrived is not cleared, and
+   * cleared is not ready.
+   */
+  clearedAt   DateTime?
+  clearedById String?
+  clearedBy   User?     @relation("CargoClearedBy", fields: [clearedById], references: [id], onDelete: SetNull)
+  /// Set once, when the customer was told it may be collected. Never twice.
+  readyNotifiedAt DateTime?
+  /// Set once, when the customer was told free storage had run out.
+  storageNoticeAt DateTime?
+
   notes         String?
   /// Never shown to a customer, on the portal or on public tracking.
   internalNotes String?
@@ -502,6 +519,7 @@ model Cargo {
   @@index([shippingMark])
   @@index([createdAt])
   @@index([status, deletedAt])
+  @@index([clearedAt])
   @@index([senderId, createdAt])
   @@index([receiverId, createdAt])
   @@index([deletedAt])

@@ -7,10 +7,12 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  FileSearch,
   MapPin,
   MessageCircle,
   PackageCheck,
   Receipt,
+  ShieldCheck,
   Ship,
   Wallet,
   Warehouse,
@@ -119,6 +121,8 @@ const STEP_ICON: Record<StageKey, typeof Ship> = {
   AT_SEA: Waves,
   ARRIVED_DAR: Anchor,
   RECEIVED_DAR: MapPin,
+  CLEARANCE: FileSearch,
+  CLEARED: ShieldCheck,
   INVOICED: Receipt,
   READY: PackageCheck,
   HANDED_OVER: Check,
@@ -761,6 +765,9 @@ function stepPlace(key: StageKey, result: PublicTracking): string {
     case "READY":
     case "HANDED_OVER":
       return `${result.destination} warehouse`;
+    case "CLEARANCE":
+    case "CLEARED":
+      return `${result.destination} customs`;
     case "INVOICED":
       return "Swift Cargo";
   }

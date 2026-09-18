@@ -183,6 +183,8 @@ export const JOURNEY_INCLUDE = {
       discrepancy: true,
       packagesCount: true,
       condition: true,
+      /* The storage clock starts here. */
+      receivedAt: true,
     },
   },
   history: {
@@ -295,6 +297,7 @@ export function journeyOf(cargo: JourneyCargo, now = new Date()): Journey {
       (e) => e.status !== "RESOLVED" && e.status !== "CLOSED"
     ),
     receivedAtDar: dar !== null,
+    clearance: { clearedAt: cargo.clearedAt },
     awaitingDarVerification: dar !== null && !dar.verified,
     /* Repacked is not damage — the floor put a burst carton back together,
        which is a kindness and not something to alarm a customer with. */
@@ -629,12 +632,11 @@ export function publicTracking(input: {
       arrivedAt: cargo.darReceiving.receivedAt.toISOString(),
       daysInWarehouse: position.daysHeld,
       freeDays: position.freeDays,
-      /* Today counts. On the last free day the subtraction reads zero, which
-         a customer reads as "my free storage has run out" directly above a line
-         saying today is still free. */
+      /* Today counts: on the last free day this reads one, never zero above a
+         line saying today is still free. */
       freeDaysRemaining:
         position.chargeableDays === 0
-          ? Math.max(1, position.freeDays - position.daysHeld)
+          ? Math.max(1, position.freeDays - position.daysHeld + 1)
           : 0,
       chargeableDays: position.chargeableDays,
       perDay: position.perDay.toFixed(2),

@@ -13,6 +13,8 @@ import { owedAcross } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { requireCustomer } from "@/lib/session";
 import { JOURNEY_INCLUDE, journeyOf } from "@/lib/tracking";
+import { storageState } from "@/lib/storage-clock";
+import { CargoStatusStrip, StorageCard } from "@/components/portal/cargo-status";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Cargo" };
@@ -85,6 +87,21 @@ export default async function PortalCargoPage({
   });
 
   const journey = journeyOf(cargo);
+  const settings = await prisma.companySetting.findUnique({
+    where: { id: "singleton" },
+    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+  });
+  /* The clock runs from the day Dar booked the boxes in, until they leave. */
+  const storage =
+    cargo.darReceiving && !["COLLECTED", "DELIVERED", "CANCELLED"].includes(cargo.status)
+      ? storageState({
+          arrivedAt: cargo.darReceiving.receivedAt,
+          freeDays: settings?.freeStorageDays ?? 7,
+          perDay: settings?.storagePerDay ?? null,
+          currency: settings?.storageCurrency ?? "USD",
+          now: new Date(),
+        })
+      : null;
   const container = cargo.containerLines.at(-1)?.container ?? null;
   const owed = owedAcross(invoices);
   const firstUnpaid = invoices.find((invoice) => owedAcross([invoice]).owes) ?? invoices[0];
@@ -116,6 +133,21 @@ export default async function PortalCargoPage({
         <Badge tone={journey.tone}>{t(locale, journey.headline)}</Badge>
       </div>
 
+      <CargoStatusStrip journey={journey} />
+      {storage ? <StorageCard storage={storage} /> : null}
+
+      {journey.stage === "IN_CLEARANCE" ? (
+        <Card className="border-brand/30 bg-brand/5 p-5">
+          <p className="font-medium text-brand">{t(locale, "Arrived in Dar — clearance in progress")}</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {t(
+              locale,
+              "Your goods are at our Dar es Salaam warehouse and going through customs clearance. They are not ready to collect yet — we will tell you as soon as clearance is complete."
+            )}
+          </p>
+        </Card>
+      ) : null}
+
       {journey.notice ? (
         <Card className="border-warning/30 bg-warning/5 p-5">
           <p className="flex items-center gap-2 font-medium text-warning">
@@ -128,12 +160,12 @@ export default async function PortalCargoPage({
         <Card className="border-success/30 bg-success/5 p-5">
           <p className="flex items-center gap-2 font-medium text-success">
             <Check className="size-4" />
-            {t(locale, "Ready to collect")}
+            {t(locale, "Ready for pickup")}
           </p>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {t(
               locale,
-              "Everything is settled. Bring your ID to our Dar es Salaam warehouse, or ask us to deliver it below."
+              "Cleared and paid. Bring your pickup note and ID to our Dar es Salaam warehouse, or ask us to deliver it below."
             )}
           </p>
         </Card>
@@ -148,7 +180,9 @@ export default async function PortalCargoPage({
                 ) : null}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {t(locale, "We release cargo once payment is confirmed.")}
+                {journey.stage === "IN_CLEARANCE" || !cargo.darReceiving
+                  ? t(locale, "You can pay now. Your cargo is ready to collect once it has cleared customs and your payment is confirmed.")
+                  : t(locale, "Cleared — payment is required before pickup.")}
               </p>
             </div>
             <Link

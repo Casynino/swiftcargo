@@ -6,6 +6,7 @@ import { Prisma, type CargoStatus } from "@prisma/client";
 
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
+import { announceDarArrival } from "@/lib/clearance";
 import { variance } from "@/lib/cbm";
 import { nextExceptionReference } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
@@ -341,18 +342,7 @@ export async function receiveInDar(
       }
 
       if (moved) {
-        await notifyCustomer(
-          [cargo.senderId, cargo.receiverId],
-          {
-            kind: "cargo.received_dar",
-            title: `${cargo.reference} has reached our Dar warehouse`,
-            body: discrepancy
-              ? "We are checking something on this consignment and will be in touch."
-              : "Your invoice will follow shortly.",
-            href: "/portal",
-          },
-          tx
-        );
+        await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy });
       }
 
       return { receiving, caseRef };
@@ -809,16 +799,7 @@ export async function acceptAsExpected(
 
       /* The same message the scales form sends, so a customer is told their
          goods reached Dar however the clerk checked them in. */
-      await notifyCustomer(
-        [item.senderId, item.receiverId],
-        {
-          kind: "cargo.received_dar",
-          title: `${item.reference} has reached our Dar warehouse`,
-          body: "Your invoice will follow shortly.",
-          href: "/portal",
-        },
-        tx
-      );
+      await announceDarArrival(tx, item, { arrivedAt: new Date() });
       return true;
     });
     if (took) {
@@ -1030,16 +1011,7 @@ export async function reportDamageAtDar(
         actor,
         `Received at Dar, ${data.condition.toLowerCase().replace("_", " ")}`
       );
-      await notifyCustomer(
-        [cargo.senderId, cargo.receiverId],
-        {
-          kind: "cargo.received_dar",
-          title: `${cargo.reference} has reached our Dar warehouse`,
-          body: "We are checking something on this consignment and will be in touch.",
-          href: "/portal",
-        },
-        tx
-      );
+      await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy: true });
     }
 
     await tx.cargoPhoto.createMany({

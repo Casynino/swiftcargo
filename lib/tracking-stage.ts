@@ -56,6 +56,8 @@ export type StageKey =
   | "AT_SEA"
   | "ARRIVED_DAR"
   | "RECEIVED_DAR"
+  | "CLEARANCE"
+  | "CLEARED"
   | "INVOICED"
   | "READY"
   | "HANDED_OVER";
@@ -83,6 +85,8 @@ export type StageCode =
   | "ARRIVED_DAR"
   /** Dar has it on the floor and has not signed the count off. */
   | "DAR_VERIFICATION"
+  /** Booked in at Dar and in customs clearance. Not ready, whatever is paid. */
+  | "IN_CLEARANCE"
   /** Counted in at Dar. Nothing priced yet. */
   | "RECEIVED_DAR"
   /** A price has been worked out and is waiting on the price list. */
@@ -190,6 +194,12 @@ export type JourneyInput = {
   onHold: boolean;
   /** Dar has a receiving row for this consignment. */
   receivedAtDar: boolean;
+  /**
+   * Customs clearance. Clearance starts when Dar books the boxes in; clearedAt
+   * is when it finished. Left out, the consignment is treated as cleared — the
+   * shape records had before clearance was its own step.
+   */
+  clearance?: { clearedAt: Date | null };
   /** Dar has a receiving row and has not signed the count off. */
   awaitingDarVerification: boolean;
   /** Dar booked the boxes in damaged, part damaged or wet. Repacked is not damage. */
@@ -265,14 +275,15 @@ const STAGE_LABEL: Record<StageCode, string> = {
   SHIPPED: "Shipped from China",
   AT_SEA: "At sea",
   ARRIVED_DAR: "Arrived in Dar es Salaam",
-  DAR_VERIFICATION: "Being checked in at our Dar warehouse",
-  RECEIVED_DAR: "At our Dar warehouse — invoice being prepared",
-  PRICING: "At our Dar warehouse — price being confirmed",
-  PAYMENT_PENDING: "At our Dar warehouse — payment pending",
-  CONFIRMING_PAYMENT: "At our Dar warehouse — confirming your payment",
-  PART_PAID: "At our Dar warehouse — part paid",
-  PAID: "At our Dar warehouse — paid",
-  READY: "Ready for collection",
+  DAR_VERIFICATION: "Arrived in Dar — being checked in",
+  IN_CLEARANCE: "Arrived in Dar — clearance in progress",
+  RECEIVED_DAR: "Cleared — invoice being prepared",
+  PRICING: "Cleared — price being confirmed",
+  PAYMENT_PENDING: "Cleared — payment required before pickup",
+  CONFIRMING_PAYMENT: "Cleared — confirming your payment",
+  PART_PAID: "Cleared — balance due before pickup",
+  PAID: "Cleared and paid — pickup note being prepared",
+  READY: "Ready for pickup",
   COLLECTED: "Collected",
   DELIVERED: "Delivered",
   CANCELLED: "Cancelled",
@@ -287,6 +298,7 @@ const STAGE_TONE: Record<StageCode, Journey["tone"]> = {
   AT_SEA: "progress",
   ARRIVED_DAR: "progress",
   DAR_VERIFICATION: "progress",
+  IN_CLEARANCE: "progress",
   RECEIVED_DAR: "progress",
   PRICING: "progress",
   PAYMENT_PENDING: "warn",
@@ -359,6 +371,10 @@ function stageOf(
     /* Booked in, not signed off. The clerk has the boxes and is still counting
        them against the sheet. */
     if (input.awaitingDarVerification) return "DAR_VERIFICATION";
+    /* Arrived is not cleared. Money does not speak while customs has the
+       goods: "paid" read by a customer about boxes in clearance is a trip to
+       the warehouse for nothing. */
+    if (input.clearance && !input.clearance.clearedAt) return "IN_CLEARANCE";
     /* A bill can go out while the container is still at sea, but a customer
        watching a ship does not want "part paid" as the answer to where their
        goods are. Money speaks only once the boxes are on the Dar floor. */
@@ -442,6 +458,10 @@ export function publicJourney(input: JourneyInput): Journey {
     AT_SEA: rank >= 3 || ready,
     ARRIVED_DAR: rank >= 5 || ready,
     RECEIVED_DAR: rank >= 6 || ready,
+    CLEARANCE: rank >= 6 || ready,
+    CLEARED:
+      ready ||
+      (rank >= 6 && input.receivedAtDar && (!input.clearance || input.clearance.clearedAt !== null)),
     /* A release needs a bill, so ready implies invoiced. Invoicing does not
        imply any physical step — a bill can go out while the box is at sea. */
     INVOICED: invoiced || ready,
@@ -500,18 +520,30 @@ export function publicJourney(input: JourneyInput): Journey {
     },
     {
       key: "ARRIVED_DAR",
-      label: "Arrived in Dar es Salaam",
+      label: "Ship arrived at Dar es Salaam port",
       detail: null,
       at: arrivedAt,
     },
     {
       key: "RECEIVED_DAR",
-      label: "Received at our Dar warehouse",
+      label: "Arrived at our Dar warehouse",
       detail:
         stage === "DAR_VERIFICATION"
           ? "We are checking it against the packing list"
           : null,
       at: stamps.RECEIVED_DAR ?? null,
+    },
+    {
+      key: "CLEARANCE",
+      label: "Customs clearance",
+      detail: stage === "IN_CLEARANCE" ? "In progress — we will tell you when it is complete" : null,
+      at: stamps.RECEIVED_DAR ?? null,
+    },
+    {
+      key: "CLEARED",
+      label: "Cleared",
+      detail: null,
+      at: input.clearance?.clearedAt ?? null,
     },
     {
       key: "INVOICED",
@@ -538,8 +570,11 @@ export function publicJourney(input: JourneyInput): Journey {
     },
   ];
 
+  /* Where the goods ARE is a physical question. A bill can be issued while
+     the ship is at sea, so the invoice step is ticked when it happens but is
+     never the "you are here" marker. */
   const lastReached = draft.reduce(
-    (last, step, index) => (reached[step.key] ? index : last),
+    (last, step, index) => (reached[step.key] && step.key !== "INVOICED" ? index : last),
     -1
   );
 

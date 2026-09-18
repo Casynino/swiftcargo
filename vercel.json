@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["iad1"],
-  "buildCommand": "npm run vercel-build"
+  "buildCommand": "npm run vercel-build",
+  "crons": [{ "path": "/api/cron/storage", "schedule": "0 5 * * *" }]
 }

@@ -2,6 +2,8 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 
+import { storageState } from "@/lib/storage-clock";
+
 /**
  * WHAT A CONSIGNMENT HAS COST IN FLOOR SPACE.
  *
@@ -18,7 +20,7 @@ import { Prisma } from "@prisma/client";
  * commercial decision and not arithmetic.
  */
 export type StoragePosition = {
-  /** Days since the boxes landed on the Dar floor. */
+  /** Which Dar calendar day of storage this is, the arrival day being day 1. */
   daysHeld: number;
   freeDays: number;
   /** Days beyond the free allowance. Zero while they are still within it. */
@@ -57,13 +59,20 @@ export function storagePosition(input: {
   }
 
   /* Stops counting the day it was handed over. A collected consignment cannot
-     keep accruing rent on a floor it is no longer standing on. */
-  const until = input.collectedAt ?? new Date();
-  const daysHeld = Math.max(
-    0,
-    Math.floor((until.getTime() - input.receivedAt.getTime()) / 86_400_000)
-  );
-  const chargeableDays = Math.max(0, daysHeld - freeDays);
+     keep accruing rent on a floor it is no longer standing on.
+
+     Counted in Dar calendar days with the arrival day as day one, by the same
+     clock the customer is shown (lib/storage-clock.ts): seven free days means
+     day eight is the first that may be charged. */
+  const clock = storageState({
+    arrivedAt: input.receivedAt,
+    freeDays,
+    perDay: null,
+    currency: input.currency,
+    now: input.collectedAt ?? new Date(),
+  });
+  const daysHeld = clock.dayNumber;
+  const chargeableDays = clock.chargeableDays;
 
   return {
     daysHeld,

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
-import { composeMessage, whatsappNumber } from "@/lib/messages";
+import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -369,6 +369,11 @@ export async function ContainerMoney({
             reference: c.reference,
             description: c.description,
             invoiceNumber: bill.number,
+            stage: messageStage({
+              status: c.status,
+              hasDarReceiving: c.darReceiving !== null,
+              clearedAt: c.clearedAt,
+            }),
             packages: measured?.packagesCount ?? null,
             cbm: bill.billableCbm
               ? Number(bill.billableCbm).toFixed(3)

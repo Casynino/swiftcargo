@@ -211,7 +211,7 @@ describe("public journey", () => {
       })
     );
     assert.equal(j.stage, "DAR_VERIFICATION");
-    assert.equal(j.headline, "Being checked in at our Dar warehouse");
+    assert.equal(j.headline, "Arrived in Dar — being checked in");
     assert.equal(
       detail(j, "RECEIVED_DAR"),
       "We are checking it against the packing list"
@@ -232,7 +232,7 @@ describe("public journey", () => {
       })
     );
     assert.equal(j.stage, "PRICING");
-    assert.equal(j.headline, "At our Dar warehouse — price being confirmed");
+    assert.equal(j.headline, "Cleared — price being confirmed");
     assert.equal(j.payment, "NOT_BILLED", "a draft is owed by nobody");
     assert.equal(state(j, "INVOICED"), "upcoming");
     assert.equal(detail(j, "INVOICED"), "We are confirming the price");
@@ -252,9 +252,10 @@ describe("public journey", () => {
       })
     );
     assert.equal(j.stage, "PAYMENT_PENDING");
-    assert.equal(j.headline, "At our Dar warehouse — payment pending");
+    assert.equal(j.headline, "Cleared — payment required before pickup");
     assert.equal(j.payment, "PENDING");
-    assert.equal(state(j, "INVOICED"), "current");
+    /* Ticked, never the "you are here" marker: that is where the goods are. */
+    assert.equal(state(j, "INVOICED"), "done");
     assert.equal(detail(j, "INVOICED"), "Payment pending");
     const text = [j.headline, j.notice, ...j.steps.flatMap((s) => [s.label, s.detail])].join(" ");
     assert.ok(!/\d/.test(text), "no figures in anything a stranger reads");
@@ -275,7 +276,7 @@ describe("public journey", () => {
     );
     assert.equal(j.stage, "PART_PAID");
     assert.equal(j.payment, "PART_PAID");
-    assert.equal(j.headline, "At our Dar warehouse — part paid");
+    assert.equal(j.headline, "Cleared — balance due before pickup");
     assert.equal(detail(j, "INVOICED"), "Part paid — a balance is still due");
   });
 
@@ -294,7 +295,7 @@ describe("public journey", () => {
     );
     assert.equal(j.payment, "CONFIRMING");
     assert.equal(j.stage, "CONFIRMING_PAYMENT");
-    assert.notEqual(j.headline, "Ready for collection");
+    assert.notEqual(j.headline, "Ready for pickup");
   });
 
   test("paid but not yet cleared to go is paid, not ready", () => {
@@ -317,10 +318,41 @@ describe("public journey", () => {
     assert.equal(state(j, "READY"), "upcoming");
   });
 
+  test("booked in at Dar and not cleared is in clearance, whatever is paid", () => {
+    const j = publicJourney(
+      input({
+        status: "RECEIVED_DAR",
+        stamps: { RECEIVED_DAR: day(-1) },
+        receivedAtDar: true,
+        clearance: { clearedAt: null },
+        billing: { issuedAt: day(-9), owes: false, pendingClaim: false, paidSome: true, drafted: false },
+      })
+    );
+    assert.equal(j.stage, "IN_CLEARANCE");
+    assert.equal(j.headline, "Arrived in Dar — clearance in progress");
+    assert.equal(state(j, "CLEARANCE"), "current");
+    assert.equal(state(j, "CLEARED"), "upcoming");
+    assert.equal(state(j, "READY"), "upcoming");
+  });
+
+  test("cleared with the bill unpaid says payment is required before pickup", () => {
+    const j = publicJourney(
+      input({
+        status: "RECEIVED_DAR",
+        receivedAtDar: true,
+        clearance: { clearedAt: day(0) },
+        billing: { issuedAt: day(-9), owes: true, pendingClaim: false, paidSome: false, drafted: false },
+      })
+    );
+    assert.equal(j.stage, "PAYMENT_PENDING");
+    assert.equal(j.headline, "Cleared — payment required before pickup");
+    assert.equal(state(j, "CLEARED"), "current");
+  });
+
   test("received and not yet billed", () => {
     const j = publicJourney(input({ status: "RECEIVED_DAR" }));
     assert.equal(j.stage, "RECEIVED_DAR");
-    assert.equal(j.headline, "At our Dar warehouse — invoice being prepared");
+    assert.equal(j.headline, "Cleared — invoice being prepared");
     assert.equal(state(j, "INVOICED"), "upcoming");
   });
 
@@ -342,7 +374,8 @@ describe("public journey", () => {
     );
     assert.equal(j.stage, "AT_SEA");
     assert.equal(j.payment, "PENDING", "the bill is still reported, just not as a place");
-    assert.equal(state(j, "INVOICED"), "current", "the bill is the furthest thing that has happened");
+    assert.equal(state(j, "INVOICED"), "done", "the bill is ticked, but the goods are at sea");
+    assert.equal(state(j, "AT_SEA"), "current");
     assert.equal(detail(j, "INVOICED"), "Payment pending");
   });
 
@@ -357,7 +390,8 @@ describe("public journey", () => {
       assert.equal(state(j, key), "done", key);
       assert.equal(j.steps.find((s) => s.key === key)!.at, null, key);
     }
-    assert.equal(state(j, "RECEIVED_DAR"), "current");
+    assert.equal(state(j, "RECEIVED_DAR"), "done");
+    assert.equal(state(j, "CLEARED"), "current", "a record from before clearance was a step reads as cleared");
     assert.deepEqual(j.steps.find((s) => s.key === "RECEIVED_DAR")!.at, day(-1));
     assert.equal(state(j, "INVOICED"), "upcoming");
     assert.equal(state(j, "HANDED_OVER"), "upcoming");
@@ -378,7 +412,7 @@ describe("public journey", () => {
         releasable: false,
       })
     );
-    assert.notEqual(paidButNotReleasable.headline, "Ready for collection");
+    assert.notEqual(paidButNotReleasable.headline, "Ready for pickup");
     assert.equal(paidButNotReleasable.ready, false);
     assert.equal(state(paidButNotReleasable, "READY"), "upcoming");
 
@@ -396,7 +430,7 @@ describe("public journey", () => {
       })
     );
     assert.equal(releasable.stage, "READY");
-    assert.equal(releasable.headline, "Ready for collection");
+    assert.equal(releasable.headline, "Ready for pickup");
     assert.equal(releasable.ready, true);
     assert.equal(state(releasable, "READY"), "current");
     assert.equal(state(releasable, "INVOICED"), "done");
@@ -479,7 +513,7 @@ describe("public journey", () => {
       })
     );
     assert.equal(j.stage, "READY");
-    assert.equal(j.headline, "Ready for collection");
+    assert.equal(j.headline, "Ready for pickup");
     assert.equal(j.issue, "DAMAGED", "still said, in the notice under it");
     assert.match(j.notice ?? "", /damage/i);
   });

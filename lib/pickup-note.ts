@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 
 import { generateQrToken, nextPickupNoteNumber } from "@/lib/ids";
 import { balanceOf, outstandingOf, owedAcross } from "@/lib/invoice-balance";
+import { announceIfReady } from "@/lib/clearance";
 import { notifyCustomer } from "@/lib/notify";
 import type { TxClient } from "@/lib/prisma";
 
@@ -86,18 +87,29 @@ export async function writePickupNote(
     },
   });
 
-  await notifyCustomer(
-    [cargo.receiverId],
-    {
-      kind: "pickup.ready",
-      title: "Your cargo is ready to collect",
-      body: onCredit
-        ? `${cargo.reference} has been released for collection. ${owed.primary} is still owing. Show note ${noteNumber} at our Dar es Salaam warehouse.`
-        : `${cargo.reference} is paid and cleared. Show note ${noteNumber} at our Dar es Salaam warehouse.`,
-      href: "/portal",
-    },
-    tx
-  );
+  /*
+    A PICKUP NOTE IS NOT "COME AND COLLECT".
+
+    Finance writes it the moment the money is settled, which can be while the
+    ship is still at sea or the boxes are in customs. The customer is told the
+    goods are ready only when they are — cleared as well as paid — and that is
+    announceIfReady's call, made here and again when clearance completes.
+  */
+  const announced = await announceIfReady(tx, cargo.id, { id: input.actorId });
+  if (!announced) {
+    await notifyCustomer(
+      [cargo.receiverId],
+      {
+        kind: "pickup.issued",
+        title: `Pickup note ${noteNumber} issued for ${cargo.reference}`,
+        body: onCredit
+          ? `Released on credit; ${owed.primary} is still owing. We will tell you as soon as it has arrived and cleared in Dar and is ready to collect.`
+          : "Payment complete. We will tell you as soon as it has arrived and cleared in Dar and is ready to collect.",
+        href: `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
+      },
+      tx
+    );
+  }
 
   return { note, owing, owed };
 }

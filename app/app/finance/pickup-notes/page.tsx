@@ -19,7 +19,7 @@ import {
 import { formatCurrency } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { t, type Locale } from "@/lib/i18n";
-import { composeMessage, whatsappNumber } from "@/lib/messages";
+import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -105,7 +105,7 @@ export default async function PickupNotesPage({
       take: PAGE_SIZE,
       include: {
         customer: { select: { fullName: true, businessName: true, phone: true } },
-        cargo: { select: { id: true, reference: true, description: true } },
+        cargo: { select: { id: true, reference: true, description: true, status: true, clearedAt: true, darReceiving: { select: { id: true } } } },
         issuedBy: { select: { name: true } },
       },
     }),
@@ -351,6 +351,7 @@ export default async function PickupNotesPage({
                             message={composeMessage("cargo.ready", {
                               customerName: name,
                               reference: note.cargo.reference,
+                              stage: messageStage({ status: note.cargo.status, hasDarReceiving: note.cargo.darReceiving !== null, clearedAt: note.cargo.clearedAt }),
                             })}
                           />
                         </span>

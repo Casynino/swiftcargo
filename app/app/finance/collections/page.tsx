@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { formatDate, formatMoney } from "@/lib/format";
 import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
-import { composeMessage, whatsappNumber } from "@/lib/messages";
+import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -153,6 +153,8 @@ export default async function CollectionsPage({
           id: true,
           reference: true,
           description: true,
+          status: true,
+          clearedAt: true,
           pickupNote: { select: { status: true, onCredit: true } },
           darReceiving: { select: { receivedAt: true } },
           contacts: {
@@ -561,6 +563,11 @@ export default async function CollectionsPage({
                           reference: row.invoice.cargo.reference,
                           description: row.invoice.cargo.description,
                           invoiceNumber: row.invoice.number,
+                          stage: messageStage({
+                            status: row.invoice.cargo.status,
+                            hasDarReceiving: row.invoice.cargo.darReceiving !== null,
+                            clearedAt: row.invoice.cargo.clearedAt,
+                          }),
                           /* Raw figures, not formatted ones: the template adds
                              the currency word itself, and formatMoney would put
                              a second symbol in beside it. */

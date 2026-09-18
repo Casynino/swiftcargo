@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { recordAudit } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
+import { announceIfReady } from "@/lib/clearance";
 import { nextDeliveryReference, nextReleaseNumber } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
@@ -205,28 +206,10 @@ export async function markReadyForRelease(
   if (!check.ok) return { error: check.blockedBy ?? "Not ready." };
 
   const moved = await prisma.$transaction(async (tx) => {
-    const changed = await setCargoStatus(
-      tx,
-      cargoId,
-      "READY_FOR_RELEASE",
-      actor,
-      "Paid, verified and cleared"
-    );
-    if (changed) {
-      await notifyCustomer(
-        /* The receiver is the one who can collect; telling only the sender sent
-           the one useful message to the wrong person. */
-        [cargo.receiverId, cargo.senderId],
-        {
-          kind: "cargo.ready",
-          title: "Your cargo is ready to collect",
-          body: "Everything is settled. Bring ID to the Dar warehouse, or request delivery.",
-          href: "/portal",
-        },
-        tx
-      );
-    }
-    return changed;
+    /* Told once, by the one function that tells it; a consignment whose
+       customer already heard is only moved on the floor's list. */
+    if (await announceIfReady(tx, cargoId, actor)) return true;
+    return setCargoStatus(tx, cargoId, "READY_FOR_RELEASE", actor, "Paid, verified and cleared");
   });
 
   /* The status history carries the move; this carries the person and the

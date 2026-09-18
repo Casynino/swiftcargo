@@ -35,6 +35,8 @@ type CargoForRelease = {
   status: string;
   operationalHold: boolean;
   operationalHoldReason: string | null;
+  /** Customs clearance finished. Null while it is still in clearance. */
+  clearedAt: Date | null;
   /** Finance's written permission to collect. See prisma PickupNote. */
   pickupNote: { status: string; onCredit: boolean } | null;
   darReceiving: { verified: boolean; discrepancy: boolean } | null;
@@ -109,6 +111,16 @@ export function checkRelease(cargo: CargoForRelease): ReleaseCheck {
       detail:
         cargo.darReceiving && !cargo.darReceiving.verified
           ? "Dar has received it but not signed off the count."
+          : undefined,
+    },
+    {
+      /* Booked in is not cleared: goods in customs are not ours to hand over,
+         whatever has been paid. */
+      label: "Cleared customs",
+      passed: cargo.clearedAt !== null,
+      detail:
+        cargo.darReceiving !== null && cargo.clearedAt === null
+          ? "Still in customs clearance."
           : undefined,
     },
     {

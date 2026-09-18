@@ -15,6 +15,7 @@ import { MeasurementCompare } from "@/components/app/measurement-compare";
 import { PackageEditor } from "@/components/app/package-editor";
 import { BoxesCard } from "@/components/app/boxes-card";
 import { PageHeader } from "@/components/app/page-header";
+import { ClearanceButton } from "@/components/app/clearance-button";
 import { PhotoPanel } from "@/components/app/photo-upload";
 import { CargoStatusBadge } from "@/components/app/status-badge";
 import { NotifyCustomer, type MessageOption } from "@/components/app/notify-customer";
@@ -49,6 +50,7 @@ import {
   CONTACT_KIND_LABELS,
   whatsappNumber,
   type ContactKind,
+  messageStage,
 } from "@/lib/messages";
 import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
@@ -150,6 +152,21 @@ export default async function CargoDetailPage({
     containerNumber: container?.containerNumber ?? container?.reference ?? null,
     vessel: container?.shipment?.vessel ?? null,
     eta: container?.shipment?.eta ?? null,
+    freeStorageDays: money?.freeStorageDays ?? 7,
+    storagePerDay: money?.storagePerDay?.toString() ?? null,
+    storageCurrency: money?.storageCurrency ?? "USD",
+    stage: messageStage({
+      status: cargo.status,
+      hasDarReceiving: Boolean(cargo.darReceiving),
+      clearedAt: cargo.clearedAt,
+    }),
+    statusLine: cargo.darReceiving
+      ? cargo.status === "READY_FOR_RELEASE"
+        ? "Ready for pickup"
+        : cargo.clearedAt
+          ? "Cleared"
+          : "Clearance in Progress"
+      : null,
   };
 
   const suggestedKind: ContactKind =
@@ -162,7 +179,9 @@ export default async function CargoDetailPage({
           : cargo.status === "ARRIVED_TANZANIA"
             ? "cargo.arrived"
             : cargo.status === "RECEIVED_DAR"
-              ? "cargo.received_dar"
+              ? cargo.clearedAt
+                ? "cargo.cleared_unpaid"
+                : "cargo.received_dar"
               : cargo.status === "READY_FOR_RELEASE"
                 ? "cargo.ready"
                 : "general";
@@ -332,6 +351,18 @@ export default async function CargoDetailPage({
         actions={
           <>
             <CargoStatusBadge status={cargo.status} />
+            {/* Arrived is not cleared: said beside the status, never inside it. */}
+            {dar && !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
+              cargo.clearedAt ? (
+                <Badge tone="good">Cleared {formatDate(cargo.clearedAt)}</Badge>
+              ) : (
+                <Badge tone="warn">In customs clearance</Badge>
+              )
+            ) : null}
+            {dar && !cargo.clearedAt && can(user.role, "receiving.dar") &&
+            !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
+              <ClearanceButton cargoId={cargo.id} waiting={1} />
+            ) : null}
             {/* Printed at the counter while the boxes are still on the floor —
                 one sticker per carton, each with its own code. */}
             {can(user.role, "receiving.china") && cargo.packages.length > 0 ? (
@@ -898,7 +929,7 @@ export default async function CargoDetailPage({
                   ? null
                   : storage.chargeableDays > 0
                     ? `Storage ${formatMoney(storage.amount, storage.currency)} so far${storageOnBill > 0 ? ` · ${formatMoney(storageOnBill, billHere?.currency ?? "USD")} on the bill` : " · not on the bill yet"}`
-                    : `No storage fee · ${Math.max(0, storage.freeDays - storage.daysHeld)} free day${storage.freeDays - storage.daysHeld === 1 ? "" : "s"} left`
+                    : `No storage fee · ${Math.max(0, storage.freeDays - storage.daysHeld + 1)} free day${storage.freeDays - storage.daysHeld + 1 === 1 ? "" : "s"} left`
               }
               accounts={accounts.map((a) => ({
                 id: a.id,
@@ -954,8 +985,10 @@ export default async function CargoDetailPage({
                   "cargo.departed",
                   "cargo.arrived",
                   "cargo.received_dar",
+                  "cargo.cleared_unpaid",
                   "cargo.ready",
                   "payment.reminder",
+                  "storage.expired",
                   "general",
                 ] as ContactKind[]
               ).map(

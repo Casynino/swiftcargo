@@ -474,6 +474,7 @@ describe("the release answer the Dar counter acts on", () => {
     status: "RECEIVED_DAR",
     operationalHold: false,
     operationalHoldReason: null,
+    clearedAt: new Date() as Date | null,
     pickupNote: { status: "ACTIVE", onCredit: false },
     darReceiving: { verified: true, discrepancy: false },
     invoices: [paidInvoice],
@@ -482,6 +483,12 @@ describe("the release answer the Dar counter acts on", () => {
 
   test("everything clear lets the boxes go", () => {
     assert.equal(releaseLib.checkRelease(settled).ok, true);
+  });
+
+  test("paid in full is still refused while it is in customs clearance", () => {
+    const check = releaseLib.checkRelease({ ...settled, clearedAt: null });
+    assert.equal(check.ok, false);
+    assert.match(check.blockedBy ?? "", /clearance/i);
   });
 
   test("a damaged consignment is not available for pickup", () => {

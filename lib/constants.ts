@@ -112,20 +112,21 @@ export const CARGO_STATUS_META: Record<CargoStatus, StatusMeta> = {
     tone: "progress",
   },
   ARRIVED_TANZANIA: {
-    label: "Arrived Tanzania",
-    publicLabel: "Arrived in Tanzania",
+    label: "Ship at Dar port",
+    publicLabel: "Ship arrived at Dar port",
     where: "Dar es Salaam port",
     tone: "progress",
   },
   RECEIVED_DAR: {
-    label: "Received at Dar warehouse",
-    publicLabel: "Received at our Dar warehouse",
+    /* Clearance and cleared are shown beside this, from clearedAt. */
+    label: "Arrived in Dar",
+    publicLabel: "Arrived in Dar",
     where: "Dar es Salaam warehouse",
     tone: "progress",
   },
   READY_FOR_RELEASE: {
-    label: "Ready for release",
-    publicLabel: "Ready for collection",
+    label: "Ready for pickup",
+    publicLabel: "Ready for pickup",
     where: "Dar es Salaam warehouse",
     tone: "good",
   },

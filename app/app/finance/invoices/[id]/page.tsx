@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { INVOICE_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
 import { formatCbm, formatDate, formatDateTime, formatMoney } from "@/lib/format";
-import { CONTACT_KIND_LABELS, composeMessage, whatsappNumber, type ContactKind } from "@/lib/messages";
+import { CONTACT_KIND_LABELS, composeMessage, messageStage, whatsappNumber, type ContactKind } from "@/lib/messages";
 import { formatCurrency, formatRate, tzsToUsd } from "@/lib/currency";
 import { balanceOf, paymentTzs } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
@@ -117,6 +117,13 @@ export default async function InvoicePage({
   const live = !isDraft && invoice.status !== "CANCELLED";
   const hasVerified = invoice.payments.some((p) => p.status === "VERIFIED");
 
+  /* Where the goods are, so a reminder never calls boxes at sea "ready". */
+  const stage = messageStage({
+    status: invoice.cargo.status,
+    hasDarReceiving: Boolean(invoice.cargo.darReceiving),
+    clearedAt: invoice.cargo.clearedAt,
+  });
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {/* The invoice document is the page, so the back link and the things done
@@ -144,6 +151,7 @@ export default async function InvoicePage({
                 amount: owing.toFixed(2),
                 amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,
                 fxRate: balance.rate ? balance.rate.toNumber().toLocaleString("en-US") : null,
+                stage,
               })}
             />
           ) : null}
@@ -256,6 +264,7 @@ export default async function InvoicePage({
                 freeStorageDays: settings?.freeStorageDays ?? null,
                 storagePerDay: settings && Number(settings.storagePerDay) > 0 ? Number(settings.storagePerDay).toString() : null,
                 storageCurrency: settings?.storageCurrency ?? "USD",
+                stage,
               }),
             })
           )}

@@ -319,7 +319,8 @@ describe("what a reference publishes", () => {
 describe("the warehouse clock", () => {
   test("counts from the day Dar booked it in, free days first", () => {
     const storage = build().storage!;
-    assert.equal(storage.daysInWarehouse, 3);
+    /* The arrival day is day one. */
+    assert.equal(storage.daysInWarehouse, 4);
     assert.equal(storage.freeDaysRemaining, 4);
     assert.equal(storage.chargeableDays, 0);
     assert.equal(storage.charge, "0.00");
@@ -332,7 +333,7 @@ describe("the warehouse clock", () => {
         packagesCount: 12,
         piecesCount: 240,
         cbm: "1.5000",
-        receivedAt: day(-7),
+        receivedAt: day(-6),
       },
     });
     const storage = build({ cargo }).storage!;
@@ -350,9 +351,10 @@ describe("the warehouse clock", () => {
       },
     });
     const storage = build({ cargo }).storage!;
-    assert.equal(storage.chargeableDays, 3);
-    assert.equal(storage.charge, "15.00");
-    assert.equal(storage.chargeTzs, "40500");
+    /* Day eleven: days eight to eleven are charged. */
+    assert.equal(storage.chargeableDays, 4);
+    assert.equal(storage.charge, "20.00");
+    assert.equal(storage.chargeTzs, "54000");
   });
 
   test("no clock at all until Dar has the boxes", () => {

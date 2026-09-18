@@ -22,7 +22,7 @@ export async function setCargoStatus(
   tx: TxClient,
   cargoId: string,
   to: CargoStatus,
-  actor: SessionUser | null,
+  actor: Pick<SessionUser, "id"> | null,
   reason?: string
 ): Promise<boolean> {
   const current = await tx.cargo.findUnique({
