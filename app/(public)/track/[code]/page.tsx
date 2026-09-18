@@ -275,12 +275,14 @@ function TrackingCard({ result }: { result: PublicTracking }) {
         </div>
         <span
           className={cn(
-            "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium",
+            /* Wraps inside its own box on a phone: the longer stages ("Received
+               and stored in our Guangzhou warehouse") ran off the card. */
+            "inline-flex max-w-full items-start gap-2 rounded-2xl px-3 py-1.5 text-sm font-medium leading-snug",
             TONE_PILL[journey.tone] ?? TONE_PILL.neutral
           )}
         >
-          <span className="size-1.5 rounded-full bg-current" />
-          {t(locale, journey.headline)}
+          <span className="mt-[0.45em] size-1.5 shrink-0 rounded-full bg-current" />
+          <span className="min-w-0 break-words">{t(locale, journey.headline)}</span>
         </span>
       </div>
 
