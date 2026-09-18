@@ -234,6 +234,12 @@ export default async function CheckInContainerPage({
                 Packing list
               </Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href={`/app/containers/${container.id}/labels`}>
+                <ScanLine />
+                Box labels
+              </Link>
+            </Button>
           </>
         }
       />

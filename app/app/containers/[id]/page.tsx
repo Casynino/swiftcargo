@@ -339,6 +339,15 @@ export default async function ContainerPage({
                 }
               />
             ) : null}
+            {(can(user.role, "receiving.china") || can(user.role, "receiving.dar")) &&
+            container.cargoLines.length > 0 ? (
+              <Link
+                href={`/app/containers/${container.id}/labels`}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-secondary"
+              >
+                Box labels
+              </Link>
+            ) : null}
           </>
         }
       />
