@@ -49,7 +49,9 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
             {t(locale, "Sailing")}
           </p>
           <p className="mt-1 truncate font-display text-lg font-bold tracking-tight">
-            {sailing.vessel ?? t(locale, "Vessel to be confirmed")}
+            {/* Named once the line has named it; until then the ship is known
+                by the day it leaves, which is what the customer plans around. */}
+            {sailing.vessel ?? `${t(locale, "Ship leaving")} ${short(sailing.departureDate)}`}
           </p>
           {sailing.reference ? (
             <p className="tnum text-xs text-muted-foreground">{sailing.reference}</p>
