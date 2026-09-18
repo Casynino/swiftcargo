@@ -91,11 +91,19 @@ async function lockCargoForPricing(client: TxClient, cargoId: string) {
  */
 export function darConfirmationGap(cargo: {
   darReceiving: { verified: boolean; discrepancy: boolean } | null;
+  chinaReceiving?: unknown | null;
 }): string | null {
-  if (!cargo.darReceiving) return "Dar has not counted this cargo yet.";
-  if (cargo.darReceiving.verified) return null;
-  if (cargo.darReceiving.discrepancy) return null;
-  return "Dar has not confirmed the count yet.";
+  /*
+    FINANCE WAITS FOR NOBODY.
+
+    By the owner's decision, a price may be confirmed and a bill issued as soon
+    as the goods have been measured anywhere — at the Guangzhou counter, before
+    they sail. The only thing that stops a bill is nothing having been measured
+    at all. Dar's later count re-prices a draft; an issued bill is Finance's to
+    adjust by discount or re-price, as it always was.
+  */
+  if (cargo.darReceiving || cargo.chinaReceiving) return null;
+  return "Nothing has been measured for this cargo yet.";
 }
 
 /**
@@ -126,7 +134,7 @@ export async function priceWaitingCargo(
       invoices: { where: { status: { not: "CANCELLED" } } },
     },
   });
-  if (!cargo || !cargo.darReceiving) {
+  if (!cargo || (!cargo.darReceiving && !cargo.chinaReceiving)) {
     return { kind: "not-counted", reference: cargo?.reference ?? null };
   }
   if (cargo.invoices.some((i) => i.status !== "DRAFT")) {
@@ -308,6 +316,7 @@ export async function confirmCargoPrice(
     select: {
       reference: true,
       darReceiving: { select: { verified: true, discrepancy: true } },
+      chinaReceiving: { select: { id: true } },
     },
   });
   if (!counted) return { kind: "skipped", reference: null };

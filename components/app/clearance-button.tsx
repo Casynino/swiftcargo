@@ -53,10 +53,10 @@ export function ClearanceButton({
         <Modal title="Clearance complete" onClose={close}>
           <p className="text-sm text-muted-foreground">
             {containerId
-              ? `${waiting} consignment${waiting === 1 ? "" : "s"} booked in at Dar and still in clearance will be marked cleared.`
-              : "This consignment will be marked cleared."}{" "}
-            Customers who have paid are told their goods are ready for pickup;
-            the rest are told payment is required first.
+              ? `${waiting} consignment${waiting === 1 ? "" : "s"} will be cleared and booked into our Dar warehouse — anything not yet checked in is checked in as China sent it. Anything reported missing is left out.`
+              : "This consignment will be cleared and booked into our Dar warehouse."}{" "}
+            Storage starts today. Customers who have paid are told their goods
+            are ready for pickup; the rest are told payment is required first.
           </p>
           <form action={action} className="space-y-4">
             {cargoId ? <input type="hidden" name="cargoId" value={cargoId} /> : null}

@@ -54,6 +54,7 @@ import {
 } from "@/lib/messages";
 import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
+import { storageStart } from "@/lib/storage-clock";
 
 export async function generateMetadata({
   params,
@@ -160,13 +161,14 @@ export default async function CargoDetailPage({
       hasDarReceiving: Boolean(cargo.darReceiving),
       clearedAt: cargo.clearedAt,
     }),
-    statusLine: cargo.darReceiving
-      ? cargo.status === "READY_FOR_RELEASE"
+    statusLine:
+      cargo.status === "READY_FOR_RELEASE"
         ? "Ready for pickup"
-        : cargo.clearedAt
-          ? "Cleared"
-          : "Clearance in Progress"
-      : null,
+        : cargo.darReceiving || cargo.status === "ARRIVED_TANZANIA"
+          ? cargo.clearedAt
+            ? "Cleared"
+            : "Clearance in Progress"
+          : null,
   };
 
   const suggestedKind: ContactKind =
@@ -177,11 +179,13 @@ export default async function CargoDetailPage({
         : cargo.status === "DEPARTED_CHINA" || cargo.status === "IN_TRANSIT"
           ? "cargo.departed"
           : cargo.status === "ARRIVED_TANZANIA"
-            ? "cargo.arrived"
+            ? cargo.clearedAt
+              ? "cargo.cleared_unpaid"
+              : "cargo.arrived"
             : cargo.status === "RECEIVED_DAR"
               ? cargo.clearedAt
-                ? "cargo.cleared_unpaid"
-                : "cargo.received_dar"
+                ? "cargo.received_dar"
+                : "cargo.arrived"
               : cargo.status === "READY_FOR_RELEASE"
                 ? "cargo.ready"
                 : "general";
@@ -264,7 +268,7 @@ export default async function CargoDetailPage({
      two are deliberately different figures — a clerk who waived half of it last
      week needs to see both, or they will waive it again. */
   const storage = storagePosition({
-    receivedAt: dar?.receivedAt ?? null,
+    receivedAt: storageStart(dar?.receivedAt, cargo.clearedAt),
     collectedAt: cargo.release?.releasedAt ?? null,
     freeDays: money?.freeStorageDays ?? 7,
     perDay: money?.storagePerDay ?? 0,
@@ -352,14 +356,15 @@ export default async function CargoDetailPage({
           <>
             <CargoStatusBadge status={cargo.status} />
             {/* Arrived is not cleared: said beside the status, never inside it. */}
-            {dar && !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
+            {(dar || cargo.status === "ARRIVED_TANZANIA") &&
+            !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
               cargo.clearedAt ? (
                 <Badge tone="good">Cleared {formatDate(cargo.clearedAt)}</Badge>
               ) : (
                 <Badge tone="warn">In customs clearance</Badge>
               )
             ) : null}
-            {dar && !cargo.clearedAt && can(user.role, "receiving.dar") &&
+            {(dar || cargo.status === "ARRIVED_TANZANIA") && !cargo.clearedAt && can(user.role, "receiving.dar") &&
             !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
               <ClearanceButton cargoId={cargo.id} waiting={1} />
             ) : null}

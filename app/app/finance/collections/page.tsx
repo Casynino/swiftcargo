@@ -33,6 +33,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { storagePosition } from "@/lib/storage-fee";
 import { cn } from "@/lib/utils";
+import { storageStart } from "@/lib/storage-clock";
 
 export const metadata: Metadata = { title: "Payment follow-up" };
 
@@ -205,7 +206,7 @@ export default async function CollectionsPage({
         rate: rateOf(invoice.fxRate),
         storage: Number(
           storagePosition({
-            receivedAt: invoice.cargo.darReceiving?.receivedAt ?? null,
+            receivedAt: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
             collectedAt: null,
             freeDays: settings?.freeStorageDays ?? 0,
             perDay: settings?.storagePerDay ?? 0,

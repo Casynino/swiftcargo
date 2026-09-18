@@ -73,3 +73,23 @@ export function storageState(input: {
     accrued: perDay === null ? null : Math.round(perDay * chargeableDays * 100) / 100,
   };
 }
+
+/**
+ * WHEN THE CLOCK STARTED: the goods in our warehouse AND cleared.
+ *
+ * The team may check boxes in at the port while customs still has them; those
+ * boxes are not on our floor yet, and nobody pays for a shelf they have not
+ * stood on. So the clock starts at whichever came last — booked in, or
+ * cleared — and does not start at all while customs has them.
+ */
+export function storageStart(
+  receivedAt: Date | null | undefined,
+  clearedAt: Date | null | undefined
+): Date | null {
+  if (!receivedAt) return null;
+  /* Undefined: a caller that has not read clearance — the older shape, where
+     booking in was the start. Null: read, and not cleared. */
+  if (clearedAt === undefined) return receivedAt;
+  if (clearedAt === null) return null;
+  return receivedAt.getTime() > clearedAt.getTime() ? receivedAt : clearedAt;
+}

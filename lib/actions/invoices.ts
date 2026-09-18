@@ -24,6 +24,7 @@ import { authorize } from "@/lib/session";
 import { refreshInvoiceStatus } from "@/lib/invoice-status";
 import { paymentSnapshotNow } from "@/lib/invoice-accounts";
 import { confirmPrices } from "@/lib/actions/price-list";
+import { storageStart } from "@/lib/storage-clock";
 
 
 /**
@@ -214,7 +215,7 @@ export async function generateContainerInvoices(
       containerId,
       cargo: {
         deletedAt: null,
-        darReceiving: { isNot: null },
+        OR: [{ chinaReceiving: { isNot: null } }, { darReceiving: { isNot: null } }],
         invoices: { none: { status: { not: "CANCELLED" } } },
       },
     },
@@ -345,6 +346,7 @@ export async function issueInvoice(
           reference: true,
           senderId: true,
           darReceiving: { select: { verified: true, discrepancy: true } },
+          chinaReceiving: { select: { id: true } },
         },
       },
     },
@@ -353,9 +355,7 @@ export async function issueInvoice(
   if (invoice.status !== "DRAFT") {
     return { error: "That invoice has already been issued." };
   }
-  /* The same signature the price list waits for. A draft may be raised and
-     corrected while the floor is still counting; asking the customer for the
-     money may not, or the figure moves under a bill they are holding. */
+  /* Something must have been measured — China's counter is enough. */
   const gap = darConfirmationGap(invoice.cargo);
   if (gap) return { error: `${invoice.cargo.reference}: ${gap}` };
 
@@ -952,7 +952,7 @@ export async function chargeStorage(
 
   const settings = await companySettings();
   const position = storagePosition({
-    receivedAt: invoice.cargo.darReceiving?.receivedAt ?? null,
+    receivedAt: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
     collectedAt: invoice.cargo.release?.releasedAt ?? null,
     freeDays: settings?.freeStorageDays ?? 7,
     perDay: settings?.storagePerDay ?? 0,

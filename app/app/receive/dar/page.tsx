@@ -13,6 +13,8 @@ import {
 
 import { KpiCard } from "@/components/app/kpi-card";
 import { MarkArrivedButton } from "@/components/app/container-controls";
+import { ClearanceButton } from "@/components/app/clearance-button";
+import { UndoArrivalButton } from "@/components/app/undo-arrival-button";
 import { StatStrip } from "@/components/app/stat-strip";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
@@ -136,6 +138,22 @@ function Queue({
                 const gone = container.cargoLines.filter(
                   (l) => l.cargo.status === "MISSING_AT_DAR"
                 ).length;
+                /* Landed and still with customs: what "Mark cleared" clears. */
+                const awaitingClearance = container.cargoLines.filter(
+                  (l) =>
+                    !l.cargo.clearedAt &&
+                    !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(l.cargo.status) &&
+                    (l.cargo.status === "ARRIVED_TANZANIA" || l.cargo.darReceiving)
+                ).length;
+                /* Nothing has happened since the arrival, so it can be undone. */
+                const untouched =
+                  container.status === "ARRIVED" &&
+                  container.cargoLines.every(
+                    (l) =>
+                      !l.cargo.darReceiving &&
+                      !l.cargo.clearedAt &&
+                      ["ARRIVED_TANZANIA", "CANCELLED"].includes(l.cargo.status)
+                  );
                 const cbm = container.cargoLines.reduce(
                   (sum, l) => sum + Number(l.cbm),
                   0
@@ -314,15 +332,21 @@ function Queue({
                     </TableCell>
                     <TableCell className="text-right">
                       {here ? (
-                        <Button
-                          asChild
-                          size="sm"
-                          variant={left > 0 ? "accent" : "outline"}
-                        >
-                          <Link href={`/app/receive/dar/${container.id}`}>
-                            {left > 0 ? "Check in" : "Finish"}
-                          </Link>
-                        </Button>
+                        /* At the port: inspect (missing, damaged) if needed,
+                           then one press clears the lot into our warehouse. */
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          {awaitingClearance > 0 ? (
+                            <ClearanceButton containerId={container.id} waiting={awaitingClearance} />
+                          ) : null}
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/app/receive/dar/${container.id}`}>
+                              {awaitingClearance > 0 ? "Inspect" : left > 0 ? "Check in" : "Finish"}
+                            </Link>
+                          </Button>
+                          {untouched ? (
+                            <UndoArrivalButton containerId={container.id} reference={container.reference} />
+                          ) : null}
+                        </div>
                       ) : sailing ? (
                         <MarkArrivedButton containerId={container.id} />
                       ) : (

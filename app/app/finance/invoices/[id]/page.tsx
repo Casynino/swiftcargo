@@ -36,6 +36,7 @@ import { prisma } from "@/lib/prisma";
 import { storagePosition } from "@/lib/storage-fee";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { storageStart } from "@/lib/storage-clock";
 
 export async function generateMetadata({
   params,
@@ -97,7 +98,7 @@ export default async function InvoicePage({
     where: { id: "singleton" },
   });
   const storage = storagePosition({
-    receivedAt: invoice.cargo.darReceiving?.receivedAt ?? null,
+    receivedAt: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
     collectedAt: null,
     freeDays: settings?.freeStorageDays ?? 7,
     perDay: settings?.storagePerDay ?? 0,

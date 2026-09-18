@@ -3,7 +3,7 @@ import "server-only";
 import { formatDate } from "@/lib/format";
 import { notifyCustomer } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
-import { storageState } from "@/lib/storage-clock";
+import { storageStart, storageState } from "@/lib/storage-clock";
 
 /**
  * TELL CUSTOMERS WHOSE FREE STORAGE HAS RUN OUT — ONCE.
@@ -28,13 +28,16 @@ export async function sendStorageNotices(now = new Date()) {
       deletedAt: null,
       storageNoticeAt: null,
       status: { notIn: ["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"] },
-      darReceiving: { receivedAt: { lte: before } },
+      darReceiving: { isNot: null },
+      /* The clock starts once cleared into our warehouse. */
+      clearedAt: { lte: before },
     },
     select: {
       id: true,
       reference: true,
       senderId: true,
       receiverId: true,
+      clearedAt: true,
       darReceiving: { select: { receivedAt: true } },
     },
     take: 500,
@@ -42,9 +45,10 @@ export async function sendStorageNotices(now = new Date()) {
 
   let told = 0;
   for (const cargo of candidates) {
-    if (!cargo.darReceiving) continue;
+    const start = storageStart(cargo.darReceiving?.receivedAt, cargo.clearedAt);
+    if (!start) continue;
     const clock = storageState({
-      arrivedAt: cargo.darReceiving.receivedAt,
+      arrivedAt: start,
       freeDays,
       perDay: settings?.storagePerDay ?? null,
       currency: settings?.storageCurrency ?? "USD",

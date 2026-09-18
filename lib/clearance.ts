@@ -16,14 +16,15 @@ import { storageState } from "@/lib/storage-clock";
  * Three different facts about a consignment in Dar, recorded by three different
  * events, and each one tells the customer something different:
  *
- *   arrived  — Dar booked the boxes in. Clearance begins and so does the
- *              storage clock. The customer is told it is here and in clearance,
- *              and that another message will follow. Never "come and collect".
- *   cleared  — somebody said customs is done. If the money is settled the
- *              consignment becomes ready; if not, the customer is told payment
- *              is what stands between them and their goods.
- *   ready    — the release check passes. Said once, whichever event completed
- *              it: clearing after paying, or paying after clearing.
+ *   at port  — the ship is in and customs has the goods. The customer is told
+ *              it is in clearance and that another message will follow.
+ *              Never "come and collect". (lib/actions/containers.ts)
+ *   cleared  — somebody said customs is done, at the port. The goods are then
+ *              brought to our warehouse.
+ *   warehouse— Dar books the boxes in. The storage clock starts here.
+ *   ready    — the release check passes: at our warehouse, cleared, paid, no
+ *              hold. Said once, whichever event completed it — clearing,
+ *              checking in, or paying, in whatever order they happened.
  *
  * Money is not part of the physical chain. Finance prices and bills whenever it
  * likes, and a payment never moves boxes; it only ever completes readiness for
@@ -59,24 +60,35 @@ function storageSentence(settings: StorageSettings, arrivedAt: Date) {
 }
 
 /**
- * The first word from Dar. Called in the check-in transaction, once per
- * consignment that moved to RECEIVED_DAR.
+ * Booked in at our Dar warehouse. Called in the check-in transaction, once per
+ * consignment that moved to RECEIVED_DAR. The storage clock starts now. If
+ * customs has already cleared it and the money is settled, it is ready — and
+ * announceIfReady says so instead.
  */
 export async function announceDarArrival(
   tx: TxClient,
-  cargo: { reference: string; senderId: string; receiverId: string },
-  options: { arrivedAt: Date; discrepancy?: boolean }
+  cargo: { id: string; reference: string; senderId: string; receiverId: string },
+  options: { arrivedAt: Date; discrepancy?: boolean; actorId?: string | null }
 ) {
+  if (!options.discrepancy && (await announceIfReady(tx, cargo.id, options.actorId ? { id: options.actorId } : null))) {
+    return;
+  }
+  const row = await tx.cargo.findUnique({ where: { id: cargo.id }, select: { clearedAt: true } });
   const settings = await storageSettings(tx);
+  const cleared = Boolean(row?.clearedAt);
   await notifyCustomer(
     [cargo.receiverId, cargo.senderId],
     {
       kind: "cargo.received_dar",
-      title: `${cargo.reference} arrived in Dar — clearance in progress`,
+      title: cleared
+        ? `${cargo.reference} is at our Dar warehouse`
+        : `${cargo.reference} is at our Dar warehouse — clearance in progress`,
       body:
         (options.discrepancy
-          ? "It is at our Dar warehouse and in customs clearance. We are also checking something on it and will be in touch. "
-          : "It is at our Dar warehouse and in customs clearance. It is not ready to collect yet — we will tell you as soon as clearance is complete. ") +
+          ? "We are checking something on it and will be in touch. "
+          : cleared
+            ? "It has cleared customs and is on our floor. Once payment is confirmed it will be ready to collect — we will tell you. "
+            : "Customs clearance is still in progress. It is not ready to collect yet — we will tell you when it is. ") +
         storageSentence(settings, options.arrivedAt),
       href: `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
     },
@@ -140,7 +152,10 @@ export async function clearCargo(
   tx: TxClient,
   cargoIds: string[],
   actor: SessionUser,
-  note?: string | null
+  note?: string | null,
+  /* False when the caller books the goods into the warehouse straight after
+     and lets that one message speak for both. */
+  announce = true
 ): Promise<{ cleared: string[]; skipped: string[] }> {
   const rows = await tx.cargo.findMany({
     where: { id: { in: cargoIds }, deletedAt: null },
@@ -151,10 +166,13 @@ export async function clearCargo(
   const now = new Date();
 
   for (const cargo of rows) {
+    /* Customs clears goods that have landed: at the port, or — when the
+       floor booked them in first — already in our warehouse. Never at sea. */
     const eligible =
-      cargo.darReceiving !== null &&
       cargo.clearedAt === null &&
-      !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status);
+      (cargo.status === "ARRIVED_TANZANIA" ||
+        (cargo.darReceiving !== null &&
+          !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status)));
     if (!eligible) {
       skipped.push(cargo.reference);
       continue;
@@ -190,21 +208,26 @@ export async function clearCargo(
       tx
     );
     cleared.push(cargo.reference);
+    if (!announce) continue;
 
     if (await announceIfReady(tx, cargo.id, actor)) continue;
 
     const live = cargo.invoices.filter((i) => i.status !== "DRAFT" && i.status !== "CANCELLED");
     const owed = owedAcross(live);
+    const atWarehouse = cargo.darReceiving !== null;
+    const next = atWarehouse ? "" : "It is now being brought to our Dar warehouse. ";
     await notifyCustomer(
       [cargo.receiverId, cargo.senderId],
       {
         kind: "cargo.cleared",
-        title: `${cargo.reference} has completed clearance`,
-        body: owed.owes
-          ? `Payment is still required before pickup: ${owed.primary}${owed.equivalent ? ` (${owed.equivalent})` : ""}. Once your payment is confirmed it will be ready to collect.`
-          : live.length === 0
-            ? "Your invoice is being prepared. We will tell you when it is ready to collect."
-            : "We are preparing your pickup note and will tell you when it is ready to collect.",
+        title: `${cargo.reference} has completed customs clearance`,
+        body:
+          next +
+          (owed.owes
+            ? `Payment is still required before pickup: ${owed.primary}${owed.equivalent ? ` (${owed.equivalent})` : ""}. We will tell you when it is ready to collect.`
+            : live.length === 0
+              ? "Your invoice is being prepared. We will tell you when it is ready to collect."
+              : "We will tell you as soon as it is ready to collect."),
         href: live.length > 0 ? "/portal/invoices" : `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
       },
       tx

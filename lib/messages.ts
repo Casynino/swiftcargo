@@ -36,8 +36,8 @@ export const CONTACT_KIND_LABELS: Record<ContactKind, string> = {
   "cargo.received_china": "Received in China",
   "cargo.loaded": "Loaded into a container",
   "cargo.departed": "Departed China",
-  "cargo.arrived": "Arrived in Tanzania",
-  "cargo.received_dar": "Arrived in Dar — clearance in progress",
+  "cargo.arrived": "At Dar port — clearance in progress",
+  "cargo.received_dar": "At our Dar warehouse",
   "cargo.cleared_unpaid": "Cleared — payment required",
   "invoice.issued": "Invoice issued",
   "payment.reminder": "Payment reminder",
@@ -188,7 +188,9 @@ export function messageStage(cargo: {
   ready?: boolean;
 }): NonNullable<MessageContext["stage"]> {
   if (cargo.ready || cargo.status === "READY_FOR_RELEASE") return "ready";
-  if (cargo.hasDarReceiving) return cargo.clearedAt ? "cleared" : "clearance";
+  if (cargo.hasDarReceiving || cargo.status === "ARRIVED_TANZANIA") {
+    return cargo.clearedAt ? "cleared" : "clearance";
+  }
   if (["REGISTERED", "RECEIVED_CHINA", "ASSIGNED_TO_CONTAINER", "CONTAINER_LOADED"].includes(cargo.status)) {
     return "china";
   }
@@ -270,22 +272,16 @@ export function composeMessage(
         { storage: false }
       );
 
-    case "cargo.arrived":
-      return letter(
-        `Mzigo wako umefika bandari ya ${ROUTE.destinationCity}. Tunaendelea na ` +
-          `taratibu za forodha na tutakujulisha ukiwa tayari.`,
-        { storage: false }
-      );
-
     /*
       ARRIVED IS NOT READY.
 
-      The first message from Dar says the boxes are here and in clearance, that
-      another message will follow, and when storage started. It never tells the
+      The first message from Dar — the ship is in and customs has the goods —
+      says they are here and in clearance, that another message will follow,
+      and what storage costs once they reach our warehouse. It never tells the
       customer to come, and never says ready: a customer who travels to the
       warehouse for goods still in customs has been lied to by us.
     */
-    case "cargo.received_dar":
+    case "cargo.arrived":
       return letter(
         `Mzigo wako umefika salama ${ROUTE.destinationCity} na kwa sasa uko kwenye ` +
           `hatua ya customs clearance. Tunaendelea na taratibu za kuutoa kwenye ` +
@@ -298,6 +294,14 @@ export function composeMessage(
             "Tutakujulisha mara tu mzigo wako utakapokuwa umekamilisha clearance " +
             "na kuwa tayari kuchukuliwa.",
         }
+      );
+
+    case "cargo.received_dar":
+      return letter(
+        `Mzigo wako umekamilisha clearance na sasa umefika ghala letu ` +
+          `${ROUTE.destinationCity}. Malipo yakithibitishwa utakuwa tayari ` +
+          `kuchukuliwa — tutakujulisha.`,
+        { linkLabel: "Angalia taarifa za mzigo wako:" }
       );
 
     case "cargo.cleared_unpaid":

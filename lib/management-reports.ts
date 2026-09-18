@@ -19,6 +19,7 @@ import { runTotals } from "@/lib/payroll";
 import { prisma } from "@/lib/prisma";
 import { buildReport, type Cell, type ReportTable } from "@/lib/report-tables";
 import { storagePosition } from "@/lib/storage-fee";
+import { storageStart } from "@/lib/storage-clock";
 
 /**
  * EVERY REPORT THE MANAGER CAN HAND OVER, ON THE BOOKS FINANCE ALREADY KEEPS.
@@ -511,6 +512,7 @@ export async function runManagementReport(
           select: {
             reference: true,
             receiver: { select: { fullName: true, businessName: true } },
+            clearedAt: true,
             darReceiving: { select: { receivedAt: true, container: { select: { reference: true } } } },
             invoices: {
               where: { status: { not: "CANCELLED" } },
@@ -523,7 +525,7 @@ export async function runManagementReport(
       const rows = cargo
         .map((c) => {
           const position = storagePosition({
-            receivedAt: c.darReceiving?.receivedAt ?? null,
+            receivedAt: storageStart(c.darReceiving?.receivedAt, c.clearedAt),
             collectedAt: null,
             freeDays: company?.freeStorageDays ?? 7,
             perDay: company?.storagePerDay ?? 0,

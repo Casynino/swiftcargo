@@ -310,8 +310,8 @@ const paid = (
   baseCurrencyAmount: new Prisma.Decimal(baseCurrencyAmount),
 });
 
-describe("Finance prices nothing Dar has not confirmed", () => {
-  test("a count Dar has not signed off is named, not issued", async () => {
+describe("Finance waits for nobody", () => {
+  test("a count Dar has not signed off is still Finance's to issue", async () => {
     await inRollback(async (tx) => {
       const me = await actor(tx);
       const { cargo } = await landed(tx, "UNC", { confirmed: false });
@@ -320,16 +320,7 @@ describe("Finance prices nothing Dar has not confirmed", () => {
       assert.ok(ctx, "needs a published exchange rate");
 
       const outcome = await confirmLib.confirmCargoPrice(tx, me, cargo.id, ctx);
-      assert.equal(outcome.kind, "blocked");
-      assert.match(
-        outcome.kind === "blocked" ? outcome.reason : "",
-        /has not confirmed the count/
-      );
-      assert.equal(
-        await tx.invoice.count({ where: { cargoId: cargo.id, status: { not: "DRAFT" } } }),
-        0,
-        "nothing was issued"
-      );
+      assert.equal(outcome.kind, "issued");
     });
   });
 
@@ -357,29 +348,41 @@ describe("Finance prices nothing Dar has not confirmed", () => {
     });
   });
 
-  test("the row is on the list with its figure, and out of what one press confirms", async () => {
+  test("an unsigned count is on the list with its figure, and in the press", async () => {
     await inRollback(async (tx) => {
       const { cargo } = await landed(tx, "ROW", { confirmed: false });
-
-      const before = await listLib.priceListFor({ id: cargo.id }, tx);
-      assert.equal(before.rows.length, 1, "Finance still sees the consignment");
-      assert.equal(before.rows[0].darConfirmed, false);
-      assert.ok(before.rows[0].totalLabel, "and the figure it will come to");
-      assert.equal(before.ready, 0, "but it is not in the press");
-
-      await tx.darReceiving.update({
-        where: { cargoId: cargo.id },
-        data: { verified: true, verifiedAt: new Date() },
-      });
-
-      const after = await listLib.priceListFor({ id: cargo.id }, tx);
-      assert.equal(after.rows[0].darConfirmed, true);
-      assert.equal(after.rows[0].darWaiting, null);
-      assert.equal(after.ready, 1);
+      const list = await listLib.priceListFor({ id: cargo.id }, tx);
+      assert.equal(list.rows.length, 1);
+      assert.ok(list.rows[0].totalLabel, "with the figure it comes to");
+      assert.equal(list.rows[0].darWaiting, null);
+      assert.equal(list.ready, 1);
     });
   });
 
-  test("one unconfirmed consignment blocks only itself", async () => {
+  test("cargo measured in Guangzhou is priced before it sails", async () => {
+    await inRollback(async (tx) => {
+      const me = await actor(tx);
+      const { cargo } = await landed(tx, "CHN", { confirmed: true });
+      await tx.darReceiving.delete({ where: { cargoId: cargo.id } });
+      await tx.cargo.update({ where: { id: cargo.id }, data: { status: "RECEIVED_CHINA" } });
+      await tx.chinaReceiving.create({
+        data: {
+          cargoId: cargo.id,
+          warehouseId: (await tx.warehouse.findFirstOrThrow({ where: { kind: "CHINA" } })).id,
+          packagesCount: 4,
+          cbm: new Prisma.Decimal("2"),
+        },
+      });
+      const list = await listLib.priceListFor({ id: cargo.id }, tx);
+      assert.equal(list.rows.length, 1, "on Finance's list from China's figures");
+      const ctx = await confirmLib.confirmContext(7, tx);
+      assert.ok(ctx);
+      const outcome = await confirmLib.confirmCargoPrice(tx, me, cargo.id, ctx);
+      assert.equal(outcome.kind, "issued");
+    });
+  });
+
+  test("signed and unsigned counts are both priced", async () => {
     await inRollback(async (tx) => {
       const me = await actor(tx);
       const ready = await landed(tx, "OK1", { confirmed: true });
@@ -391,13 +394,7 @@ describe("Finance prices nothing Dar has not confirmed", () => {
       const second = await confirmLib.confirmCargoPrice(tx, me, waiting.cargo.id, ctx);
 
       assert.equal(first.kind, "issued");
-      assert.equal(second.kind, "blocked");
-
-      const issued = await tx.invoice.findFirstOrThrow({
-        where: { cargoId: ready.cargo.id },
-      });
-      assert.equal(issued.status, "ISSUED");
-      assert.equal(await tx.invoice.count({ where: { cargoId: waiting.cargo.id } }), 0);
+      assert.equal(second.kind, "issued", "an unsigned Dar count does not hold Finance up");
     });
   });
 
@@ -463,8 +460,6 @@ describe("a measurement goes back to the floor, not into Finance's hands", () =>
       assert.equal(changed.oldValue, "true", "old value first");
       assert.equal(changed.actorId, me.id);
 
-      const waiting = await listLib.priceListFor({ id: cargo.id });
-      assert.equal(waiting.ready, 0, "and it is out of the press meanwhile");
 
       /* Dar re-measures and signs it off; it comes back onto the list. */
       await prisma.darReceiving.update({

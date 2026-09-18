@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
 import { storagePosition } from "@/lib/storage-fee";
 import { publicJourney, type Journey } from "@/lib/tracking-stage";
+import { storageStart } from "@/lib/storage-clock";
 
 /**
  * PUBLIC TRACKING.
@@ -323,6 +324,8 @@ export type TrackingSource = {
   reference: string;
   service: ServiceType;
   status: CargoStatus;
+  /** Storage starts once cleared into our warehouse. Absent on older fixtures. */
+  clearedAt?: Date | null;
   description: string;
   sender: { fullName: string };
   chinaReceiving: {
@@ -620,7 +623,7 @@ export function publicTracking(input: {
   let storage: PublicStorage | null = null;
   if (cargo.darReceiving && settings) {
     const position = storagePosition({
-      receivedAt: cargo.darReceiving.receivedAt,
+      receivedAt: storageStart(cargo.darReceiving.receivedAt, cargo.clearedAt),
       collectedAt: handedOverAt,
       freeDays: settings.freeStorageDays,
       perDay: dec(settings.storagePerDay),

@@ -16,14 +16,16 @@ const WHERE: Record<StageCode, [string, string | null]> = {
   SHIPPED: ["In transit", "Left China"],
   AT_SEA: ["In transit", "At sea"],
   ARRIVED_DAR: ["Ship at Dar port", "Being discharged"],
-  DAR_VERIFICATION: ["Arrived in Dar", "Being checked in"],
-  IN_CLEARANCE: ["Arrived in Dar", "Clearance in progress"],
-  RECEIVED_DAR: ["Cleared", "Dar warehouse"],
-  PRICING: ["Cleared", "Dar warehouse"],
-  PAYMENT_PENDING: ["Cleared", "Dar warehouse"],
-  CONFIRMING_PAYMENT: ["Cleared", "Dar warehouse"],
-  PART_PAID: ["Cleared", "Dar warehouse"],
-  PAID: ["Cleared", "Dar warehouse"],
+  DAR_VERIFICATION: ["At our Dar warehouse", "Being checked in"],
+  IN_CLEARANCE: ["At Dar port", "Clearance in progress"],
+  CLEARED_TO_WAREHOUSE: ["Cleared", "On the way to our Dar warehouse"],
+  WAREHOUSE_CLEARANCE: ["At our Dar warehouse", "Clearance in progress"],
+  RECEIVED_DAR: ["At our Dar warehouse", "Cleared"],
+  PRICING: ["At our Dar warehouse", "Cleared"],
+  PAYMENT_PENDING: ["At our Dar warehouse", "Cleared"],
+  CONFIRMING_PAYMENT: ["At our Dar warehouse", "Cleared"],
+  PART_PAID: ["At our Dar warehouse", "Cleared"],
+  PAID: ["At our Dar warehouse", "Cleared"],
   READY: ["Ready for pickup", "Dar warehouse"],
   COLLECTED: ["Collected", null],
   DELIVERED: ["Delivered", null],
@@ -62,8 +64,10 @@ export function CargoStatusStrip({ journey }: { journey: Journey }) {
     ? ["Collected", null, "good"]
     : journey.ready
       ? ["Ready for pickup", "Bring your pickup note and ID", "good"]
-      : journey.stage === "IN_CLEARANCE"
+      : journey.stage === "IN_CLEARANCE" || journey.stage === "WAREHOUSE_CLEARANCE"
         ? ["Not ready", "Waiting for clearance", "neutral"]
+        : journey.stage === "CLEARED_TO_WAREHOUSE" || journey.stage === "DAR_VERIFICATION"
+          ? ["Not ready", "Being brought into our warehouse", "neutral"]
         : journey.payment !== "PAID" && ["RECEIVED_DAR", "PRICING", "PAYMENT_PENDING", "CONFIRMING_PAYMENT", "PART_PAID"].includes(journey.stage)
           ? ["Not ready", "Payment required first", "warn"]
           : ["Not ready", null, "neutral"];

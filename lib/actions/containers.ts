@@ -1011,8 +1011,11 @@ const MILESTONES = {
     from: ["DEPARTED", "IN_TRANSIT"] as ContainerStatus[],
     shipment: "ARRIVED_TANZANIA" as const,
     cargo: "ARRIVED_TANZANIA" as const,
-    title: "Your cargo has arrived in Tanzania",
-    body: (ref: string) => `Container ${ref} has arrived at Dar es Salaam.`,
+    /* Arrived at the port is not ready: customs has the goods now, and the
+       customer is told so — and that another message follows. */
+    title: "Your cargo has arrived at Dar es Salaam port — clearance in progress",
+    body: (ref: string) =>
+      `Container ${ref} is at Dar es Salaam port and your goods are going through customs clearance. They are not ready to collect yet — we will tell you when clearance is complete and they are at our warehouse.`,
   },
   CLOSED: {
     from: ["ARRIVED"] as ContainerStatus[],
@@ -1701,4 +1704,123 @@ export async function putOnArrivedContainer(
   return {
     ok: `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`,
   };
+}
+
+/**
+ * THE SHIP HAD NOT ARRIVED.
+ *
+ * "Mark as arrived" pressed on the wrong container, or a day early. It is put
+ * back to in transit — the container, the sailing and every consignment on it,
+ * each with its own history line — and the customers who were told their goods
+ * were at the port are told that was premature.
+ *
+ * Only while nothing has happened since: once a consignment has been checked
+ * in, reported missing or cleared, the arrival is a fact other records stand
+ * on, and undoing it here would leave them describing goods at sea.
+ */
+export async function undoContainerArrival(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  let actor;
+  try {
+    actor = await authorize("container.arrive");
+  } catch {
+    return { error: "Recording an arrival is Dar's to do." };
+  }
+  const containerId = String(formData.get("containerId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, deletedAt: null },
+    include: {
+      cargoLines: {
+        select: {
+          cargoId: true,
+          cargo: {
+            select: {
+              reference: true,
+              status: true,
+              clearedAt: true,
+              senderId: true,
+              receiverId: true,
+              darReceiving: { select: { id: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!container) return { error: "That container no longer exists." };
+  if (container.status !== "ARRIVED") {
+    return { error: `${container.reference} is not marked as arrived.` };
+  }
+  const touched = container.cargoLines.find(
+    (l) =>
+      l.cargo.darReceiving ||
+      l.cargo.clearedAt ||
+      !["ARRIVED_TANZANIA", "CANCELLED"].includes(l.cargo.status)
+  );
+  if (touched) {
+    return {
+      error: `${touched.cargo.reference} has already been checked in, cleared or reported missing, so the arrival stands. Correct that consignment instead.`,
+    };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const claim = await tx.container.updateMany({
+        where: { id: container.id, status: "ARRIVED" },
+        data: { status: "IN_TRANSIT" },
+      });
+      if (claim.count === 0) throw new Error("Somebody else changed this container first.");
+
+      await tx.containerEvent.create({
+        data: {
+          containerId: container.id,
+          from: "ARRIVED",
+          to: "IN_TRANSIT",
+          note: `Arrival undone${reason ? ` — ${reason}` : ""}`,
+          actorId: actor.id,
+        },
+      });
+      await tx.shipment.updateMany({
+        where: { containerId: container.id },
+        data: { status: "IN_TRANSIT", actualArrival: null },
+      });
+      await setCargoStatusBulk(
+        tx,
+        container.cargoLines
+          .filter((l) => l.cargo.status === "ARRIVED_TANZANIA")
+          .map((l) => l.cargoId),
+        "IN_TRANSIT",
+        actor,
+        `Arrival of ${container.reference} undone${reason ? ` — ${reason}` : ""}`
+      );
+      await notifyCustomer(
+        container.cargoLines.flatMap((l) => [l.cargo.senderId, l.cargo.receiverId]),
+        {
+          kind: "container.arrival_undone",
+          title: "Correction: your cargo is still on the way",
+          body: `Container ${container.containerNumber ?? container.reference} has not reached Dar es Salaam port yet — our earlier message was sent too soon. We will tell you when it arrives.`,
+          href: "/portal",
+        },
+        tx
+      );
+    });
+  } catch (error) {
+    return { error: formMessage(error, "That did not work.") };
+  }
+
+  await recordAudit({
+    actor,
+    action: "container.arrivalUndone",
+    entity: "Container",
+    entityId: container.id,
+    summary: `Undid the arrival of ${container.reference}${reason ? ` — ${reason}` : ""}`,
+  });
+
+  revalidatePath("/app/receive/dar");
+  revalidatePath(`/app/containers/${container.id}`);
+  return { ok: `${container.reference} is back in transit.` };
 }

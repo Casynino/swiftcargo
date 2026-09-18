@@ -7,6 +7,7 @@ import { balanceOf } from "@/lib/invoice-balance";
 import { companySettings } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { storagePosition } from "@/lib/storage-fee";
+import { storageStart } from "@/lib/storage-clock";
 
 /**
  * The manager's control room: every place the company is quietly going wrong,
@@ -136,13 +137,13 @@ async function storageNotBilled(now: Date) {
         none: { status: { not: "CANCELLED" }, items: { some: { category: "Storage" } } },
       },
     },
-    select: { darReceiving: { select: { receivedAt: true } } },
+    select: { clearedAt: true, darReceiving: { select: { receivedAt: true } } },
   });
 
   const late = cargo
     .map((c) =>
       storagePosition({
-        receivedAt: c.darReceiving?.receivedAt ?? null,
+        receivedAt: storageStart(c.darReceiving?.receivedAt, c.clearedAt),
         collectedAt: null,
         freeDays,
         perDay,

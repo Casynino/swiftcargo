@@ -6,7 +6,7 @@ import { Prisma, type CargoStatus } from "@prisma/client";
 
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { setCargoStatus } from "@/lib/cargo";
-import { announceDarArrival } from "@/lib/clearance";
+import { announceDarArrival, announceIfReady } from "@/lib/clearance";
 import { variance } from "@/lib/cbm";
 import { nextExceptionReference } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
@@ -342,7 +342,7 @@ export async function receiveInDar(
       }
 
       if (moved) {
-        await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy });
+        await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy, actorId: actor.id });
       }
 
       return { receiving, caseRef };
@@ -413,9 +413,14 @@ export async function verifyCargo(
     };
   }
 
-  await prisma.darReceiving.update({
-    where: { id: receiving.id },
-    data: { verified: true, verifiedAt: new Date() },
+  await prisma.$transaction(async (tx) => {
+    await tx.darReceiving.update({
+      where: { id: receiving.id },
+      data: { verified: true, verifiedAt: new Date() },
+    });
+    /* Signing the count off can be the last thing standing between a cleared,
+       paid consignment and the customer being told to come. */
+    await announceIfReady(tx, cargoId, actor);
   });
 
   await recordAudit({
@@ -799,7 +804,7 @@ export async function acceptAsExpected(
 
       /* The same message the scales form sends, so a customer is told their
          goods reached Dar however the clerk checked them in. */
-      await announceDarArrival(tx, item, { arrivedAt: new Date() });
+      await announceDarArrival(tx, item, { arrivedAt: new Date(), actorId: actor.id });
       return true;
     });
     if (took) {
@@ -1011,7 +1016,7 @@ export async function reportDamageAtDar(
         actor,
         `Received at Dar, ${data.condition.toLowerCase().replace("_", " ")}`
       );
-      await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy: true });
+      await announceDarArrival(tx, cargo, { arrivedAt: new Date(), discrepancy: true, actorId: actor.id });
     }
 
     await tx.cargoPhoto.createMany({

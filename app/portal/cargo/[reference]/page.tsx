@@ -14,7 +14,7 @@ import { owedAcross } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { requireCustomer } from "@/lib/session";
 import { JOURNEY_INCLUDE, journeyOf } from "@/lib/tracking";
-import { storageState } from "@/lib/storage-clock";
+import { storageStart, storageState } from "@/lib/storage-clock";
 import { CargoStatusStrip, StorageCard } from "@/components/portal/cargo-status";
 import { cn } from "@/lib/utils";
 
@@ -93,10 +93,11 @@ export default async function PortalCargoPage({
     select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
   });
   /* The clock runs from the day Dar booked the boxes in, until they leave. */
+  const clockFrom = storageStart(cargo.darReceiving?.receivedAt, cargo.clearedAt);
   const storage =
-    cargo.darReceiving && !["COLLECTED", "DELIVERED", "CANCELLED"].includes(cargo.status)
+    clockFrom && !["COLLECTED", "DELIVERED", "CANCELLED"].includes(cargo.status)
       ? storageState({
-          arrivedAt: cargo.darReceiving.receivedAt,
+          arrivedAt: clockFrom,
           freeDays: settings?.freeStorageDays ?? 7,
           perDay: settings?.storagePerDay ?? null,
           currency: settings?.storageCurrency ?? "USD",
@@ -137,13 +138,13 @@ export default async function PortalCargoPage({
       <CargoStatusStrip journey={journey} />
       {storage ? <StorageCard storage={storage} /> : null}
 
-      {journey.stage === "IN_CLEARANCE" ? (
+      {journey.stage === "IN_CLEARANCE" || journey.stage === "WAREHOUSE_CLEARANCE" ? (
         <Card className="border-brand/30 bg-brand/5 p-5">
-          <p className="font-medium text-brand">{t(locale, "Arrived in Dar — clearance in progress")}</p>
+          <p className="font-medium text-brand">{t(locale, journey.headline)}</p>
           <p className="mt-1.5 text-sm text-muted-foreground">
             {t(
               locale,
-              "Your goods are at our Dar es Salaam warehouse and going through customs clearance. They are not ready to collect yet — we will tell you as soon as clearance is complete."
+              "Your goods have arrived in Dar es Salaam and are going through customs clearance. They are not ready to collect yet — we will tell you as soon as clearance is complete."
             )}
           </p>
         </Card>
@@ -181,7 +182,7 @@ export default async function PortalCargoPage({
                 ) : null}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {journey.stage === "IN_CLEARANCE" || !cargo.darReceiving
+                {!cargo.darReceiving || !cargo.clearedAt
                   ? t(locale, "You can pay now. Your cargo is ready to collect once it has cleared customs and your payment is confirmed.")
                   : t(locale, "Cleared — payment is required before pickup.")}
               </p>

@@ -20,6 +20,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { storagePosition } from "@/lib/storage-fee";
 import { SmartBack } from "@/components/app/smart-back";
+import { storageStart } from "@/lib/storage-clock";
 
 export const metadata: Metadata = { title: "Merge Payment" };
 
@@ -58,6 +59,7 @@ export default async function MergePaymentForCustomer({
                 reference: true,
                 description: true,
                 darReceiving: { select: { receivedAt: true } },
+                clearedAt: true,
                 containerLines: {
                   take: 1,
                   orderBy: { createdAt: "desc" },
@@ -106,7 +108,7 @@ export default async function MergePaymentForCustomer({
        named on the row rather than folded in: folding it in would promise a
        total the payment would then be refused for. */
     const accrued = storagePosition({
-      receivedAt: invoice.cargo.darReceiving?.receivedAt ?? null,
+      receivedAt: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
       collectedAt: null,
       freeDays: settings?.freeStorageDays ?? 0,
       perDay: settings?.storagePerDay ?? 0,

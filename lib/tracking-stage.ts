@@ -85,8 +85,12 @@ export type StageCode =
   | "ARRIVED_DAR"
   /** Dar has it on the floor and has not signed the count off. */
   | "DAR_VERIFICATION"
-  /** Booked in at Dar and in customs clearance. Not ready, whatever is paid. */
+  /** The ship is in and customs has the goods, at the port. Not ready, whatever is paid. */
   | "IN_CLEARANCE"
+  /** Customs is done; the goods are on their way from the port to our warehouse. */
+  | "CLEARED_TO_WAREHOUSE"
+  /** Booked in at our warehouse before customs signed off. Still not ready. */
+  | "WAREHOUSE_CLEARANCE"
   /** Counted in at Dar. Nothing priced yet. */
   | "RECEIVED_DAR"
   /** A price has been worked out and is waiting on the price list. */
@@ -195,8 +199,9 @@ export type JourneyInput = {
   /** Dar has a receiving row for this consignment. */
   receivedAtDar: boolean;
   /**
-   * Customs clearance. Clearance starts when Dar books the boxes in; clearedAt
-   * is when it finished. Left out, the consignment is treated as cleared — the
+   * Customs clearance, at the port. It starts when the ship is in and the
+   * box discharged, and clearedAt is when it finished — before the goods are
+   * brought to our warehouse. Left out, the consignment is treated as cleared — the
    * shape records had before clearance was its own step.
    */
   clearance?: { clearedAt: Date | null };
@@ -276,13 +281,15 @@ const STAGE_LABEL: Record<StageCode, string> = {
   AT_SEA: "At sea",
   ARRIVED_DAR: "Arrived in Dar es Salaam",
   DAR_VERIFICATION: "Arrived in Dar — being checked in",
-  IN_CLEARANCE: "Arrived in Dar — clearance in progress",
-  RECEIVED_DAR: "Cleared — invoice being prepared",
-  PRICING: "Cleared — price being confirmed",
-  PAYMENT_PENDING: "Cleared — payment required before pickup",
-  CONFIRMING_PAYMENT: "Cleared — confirming your payment",
-  PART_PAID: "Cleared — balance due before pickup",
-  PAID: "Cleared and paid — pickup note being prepared",
+  IN_CLEARANCE: "At Dar port — clearance in progress",
+  CLEARED_TO_WAREHOUSE: "Cleared — on the way to our Dar warehouse",
+  WAREHOUSE_CLEARANCE: "At our Dar warehouse — clearance in progress",
+  RECEIVED_DAR: "At our Dar warehouse — invoice being prepared",
+  PRICING: "At our Dar warehouse — price being confirmed",
+  PAYMENT_PENDING: "At our Dar warehouse — payment required before pickup",
+  CONFIRMING_PAYMENT: "At our Dar warehouse — confirming your payment",
+  PART_PAID: "At our Dar warehouse — balance due before pickup",
+  PAID: "At our Dar warehouse — paid, pickup note being prepared",
   READY: "Ready for pickup",
   COLLECTED: "Collected",
   DELIVERED: "Delivered",
@@ -299,6 +306,8 @@ const STAGE_TONE: Record<StageCode, Journey["tone"]> = {
   ARRIVED_DAR: "progress",
   DAR_VERIFICATION: "progress",
   IN_CLEARANCE: "progress",
+  CLEARED_TO_WAREHOUSE: "progress",
+  WAREHOUSE_CLEARANCE: "progress",
   RECEIVED_DAR: "progress",
   PRICING: "progress",
   PAYMENT_PENDING: "warn",
@@ -371,10 +380,9 @@ function stageOf(
     /* Booked in, not signed off. The clerk has the boxes and is still counting
        them against the sheet. */
     if (input.awaitingDarVerification) return "DAR_VERIFICATION";
-    /* Arrived is not cleared. Money does not speak while customs has the
-       goods: "paid" read by a customer about boxes in clearance is a trip to
-       the warehouse for nothing. */
-    if (input.clearance && !input.clearance.clearedAt) return "IN_CLEARANCE";
+    /* Booked in before customs signed off (it happens): still not ready, and
+       money does not speak while customs has the goods. */
+    if (input.clearance && !input.clearance.clearedAt) return "WAREHOUSE_CLEARANCE";
     /* A bill can go out while the container is still at sea, but a customer
        watching a ship does not want "part paid" as the answer to where their
        goods are. Money speaks only once the boxes are on the Dar floor. */
@@ -394,6 +402,11 @@ function stageOf(
 
   /* Off the vessel and not yet booked in: somewhere between the quay and the
      counter, which is also where a consignment nobody can find sits. */
+  /* The ship is in and the goods are not on our floor yet: they are with
+     customs at the port, or cleared and being brought over. */
+  if (rank >= 5 && input.clearance && input.status !== "MISSING_AT_DAR") {
+    return input.clearance.clearedAt ? "CLEARED_TO_WAREHOUSE" : "IN_CLEARANCE";
+  }
   if (rank >= 5) return "ARRIVED_DAR";
   if (rank >= 4) return "AT_SEA";
   if (rank >= 3) return "SHIPPED";
@@ -457,11 +470,15 @@ export function publicJourney(input: JourneyInput): Journey {
     DEPARTED: rank >= 3 || ready,
     AT_SEA: rank >= 3 || ready,
     ARRIVED_DAR: rank >= 5 || ready,
-    RECEIVED_DAR: rank >= 6 || ready,
-    CLEARANCE: rank >= 6 || ready,
+    /* Customs happens at the port, before our warehouse. A record from before
+       clearance was a step (no clearance given) passes through it as done. */
+    CLEARANCE: (rank >= 5 && status !== "MISSING_AT_DAR") || ready,
     CLEARED:
       ready ||
-      (rank >= 6 && input.receivedAtDar && (!input.clearance || input.clearance.clearedAt !== null)),
+      (input.clearance
+        ? input.clearance.clearedAt !== null
+        : rank >= 6 && input.receivedAtDar),
+    RECEIVED_DAR: rank >= 6 || ready,
     /* A release needs a bill, so ready implies invoiced. Invoicing does not
        imply any physical step — a bill can go out while the box is at sea. */
     INVOICED: invoiced || ready,
@@ -525,6 +542,21 @@ export function publicJourney(input: JourneyInput): Journey {
       at: arrivedAt,
     },
     {
+      key: "CLEARANCE",
+      label: "Customs clearance",
+      detail:
+        stage === "IN_CLEARANCE" || stage === "WAREHOUSE_CLEARANCE"
+          ? "In progress — we will tell you when it is complete"
+          : null,
+      at: arrivedAt,
+    },
+    {
+      key: "CLEARED",
+      label: "Cleared",
+      detail: stage === "CLEARED_TO_WAREHOUSE" ? "Being brought to our Dar warehouse" : null,
+      at: input.clearance?.clearedAt ?? null,
+    },
+    {
       key: "RECEIVED_DAR",
       label: "Arrived at our Dar warehouse",
       detail:
@@ -532,29 +564,6 @@ export function publicJourney(input: JourneyInput): Journey {
           ? "We are checking it against the packing list"
           : null,
       at: stamps.RECEIVED_DAR ?? null,
-    },
-    {
-      key: "CLEARANCE",
-      label: "Customs clearance",
-      detail: stage === "IN_CLEARANCE" ? "In progress — we will tell you when it is complete" : null,
-      at: stamps.RECEIVED_DAR ?? null,
-    },
-    {
-      key: "CLEARED",
-      label: "Cleared",
-      detail: null,
-      at: input.clearance?.clearedAt ?? null,
-    },
-    {
-      key: "INVOICED",
-      label: "Invoice issued",
-      /* A draft is Finance's working and has never been sent to anybody, so it
-         is named as work in progress and never as a bill. */
-      detail:
-        !invoiced && billing.drafted
-          ? "We are confirming the price"
-          : paymentDetail[payment],
-      at: billing.issuedAt,
     },
     {
       key: "READY",
@@ -570,13 +579,16 @@ export function publicJourney(input: JourneyInput): Journey {
     },
   ];
 
-  /* Where the goods ARE is a physical question. A bill can be issued while
-     the ship is at sea, so the invoice step is ticked when it happens but is
-     never the "you are here" marker. */
-  const lastReached = draft.reduce(
-    (last, step, index) => (reached[step.key] && step.key !== "INVOICED" ? index : last),
-    -1
-  );
+  /* The line is the goods' physical journey. Money is not a place — a bill
+     can go out while the ship is at sea — so it is reported beside the line
+     (payment), never as a station on it. */
+  /* Booked into our warehouse before customs signed off: the goods are on
+     our floor, but clearance is what they are waiting on, so that is where
+     the marker stands. */
+  const lastReached =
+    stage === "WAREHOUSE_CLEARANCE"
+      ? draft.findIndex((step) => step.key === "CLEARANCE")
+      : draft.reduce((last, step, index) => (reached[step.key] ? index : last), -1);
 
   const steps: JourneyStep[] = draft.map((step, index) => ({
     ...step,

@@ -12,7 +12,7 @@ import { UNSAILED_TO_PRICE } from "@/lib/unsailed-pricing";
 /**
  * WHAT IS WAITING FOR A PRICE, WITH THE PRICE ALREADY WORKED OUT.
  *
- * Counted at Dar, with nothing but drafts billed against it. The figure on
+ * Measured in China or at Dar, with nothing but drafts billed against it. The figure on
  * each row is the draft the rate book raised at check-in; cargo checked in
  * before drafts were raised automatically has none, and its row shows what the
  * book would charge today, worked out here and written nowhere — confirming is
@@ -25,7 +25,12 @@ import { UNSAILED_TO_PRICE } from "@/lib/unsailed-pricing";
 export const WAITING_ON_CONTAINER = (containerId: string) =>
   ({
     deletedAt: null,
-    darReceiving: { isNot: null },
+    /* Measured anywhere is enough: Finance prices from China's figures the
+       day the boxes are received, and Dar's count re-prices a draft if it
+       differs. */
+    OR: [{ chinaReceiving: { isNot: null } }, { darReceiving: { isNot: null } }],
+    /* Nobody is billed for boxes nobody found. */
+    status: { notIn: ["MISSING_AT_DAR", "CANCELLED"] },
     containerLines: { some: { containerId } },
     invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
   }) satisfies Prisma.CargoWhereInput;
@@ -174,8 +179,8 @@ export async function priceListFor(
       description: item.description,
       customer: item.receiver.fullName,
       customerCode: item.receiver.code,
-      packages: item.darReceiving?.packagesCount ?? null,
-      cbm: item.darReceiving?.cbm?.toString() ?? null,
+      packages: item.darReceiving?.packagesCount ?? item.chinaReceiving?.packagesCount ?? null,
+      cbm: (item.darReceiving?.cbm ?? item.chinaReceiving?.cbm)?.toString() ?? null,
       weightKg:
         (item.darReceiving?.weightKg ?? item.chinaReceiving?.weightKg)?.toString() ??
         null,

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { announceIfReady } from "@/lib/clearance";
+
 import { nextExceptionReference } from "@/lib/ids";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import type { TxClient } from "@/lib/prisma";
@@ -190,6 +192,7 @@ export async function confirmContainerAtDar(
       where: { id: { in: counts.toSign.map((c) => c.darReceiving!.id) } },
       data: { verified: true, verifiedAt: new Date() },
     });
+    for (const item of counts.toSign) await announceIfReady(tx, item.id, actor);
   }
 
   /* Ruled over, not forgotten. Each one leaves the dock with the container and

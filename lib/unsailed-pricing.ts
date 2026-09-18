@@ -19,7 +19,9 @@ import { prisma, type TxClient } from "@/lib/prisma";
  */
 export const UNSAILED_TO_PRICE = {
   deletedAt: null,
-  darReceiving: { isNot: null },
+  OR: [{ chinaReceiving: { isNot: null } }, { darReceiving: { isNot: null } }],
+    /* Nobody is billed for boxes nobody found. */
+    status: { notIn: ["MISSING_AT_DAR", "CANCELLED"] },
   containerLines: { none: {} },
   invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
 } satisfies Prisma.CargoWhereInput;

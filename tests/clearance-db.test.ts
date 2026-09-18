@@ -65,7 +65,12 @@ let seq = 0;
 const tag = () => `CLR${Date.now().toString(36)}${seq++}`;
 
 /** Booked in at Dar and signed off; billed, and paid in full when asked. */
-async function atDar(tx: Prisma.TransactionClient, paid: boolean, booked = true) {
+async function atDar(
+  tx: Prisma.TransactionClient,
+  paid: boolean,
+  booked = true,
+  unbookedStatus: "IN_TRANSIT" | "ARRIVED_TANZANIA" = "IN_TRANSIT"
+) {
   const mark = tag();
   const customer = await tx.customer.create({
     data: { code: `T-${mark}`, fullName: `Test ${mark}`, phone: `+2557${String(Date.now()).slice(-6)}${seq % 100}`.slice(0, 13) },
@@ -77,7 +82,7 @@ async function atDar(tx: Prisma.TransactionClient, paid: boolean, booked = true)
       senderId: customer.id,
       receiverId: customer.id,
       description: "Test goods",
-      status: booked ? "RECEIVED_DAR" : "IN_TRANSIT",
+      status: booked ? "RECEIVED_DAR" : unbookedStatus,
     },
   });
   if (booked) {
@@ -186,6 +191,29 @@ describe("arrived is not cleared, and cleared is not ready", () => {
       assert.equal(notes.length, 1);
       assert.equal(notes[0].kind, "cargo.cleared");
       assert.match(notes[0].body ?? "", /Payment is still required/);
+    });
+  });
+
+  test("cleared at the port, then ready the moment our warehouse books it in", async () => {
+    await inRollback(async (tx) => {
+      const me = await darDesk(tx);
+      const { cargo, customer } = await atDar(tx, true, false, "ARRIVED_TANZANIA");
+      const result = await clearance.clearCargo(tx, [cargo.id], me);
+      assert.deepEqual(result.cleared, [cargo.reference], "customs clears it at the port");
+      assert.equal((await tx.cargo.findUniqueOrThrow({ where: { id: cargo.id } })).status, "ARRIVED_TANZANIA");
+      const first = await tx.notification.findMany({ where: { customerId: customer.id } });
+      assert.equal(first.length, 1);
+      assert.equal(first[0].kind, "cargo.cleared");
+      assert.match(first[0].body ?? "", /brought to our Dar warehouse/);
+
+      const warehouse = await tx.warehouse.findFirstOrThrow({ where: { kind: "TANZANIA" } });
+      await tx.darReceiving.create({
+        data: { cargoId: cargo.id, warehouseId: warehouse.id, packagesCount: 2, condition: "GOOD", verified: true, verifiedAt: new Date() },
+      });
+      await tx.cargo.update({ where: { id: cargo.id }, data: { status: "RECEIVED_DAR" } });
+      await clearance.announceDarArrival(tx, cargo, { arrivedAt: new Date(), actorId: me.id });
+      assert.equal((await tx.cargo.findUniqueOrThrow({ where: { id: cargo.id } })).status, "READY_FOR_RELEASE");
+      assert.deepEqual(await kinds(tx, customer.id), ["cargo.cleared", "cargo.ready"]);
     });
   });
 
