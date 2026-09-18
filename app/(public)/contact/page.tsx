@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 
 import { QuoteForm } from "@/components/site/request-forms";
-import { PageHero } from "@/components/site/page-hero";
 import { Card } from "@/components/ui/card";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -27,25 +26,22 @@ export default async function ContactPage() {
   const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER);
 
   return (
-    <>
-      <PageHero
-        eyebrow={t(locale, "Get in touch")}
-        eyebrowIcon={MessageCircle}
-        lead={t(locale, "Talk to")}
-        trail={t(locale, "Swift Cargo")}
-        body={t(
+    <div className="container max-w-5xl py-16">
+      <p className="eyebrow text-marine">{t(locale, "Get in touch")}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        {t(locale, "Talk to Swift Cargo")}
+      </h1>
+      <p className="mt-3 max-w-2xl text-muted-foreground">
+        {t(
           locale,
           "Call us, message us on WhatsApp, or leave your details and we will come back with a price."
         )}
-        scene="road"
-      />
+      </p>
 
-      <div className="bg-field py-14 sm:py-20">
-      <div className="container max-w-5xl">
-      <div className="grid gap-8 lg:grid-cols-5">
+      <div className="mt-10 grid gap-8 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-2">
           {company?.phone ? (
-            <Card className="rounded-3xl border-field-edge p-6">
+            <Card className="p-6">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Phone className="size-4 text-signal" />
                 {t(locale, "Call us")}
@@ -62,7 +58,7 @@ export default async function ContactPage() {
           ) : null}
 
           {whatsapp ? (
-            <Card className="rounded-3xl border-field-edge p-6">
+            <Card className="p-6">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <MessageCircle className="size-4 text-signal" />
                 WhatsApp
@@ -79,7 +75,7 @@ export default async function ContactPage() {
           ) : null}
 
           {company?.email ? (
-            <Card className="rounded-3xl border-field-edge p-6">
+            <Card className="p-6">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Mail className="size-4 text-signal" />
                 {t(locale, "Email")}
@@ -91,7 +87,7 @@ export default async function ContactPage() {
           ) : null}
 
           {company?.darAddress ? (
-            <Card className="rounded-3xl border-field-edge p-6">
+            <Card className="p-6">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <MapPin className="size-4 text-signal" />
                 {t(locale, "Dar es Salaam office and warehouse")}
@@ -101,7 +97,7 @@ export default async function ContactPage() {
           ) : null}
 
           {company?.chinaAddress ? (
-            <Card className="rounded-3xl border-field-edge p-6">
+            <Card className="p-6">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <MapPin className="size-4 text-signal" />
                 {t(locale, "Guangzhou warehouse")}
@@ -128,8 +124,6 @@ export default async function ContactPage() {
           </div>
         </div>
       </div>
-      </div>
-      </div>
-    </>
+    </div>
   );
 }

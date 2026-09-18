@@ -1,9 +1,9 @@
+import Link from "next/link";
 import type { Metadata } from "next";
-import { Camera, MapPin, Scale, ShieldCheck, Ship } from "lucide-react";
+import { ArrowRight, Camera, MapPin, Scale, ShieldCheck, Ship } from "lucide-react";
 
-import { PageHero } from "@/components/site/page-hero";
-import { PillLink, SectionHead } from "@/components/site/display";
-import { PhotoCaption, PhotoSlot } from "@/components/site/photo-slot";
+import { HeroArtwork } from "@/components/site/hero-artwork";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
@@ -68,33 +68,33 @@ export default async function AboutPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow={t(locale, "About us")}
-        eyebrowIcon={Ship}
-        lead={name}
-        trail={company?.tagline ?? undefined}
-        body={t(
-          locale,
-          "We ship goods by sea from China to Tanzania for traders and businesses — shared containers for loose cargo, whole containers for those who fill them, and sourcing help in Guangzhou for those still looking for a supplier."
-        )}
-        scene="crane"
-      />
+      <section className="relative isolate overflow-hidden border-b bg-ink py-16 text-white sm:py-20">
+        <HeroArtwork name="hero-about" />
+        <div className="container relative">
+          <p className="eyebrow text-marine">{t(locale, "About us")}</p>
+          <h1 className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl">
+            {name}
+          </h1>
+          {company?.tagline ? (
+            <p className="mt-2 text-lg text-marine">{company.tagline}</p>
+          ) : null}
+          <p className="mt-5 max-w-2xl text-lg text-white/70">
+            {t(
+              locale,
+              "We ship goods by sea from China to Tanzania for traders and businesses — shared containers for loose cargo, whole containers for those who fill them, and sourcing help in Guangzhou for those still looking for a supplier."
+            )}
+          </p>
+        </div>
+      </section>
 
-      <section className="bg-field py-14 sm:py-20">
-        <div className="container">
-        <SectionHead
-          eyebrow={t(locale, "How we work")}
-          lead={t(locale, "Facts we can stand behind,")}
-          trail={t(locale, "and nothing we cannot")}
-          body={t(
-            locale,
-            "No founding story and no testimonials. What follows is how the operation runs and who signs for the goods at each end."
-          )}
-        />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+      <section className="container py-16">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          {t(locale, "How we work")}
+        </h2>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
           {principles.map((item) => (
-            <Card key={item.title} className="rounded-3xl border-field-edge p-6">
-              <span className="grid size-11 place-items-center rounded-2xl bg-brand text-brand-foreground">
+            <Card key={item.title} className="p-6">
+              <span className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand">
                 <item.icon className="size-5" />
               </span>
               <h3 className="mt-4 font-semibold">{t(locale, item.title)}</h3>
@@ -105,35 +105,19 @@ export default async function AboutPage() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <PhotoSlot name="guangzhou-warehouse" scrim>
-            <PhotoCaption label={t(locale, "Guangzhou")}>
-              {t(locale, "Received, counted, weighed, measured, photographed.")}
-            </PhotoCaption>
-          </PhotoSlot>
-          <PhotoSlot name="dar-delivery" scrim>
-            <PhotoCaption label={t(locale, "Dar es Salaam")}>
-              {t(locale, "Checked in off the container, then released — to the right person.")}
-            </PhotoCaption>
-          </PhotoSlot>
-        </div>
-
         {company?.chinaAddress || company?.darAddress ? (
           <>
-            <SectionHead
-              className="mt-16"
-              eyebrow={t(locale, "Where we are")}
-              lead={t(locale, "Two addresses,")}
-              trail={t(locale, "both ours")}
-            />
-            <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <h2 className="mt-16 text-2xl font-semibold tracking-tight">
+              {t(locale, "Where we are")}
+            </h2>
+            <div className="mt-8 grid gap-6 md:grid-cols-2">
               {[
                 ["Guangzhou, China", company?.chinaEntity, company?.chinaAddress],
                 ["Dar es Salaam, Tanzania", company?.darEntity, company?.darAddress],
               ]
                 .filter(([, , address]) => address)
                 .map(([place, entity, address]) => (
-                  <Card key={place} className="rounded-3xl border-field-edge p-6">
+                  <Card key={place} className="p-6">
                     <p className="flex items-center gap-2 text-sm font-semibold">
                       <MapPin className="size-4 text-signal" />
                       {t(locale, place!)}
@@ -154,13 +138,15 @@ export default async function AboutPage() {
         ) : null}
 
         <div className="mt-12 flex flex-wrap gap-3">
-          <PillLink href="/quote" tone="accent">
-            {t(locale, "Get a quote")}
-          </PillLink>
-          <PillLink href="/contact" tone="light">
-            {t(locale, "Contact us")}
-          </PillLink>
-        </div>
+          <Button asChild size="lg">
+            <Link href="/quote">
+              {t(locale, "Get a quote")}
+              <ArrowRight />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/contact">{t(locale, "Contact us")}</Link>
+          </Button>
         </div>
       </section>
     </>

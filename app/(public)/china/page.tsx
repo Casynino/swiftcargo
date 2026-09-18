@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, MapPin, Warehouse } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 
-import { PageHero } from "@/components/site/page-hero";
-import { PillLink, SectionHead } from "@/components/site/display";
-import { PhotoCaption, PhotoSlot } from "@/components/site/photo-slot";
+import { DisplayHeadingDark } from "@/components/site/display";
+import { HeroArtwork } from "@/components/site/hero-artwork";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CopyField } from "@/components/app/copy-field";
@@ -36,25 +35,27 @@ export default async function ChinaPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow={t(locale, "Guangzhou")}
-        eyebrowIcon={Warehouse}
-        lead={t(locale, "Our warehouse")}
-        trail={t(locale, "in China")}
-        body={t(
-          locale,
-          "Give this address to your supplier along with your shipping mark, and your goods reach us directly."
-        )}
-        scene="warehouse"
-      >
-        <PillLink href="/register" tone="accent">
-          {t(locale, "Get my shipping mark")}
-        </PillLink>
-      </PageHero>
+      <section className="relative isolate overflow-hidden border-b bg-ink py-16 text-white sm:py-20">
+        <HeroArtwork name="hero-china" />
+        <div className="container relative">
+          <p className="eyebrow text-marine">{t(locale, "Guangzhou")}</p>
+          <DisplayHeadingDark
+            as="h1"
+            className="mt-3 max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl"
+            lead={t(locale, "Our warehouse")}
+            trail={t(locale, "in China")}
+          />
+          <p className="mt-5 max-w-2xl text-lg text-white/70">
+            {t(
+              locale,
+              "Give this address to your supplier along with your shipping mark, and your goods reach us directly."
+            )}
+          </p>
+        </div>
+      </section>
 
-      <section className="bg-field py-14 sm:py-20">
-        <div className="container">
-        <Card className="rounded-3xl border-field-edge p-6 sm:p-8">
+      <section className="container py-16">
+        <Card className="p-5 sm:p-7">
           <p className="flex items-center gap-2 text-sm font-semibold">
             <MapPin className="size-4 text-signal" />
             {t(locale, "Swift Cargo Guangzhou warehouse")}
@@ -83,20 +84,16 @@ export default async function ChinaPage() {
 
         {markets.length > 0 ? (
           <>
-            <SectionHead
-              className="mt-16"
-              eyebrow={t(locale, "Sourcing")}
-              lead={t(locale, "Markets")}
-              trail={t(locale, "we buy from")}
-              body={t(
-                locale,
-                "If you know what you want but not where to get it, we probably do."
-              )}
-            />
+            <h2 className="mt-16 text-2xl font-semibold tracking-tight">
+              {t(locale, "Markets we buy from")}
+            </h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              {t(locale, "If you know what you want but not where to get it, we probably do.")}
+            </p>
 
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {markets.map((market) => (
-                <Card key={market.id} className="rounded-2xl border-field-edge p-5">
+                <Card key={market.id} className="p-5">
                   <p className="font-medium">{market.name}</p>
                   {market.category ? (
                     <p className="mt-0.5 text-xs uppercase tracking-wide text-marine">
@@ -112,33 +109,17 @@ export default async function ChinaPage() {
           </>
         ) : null}
 
-        <div className="mt-12 grid gap-4 lg:grid-cols-2">
-          <PhotoSlot name="service-sourcing" scrim fillRow="lg">
-            <PhotoCaption label={t(locale, "Consolidated")}>
-              {t(locale, "Several suppliers, one shipment, one set of paperwork.")}
-            </PhotoCaption>
-          </PhotoSlot>
-
-          <div className="rounded-3xl border border-field-edge bg-card p-6 sm:p-8">
-            <h2 className="text-xl font-semibold">
-              {t(locale, "Want us to source for you?")}
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              {t(
-                locale,
-                "Tell us what you are looking for, your budget and the quantity. We will find suppliers, compare prices, check the goods before they load and consolidate everything into one shipment."
-              )}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <PillLink href="/contact">
-                {t(locale, "Talk to us about sourcing")}
-              </PillLink>
-              <PillLink href="/pickup" tone="light">
-                {t(locale, "Request a pickup")}
-              </PillLink>
-            </div>
-          </div>
-        </div>
+        <div className="mt-12 rounded-xl border bg-surface-2 p-5 sm:p-7">
+          <h2 className="font-semibold">{t(locale, "Want us to source for you?")}</h2>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            {t(
+              locale,
+              "Tell us what you are looking for, your budget and the quantity. We will find suppliers, compare prices, check the goods before they load and consolidate everything into one shipment."
+            )}
+          </p>
+          <Button asChild className="mt-5">
+            <Link href="/contact">{t(locale, "Talk to us about sourcing")}</Link>
+          </Button>
         </div>
       </section>
     </>

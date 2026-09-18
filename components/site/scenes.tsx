@@ -1,15 +1,16 @@
 /**
- * THE DRAWN PICTURES, WHERE THE PHOTOGRAPHS WILL GO.
+ * THE DRAWN PICTURES BEHIND THE DARK HERO BANDS.
  *
- * This company has no photo library yet. Every image slot on the public site
- * therefore holds a drawing until a real photograph is dropped into it — see
- * components/site/photo-slot.tsx, which is the only thing that should ever
- * render one of these.
+ * The public site's hero panels were flat ink with a gradient on them. These
+ * put something behind the words that says what the company does — a crane
+ * lifting a box at night, a terminal at dusk, the shed in Guangzhou — until the
+ * company has photographs of its own. See components/site/hero-artwork.tsx,
+ * which is the only thing that should ever render one of these, and which is
+ * where a real photograph replaces one.
  *
  * They are drawings and not grey boxes on purpose. A placeholder rectangle
- * tells a visitor the site is unfinished; a crane lifting a box at night tells
- * them what the company does. When the owner sends photographs the layout does
- * not move, because the slot already reserves the aspect ratio.
+ * tells a visitor the site is unfinished; a crane lifting a box tells them what
+ * the company does.
  *
  * RULES THEY ALL KEEP:
  *
@@ -24,11 +25,11 @@
  *   the orange sun used once so it reads as an accent rather than as livery.
  *
  *   Nothing moves except light. What little animation there is — a lamp
- *   flickering, haze drifting — is opacity only, runs on the compositor, and
- *   stops dead under prefers-reduced-motion (see app/globals.css).
+ *   flickering — is opacity only, runs on the compositor, and stops dead under
+ *   prefers-reduced-motion (see app/globals.css).
  *
  *   Drawn to a 3:2 field with the subject inside the middle two thirds, so the
- *   same scene crops honestly into a tall 4:5 slot and a wide 16:9 one.
+ *   same scene crops honestly into a shallow hero band and a tall one.
  */
 
 const VB = { w: 1200, h: 800 } as const;
@@ -541,306 +542,12 @@ export function WarehouseScene() {
   );
 }
 
-/* ── the road ─────────────────────────────────────────────────────────────── */
-
-/**
- * The last mile in Dar: a loaded truck on the road out of the port at first
- * light, palms on the verge. Where the customer's own part of the story starts.
- */
-export function RoadScene() {
-  const id = "road";
-  return (
-    <Frame id={id}>
-      <Defs id={id} sky={["#0a2036", "#2a6a86", "#f0a468"]} />
-      <rect width={VB.w} height={VB.h} fill={`url(#${id}-sky)`} />
-
-      <circle cx="330" cy="430" r="58" fill="#ffd9a8" fillOpacity="0.8" />
-      <circle cx="330" cy="430" r="190" fill="#ff9d5c" fillOpacity="0.16" filter="url(#sc-haze)" />
-      <ellipse cx="760" cy="392" rx="420" ry="30" fill="#134a66" fillOpacity="0.45" filter="url(#sc-haze)" />
-
-      {/* The city and the cranes it grew around, low on the skyline. */}
-      <g fill="#0a2338" fillOpacity="0.92">
-        {[
-          [640, 330, 40, 130],
-          [690, 350, 52, 110],
-          [752, 300, 34, 160],
-          [796, 342, 60, 118],
-          [866, 318, 30, 142],
-          [906, 352, 48, 108],
-        ].map(([x, y, w, h]) => (
-          <rect key={x} x={x} y={y} width={w} height={h} />
-        ))}
-        <rect x="1000" y="300" width="7" height="160" />
-        <rect x="1094" y="300" width="7" height="160" />
-        <rect x="976" y="292" width="150" height="11" />
-        <rect x="976" y="262" width="11" height="32" />
-      </g>
-
-      {/* The road, running to the vanishing point on the horizon. */}
-      <rect x="0" y="460" width={VB.w} height={VB.h - 460} fill="#0d2438" />
-      <polygon points="560,460 700,460 1440,800 -180,800" fill="#0a1c2c" />
-      <polygon points="556,460 566,460 -230,800 -330,800" fill="#0c2135" />
-      {/* Centre line: the dashes get longer as they come at you, which is the
-          whole of the perspective. */}
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const t = i / 5;
-        const y = 470 + t * t * 320;
-        const w = 5 + t * t * 44;
-        const h = 3 + t * t * 16;
-        return <rect key={i} x={630 - w / 2 + t * t * 24} y={y} width={w} height={h} rx={h / 2} fill="#f4c04f" fillOpacity="0.45" />;
-      })}
-
-      {/* Palms on the verge — the one thing in the set that says Tanzania and
-          not any port anywhere. */}
-      {[
-        [96, 470, 1],
-        [1118, 466, -1],
-        [214, 452, 1],
-      ].map(([x, base, dir]) => (
-        <g key={x} fill="#061c2c">
-          <path d={`M ${x} ${base} q ${dir * 10} -80 ${dir * 4} -150`} stroke="#061c2c" strokeWidth="9" fill="none" />
-          {[-1, -0.5, 0.5, 1].map((f, i) => (
-            <path
-              key={i}
-              d={`M ${x + dir * 4} ${base - 150} q ${f * 60} ${-30 + Math.abs(f) * 16} ${f * 96} ${14 + Math.abs(f) * 26}`}
-              stroke="#061c2c"
-              strokeWidth={7 - Math.abs(f) * 2}
-              strokeLinecap="round"
-              fill="none"
-            />
-          ))}
-        </g>
-      ))}
-
-      {/* The truck, three-quarter on, coming down the near lane. */}
-      <g>
-        <ellipse cx="700" cy="736" rx="330" ry="24" fill="#020a12" fillOpacity="0.5" />
-        {/* Trailer, with a container on it rather than a curtain: this is the
-            same box that was on the ship. */}
-        <Container x={440} y={540} w={360} h={150} fill="#1b6a95" shade={0.34} />
-        <rect x="440" y="690" width="360" height="16" fill="#0a2236" />
-        {/* Tractor unit. */}
-        <path d="M 800 690 L 800 560 Q 800 548 814 548 L 916 548 Q 932 548 940 566 L 972 634 L 984 634 Q 996 634 996 648 L 996 690 Z" fill="#0e3251" />
-        <path d="M 820 566 L 908 566 Q 918 566 924 578 L 946 626 L 820 626 Z" fill="#7fc4e6" fillOpacity="0.35" />
-        <rect x="800" y="548" width="196" height="6" fill="#4fc9f0" fillOpacity="0.4" />
-        <rect x="960" y="648" width="40" height="18" rx="6" fill="#ffe9c8" />
-        <circle cx="982" cy="658" r="26" fill="#ffe0b0" fillOpacity="0.28" filter="url(#sc-soft)" />
-        {[500, 570, 720, 860, 930].map((x) => (
-          <g key={x}>
-            <circle cx={x} cy="706" r="30" fill="#061421" />
-            <circle cx={x} cy="706" r="13" fill="#123a55" />
-          </g>
-        ))}
-        <rect x="440" y="540" width="360" height="6" fill="#cfe9fb" fillOpacity="0.25" />
-      </g>
-
-      <rect x="0" y="740" width={VB.w} height="60" fill="#040e19" fillOpacity="0.55" />
-    </Frame>
-  );
-}
-
-/* ── the route ────────────────────────────────────────────────────────────── */
-
-/**
- * THE LANE, AS DOTS.
- *
- * The one diagram in the set, and the only place on the site where a picture
- * makes a claim. So it is drawn from coordinates rather than by eye: every
- * coastline below is a list of real degrees, projected here, and the lane runs
- * through the waters a ship on this trade actually uses — down the South China
- * Sea, through the Malacca Strait, across the Indian Ocean. A pretty curve
- * straight across India would be a lie told in pixels.
- *
- * It is still a sketch and not a chart. Nothing on it is scaled finely enough
- * to measure, and the only two places named on it are the two warehouses, so
- * no reader is invited to read a position off it. There is no AIS feed on this
- * service and nothing here pretends otherwise.
- */
-
-/** Equirectangular, over the quadrant this company sails. */
-const WEST = 20;
-const EAST = 125;
-const NORTH = 42;
-const SOUTH = -28;
-const MAP = { w: 840, h: 470 } as const;
-
-const px = (lon: number) => ((lon - WEST) / (EAST - WEST)) * MAP.w;
-const py = (lat: number) => ((NORTH - lat) / (NORTH - SOUTH)) * MAP.h;
-
-/** [lon, lat] rings, coarse. Closed by the renderer. */
-const COAST: [number, number][][] = [
-  /* Africa, from the Libyan coast round the Horn and down to the Cape. The
-     western edge is the frame, not a coastline: this map starts at 20°E. */
-  [
-    [20, 32], [25, 32], [30, 31], [32, 31], [35, 28], [37, 22], [39, 15],
-    [43, 11.5], [51, 12], [48, 5], [42, -1], [40, -4], [39.5, -7], [40, -10],
-    [40.5, -16], [35, -20], [32, -26], [29, -31], [25, -34], [20, -34],
-  ],
-  /* Madagascar. */
-  [[44, -12], [49.5, -15], [50, -18], [47, -25], [44.5, -22], [43, -17]],
-  /* Arabia. */
-  [
-    [35, 28], [38, 31], [48, 30], [57, 25], [59, 22], [55, 17], [48, 14],
-    [43, 12.7], [39, 17], [36, 23],
-  ],
-  /* The subcontinent. */
-  [
-    [61, 25], [68, 24], [72, 21], [73, 16], [77, 8], [80, 13], [81, 16],
-    [87, 21], [90, 22], [92, 21], [93, 24], [88, 27], [78, 31], [72, 28],
-    [67, 26],
-  ],
-  /* Sri Lanka. */
-  [[80, 9.5], [82, 7], [80.5, 6], [79.8, 8]],
-  /* China and Indochina, one mass. Guangzhou sits on its southern coast. */
-  [
-    [93, 24], [95, 20], [98, 16], [100, 13], [100, 8], [104, 1.5], [106, 10],
-    [109, 15], [108, 21], [113, 22], [117, 24], [120, 30], [122, 31],
-    [121, 37], [125, 40], [125, 42], [95, 42], [92, 30],
-  ],
-  /* Borneo, Sumatra, Java — what makes the straits read as straits. */
-  [[109, 2], [117, 4], [119, 1], [117, -3], [111, -3], [109, 0]],
-  [[95, 5], [100, 2], [106, -6], [102, -5], [97, 2]],
-  [[105, -6], [114, -8], [114, -9], [105, -7]],
-  /* The Philippines, roughly. */
-  [[120, 18], [122, 14], [126, 10], [125, 6], [121, 7], [119, 11], [119, 16]],
-  /* The north-west shoulder of Australia, cut by the frame. */
-  [[114, -22], [122, -18], [125, -14], [125, -28], [114, -28]],
-];
-
-const ring = (points: [number, number][]) =>
-  points.map(([lon, lat], i) => `${i ? "L" : "M"} ${px(lon).toFixed(1)} ${py(lat).toFixed(1)}`).join(" ") + " Z";
-
-/** The two warehouses. */
-const GUANGZHOU: [number, number] = [113.3, 23.1];
-const DAR: [number, number] = [39.3, -6.8];
-
-/**
- * The waters between them, in order: out of the Pearl River delta, down the
- * South China Sea, through Malacca, then west across the Indian Ocean.
- */
-const LANE: [number, number][] = [
-  GUANGZHOU, [112, 19], [109, 10], [106, 4], [103, 1.5], [99, 4.5], [93, 6],
-  [82, 5.5], [70, 3], [58, 0], [50, -3], [44, -5.5], DAR,
-];
-
-const lanePath = LANE.map(([lon, lat], i) =>
-  `${i ? "L" : "M"} ${px(lon).toFixed(1)} ${py(lat).toFixed(1)}`
-).join(" ");
-
-export function RouteScene({
-  className,
-  /** The two warehouses' own names, so the drawing says what the site says. */
-  originLabel,
-  destinationLabel,
-}: {
-  className?: string;
-  originLabel: string;
-  destinationLabel: string;
-}) {
-  return (
-    <svg
-      aria-hidden
-      viewBox={`0 0 ${MAP.w} ${MAP.h}`}
-      preserveAspectRatio="xMidYMid meet"
-      className={className ?? FILL}
-    >
-      <defs>
-        <pattern id="rt-dots" width="10" height="10" patternUnits="userSpaceOnUse">
-          <circle cx="2.2" cy="2.2" r="1.7" fill="currentColor" />
-        </pattern>
-        <linearGradient id="rt-lane" x1="1" y1="0" x2="0" y2="0">
-          <stop offset="0%" stopColor="#4fc9f0" />
-          <stop offset="55%" stopColor="#7fd6ee" />
-          <stop offset="100%" stopColor="#f4611f" />
-        </linearGradient>
-        <clipPath id="rt-land">
-          {COAST.map((points, i) => (
-            <path key={i} d={ring(points)} />
-          ))}
-        </clipPath>
-      </defs>
-
-      {/* The land. The dots are laid over the whole frame and cut to shape, so
-          the grid stays square instead of bending round each coast. */}
-      <g clipPath="url(#rt-land)" className="text-white/30">
-        <rect x="0" y="0" width={MAP.w} height={MAP.h} fill="url(#rt-dots)" />
-      </g>
-
-      {/* The lane. The soft copy under it is the glow; the dashes on top are
-          what actually reads as a track at a phone's size. */}
-      <path
-        d={lanePath}
-        fill="none"
-        stroke="url(#rt-lane)"
-        strokeOpacity="0.28"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d={lanePath}
-        fill="none"
-        stroke="url(#rt-lane)"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray="2 9"
-        className="rt-lane"
-      />
-
-      {/* The two ends, named on the drawing rather than under it. A label at
-          the foot of the frame is a caption; a label beside the dot is what the
-          dot means. Guangzhou's sits to its left because the mark is close to
-          the eastern edge, and Dar's to its right for the same reason. */}
-      {([
-        [GUANGZHOU, "#4fc9f0", originLabel, "end" as const, -14],
-        [DAR, "#f4611f", destinationLabel, "start" as const, 14],
-      ] as const).map(([[lon, lat], colour, label, anchor, dx]) => (
-        <g key={colour}>
-          <circle cx={px(lon)} cy={py(lat)} r="15" fill={colour} fillOpacity="0.18" className="rt-ping" />
-          <circle cx={px(lon)} cy={py(lat)} r="5.5" fill={colour} />
-          <circle
-            cx={px(lon)}
-            cy={py(lat)}
-            r="5.5"
-            fill="none"
-            stroke="#ffffff"
-            strokeOpacity="0.6"
-            strokeWidth="1.3"
-          />
-          <text
-            x={px(lon) + dx}
-            y={py(lat) + 4.5}
-            textAnchor={anchor}
-            fill="#ffffff"
-            fillOpacity="0.85"
-            fontSize="13"
-            fontWeight="600"
-            letterSpacing="1.6"
-            /* The label crosses the dot grid of its own coastline. Drawing the
-               stroke first lays a dark halo under the letters, which is the
-               only thing that keeps them readable over it. */
-            stroke="#04121f"
-            strokeWidth="3.5"
-            strokeOpacity="0.85"
-            paintOrder="stroke"
-            style={{ textTransform: "uppercase" }}
-          >
-            {label}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
 /* ── the register ─────────────────────────────────────────────────────────── */
 
 export const SCENES = {
   crane: CraneScene,
   port: PortScene,
   warehouse: WarehouseScene,
-  road: RoadScene,
 } as const;
 
 export type SceneName = keyof typeof SCENES;
