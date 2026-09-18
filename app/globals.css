@@ -619,12 +619,13 @@
 }
 
 /**
- * THE DRAWN SCENES, WHERE THE PHOTOGRAPHS WILL GO.
+ * THE DRAWN SCENES BEHIND THE DARK HERO BANDS.
  *
- * See components/site/scenes.tsx. Nothing here moves a layout or wakes the main
- * thread: opacity and transform only, and all of it stops under
- * prefers-reduced-motion. A lamp that flickers on a page somebody is trying to
- * read a reference off is not atmosphere, it is a nuisance.
+ * See components/site/scenes.tsx. The only thing that moves in any of them is a
+ * mast lamp, and it moves by opacity alone, which the compositor runs without
+ * waking the main thread. It stops dead under prefers-reduced-motion: a lamp
+ * flickering behind a heading somebody is trying to read is not atmosphere, it
+ * is a nuisance.
  */
 @keyframes sc-lamp {
   0%,
@@ -644,40 +645,8 @@
   animation: sc-lamp 9s steps(1, end) infinite;
 }
 
-/* The lane on the route drawing, walking west the way the ship does. The dash
-   gap is 10 units, so one period of 10 puts it back where it started. */
-@keyframes rt-lane {
-  to {
-    stroke-dashoffset: -10;
-  }
-}
-
-.rt-lane {
-  animation: rt-lane 1.6s linear infinite;
-}
-
-@keyframes rt-ping {
-  0%,
-  100% {
-    transform: scale(0.85);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.25);
-    opacity: 0.16;
-  }
-}
-
-.rt-ping {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: rt-ping 4.4s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .sc-lamp,
-  .rt-lane,
-  .rt-ping {
+  .sc-lamp {
     animation: none;
   }
 }
