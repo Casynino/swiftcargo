@@ -374,7 +374,7 @@ export function PackageEditor({
               <Input id="modelNo" name="modelNo" defaultValue={editing?.modelNo ?? ""} />
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="pieces">Pieces / sets</Label>
               <Input id="pieces" name="pieces" type="number" min={0} inputMode="numeric" defaultValue={editing?.pieces ?? ""} />
@@ -382,10 +382,6 @@ export function PackageEditor({
             <div className="space-y-2">
               <Label htmlFor="netWeightKg">Net weight (kg)</Label>
               <Input id="netWeightKg" name="netWeightKg" type="number" step="0.001" min={0} inputMode="decimal" defaultValue={editing?.netWeightKg ?? ""} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="declaredUnitValue">Unit price (USD)</Label>
-              <Input id="declaredUnitValue" name="declaredUnitValue" type="number" step="0.01" min={0} inputMode="decimal" defaultValue={editing?.declaredUnitValue ?? ""} />
             </div>
           </div>
 

@@ -52,7 +52,6 @@ type Line = {
   weightKg: string;
   netWeightKg: string;
   modelNo: string;
-  unitValue: string;
 };
 
 type KnownCustomer = {
@@ -82,7 +81,6 @@ const blank = (key: number, receiptNo = ""): Line => ({
   weightKg: "",
   netWeightKg: "",
   modelNo: "",
-  unitValue: "",
 });
 
 /**
@@ -746,8 +744,10 @@ export function IntakeForm({
                   </div>
                 </div>
 
-                {/* The customs columns of the packing list. All optional. */}
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {/* The customs columns of the packing list. All optional. No
+                    price here: the category decides what a line is charged,
+                    and the floor is never asked for money. */}
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor={`mo-${line.key}`}>
                       Model no. 型号{" "}
@@ -774,22 +774,6 @@ export function IntakeForm({
                       inputMode="decimal"
                       value={line.netWeightKg}
                       onChange={(e) => update(line.key, "netWeightKg", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`uv-${line.key}`}>
-                      Unit price USD 单价{" "}
-                      <span className="font-normal text-muted-foreground">optional</span>
-                    </Label>
-                    <Input
-                      id={`uv-${line.key}`}
-                      name="itemUnitValue"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      inputMode="decimal"
-                      value={line.unitValue}
-                      onChange={(e) => update(line.key, "unitValue", e.target.value)}
                     />
                   </div>
                 </div>
