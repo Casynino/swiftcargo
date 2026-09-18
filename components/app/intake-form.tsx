@@ -173,7 +173,9 @@ export function IntakeForm({
   };
 
   useEffect(() => {
-    if (state.id) router.push(`/app/cargo/${state.id}`);
+    /* Straight to the stickers: the next thing the clerk does is put one on
+       every box, while the boxes are still on the counter. */
+    if (state.id) router.push(`/app/cargo/${state.id}/label?received=1`);
   }, [state.id, router]);
 
   const totals = useMemo(() => {
@@ -813,16 +815,11 @@ export function IntakeForm({
             Photos <span className="text-destructive">*</span>
           </CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            At least one. It is what the customer sees when they track their
-            cargo, and the only record of how the boxes looked on arrival.
+            The shipping mark, and anything damaged. The customer sees these.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <PhotoCapture />
-          <p className="text-xs text-muted-foreground">
-            Take them now, while the boxes are in front of you. The shipping
-            mark and anything damaged are the two that matter later.
-          </p>
 
           <div className="space-y-2">
             <Label htmlFor="notes">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CheckCircle2, Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -45,7 +46,7 @@ export default async function CargoLabelPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ box?: string }>;
+  searchParams: Promise<{ box?: string; received?: string }>;
 }) {
   /* Every desk may look a box up; only a desk that handles the boxes may print
      what goes on them. The route table matches on prefixes and /app/cargo
@@ -83,12 +84,38 @@ export default async function CargoLabelPage({
 
   /* ?box= reprints one sticker — the one that was torn or went missing —
      without printing the whole consignment again. */
-  const { box } = await searchParams;
+  const { box, received } = await searchParams;
   const stickers: StickerData[] = await stickersFor([cargo.id], box ?? null);
   if (stickers.length === 0) notFound();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 print:max-w-none print:space-y-0">
+      {received ? (
+        <div className="rounded-2xl border border-success/40 bg-success/10 p-4 print:hidden">
+          <p className="flex items-center gap-2 font-semibold text-success">
+            <CheckCircle2 className="size-5" />
+            Received · {cargo.reference}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Print the labels and stick one on each box — {stickers.length} box
+            {stickers.length === 1 ? "" : "es"}.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:flex">
+            <PrintButton
+              primary
+              className="w-full sm:w-auto"
+              label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
+            />
+            <Link
+              href="/app/receive/new"
+              className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+            >
+              <Plus className="size-4" />
+              Receive next
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
           <SmartBack fallbackHref={`/app/cargo/${cargo.id}`} fallbackLabel={`${cargo.reference}`} />

@@ -3,11 +3,24 @@
 import { useEffect } from "react";
 import { Printer } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-export function PrintButton({ label = "Print" }: { label?: string }) {
+export function PrintButton({
+  label = "Print",
+  className,
+  primary,
+}: {
+  label?: string;
+  className?: string;
+  primary?: boolean;
+}) {
   return (
-    <Button variant="outline" onClick={() => window.print()} className="print:hidden">
+    <Button
+      variant={primary ? "default" : "outline"}
+      onClick={() => window.print()}
+      className={cn("print:hidden", className)}
+    >
       <Printer />
       {label}
     </Button>
