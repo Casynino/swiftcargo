@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, Clock, Paperclip, Pencil, Undo2 } from "lucide-react";
+import { useActionState, useCallback, useEffect, useMemo, useState } from "react";
+import { Ban, CheckCircle2, Clock, Paperclip, Pencil, Undo2, Upload } from "lucide-react";
 
 import {
   cancelClaims,
@@ -11,9 +11,13 @@ import {
 } from "@/lib/actions/claims";
 import { rejectPayment } from "@/lib/actions/payments";
 import { FormMessage } from "@/components/app/form-message";
+import { Modal } from "@/components/app/modal";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 export type ClaimRow = {
@@ -231,9 +235,6 @@ function ClaimRowItem({
     {}
   );
   const [editState, edit] = useActionState<ClaimState, FormData>(editClaim, {});
-  useEffect(() => {
-    if (editState.ok) setOpen(null);
-  }, [editState]);
   const [backState, sendBack] = useActionState<ClaimState, FormData>(
     rejectPayment,
     {}
@@ -242,9 +243,12 @@ function ClaimRowItem({
     cancelClaims,
     {}
   );
+  const close = useCallback(() => setOpen(null), []);
+  useEffect(() => {
+    if (editState.ok || backState.ok || cancelState.ok) setOpen(null);
+  }, [editState, backState, cancelState]);
 
-  const message =
-    verifyState.error ?? editState.error ?? backState.error ?? cancelState.error;
+  const message = verifyState.error;
   const done = verifyState.ok ?? editState.ok ?? backState.ok ?? cancelState.ok;
 
   return (
@@ -324,7 +328,7 @@ function ClaimRowItem({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setOpen(open === "edit" ? null : "edit")}
+            onClick={() => setOpen("edit")}
           >
             <Pencil className="mr-1 size-3.5" />
             {mode === "verify" ? "Edit" : "Fix and send again"}
@@ -344,7 +348,7 @@ function ClaimRowItem({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setOpen(open === "back" ? null : "back")}
+                onClick={() => setOpen("back")}
               >
                 <Undo2 className="mr-1 size-3.5" />
                 Send it back
@@ -354,7 +358,7 @@ function ClaimRowItem({
           <Button
             size="sm"
             variant="outline"
-            onClick={() => setOpen(open === "cancel" ? null : "cancel")}
+            onClick={() => setOpen("cancel")}
           >
             <Ban className="mr-1 size-3.5" />
             {mode === "verify" ? "Cancel it" : "Delete"}
@@ -366,117 +370,137 @@ function ClaimRowItem({
       {open === "edit" ? (
         /* The whole record, as saved, ready to put right before it counts —
            nothing here has been verified or printed on a receipt yet. */
-        <form
-          action={edit}
-          className="ml-9 mt-3 grid gap-3 rounded-lg border bg-secondary/30 p-3 sm:grid-cols-2 lg:grid-cols-4"
+        <Modal
+          title={mode === "verify" ? "Correct this payment" : "Fix and send again"}
+          onClose={close}
+          className="max-w-lg"
         >
-          <input type="hidden" name="paymentId" value={row.id} />
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Amount ({row.currency})</span>
-            <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={row.amount} required />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Paid into</span>
-            <select
-              name="accountId"
-              defaultValue={row.accountId ?? ""}
-              className="flex h-10 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="">— not said —</option>
-              {accounts
-                .filter((a) => a.currency === row.currency || a.id === row.accountId)
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Date paid</span>
-            <Input name="paidAt" type="date" defaultValue={row.paidAt} max={new Date().toISOString().slice(0, 10)} />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">How it was paid</span>
-            <select
-              name="method"
-              defaultValue={row.method}
-              className="flex h-10 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="BANK_TRANSFER">Bank transfer</option>
-              <option value="MOBILE_MONEY">Mobile money</option>
-              <option value="CASH">Cash</option>
-              <option value="CHEQUE">Cheque</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Their reference</span>
-            <Input name="transactionRef" defaultValue={row.transactionRef ?? ""} placeholder="M-Pesa code, slip number…" />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Paid by</span>
-            <Input name="payerName" defaultValue={row.payerName ?? ""} placeholder={row.customer} />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Payer&apos;s bank</span>
-            <Input name="payerBank" defaultValue={row.payerBank ?? ""} />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Payer&apos;s account or number</span>
-            <Input name="payerAccount" defaultValue={row.payerAccount ?? ""} />
-          </label>
-          <label className="space-y-1 text-xs sm:col-span-2">
-            <span className="text-muted-foreground">Note</span>
-            <Input name="notes" defaultValue={row.notes ?? ""} />
-          </label>
-          <label className="space-y-1 text-xs">
-            <span className="text-muted-foreground">Add proof</span>
-            <Input name="proof" type="file" accept="image/*,application/pdf" />
-          </label>
-          <div className="flex items-end">
-            <SubmitButton size="sm" className="w-full">
-              {mode === "verify" ? "Save changes" : "Fix and send again"}
-            </SubmitButton>
-          </div>
-        </form>
+          <p className="tnum text-sm text-muted-foreground">
+            {row.customer} · {row.reference}
+            {row.invoice ? ` · ${row.invoice}` : ""}
+          </p>
+          <form action={edit} className="space-y-4">
+            <input type="hidden" name="paymentId" value={row.id} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={`Amount (${row.currency})`}>
+                <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={row.amount} required />
+              </Field>
+              <Field label="Date paid">
+                <Input name="paidAt" type="date" defaultValue={row.paidAt} max={new Date().toISOString().slice(0, 10)} />
+              </Field>
+            </div>
+            <Field label="Paid into">
+              <NativeSelect name="accountId" defaultValue={row.accountId ?? ""}>
+                <option value="">— not said —</option>
+                {accounts
+                  .filter((a) => a.currency === row.currency || a.id === row.accountId)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+              </NativeSelect>
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="How it was paid">
+                <NativeSelect name="method" defaultValue={row.method}>
+                  <option value="BANK_TRANSFER">Bank transfer</option>
+                  <option value="MOBILE_MONEY">Mobile money</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="OTHER">Other</option>
+                </NativeSelect>
+              </Field>
+              <Field label="Their reference">
+                <Input name="transactionRef" defaultValue={row.transactionRef ?? ""} placeholder="M-Pesa code, slip number…" />
+              </Field>
+            </div>
+            <Field label="Paid by">
+              <Input name="payerName" defaultValue={row.payerName ?? ""} placeholder={row.customer} />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Payer's bank">
+                <Input name="payerBank" defaultValue={row.payerBank ?? ""} />
+              </Field>
+              <Field label="Payer's account or number">
+                <Input name="payerAccount" defaultValue={row.payerAccount ?? ""} />
+              </Field>
+            </div>
+            <Field label="Note">
+              <Textarea name="notes" rows={2} defaultValue={row.notes ?? ""} />
+            </Field>
+            <div className="space-y-1.5">
+              <Label>Proof</Label>
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-signal/50 bg-signal/[0.06] px-3 py-2.5 text-sm">
+                <Upload className="size-4 shrink-0 text-signal" />
+                <span className="font-medium">{row.proofUrl ? "Replace proof" : "Add proof"}</span>
+                <input
+                  name="proof"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="min-w-0 flex-1 text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-foreground"
+                />
+              </label>
+              {row.proofUrl ? (
+                <a href={row.proofUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-brand hover:underline">
+                  <Paperclip className="size-3" />
+                  View the proof on file
+                </a>
+              ) : null}
+            </div>
+            <FormMessage error={editState.error} />
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton size="sm">
+                {mode === "verify" ? "Save the correction" : "Fix and send again"}
+              </SubmitButton>
+              <Button type="button" size="sm" variant="ghost" onClick={close}>
+                Leave it
+              </Button>
+            </div>
+          </form>
+        </Modal>
       ) : null}
 
       {open === "back" ? (
-        <form
-          action={sendBack}
-          className="ml-9 mt-3 flex flex-wrap items-end gap-2 rounded-lg border bg-secondary/30 p-3"
-        >
-          <input type="hidden" name="paymentId" value={row.id} />
-          <Input
-            name="reason"
-            required
-            placeholder="Why it does not check out — the customer is told this"
-            className="min-w-[20rem] flex-1"
-          />
-          <SubmitButton size="sm" variant="outline">
-            Send it back
-          </SubmitButton>
-        </form>
+        <Modal title="Send this payment back" onClose={close}>
+          <p className="tnum text-sm text-muted-foreground">
+            {row.customer} · {row.reference} · {row.amountLabel}
+          </p>
+          <form action={sendBack} className="space-y-4">
+            <input type="hidden" name="paymentId" value={row.id} />
+            <Field label="Why it does not check out">
+              <Textarea name="reason" rows={3} required placeholder="The customer and the person who recorded it are told this" />
+            </Field>
+            <FormMessage error={backState.error} />
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton size="sm">Send it back</SubmitButton>
+              <Button type="button" size="sm" variant="ghost" onClick={close}>
+                Leave it
+              </Button>
+            </div>
+          </form>
+        </Modal>
       ) : null}
 
       {open === "cancel" ? (
-        <form
-          action={cancel}
-          className="ml-9 mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] p-3"
-        >
-          <input type="hidden" name="paymentIds" value={row.id} />
-          <p className="flex-1 text-sm">
-            Remove {row.reference}? It stops counting and leaves this list. The
-            record is kept.
+        <Modal title={mode === "verify" ? "Cancel this payment" : "Delete this payment"} onClose={close}>
+          <p className="text-sm text-muted-foreground">
+            {row.customer} · {row.reference} · {row.amountLabel}. It stops
+            counting and leaves this list. The record is kept.
           </p>
-          <SubmitButton size="sm" variant="destructive">
-            {mode === "verify" ? "Cancel it" : "Delete"}
-          </SubmitButton>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(null)}>
-            Keep it
-          </Button>
-        </form>
+          <form action={cancel} className="space-y-4">
+            <input type="hidden" name="paymentIds" value={row.id} />
+            <FormMessage error={cancelState.error} />
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton size="sm" variant="destructive">
+                {mode === "verify" ? "Cancel it" : "Delete"}
+              </SubmitButton>
+              <Button type="button" size="sm" variant="ghost" onClick={close}>
+                Keep it
+              </Button>
+            </div>
+          </form>
+        </Modal>
       ) : null}
 
       {message || done ? (
@@ -485,5 +509,14 @@ function ClaimRowItem({
         </div>
       ) : null}
     </li>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+    </label>
   );
 }
