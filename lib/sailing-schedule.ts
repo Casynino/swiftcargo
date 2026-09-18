@@ -275,11 +275,14 @@ function fromRow(row: StoredRow, now: Date): Sailing {
 /**
  * What the website shows: the generated weeks, overridden by anything stored.
  *
- * A stored row wins its week outright. An unpublished row removes that week —
- * the only way to take a generated week off the page, and deliberately not a
- * status, because "there is no boat that week" and "the boat is cancelled" are
- * different sentences to a customer. A stored row with no `weekOf` is an extra
- * sailing and is folded in by departure date.
+ * A stored row wins its week outright — by `weekOf` when it names one, and
+ * otherwise by the week its departure falls in. A SECOND row in the same week
+ * is a genuine extra sailing and is shown beside the first, in departure order.
+ *
+ * An unpublished row removes its week from the page. That is the only way to
+ * take a generated week off, and it is deliberately not a status: "there is no
+ * boat that week" and "the boat is cancelled" are different sentences to a
+ * customer, and only one of them is worth printing.
  */
 export async function publicSailings(
   options: {
