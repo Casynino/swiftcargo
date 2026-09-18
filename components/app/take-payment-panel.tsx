@@ -58,8 +58,8 @@ const money = (value: number, currency: string) =>
  * pay in shillings, so the desk needs to see what the notes on the counter
  * settle BEFORE taking them, not afterwards on a receipt somebody disputes.
  *
- * RECORDING IS NOT VERIFYING. Everything here lands as pending, whoever pressed
- * it, and a separate permission turns it into money the release gate counts.
+ * Finance's recording counts at once, with a receipt; anybody else's lands as
+ * a claim for Finance to confirm (lib/actions/payments.ts).
  */
 export function TakePaymentPanel({
   bill,
@@ -512,7 +512,9 @@ export function TakePaymentPanel({
 
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Recorded now, counted once Finance verifies it.
+              {canReleaseOnCredit
+                ? "Counted straight away, with a receipt."
+                : "Recorded now, counted once Finance verifies it."}
             </p>
             <SubmitButton pendingLabel="Recording…" disabled={over && (mode === "many" || !acceptOver)}>
               {mode === "one" ? "Record payment" : "Record one payment"}

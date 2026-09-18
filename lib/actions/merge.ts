@@ -13,6 +13,7 @@ import { can } from "@/lib/rbac";
 import { currentExchangeRate } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/session";
+import { confirmPayment } from "@/lib/payment-confirm";
 import { store, UploadError } from "@/lib/storage";
 
 export type MergeState = { error?: string; ok?: string };
@@ -40,13 +41,17 @@ const METHOD_FOR = {
  * money in CRDB by transfer, money in the tin as cash. Asking twice invites the
  * two answers to disagree.
  *
- * EVERY SLICE LANDS PENDING. Spreading money is not verifying it.
+ * WHO TAKES IT DECIDES WHETHER IT COUNTS NOW. By the owner's decision, money
+ * Finance (or the manager or owner) records is confirmed in the same press —
+ * each slice VERIFIED with its own receipt. Support's recording is a claim and
+ * waits for Finance.
  */
 export async function recordCombinedPayment(
   _prev: MergeState,
   formData: FormData
 ): Promise<MergeState> {
   const actor = await authorize("payment.submit");
+  const confirmsOwn = can(actor.role, "payment.verify");
 
   const customerId = String(formData.get("customerId") ?? "");
   const invoiceIds = [
@@ -260,16 +265,18 @@ export async function recordCombinedPayment(
       made.push(reference);
     }
 
-    await notifyStaff(
-      await staffInDepartment("FINANCE", tx),
-      {
-        kind: "payment.pending",
-        title: `One payment to verify across ${slices.length} bill(s)`,
-        body: `${formatCurrency(cargo, currency)} into ${account.bankName}, covering ${covering}.`,
-        href: "/app/finance/collections/verify",
-      },
-      tx
-    );
+    if (!confirmsOwn) {
+      await notifyStaff(
+        await staffInDepartment("FINANCE", tx),
+        {
+          kind: "payment.pending",
+          title: `One payment to verify across ${slices.length} bill(s)`,
+          body: `${formatCurrency(cargo, currency)} into ${account.bankName}, covering ${covering}.`,
+          href: "/app/finance/collections/verify",
+        },
+        tx
+      );
+    }
     return made;
   });
   } catch (error) {
@@ -309,6 +316,28 @@ export async function recordCombinedPayment(
 
   revalidatePath("/app/finance/collections", "layout");
   revalidatePath("/app/finance/payments/new", "layout");
+
+  if (confirmsOwn) {
+    const rows = await prisma.payment.findMany({
+      where: { reference: { in: references } },
+      orderBy: { reference: "asc" },
+      select: { id: true, reference: true },
+    });
+    const receipts: string[] = [];
+    const failed: string[] = [];
+    for (const row of rows) {
+      const confirmed = await confirmPayment(actor, row.id);
+      if (confirmed.error) failed.push(`${row.reference}: ${confirmed.error}`);
+      else if (confirmed.ok) receipts.push(confirmed.ok.replace(/^Verified\.\s*/, ""));
+    }
+    if (failed.length > 0) {
+      return { error: `Recorded, but not confirmed — ${failed.join("; ")}` };
+    }
+    return {
+      ok: `Payment recorded${shared ? ` across ${slices.length} bills as ${shared}` : ` as ${references[0]}`}. ${receipts.join(" ")}`.trim(),
+    };
+  }
+
   return {
     ok: shared
       ? `Recorded across ${slices.length} bills as ${shared}. It is waiting in Verify payments.`

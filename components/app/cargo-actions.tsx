@@ -17,6 +17,7 @@ import {
 
 import { recordCombinedPayment, type MergeState } from "@/lib/actions/merge";
 import { issuePickupNote } from "@/lib/actions/pickup-notes";
+import { verifyPayment } from "@/lib/actions/payments";
 import {
   CreditButton,
   DiscountDialog,
@@ -49,6 +50,8 @@ export type CargoBill = {
   cbm: number | null;
   /** A payment already waiting on Finance for this bill. */
   pending: boolean;
+  /** Which one, so Finance can confirm it where it stands. */
+  pendingPaymentId?: string | null;
 };
 
 export type CargoAccount = {
@@ -241,12 +244,19 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
 
       {open && !props.settled ? (
         bill.pending ? (
-          <p className="mt-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-            A payment for this bill is already waiting in Verify payments. Verify or send it back before taking another.{" "}
-            <Link href="/app/finance/collections/verify" className="font-semibold underline underline-offset-2">
-              Open Verify payments
-            </Link>
-          </p>
+          <div className="mt-3 space-y-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <p>
+              {props.canDecide
+                ? "Support recorded a payment on this bill that is waiting for you. Confirm it here if the money is in, or open the queue to send it back."
+                : "A payment for this bill is already waiting for Finance."}{" "}
+              <Link href="/app/finance/collections/verify" className="font-semibold underline underline-offset-2">
+                Open Verify payments
+              </Link>
+            </p>
+            {props.canDecide && bill.pendingPaymentId ? (
+              <ConfirmWaiting paymentId={bill.pendingPaymentId} />
+            ) : null}
+          </div>
         ) : (
           <form action={action} className="mt-4 space-y-3">
             <input type="hidden" name="customerId" value={props.customerId} />
@@ -444,7 +454,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
             </div>
             <p className="text-[11px] text-muted-foreground">
               {props.canDecide
-                ? "It lands in Verify payments and counts against the bill once verified."
+                ? "It counts against the bill straight away, and the receipt is issued."
                 : "Nothing is settled until Finance verifies it. No money moves on this screen."}
             </p>
             {dialogs}
@@ -584,5 +594,19 @@ function PickupPanel(props: Props & { settled: boolean }) {
         </SubmitButton>
       </form>
     </div>
+  );
+}
+
+/** Finance confirming the claim Support left on this bill, without leaving the page. */
+function ConfirmWaiting({ paymentId }: { paymentId: string }) {
+  const [state, action] = useActionState(verifyPayment, {});
+  return (
+    <form action={action} className="space-y-1.5">
+      <input type="hidden" name="paymentId" value={paymentId} />
+      <SubmitButton size="sm" pendingLabel="Confirming…">
+        Confirm this payment
+      </SubmitButton>
+      <FormMessage error={state.error} ok={state.ok} />
+    </form>
   );
 }

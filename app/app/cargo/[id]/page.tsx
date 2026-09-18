@@ -872,6 +872,7 @@ export default async function CargoDetailPage({
                       appliedRate: billHere.appliedRate ? Number(billHere.appliedRate) : null,
                       cbm: billHere.billableCbm ? Number(billHere.billableCbm) : null,
                       pending: billHere.payments.some((p) => p.status === "PENDING"),
+                      pendingPaymentId: billHere.payments.find((p) => p.status === "PENDING")?.id ?? null,
                     }
                   : null
               }

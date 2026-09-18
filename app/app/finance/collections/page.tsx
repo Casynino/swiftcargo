@@ -195,6 +195,7 @@ export default async function CollectionsPage({
         paid: Number(balance.paid),
         lastContact: invoice.cargo.contacts[0] ?? null,
         pending: invoice.payments.some((p) => p.status === "PENDING"),
+                      pendingPaymentId: invoice.payments.find((p) => p.status === "PENDING")?.id ?? null,
         ready: invoice.cargo.pickupNote?.status === "ACTIVE",
         /* Released on credit and still owed — the goods left before the money
            arrived, which is a different conversation from an ordinary debt. */

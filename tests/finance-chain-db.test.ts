@@ -895,22 +895,17 @@ describe("one bill settled in two currencies, at the counter", () => {
       const usd = await prisma.payment.findFirstOrThrow({
         where: { invoiceId, currency: "USD" },
       });
-      assert.equal(usd.status, "PENDING", "money is worth nothing until it is checked");
+      /* Finance recording it is Finance confirming it — the owner's decision. */
+      assert.equal(usd.status, "VERIFIED", "Finance's own recording counts at once");
       assert.equal(usd.fxRate?.toString(), rate.rate.toString(), "its own rate");
       assert.equal(usd.baseCurrencyAmount?.toString(), "27000", "and its own shillings");
       assert.equal(usd.method, "CASH");
       assert.equal(usd.recordedById, me.id, "and who took it");
       assert.ok(usd.paidAt, "and when");
       assert.match(usd.reference, /^PAY-/);
-      assert.equal(
-        (await owing(invoiceId)).outstandingTzs?.toString(),
-        "36450",
-        "the bill still owes it all while the claim is unverified"
-      );
-
-      const verified = await paymentActions.verifyPayment({}, form({ paymentId: usd.id }));
-      assert.ok(verified.ok, verified.error);
       assert.equal((await owing(invoiceId)).outstandingTzs?.toString(), "9450");
+      const again = await paymentActions.verifyPayment({}, form({ paymentId: usd.id }));
+      assert.ok(again.error, "and there is nothing left to verify");
       assert.equal(
         (await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } })).status,
         "PARTIALLY_PAID"
@@ -954,9 +949,7 @@ describe("one bill settled in two currencies, at the counter", () => {
       assert.equal(tzs.transactionRef, "MPESA-TEST-1");
       assert.equal(tzs.notes, "Second half, at the counter");
       assert.notEqual(tzs.id, usd.id, "its own row against the same bill");
-
-      const settled = await paymentActions.verifyPayment({}, form({ paymentId: tzs.id }));
-      assert.ok(settled.ok, settled.error);
+      assert.equal(tzs.status, "VERIFIED");
 
       const done = await prisma.invoice.findUniqueOrThrow({
         where: { id: invoiceId },

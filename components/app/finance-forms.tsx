@@ -630,7 +630,7 @@ export function RecordPaymentForm({
 
       <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
         {canVerify
-          ? "This lands as pending. Verify it separately once the bank shows it — recording and confirming are two acts, and that separation is what stops cargo leaving on a screenshot."
+          ? "Recorded by Finance, it counts straight away and the receipt is issued."
           : "This is a claim, not a confirmation. Finance checks it against the bank before it counts against the bill."}
       </p>
 
