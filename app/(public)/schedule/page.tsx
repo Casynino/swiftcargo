@@ -31,7 +31,6 @@ export default async function SchedulePage() {
       <PageHero
         overlap
         photo="shipSea"
-        eyebrow={t(locale, "Sailing schedule")}
         lead={t(locale, "A ship every Monday.")}
         trail={t(locale, "Cargo in by Friday.")}
         body={

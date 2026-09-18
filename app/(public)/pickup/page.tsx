@@ -25,7 +25,6 @@ export default async function Page() {
       <PageHero
         overlap
         photo="cnFactoryLine"
-        eyebrow={t(locale, "China pickup")}
         lead={t(locale, "We collect it")}
         trail={t(locale, "from your supplier.")}
         body={<p>{t(locale, "We can collect from your supplier in China and bring it to our Guangzhou warehouse.")}</p>}

@@ -103,7 +103,6 @@ export default async function HomePage() {
       <PageHero
         size="home"
         photo="shipWake"
-        eyebrow={`${ROUTE.originCity} → ${ROUTE.destinationCity}`}
         lead={t(locale, "Shipping from China to Tanzania,")}
         trail={t(locale, "on time, every time.")}
         body={

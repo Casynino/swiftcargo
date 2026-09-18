@@ -47,7 +47,6 @@ export default async function ChinaPage() {
       <PageHero
         overlap
         photo="guangzhouNight"
-        eyebrow={t(locale, "Explore China")}
         lead={t(locale, "Explore China's markets,")}
         trail={t(locale, "we ship it home.")}
         body={

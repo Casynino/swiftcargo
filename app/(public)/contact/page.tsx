@@ -31,7 +31,6 @@ export default async function ContactPage() {
       <PageHero
         overlap
         photo="traderShop"
-        eyebrow={t(locale, "Get in touch")}
         lead={t(locale, "Talk to")}
         trail="Swift Cargo."
         body={

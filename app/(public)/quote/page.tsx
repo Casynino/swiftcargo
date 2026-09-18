@@ -18,7 +18,6 @@ export default function Page() {
       <PageHero
         overlap
         photo="portSunset"
-        eyebrow="Swift Cargo"
         lead={t(locale, "Get a quote.")}
         trail={t(locale, "Tell us what you ship.")}
         body={<p>{t(locale, "Tell us what you are shipping and we will come back with a price.")}</p>}

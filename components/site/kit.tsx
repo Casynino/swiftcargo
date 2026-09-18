@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Anchor } from "lucide-react";
 
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
 import { Reveal } from "@/components/site/motion";
@@ -169,7 +168,6 @@ export function PhotoFrame({
  */
 export function PageHero({
   photo,
-  eyebrow,
   lead,
   trail,
   body,
@@ -182,7 +180,6 @@ export function PageHero({
   /** Leave room at the foot for a panel that rides up over the hero. */
   overlap?: boolean;
   photo: PhotoName;
-  eyebrow: React.ReactNode;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -232,17 +229,13 @@ export function PageHero({
         )}
       >
         <div className="animate-in-up max-w-3xl">
-          <Pill dark>
-            <Anchor aria-hidden className="-ml-0.5 size-3.5" />
-            {eyebrow}
-          </Pill>
           <Headline
             as="h1"
             dark
             lead={lead}
             trail={trail}
             className={cn(
-              "mt-6 leading-[1.02]",
+              "leading-[1.02]",
               size === "home"
                 ? "text-[2.75rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
                 : "text-4xl sm:text-5xl lg:text-6xl"

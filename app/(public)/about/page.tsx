@@ -70,7 +70,6 @@ export default async function AboutPage() {
     <>
       <PageHero
         photo="craneLift"
-        eyebrow={t(locale, "About us")}
         lead={name}
         trail={company?.tagline ?? undefined}
         body={

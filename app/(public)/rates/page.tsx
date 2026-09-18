@@ -60,7 +60,6 @@ export default async function RatesPage() {
       <PageHero
         overlap
         photo="containerStack"
-        eyebrow={t(locale, "Guangzhou to Dar es Salaam")}
         lead={t(locale, "Shipping rates,")}
         trail={t(locale, "published in the open.")}
         body={
