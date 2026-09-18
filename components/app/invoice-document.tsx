@@ -36,6 +36,8 @@ export async function InvoiceDocument({ id }: { id: string }) {
         cargo: {
           select: {
             reference: true,
+            shippingMark: true,
+            description: true,
             containerLines: {
               orderBy: { createdAt: "desc" },
               take: 1,
@@ -206,7 +208,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr className="bg-navy-700 text-left text-white">
-                {["RCT/NO", "Description", "Packages", "Pieces", "Total qty", "Unit price", "Amount"].map((head, i) => (
+                {["Cargo · receipt", "Description", "Pkgs", "Pcs", "Chargeable", "Rate", "Amount"].map((head, i) => (
                   <th
                     key={head}
                     className={`px-3 py-3 text-xs font-semibold uppercase tracking-wide ${i >= 2 ? "text-right" : ""}`}
@@ -219,10 +221,25 @@ export async function InvoiceDocument({ id }: { id: string }) {
             <tbody>
               {invoice.items.map((item) => {
                 const negative = Number(item.amount) < 0;
+                /* Freight lines are written "GOODS — CATEGORY"; the category
+                   is shown as what it is rather than as half a name. */
+                const [goods, category] = item.description.split(" — ");
+                const freight = item.unit === "CBM" || item.unit === "kg";
                 return (
-                  <tr key={item.id} className="border-t border-neutral-200 even:bg-neutral-50/70">
-                    <td className="tnum px-3 py-2.5 text-neutral-600">{item.paperReceiptNo ?? "—"}</td>
-                    <td className="px-3 py-2.5 font-medium uppercase">{item.description}</td>
+                  <tr key={item.id} className="border-t border-neutral-200 align-top even:bg-neutral-50/70">
+                    <td className="tnum px-3 py-2.5">
+                      {freight ? <span className="block font-semibold">{invoice.cargo.reference}</span> : null}
+                      <span className="text-xs text-neutral-500">{item.paperReceiptNo ? `Rct ${item.paperReceiptNo}` : freight ? "Rct —" : ""}</span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span className="font-semibold uppercase">{goods}</span>
+                      {category || item.category ? (
+                        <span className="block text-xs text-neutral-500">
+                          {category ?? item.category}
+                          {freight && invoice.cargo.shippingMark ? ` · Mark ${invoice.cargo.shippingMark}` : ""}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="tnum px-3 py-2.5 text-right">{item.packages ?? "—"}</td>
                     <td className="tnum px-3 py-2.5 text-right">{item.pieces ?? "—"}</td>
                     <td className="tnum px-3 py-2.5 text-right">
@@ -238,6 +255,26 @@ export async function InvoiceDocument({ id }: { id: string }) {
                   </tr>
                 );
               })}
+              {/* What the freight lines add up to, so the customer sees the
+                  cargo the bill is for before the money. */}
+              {(() => {
+                const freight = invoice.items.filter((i) => i.unit === "CBM");
+                if (freight.length < 1) return null;
+                const cbm = freight.reduce((sum, i) => sum + Number(i.quantity), 0);
+                const pkgs = freight.reduce((sum, i) => sum + (i.packages ?? 0), 0);
+                const pcs = freight.reduce((sum, i) => sum + (i.pieces ?? 0), 0);
+                return (
+                  <tr className="border-t-2 border-navy-700 bg-navy-700/5 font-semibold">
+                    <td className="px-3 py-2.5 text-xs uppercase tracking-wide" colSpan={2}>
+                      Cargo total · {freight.length} line{freight.length === 1 ? "" : "s"}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">{pkgs || "—"}</td>
+                    <td className="tnum px-3 py-2.5 text-right">{pcs || "—"}</td>
+                    <td className="tnum px-3 py-2.5 text-right">{money(cbm, 3)} CBM</td>
+                    <td colSpan={2} />
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>

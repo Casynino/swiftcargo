@@ -352,12 +352,12 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
 
   // ---------------------------------------------------------------- charges
   const columns = [
-    { head: "RCT/NO", w: 50, right: false },
+    { head: "Receipt", w: 50, right: false },
     { head: "Description", w: 0, right: false },
     { head: "Packages", w: 52, right: true },
     { head: "Pieces", w: 42, right: true },
-    { head: "Total qty", w: 64, right: true },
-    { head: "Unit price", w: 76, right: true },
+    { head: "Chargeable", w: 64, right: true },
+    { head: "Rate", w: 76, right: true },
     { head: "Amount", w: 80, right: true },
   ];
   columns[1].w = CONTENT - columns.reduce((sum, c) => sum + c.w, 0);
