@@ -27,6 +27,8 @@ type PaymentLine = {
 export type InvoicePdfInput = {
   /** A data URL of the logo, read from disk by the caller. */
   logo?: string | null;
+  /** The invoice's own verification code, as a PNG data URL. Never a cargo code. */
+  qr?: string | null;
   stamp: { label: string; tone: PdfTone };
   company: {
     name: string;
@@ -236,6 +238,14 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
     doc.addImage(input.logo, "PNG", MARGIN, 26, (logoH * props.width) / props.height, logoH, "logo", "FAST");
   }
   put("INVOICE", RIGHT, 56, { size: 34, style: "bold", align: "right" });
+  /* Between the logo and the title: scanned, it confirms Swift Cargo issued
+     this bill and whether it is paid. */
+  if (input.qr) {
+    const size = 60;
+    const x = RIGHT - 178 - size;
+    doc.addImage(input.qr, "PNG", x, 22, size, size, "verify", "FAST");
+    put("SCAN TO VERIFY", x + size / 2, 22 + size + 7, { size: 5.5, style: "bold", align: "center", spacing: 0.6 });
+  }
 
   const tone = TONES[input.stamp.tone];
   const stampText = input.stamp.label.toUpperCase();

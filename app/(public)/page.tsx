@@ -18,13 +18,13 @@ import {
 import {
   CtaBand,
   Headline,
-  Marquee,
+  Ribbon,
   PageHero,
   PhotoFrame,
   SectionHead,
   heroButton,
 } from "@/components/site/kit";
-import { CountUp, Reveal } from "@/components/site/motion";
+import { Reveal } from "@/components/site/motion";
 import { RouteMap } from "@/components/site/route-map";
 import { SailingCard, bookHref } from "@/components/site/sailing-card";
 import { PriceCalculator } from "@/components/site/price-calculator";
@@ -50,7 +50,7 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const locale = DEFAULT_LOCALE;
-  const [company, cargoTypes, sailings, stats] = await Promise.all([
+  const [company, cargoTypes, sailings] = await Promise.all([
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),
     /* The names of the cargo types only. The rate book is not printed on the
        public site; a price is the answer to "this much of this". */
@@ -58,39 +58,11 @@ export default async function HomePage() {
     /* The weekly rule, not a table somebody has to remember to extend. See
        lib/sailing-schedule.ts. */
     publicSailings({ count: 3 }),
-    Promise.all([
-      prisma.customer.count({ where: { deletedAt: null } }),
-      prisma.container.count({
-        where: { deletedAt: null, status: { in: ["DEPARTED", "IN_TRANSIT", "ARRIVED", "CLOSED"] } },
-      }),
-      prisma.cargo.count({
-        where: { deletedAt: null, status: { in: ["COLLECTED", "DELIVERED"] } },
-      }),
-    ]),
   ]);
 
-  const [customers, containers, delivered] = stats;
   const next = sailings.find((s) => s.bookingOpen) ?? sailings[0];
   const short = (d: Date) =>
     new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(d);
-
-  /* Real counts from the operational record, shown only once there is
-     something to count — "0 consignments delivered" on launch day is true and
-     tells a visitor the wrong thing. Singular where the count is one. */
-  const counts = (
-    [
-      [customers === 1 ? "Customer" : "Customers", customers],
-      [containers === 1 ? "Container shipped" : "Containers shipped", containers],
-      [delivered === 1 ? "Consignment delivered" : "Consignments delivered", delivered],
-    ] as const
-  ).filter(([, value]) => value > 0);
-
-  const facts: [string, string][] = [
-    [`${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax}`, "Days at sea"],
-    ["1", "Sailing every week"],
-    ["2", "Warehouses, one at each end"],
-    ...counts.map(([label, value]) => [String(value), label] as [string, string]),
-  ];
 
   return (
     <>
@@ -138,7 +110,7 @@ export default async function HomePage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {t(locale, "Next sailing")}
+                    {t(locale, "Next sailing (next ship)")}
                   </p>
                   <span className="grid size-7 place-items-center rounded-full bg-slate-900 text-white transition-transform group-hover:rotate-45">
                     <ArrowUpRight className="size-3.5" />
@@ -171,32 +143,17 @@ export default async function HomePage() {
           </div>
         }
       >
-        <div className="container relative pb-10">
-          {/* Flex rather than a grid: however many figures there are, the last
-              row stretches to the edge instead of leaving an empty cell. */}
-          <dl className="flex flex-wrap gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 backdrop-blur-md">
-            {facts.slice(0, 6).map(([value, label]) => (
-              <div key={label} className="flex min-w-0 flex-1 basis-[45%] flex-col-reverse bg-ink/50 px-5 py-5 sm:basis-[30%] lg:basis-0">
-                <dt className="mt-1 text-xs text-white/60">{t(locale, label)}</dt>
-                <dd className="tnum font-display text-3xl font-extrabold tracking-tight">
-                  {/^\d+$/.test(value) ? <CountUp value={Number(value)} /> : value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
       </PageHero>
 
-      <Marquee
-        className="bg-background/50 text-foreground/85 backdrop-blur-sm"
+      <Ribbon
         items={[
-          "Guangzhou",
-          "Dar es Salaam",
-          t(locale, "Loose cargo"),
-          t(locale, "Full containers"),
-          t(locale, "China sourcing"),
-          t(locale, "Weekly sailings"),
-          t(locale, "Factory pickup"),
+          ["Ship", t(locale, "Weekly sailings")],
+          ["Package", t(locale, "Loose cargo")],
+          ["Container", t(locale, "Full containers")],
+          ["Search", t(locale, "China sourcing")],
+          ["Truck", t(locale, "Factory pickup")],
+          ["MapPin", "Guangzhou → Dar es Salaam"],
+          ["ScanLine", t(locale, "Every box tracked")],
         ]}
       />
 

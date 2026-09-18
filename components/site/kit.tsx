@@ -396,3 +396,51 @@ export function PhotoMarquee({
     </div>
   );
 }
+
+const RIBBON_ICONS = {
+  Ship: "M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6M12 10v4M12 2v3",
+  Package: "M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73zM12 22V12M3.3 7 12 12l8.7-5M7.5 4.27l9 5.15",
+  Container: "M22 7.7c0-.6-.4-1.2-.8-1.5l-6.3-3.9a1.72 1.72 0 0 0-1.7 0l-10.3 6c-.5.2-.9.8-.9 1.4v6.6c0 .5.4 1.2.8 1.5l6.3 3.9a1.72 1.72 0 0 0 1.7 0l10.3-6c.5-.3.9-1 .9-1.5ZM10 21.9V14L2.1 9.1M10 14l11.9-6.9M14 19.8v-8.1M18 17.5V9.4",
+  Search: "m21 21-4.34-4.34M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16",
+  Truck: "M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2M15 18H9M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14M7 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4",
+  MapPin: "M20 10c0 4.99-5.54 10.19-7.4 11.8a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+  ScanLine: "M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10",
+} as const;
+
+/**
+ * THE RIBBON UNDER THE HERO.
+ *
+ * Two bands crossed at a slight angle, the front one in the brand gradient with
+ * what the company does running along it, each with its own mark; the back one
+ * faint and running the other way. It reads as movement without shouting, and
+ * it sits comfortably at phone width, where the old strip of capitals did not.
+ */
+export function Ribbon({ items }: { items: [keyof typeof RIBBON_ICONS, string][] }) {
+  const row = (hidden?: boolean) => (
+    <ul aria-hidden={hidden} className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12">
+      {items.map(([icon, text], i) => (
+        <li key={i} className="flex items-center gap-2.5 whitespace-nowrap text-sm font-semibold text-white sm:text-base">
+          <span className="grid size-8 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d={RIBBON_ICONS[icon]} />
+            </svg>
+          </span>
+          {text}
+          <span aria-hidden className="ml-6 size-1.5 rounded-full bg-white/50 sm:ml-10" />
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className="relative -mt-6 overflow-hidden py-6 sm:-mt-8">
+      {/* The faint band behind, crossing the other way. */}
+      <div aria-hidden className="absolute inset-x-[-5%] top-1/2 h-12 -translate-y-1/2 rotate-[2deg] bg-brand/25 blur-[1px]" />
+      <div className="relative -mx-[5%] rotate-[-1.5deg] bg-gradient-to-r from-[#f4611f] via-[#e2562b] to-[#1b6fb3] py-3.5 shadow-[0_20px_40px_-20px_rgba(244,97,31,0.6)]">
+        <div className="site-marquee flex w-max" style={{ animationDuration: "45s" }}>
+          {row()}
+          {row(true)}
+        </div>
+      </div>
+    </div>
+  );
+}

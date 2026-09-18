@@ -6,6 +6,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { balanceOf } from "@/lib/invoice-balance";
 import { accountsForInvoice } from "@/lib/invoice-accounts";
 import { prisma } from "@/lib/prisma";
+import { invoiceQr } from "@/lib/invoice-verify";
 
 const money = (n: unknown, dp = 2) =>
   Number(n ?? 0).toLocaleString("en-US", {
@@ -60,6 +61,8 @@ export async function InvoiceDocument({ id }: { id: string }) {
   if (!invoice) notFound();
   /* The accounts this bill was issued with, not whatever settings say today. */
   const accounts = await accountsForInvoice(invoice.paymentSnapshot);
+  /* A draft is not a bill anybody should be able to verify. */
+  const verifyQr = invoice.status !== "DRAFT" ? await invoiceQr(invoice.id, 360).catch(() => null) : null;
 
   const container = invoice.cargo.containerLines[0]?.container ?? null;
   const shipment = container?.shipment ?? null;
@@ -116,58 +119,69 @@ export async function InvoiceDocument({ id }: { id: string }) {
   return (
     <article className="overflow-hidden rounded-xl bg-white text-neutral-900 shadow-lg ring-1 ring-black/5 print:rounded-none print:shadow-none print:ring-0">
       {/* ------------------------------------------------------------ masthead */}
-      <header className="flex items-start justify-between gap-6 px-6 pb-6 pt-8 sm:px-10">
-        <Image
-          src="/brand/swift-cargo.png"
-          alt={company?.name ?? "Swift Cargo"}
-          width={112}
-          height={112}
-          className="size-20 object-contain sm:size-28"
-          priority
+      <header className="relative overflow-hidden bg-[#0b2742] px-6 py-7 text-white sm:px-10">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_90%_-20%,rgba(79,201,240,0.35),transparent_60%),radial-gradient(ellipse_at_0%_130%,rgba(244,97,31,0.35),transparent_55%)]"
         />
-        <div className="text-right">
-          <p className="text-4xl font-black uppercase tracking-tight sm:text-6xl">Invoice</p>
-          <p className={`mt-3 inline-flex rounded-md border-2 px-3 py-0.5 text-xs font-bold uppercase tracking-[0.2em] ${stamp.tone}`}>
-            {stamp.label}
-          </p>
+        <div className="relative flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <span className="grid size-20 shrink-0 place-items-center rounded-2xl bg-white p-1.5 sm:size-24">
+              <Image
+                src="/brand/swift-cargo.png"
+                alt={company?.name ?? "Swift Cargo"}
+                width={96}
+                height={96}
+                className="object-contain"
+                priority
+              />
+            </span>
+            <address className="not-italic">
+              <p className="text-xl font-extrabold uppercase tracking-[0.12em] sm:text-2xl">{company?.name ?? "Swift Cargo"}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffb27d]">
+                {company?.tagline ?? "On time, every time"}
+              </p>
+              <div className="mt-1.5 space-y-0.5 text-[11px] leading-snug text-white/75">
+                {addressLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+                {company?.tin ? (
+                  <p>
+                    TIN {company.tin}
+                    {company.vrn ? ` · VRN ${company.vrn}` : ""}
+                  </p>
+                ) : null}
+                <p className="tnum">{[contact, company?.email].filter(Boolean).join(" · ")}</p>
+              </div>
+            </address>
+          </div>
+          <div className="text-right">
+            <p className="text-4xl font-black uppercase tracking-tight sm:text-5xl">Invoice</p>
+            <p className="tnum mt-1 text-lg font-bold text-[#9fd8f5]">{invoice.number}</p>
+            <p className={`mt-2 inline-flex rotate-[-3deg] rounded-md border-2 bg-white px-3 py-0.5 text-xs font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
+              {stamp.label}
+            </p>
+          </div>
         </div>
-      </header>
-      <div className="h-3 bg-navy-700" />
-
-      {/* --------------------------------------- the company, and the dates */}
-      <section className="grid grid-cols-1 gap-6 px-6 pt-7 sm:grid-cols-[1fr_auto] sm:px-10">
-        <address className="min-w-0 space-y-0.5 text-sm not-italic leading-relaxed text-neutral-700">
-          <p className="text-base font-bold text-navy-700">{company?.name ?? "Swift Cargo"}</p>
-          {addressLines.map((line) => (
-            <p key={line} className="whitespace-nowrap">
-              {line}
-            </p>
+        <div className="relative mt-6 h-1 rounded-full bg-gradient-to-r from-[#f4611f] via-[#ffb27d] to-[#4fc9f0]" />
+        <dl className="relative mt-4 flex flex-wrap gap-2 text-center">
+          {[
+            ["Issued", formatDate(invoice.issuedAt ?? invoice.createdAt)],
+            ["Due", formatDate(invoice.dueAt)],
+            ["Tracking", invoice.cargo.reference],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl bg-white/10 px-4 py-1.5 ring-1 ring-white/15">
+              <dt className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60">{label}</dt>
+              <dd className="tnum text-sm font-semibold">{value}</dd>
+            </div>
           ))}
-          {company?.tin ? (
-            <p>
-              TIN: {company.tin}
-              {company.vrn ? ` · VRN: ${company.vrn}` : ""}
-            </p>
-          ) : null}
-          {company?.email ? <p>{company.email}</p> : null}
-          {contact ? <p className="tnum">{contact}</p> : null}
-        </address>
-        <dl className="grid grid-cols-2 gap-2 self-start text-center sm:w-64">
-          <div className="rounded-lg border border-neutral-200 px-3 py-2">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Issued</dt>
-            <dd className="tnum mt-0.5 text-sm font-semibold">{formatDate(invoice.issuedAt ?? invoice.createdAt)}</dd>
-          </div>
-          <div className="rounded-lg border border-neutral-200 px-3 py-2">
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Due</dt>
-            <dd className="tnum mt-0.5 text-sm font-semibold">{formatDate(invoice.dueAt)}</dd>
-          </div>
         </dl>
-      </section>
+      </header>
 
       {/* ------------------------------------------ who, and which sailing */}
       <section className="grid grid-cols-1 gap-4 px-6 pt-6 sm:grid-cols-2 sm:px-10">
-        <div className="rounded-lg bg-neutral-50 p-5">
-          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Invoice to</p>
+        <div className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#f4611f]">Invoice to</p>
           <p className="mt-2 text-lg font-bold">{invoice.customer.businessName || invoice.customer.fullName}</p>
           {invoice.customer.businessName ? (
             <p className="text-sm text-neutral-700">{invoice.customer.fullName}</p>
@@ -187,7 +201,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
             </div>
           </dl>
         </div>
-        <dl className="rounded-lg bg-neutral-50 p-5 text-sm">
+        <dl className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-5 text-sm">
           {details.map(([label, value]) => (
             <div
               key={label}
@@ -207,7 +221,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
         <div className="relative overflow-x-auto rounded-lg border border-neutral-200">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="bg-navy-700 text-left text-white">
+              <tr className="bg-[#0b2742] text-left text-white">
                 {["Cargo · receipt", "Description", "Pkgs", "Pcs", "Chargeable", "Rate", "Amount"].map((head, i) => (
                   <th
                     key={head}
@@ -371,6 +385,17 @@ export async function InvoiceDocument({ id }: { id: string }) {
               {balance.creditTzs && balance.creditTzs.greaterThan(0) ? (
                 <p className="tnum mt-0.5 text-xs text-white/75">In credit {formatCurrency(balance.creditTzs, "TZS")}</p>
               ) : null}
+            </div>
+          ) : null}
+          {/* The invoice's own code — scanned, it shows that Swift Cargo
+              issued this bill and whether it is paid. Never a cargo code. */}
+          {verifyQr ? (
+            <div className="mt-3 flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3">
+              <Image src={verifyQr} alt="" width={180} height={180} unoptimized className="size-[88px] shrink-0" />
+              <div className="text-[11px] leading-snug text-neutral-600">
+                <p className="font-bold uppercase tracking-wide text-navy-700">Scan to verify</p>
+                <p className="mt-0.5">Confirms this invoice was issued by Swift Cargo and shows whether it is paid.</p>
+              </div>
             </div>
           ) : null}
         </div>

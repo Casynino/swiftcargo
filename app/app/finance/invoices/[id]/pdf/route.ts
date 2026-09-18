@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { t } from "@/lib/i18n";
 import { renderInvoicePdf } from "@/lib/invoice-pdf";
+import { invoiceQr } from "@/lib/invoice-verify";
 import { invoiceLogo, loadInvoicePdf } from "@/lib/invoice-pdf-data";
 import { requirePermission } from "@/lib/session";
 
@@ -45,7 +46,8 @@ export async function GET(
     );
   }
 
-  const pdf = renderInvoicePdf({ ...loaded.input, logo: await invoiceLogo() });
+  const qr = await invoiceQr(id, 360).catch(() => null);
+  const pdf = renderInvoicePdf({ ...loaded.input, logo: await invoiceLogo(), qr });
   const { ascii, full } = loaded.fileName;
 
   return new NextResponse(Buffer.from(pdf), {
