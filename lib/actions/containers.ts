@@ -22,6 +22,10 @@ import { authorize } from "@/lib/session";
 
 export type ActionState = { error?: string; ok?: string; id?: string };
 
+/** A day, as a string that can sit beside another one in a FieldChange row. */
+const dayOf = (d: Date | null | undefined) =>
+  d ? d.toISOString().slice(0, 10) : null;
+
 const CONTAINER_TYPES = ["GP_20", "GP_40", "HQ_40", "HQ_45", "LCL_CONSOLIDATED"] as const;
 
 const createSchema = z.object({
@@ -71,6 +75,33 @@ export async function createContainer(
     throw error;
   }
 
+  /*
+    THE BOX'S OWN HOME, OFF THE PERSON OPENING IT.
+
+    Not asked for — a clerk standing in Guangzhou opening a container is opening
+    it in Guangzhou, and a dropdown only creates the possibility of the wrong
+    answer. Falls back to the single live China warehouse, the way receiving
+    does, and stays null rather than guessing when there are several and this
+    user belongs to none.
+
+    The packing list does NOT read this. It derives its origin from the
+    receiving rows of the cargo actually inside, which is first-hand: the goods
+    say which floor they came off, and this column only says where the box was
+    opened. When they disagree the goods are right.
+  */
+  const origin =
+    (actor.warehouseId
+      ? await prisma.warehouse.findFirst({
+          where: { id: actor.warehouseId, active: true, kind: "CHINA" },
+          select: { id: true },
+        })
+      : null) ??
+    (await prisma.warehouse.findFirst({
+      where: { active: true, kind: "CHINA" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    }));
+
   const container = await prisma.$transaction(async (tx) => {
     const reference = await nextContainerReference(tx);
     const created = await tx.container.create({
@@ -78,6 +109,7 @@ export async function createContainer(
         reference,
         containerNumber: data.containerNumber || null,
         type: data.type,
+        originWarehouseId: origin?.id ?? null,
         originPort: data.originPort || "Guangzhou",
         destinationPort: data.destinationPort || "Dar es Salaam",
         capacityCbm: data.capacityCbm ?? null,
@@ -112,6 +144,157 @@ export async function createContainer(
 
   revalidatePath("/app/containers");
   return { ok: `${container.reference} is open for loading.`, id: container.id };
+}
+
+const boxSchema = z.object({
+  containerId: z.string().min(1),
+  capacityCbm: z.coerce.number().min(0).optional(),
+  cargoDeadline: z.string().trim().optional(),
+  notes: z.string().trim().max(2000, "Keep the note short.").optional(),
+});
+
+/**
+ * Correct the box's own particulars while it is still open.
+ *
+ * Capacity, the date Guangzhou stops accepting for this sailing, and the note.
+ * They were typed once when the container was opened and could not be touched
+ * again, so a deadline the shipping line moved was corrected by opening a
+ * second container and moving everything into it.
+ *
+ * ONLY WHILE IT IS OPEN. A capacity is a loading guide and a deadline is a
+ * promise made to customers who are still deciding; both stop meaning anything
+ * the moment the doors are shut, and a sealed box's particulars are part of
+ * what the packing list froze.
+ *
+ * The shipping line's container number and the seal are not here. They are set
+ * at the seal, with the seal, because that is when the line allocates them.
+ */
+export async function updateContainerBox(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("container.edit");
+
+  const parsed = boxSchema.safeParse({
+    containerId: formData.get("containerId"),
+    capacityCbm: formData.get("capacityCbm") || undefined,
+    cargoDeadline: formData.get("cargoDeadline") || undefined,
+    notes: formData.get("notes") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the details." };
+  }
+  const data = parsed.data;
+
+  let deadline: Date | null;
+  try {
+    deadline = formDate(data.cargoDeadline, "cargo deadline");
+  } catch (error) {
+    if (error instanceof DateOutOfRange) return { error: error.message };
+    throw error;
+  }
+
+  const container = await prisma.container.findFirst({
+    where: { id: data.containerId, deletedAt: null },
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      capacityCbm: true,
+      cargoDeadline: true,
+      notes: true,
+    },
+  });
+  if (!container) return { error: "That container no longer exists." };
+  if (!LOADABLE_CONTAINER_STATUSES.includes(container.status)) {
+    return {
+      error: `${container.reference} is ${container.status.toLowerCase()} — its capacity and deadline stopped meaning anything when the doors shut.`,
+    };
+  }
+
+  const next = {
+    capacityCbm:
+      data.capacityCbm === undefined ? null : new Prisma.Decimal(data.capacityCbm),
+    cargoDeadline: deadline,
+    notes: data.notes || null,
+  };
+
+  /* Decimals and dates compare by value, not by identity — `Decimal(67)` is
+     never `===` another `Decimal(67)`, and every save would have written a
+     FieldChange saying the capacity changed from 67 to 67. */
+  const moved = (
+    [
+      [
+        "capacityCbm",
+        container.capacityCbm?.toString() ?? null,
+        next.capacityCbm?.toString() ?? null,
+      ],
+      ["cargoDeadline", dayOf(container.cargoDeadline), dayOf(next.cargoDeadline)],
+      ["notes", container.notes, next.notes],
+    ] as const
+  ).filter(([, was, now]) => (was ?? null) !== (now ?? null));
+
+  if (moved.length === 0) return { ok: "Nothing changed." };
+
+  await prisma.$transaction(async (tx) => {
+    for (const [field, was, now] of moved) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "Container",
+          entityId: container.id,
+          field,
+          oldValue: was,
+          newValue: now,
+        },
+        tx
+      );
+    }
+
+    await tx.container.update({
+      where: { id: container.id },
+      data: Object.fromEntries(
+        moved.map(([field]) => [field, next[field]])
+      ) as Prisma.ContainerUpdateInput,
+    });
+
+    /* The deadline is published on the website, so moving it is an operational
+       event and not a private edit. The other two are notes to ourselves. */
+    if (moved.some(([field]) => field === "cargoDeadline")) {
+      await tx.containerEvent.create({
+        data: {
+          containerId: container.id,
+          from: container.status,
+          to: container.status,
+          note: `Cargo deadline ${
+            next.cargoDeadline
+              ? `set to ${dayOf(next.cargoDeadline)}`
+              : "removed"
+          }`,
+          actorId: actor.id,
+        },
+      });
+    }
+  });
+
+  await recordAudit({
+    actor,
+    action: "container.edit",
+    entity: "Container",
+    entityId: container.id,
+    summary: `Changed ${moved.map(([field]) => field).join(", ")} on ${container.reference}`,
+    metadata: {
+      changes: moved.map(([field, was, now]) => ({
+        field,
+        from: was ?? null,
+        to: now ?? null,
+      })),
+    },
+  });
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath("/app/containers/loading");
+  return { ok: "Saved." };
 }
 
 /**
@@ -619,10 +802,6 @@ const voyageSchema = z.object({
   eta: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
-
-/** A day, as a string that can sit beside another one in a FieldChange row. */
-const dayOf = (d: Date | null | undefined) =>
-  d ? d.toISOString().slice(0, 10) : null;
 
 /**
  * The vessel, the voyage, the bill of lading and the dates.

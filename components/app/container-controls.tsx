@@ -9,6 +9,7 @@ import {
   loadCargo,
   sealContainer,
   unloadCargo,
+  updateContainerBox,
   updateVoyage,
   type ActionState,
 } from "@/lib/actions/containers";
@@ -350,6 +351,77 @@ export function AdvancePanel({
         {step.icon}
         {step.label}
       </SubmitButton>
+    </form>
+  );
+}
+
+/**
+ * The box's own particulars, while the doors are still open.
+ *
+ * Capacity, the date Guangzhou stops accepting for this sailing, and the note.
+ * The same shape as the voyage form beside it, because they are the same job on
+ * the two halves of one record and a clerk should not have to learn two.
+ *
+ * The container and seal numbers are deliberately absent: they are allocated by
+ * the shipping line and are set at the seal, with the seal.
+ */
+export function BoxForm({
+  containerId,
+  box,
+}: {
+  containerId: string;
+  box: {
+    capacityCbm: string | null;
+    cargoDeadline: string | null;
+    notes: string | null;
+  };
+}) {
+  const [state, action] = useActionState<ActionState, FormData>(
+    updateContainerBox,
+    {}
+  );
+
+  return (
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="containerId" value={containerId} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="capacityCbm">Capacity (CBM)</Label>
+          <Input
+            id="capacityCbm"
+            name="capacityCbm"
+            type="number"
+            step="0.0001"
+            min={0}
+            inputMode="decimal"
+            defaultValue={box.capacityCbm ?? ""}
+          />
+          <p className="text-xs text-muted-foreground">
+            What the loading bar is measured against. A guide, never a gate.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cargoDeadline">Cargo deadline</Label>
+          <Input
+            id="cargoDeadline"
+            name="cargoDeadline"
+            type="date"
+            min="2000-01-01"
+            max="2099-12-31"
+            defaultValue={box.cargoDeadline ?? ""}
+          />
+          <p className="text-xs text-muted-foreground">
+            The day Guangzhou stops taking cargo for this sailing. It is
+            published, so moving it goes on the box's timeline.
+          </p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="box-notes">Notes</Label>
+        <Textarea id="box-notes" name="notes" defaultValue={box.notes ?? ""} />
+      </div>
+      <FormMessage error={state.error} ok={state.ok} />
+      <SubmitButton variant="outline">Save container</SubmitButton>
     </form>
   );
 }

@@ -15,6 +15,7 @@ import {
 
 import {
   AdvancePanel,
+  BoxForm,
   LoadedTable,
   LoadPanel,
   SealPanel,
@@ -85,6 +86,10 @@ export default async function ContainerPage({
   /* The paperwork shelf turns into the voyage form and back, so the sailing has
      one home rather than a read-only copy and an editable one somewhere else. */
   const editingVoyage = edit === "voyage" && can(user.role, "shipment.edit");
+  /* The box's own particulars — capacity, deadline, note — only while the
+     doors are open. The server refuses a sealed one; this only stops the form
+     being offered where it would be refused. */
+  const editingBox = edit === "box" && can(user.role, "container.edit");
 
   const container = await prisma.container.findFirst({
     where: { id, deletedAt: null },
@@ -625,19 +630,20 @@ export default async function ContainerPage({
       <section>
         <SectionLabel
           action={
-            can(user.role, "shipment.edit") && container.shipment
-              ? editingVoyage
-                ? {
-                    href: `/app/containers/${container.id}`,
-                    label: "Done",
-                    keepScroll: true,
-                  }
-                : {
-                    href: `?edit=voyage`,
-                    label: "Edit the voyage",
-                    keepScroll: true,
-                  }
-              : undefined
+            editingVoyage || editingBox
+              ? {
+                  href: `/app/containers/${container.id}`,
+                  label: "Done",
+                  keepScroll: true,
+                }
+              : can(user.role, "shipment.edit") && container.shipment
+                ? { href: `?edit=voyage`, label: "Edit the voyage", keepScroll: true }
+                : /* While the doors are open the box's own particulars are the
+                     thing worth correcting; once it has sailed, only the
+                     sailing is. Whichever this desk can do is offered. */
+                  open && can(user.role, "container.edit")
+                  ? { href: `?edit=box`, label: "Edit the container", keepScroll: true }
+                  : undefined
           }
         >
           The paperwork
@@ -651,6 +657,29 @@ export default async function ContainerPage({
         loading. They sat across the top for a while, which put ten things
         nobody was looking for above the two things everybody was.
       */}
+        {editingBox ? (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">Container</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                What the loading bar measures against and the day Guangzhou
+                stops taking cargo for this sailing. The line's own container
+                and seal numbers are recorded when the box is sealed.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <BoxForm
+                containerId={container.id}
+                box={{
+                  capacityCbm: container.capacityCbm?.toString() ?? null,
+                  cargoDeadline: asDate(container.cargoDeadline),
+                  notes: container.notes,
+                }}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
+
         {editingVoyage ? (
           <Card className="mb-4">
             <CardHeader>
