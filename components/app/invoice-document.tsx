@@ -109,6 +109,8 @@ export async function InvoiceDocument({ id }: { id: string }) {
 
   const details: [string, string][] = [
     ["Invoice no", invoice.number],
+    ["Issued", formatDate(invoice.issuedAt ?? invoice.createdAt)],
+    ["Due", formatDate(invoice.dueAt)],
     ["Container no", container?.containerNumber ?? container?.reference ?? "—"],
     ["Tracking no", invoice.cargo.reference],
     ["Departure", formatDate(shipment?.departureDate)],
@@ -117,76 +119,69 @@ export async function InvoiceDocument({ id }: { id: string }) {
   ];
 
   return (
-    <article className="overflow-hidden rounded-xl bg-white text-neutral-900 shadow-lg ring-1 ring-black/5 print:rounded-none print:shadow-none print:ring-0">
+    <article className="inv-sheet overflow-hidden rounded-xl bg-white text-neutral-900 shadow-lg ring-1 ring-black/5 print:rounded-none print:shadow-none print:ring-0">
+      {/* One A4 sheet: no page margin of its own (so the browser prints no
+          date or address over it), the sheet's own padding instead, and every
+          block kept whole. A long bill runs on; an ordinary one fits. */}
+      <style>{`
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+          html, body { background: #fff !important; }
+          .inv-sheet { width: calc(210mm / 0.8); zoom: 0.8; border-radius: 0 !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .inv-sheet tr, .inv-keep { break-inside: avoid; }
+          .update-pill { display: none !important; }
+        }
+      `}</style>
+
       {/* ------------------------------------------------------------ masthead */}
-      <header className="relative overflow-hidden bg-[#0b2742] px-6 py-7 text-white sm:px-10">
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_90%_-20%,rgba(79,201,240,0.35),transparent_60%),radial-gradient(ellipse_at_0%_130%,rgba(244,97,31,0.35),transparent_55%)]"
-        />
-        <div className="relative flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <span className="grid size-20 shrink-0 place-items-center rounded-2xl bg-white p-1.5 sm:size-24">
-              <Image
-                src="/brand/swift-cargo.png"
-                alt={company?.name ?? "Swift Cargo"}
-                width={96}
-                height={96}
-                className="object-contain"
-                priority
-              />
-            </span>
-            <address className="not-italic">
-              <p className="text-xl font-extrabold uppercase tracking-[0.12em] sm:text-2xl">{company?.name ?? "Swift Cargo"}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffb27d]">
-                {company?.tagline ?? "On time, every time"}
+      <header className="px-6 pt-6 sm:px-10 print:px-[10mm] print:pt-[9mm]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/brand/swift-cargo.png"
+              alt={company?.name ?? "Swift Cargo"}
+              width={72}
+              height={72}
+              className="size-14 shrink-0 object-contain sm:size-16"
+              priority
+            />
+            <address className="min-w-0 not-italic">
+              <p className="text-base font-extrabold uppercase tracking-[0.1em] text-[#0b2742] sm:text-lg">
+                {company?.name ?? "Swift Cargo"}
               </p>
-              <div className="mt-1.5 space-y-0.5 text-[11px] leading-snug text-white/75">
-                {addressLines.map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
-                {company?.tin ? (
-                  <p>
-                    TIN {company.tin}
-                    {company.vrn ? ` · VRN ${company.vrn}` : ""}
-                  </p>
-                ) : null}
-                <p className="tnum">{[contact, company?.email].filter(Boolean).join(" · ")}</p>
+              <div className="text-[10.5px] leading-snug text-neutral-600">
+                <p>{addressLines.join(", ")}</p>
+                <p className="tnum">
+                  {[company?.tin ? `TIN ${company.tin}` : null, company?.vrn ? `VRN ${company.vrn}` : null, contact, company?.email]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
               </div>
             </address>
           </div>
-          <div className="text-right">
-            <p className="text-4xl font-black uppercase tracking-tight sm:text-5xl">Invoice</p>
-            <p className="tnum mt-1 text-lg font-bold text-[#9fd8f5]">{invoice.number}</p>
-            <p className={`mt-2 inline-flex rotate-[-3deg] rounded-md border-2 bg-white px-3 py-0.5 text-xs font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
+          <div className="shrink-0 text-right">
+            <p className="text-3xl font-black uppercase leading-none tracking-tight text-[#0b2742] sm:text-4xl">Invoice</p>
+            <p className="tnum mt-1 text-sm font-bold text-neutral-700">{invoice.number}</p>
+            <p className={`mt-1.5 inline-flex rounded border-2 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
               {stamp.label}
             </p>
           </div>
         </div>
-        <div className="relative mt-6 h-1 rounded-full bg-gradient-to-r from-[#f4611f] via-[#ffb27d] to-[#4fc9f0]" />
-        <dl className="relative mt-4 flex flex-wrap gap-2 text-center">
-          {[
-            ["Issued", formatDate(invoice.issuedAt ?? invoice.createdAt)],
-            ["Due", formatDate(invoice.dueAt)],
-            ["Tracking", invoice.cargo.reference],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-xl bg-white/10 px-4 py-1.5 ring-1 ring-white/15">
-              <dt className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/60">{label}</dt>
-              <dd className="tnum text-sm font-semibold">{value}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-4 flex h-1.5 overflow-hidden rounded-full">
+          <span className="flex-[3] bg-[#0b2742]" />
+          <span className="flex-1 bg-[#f4611f]" />
+        </div>
       </header>
 
       {/* ------------------------------------------ who, and which sailing */}
-      <section className="grid grid-cols-1 gap-4 px-6 pt-6 sm:grid-cols-2 sm:px-10">
-        <div className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-5">
+      <section className="inv-keep grid grid-cols-1 gap-3 px-6 pt-4 sm:grid-cols-2 sm:px-10 print:grid-cols-2 print:px-[10mm]">
+        <div className="rounded-xl border border-[#d6e2ee] bg-[#f5f9fc] p-4">
           <p className="text-xs font-bold uppercase tracking-widest text-[#f4611f]">Invoice to</p>
-          <p className="mt-2 text-lg font-bold">{invoice.customer.businessName || invoice.customer.fullName}</p>
+          <p className="mt-1 text-lg font-bold">{invoice.customer.businessName || invoice.customer.fullName}</p>
           {invoice.customer.businessName ? (
             <p className="text-sm text-neutral-700">{invoice.customer.fullName}</p>
           ) : null}
-          <dl className="mt-3 space-y-1.5 text-sm">
+          <dl className="mt-2 space-y-1 text-[13px]">
             <div className="flex gap-3">
               <dt className="w-16 shrink-0 font-semibold text-neutral-500">Phone</dt>
               <dd className="tnum">{invoice.customer.phone}</dd>
@@ -201,11 +196,11 @@ export async function InvoiceDocument({ id }: { id: string }) {
             </div>
           </dl>
         </div>
-        <dl className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-5 text-sm">
+        <dl className="rounded-xl border border-[#d6e2ee] bg-[#f5f9fc] px-4 py-3 text-[13px]">
           {details.map(([label, value]) => (
             <div
               key={label}
-              className="flex items-baseline justify-between gap-4 border-b border-neutral-200/70 py-1.5 first:pt-0 last:border-0 last:pb-0"
+              className="flex items-baseline justify-between gap-4 border-b border-neutral-200/70 py-1 first:pt-0 last:border-0 last:pb-0"
             >
               <dt className="font-semibold text-neutral-500">{label}</dt>
               <dd className={`tnum text-right ${label === "Invoice no" ? "font-bold text-navy-700" : "font-medium"}`}>
@@ -217,7 +212,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
       </section>
 
       {/* ---------------------------------------------------------- charges */}
-      <section className="px-6 pt-7 sm:px-10">
+      <section className="px-6 pt-4 sm:px-10 print:px-[10mm]">
         <div className="relative overflow-x-auto rounded-lg border border-neutral-200">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
@@ -225,7 +220,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
                 {["Cargo · receipt", "Description", "Pkgs", "Pcs", "Chargeable", "Rate", "Amount"].map((head, i) => (
                   <th
                     key={head}
-                    className={`px-3 py-3 text-xs font-semibold uppercase tracking-wide ${i >= 2 ? "text-right" : ""}`}
+                    className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide ${i >= 2 ? "text-right" : ""}`}
                   >
                     {head}
                   </th>
@@ -241,11 +236,11 @@ export async function InvoiceDocument({ id }: { id: string }) {
                 const freight = item.unit === "CBM" || item.unit === "kg";
                 return (
                   <tr key={item.id} className="border-t border-neutral-200 align-top even:bg-neutral-50/70">
-                    <td className="tnum px-3 py-2.5">
+                    <td className="tnum px-3 py-2">
                       {freight ? <span className="block font-semibold">{invoice.cargo.reference}</span> : null}
                       <span className="text-xs text-neutral-500">{item.paperReceiptNo ? `Rct ${item.paperReceiptNo}` : freight ? "Rct —" : ""}</span>
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2">
                       <span className="font-semibold uppercase">{goods}</span>
                       {category || item.category ? (
                         <span className="block text-xs text-neutral-500">
@@ -254,16 +249,16 @@ export async function InvoiceDocument({ id }: { id: string }) {
                         </span>
                       ) : null}
                     </td>
-                    <td className="tnum px-3 py-2.5 text-right">{item.packages ?? "—"}</td>
-                    <td className="tnum px-3 py-2.5 text-right">{item.pieces ?? "—"}</td>
-                    <td className="tnum px-3 py-2.5 text-right">
+                    <td className="tnum px-3 py-2 text-right">{item.packages ?? "—"}</td>
+                    <td className="tnum px-3 py-2 text-right">{item.pieces ?? "—"}</td>
+                    <td className="tnum px-3 py-2 text-right">
                       {money(item.quantity, item.unit === "kg" ? 2 : item.unit === "CBM" ? 3 : 0)} {item.unit ?? ""}
                     </td>
-                    <td className="tnum px-3 py-2.5 text-right">
+                    <td className="tnum px-3 py-2 text-right">
                       {money(item.unitPrice)}
                       {item.unit ? <span className="text-neutral-500"> / {item.unit}</span> : null}
                     </td>
-                    <td className={`tnum px-3 py-2.5 text-right font-semibold ${negative ? "text-emerald-700" : ""}`}>
+                    <td className={`tnum px-3 py-2 text-right font-semibold ${negative ? "text-emerald-700" : ""}`}>
                       {money(item.amount)} {invoice.currency}
                     </td>
                   </tr>
@@ -279,12 +274,12 @@ export async function InvoiceDocument({ id }: { id: string }) {
                 const pcs = freight.reduce((sum, i) => sum + (i.pieces ?? 0), 0);
                 return (
                   <tr className="border-t-2 border-navy-700 bg-navy-700/5 font-semibold">
-                    <td className="px-3 py-2.5 text-xs uppercase tracking-wide" colSpan={2}>
+                    <td className="px-3 py-2 text-xs uppercase tracking-wide" colSpan={2}>
                       Cargo total · {freight.length} line{freight.length === 1 ? "" : "s"}
                     </td>
-                    <td className="tnum px-3 py-2.5 text-right">{pkgs || "—"}</td>
-                    <td className="tnum px-3 py-2.5 text-right">{pcs || "—"}</td>
-                    <td className="tnum px-3 py-2.5 text-right">{money(cbm, 3)} CBM</td>
+                    <td className="tnum px-3 py-2 text-right">{pkgs || "—"}</td>
+                    <td className="tnum px-3 py-2 text-right">{pcs || "—"}</td>
+                    <td className="tnum px-3 py-2 text-right">{money(cbm, 3)} CBM</td>
                     <td colSpan={2} />
                   </tr>
                 );
@@ -300,12 +295,12 @@ export async function InvoiceDocument({ id }: { id: string }) {
       </section>
 
       {/* --------------------------------------------- how to pay, and totals */}
-      <section className="grid grid-cols-1 gap-6 px-6 py-8 sm:grid-cols-[1fr_minmax(0,300px)] sm:px-10">
+      <section className="inv-keep grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-[1fr_minmax(0,290px)] sm:px-10 print:grid-cols-[1fr_270px] print:px-[10mm] print:py-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Payment info</p>
-          <div className="mt-3 space-y-4 rounded-lg bg-neutral-50 p-5">
+          <div className="mt-2 space-y-3 rounded-lg bg-neutral-50 p-4">
             {banks.length > 0 ? (
-              <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
                 {banks.map((bank) => (
                   <div key={`${bank.bankName}-${bank.accountNumber}`} className="text-[12px] leading-relaxed">
                     <p className="tnum text-sm font-bold">{bank.accountNumber}</p>
@@ -333,33 +328,33 @@ export async function InvoiceDocument({ id }: { id: string }) {
         </div>
 
         <div className="self-start overflow-hidden rounded-lg text-sm">
-          <div className="flex justify-between bg-neutral-100 px-5 py-3 font-semibold uppercase">
+          <div className="flex justify-between bg-neutral-100 px-4 py-2 font-semibold uppercase">
             <span>Sub total</span>
             <span className="tnum">
               {money(invoice.subtotal)} {invoice.currency}
             </span>
           </div>
           <div className="bg-navy-700 text-white">
-            <div className="flex justify-between px-5 py-3">
+            <div className="flex justify-between px-4 py-2">
               <span className="uppercase">VAT ({vatPercent % 1 === 0 ? vatPercent : vatPercent.toFixed(2)}%)</span>
               <span className="tnum">
                 {money(invoice.vatAmount)} {invoice.currency}
               </span>
             </div>
-            <div className="flex justify-between border-t border-white/15 px-5 py-3 text-base font-bold">
+            <div className="flex justify-between border-t border-white/15 px-4 py-2 text-base font-bold">
               <span className="uppercase">Total</span>
               <span className="tnum">
                 {money(invoice.total)} {invoice.currency}
               </span>
             </div>
             {invoice.totalTzs ? (
-              <div className="flex justify-between border-t border-white/15 px-5 py-3 font-semibold">
+              <div className="flex justify-between border-t border-white/15 px-4 py-2 font-semibold">
                 <span className="uppercase">Total</span>
                 <span className="tnum">{money(invoice.totalTzs, 0)} TZS</span>
               </div>
             ) : null}
             {live && paidSomething ? (
-              <div className="flex justify-between border-t border-white/15 px-5 py-3 text-white/85">
+              <div className="flex justify-between border-t border-white/15 px-4 py-2 text-white/85">
                 <span className="uppercase">Paid</span>
                 <span className="tnum">
                   {balance.paidTzs !== null ? `${money(balance.paidTzs, 0)} TZS` : `${money(balance.paid)} ${invoice.currency}`}
@@ -368,11 +363,11 @@ export async function InvoiceDocument({ id }: { id: string }) {
             ) : null}
           </div>
           {live ? (
-            <div className={`px-5 py-4 text-white ${balance.settled ? "bg-emerald-600" : "bg-navy-900"}`}>
+            <div className={`px-4 py-3 text-white ${balance.settled ? "bg-emerald-600" : "bg-navy-900"}`}>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/70">
                 {balance.settled ? "Paid in full" : "Amount due"}
               </p>
-              <p className="tnum mt-1 text-2xl font-black">
+              <p className="tnum mt-0.5 text-xl font-black">
                 {inTzs
                   ? formatCurrency(balance.outstandingTzs, "TZS")
                   : formatCurrency(balance.outstanding, invoice.currency)}
@@ -390,8 +385,8 @@ export async function InvoiceDocument({ id }: { id: string }) {
           {/* The invoice's own code — scanned, it shows that Swift Cargo
               issued this bill and whether it is paid. Never a cargo code. */}
           {verifyQr ? (
-            <div className="mt-3 flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3">
-              <Image src={verifyQr} alt="" width={180} height={180} unoptimized className="size-[88px] shrink-0" />
+            <div className="mt-2 flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-2.5">
+              <Image src={verifyQr} alt="" width={180} height={180} unoptimized className="size-[76px] shrink-0" />
               <div className="text-[11px] leading-snug text-neutral-600">
                 <p className="font-bold uppercase tracking-wide text-navy-700">Scan to verify</p>
                 <p className="mt-0.5">Confirms this invoice was issued by Swift Cargo and shows whether it is paid.</p>
@@ -402,11 +397,11 @@ export async function InvoiceDocument({ id }: { id: string }) {
       </section>
 
       {/* ----------------------------------------------- terms, storage, foot */}
-      <footer className="space-y-6 border-t border-neutral-200 bg-neutral-50 px-6 py-7 sm:px-10">
+      <footer className="inv-keep space-y-3 border-t border-neutral-200 bg-neutral-50 px-6 py-4 sm:px-10 print:px-[10mm] print:py-3">
         {shownTerms.length > 0 ? (
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-neutral-600">Terms &amp; conditions</p>
-            <ol className="mt-3 list-decimal space-y-1 pl-5 text-[12px] leading-relaxed text-neutral-700">
+            <ol className="mt-1.5 list-decimal space-y-0.5 pl-5 text-[11px] leading-snug text-neutral-700">
               {shownTerms.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -415,9 +410,9 @@ export async function InvoiceDocument({ id }: { id: string }) {
         ) : null}
 
         {perDay > 0 ? (
-          <div className="rounded-lg border border-red-200 bg-white px-5 py-4">
+          <div className="rounded-lg border border-red-200 bg-white px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Storage policy</p>
-            <div className="mt-3 grid grid-cols-1 gap-4 text-[12px] leading-relaxed text-red-700 sm:grid-cols-2">
+            <div className="mt-1.5 grid grid-cols-1 gap-3 text-[11px] leading-snug text-red-700 sm:grid-cols-2 print:grid-cols-2">
               <div>
                 <p className="font-bold uppercase">Sera ya uhifadhi wa mizigo</p>
                 <p className="mt-1">
@@ -438,7 +433,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-neutral-200 pt-5 text-xs">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-neutral-200 pt-3 text-[11px]">
           <div>
             <p className="font-bold text-navy-700">{company?.name ?? "Swift Cargo"}</p>
             <p className="font-semibold uppercase tracking-widest text-orange-600">{company?.tagline ?? "On time, Every time"}</p>

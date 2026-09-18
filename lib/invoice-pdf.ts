@@ -232,69 +232,49 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
   }
 
   // --------------------------------------------------------------- masthead
-  const logoH = 64;
+  // One compact band: the mark and the company beside it, the verification
+  // code, and INVOICE with its number and stamp — so an ordinary bill, with
+  // its terms and storage policy, fits one A4 sheet.
+  const logoH = 46;
+  let logoW = 0;
   if (input.logo) {
     const props = doc.getImageProperties(input.logo);
-    doc.addImage(input.logo, "PNG", MARGIN, 26, (logoH * props.width) / props.height, logoH, "logo", "FAST");
+    logoW = (logoH * props.width) / props.height;
+    doc.addImage(input.logo, "PNG", MARGIN, 24, logoW, logoH, "logo", "FAST");
   }
-  put("INVOICE", RIGHT, 56, { size: 34, style: "bold", align: "right" });
-  /* Between the logo and the title: scanned, it confirms Swift Cargo issued
-     this bill and whether it is paid. */
-  if (input.qr) {
-    const size = 60;
-    const x = RIGHT - 178 - size;
-    doc.addImage(input.qr, "PNG", x, 22, size, size, "verify", "FAST");
-    put("SCAN TO VERIFY", x + size / 2, 22 + size + 7, { size: 5.5, style: "bold", align: "center", spacing: 0.6 });
-  }
+  const textX = MARGIN + logoW + 10;
+  put(input.company.name.toUpperCase(), textX, 38, { size: 12, style: "bold", colour: NAVY, spacing: 1 });
+  const companyInfo = [
+    input.company.addressLines.join(", "),
+    [input.company.taxLine, input.company.contact, input.company.email].filter(Boolean).join(" · "),
+  ].flatMap((line) => wrap(line, 250, 7));
+  lines(companyInfo, textX, 50, 9, 7, BODY);
 
+  put("INVOICE", RIGHT, 48, { size: 26, style: "bold", align: "right", colour: NAVY });
+  put(input.reference, RIGHT, 61, { size: 8.5, style: "bold", align: "right", colour: BODY });
   const tone = TONES[input.stamp.tone];
   const stampText = input.stamp.label.toUpperCase();
-  font(7.5, "bold");
-  const stampW = doc.getTextWidth(stampText) + stampText.length * 1.4 + 18;
+  font(6.8, "bold");
+  const stampW = doc.getTextWidth(stampText) + stampText.length * 1.3 + 14;
   fill(tone.fill);
-  stroke(tone.line, 1.3);
-  doc.roundedRect(RIGHT - stampW, 66, stampW, 17, 3, 3, "FD");
-  put(stampText, RIGHT - stampW + 9, 77.5, { size: 7.5, style: "bold", colour: tone.ink, spacing: 1.4 });
+  stroke(tone.line, 1.1);
+  doc.roundedRect(RIGHT - stampW, 66, stampW, 14, 3, 3, "FD");
+  put(stampText, RIGHT - stampW + 7, 75.5, { size: 6.8, style: "bold", colour: tone.ink, spacing: 1.3 });
 
-  y = 26 + logoH + 12;
+  if (input.qr) {
+    const size = 50;
+    const x = RIGHT - 118 - size;
+    doc.addImage(input.qr, "PNG", x, 22, size, size, "verify", "FAST");
+    put("SCAN TO VERIFY", x + size / 2, 22 + size + 6, { size: 5, style: "bold", align: "center" });
+  }
+
+  y = 88;
   fill(NAVY);
-  doc.rect(0, y, PAGE_W, 7, "F");
-  y += 7 + 22;
-
-  // -------------------------------------------------- company, and the dates
-  const dateBoxW = 72;
-  const dateGap = 6;
-  const datesX = RIGHT - dateBoxW * 2 - dateGap;
-  const companyW = datesX - MARGIN - 16;
-
-  let cy = y;
-  put(input.company.name, MARGIN, cy, { size: 11, style: "bold", colour: NAVY });
-  cy += 14;
-  const companyLines = [
-    ...input.company.addressLines,
-    ...(input.company.taxLine ? [input.company.taxLine] : []),
-    ...(input.company.email ? [input.company.email] : []),
-    ...(input.company.contact ? [input.company.contact] : []),
-  ].flatMap((line) => wrap(line, companyW, 8.5));
-  lines(companyLines, MARGIN, cy, 11.5, 8.5, BODY);
-  cy += companyLines.length * 11.5;
-
-  (
-    [
-      ["Issued", input.issuedOn],
-      ["Due", input.dueOn],
-    ] as const
-  ).forEach(([name, value], i) => {
-    const x = datesX + i * (dateBoxW + dateGap);
-    stroke(HAIR, 0.8);
-    doc.roundedRect(x, y - 10, dateBoxW, 34, 4, 4, "S");
-    font(6.3, "bold");
-    const w = doc.getTextWidth(name.toUpperCase()) + name.length * 1.2;
-    put(name.toUpperCase(), x + (dateBoxW - w) / 2, y + 1, { size: 6.3, style: "bold", colour: MUTED, spacing: 1.2 });
-    put(value, x + dateBoxW / 2, y + 15, { size: 8.5, style: "bold", align: "center" });
-  });
-
-  y = Math.max(cy, y + 24) + 10;
+  doc.rect(MARGIN, y, CONTENT * 0.75, 3.5, "F");
+  fill([244, 97, 31]);
+  doc.rect(MARGIN + CONTENT * 0.75, y, CONTENT * 0.25, 3.5, "F");
+  y += 3.5 + 12;
+  input.details = [["Issued", input.issuedOn], ["Due", input.dueOn], ...input.details.filter(([k]) => k !== "Issued" && k !== "Due")];
 
   // ------------------------------------------- who, and which sailing
   const boxGap = 12;
