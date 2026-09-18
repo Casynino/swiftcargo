@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { recordAudit } from "@/lib/audit";
+import { formDate } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
+import { formMessage } from "@/lib/safe-error";
+import { DEFAULT_TRANSIT_DAYS } from "@/lib/sailing-schedule";
 import { authorize } from "@/lib/session";
 
 export type ActionState = { error?: string; ok?: string };
@@ -79,22 +82,52 @@ export async function upsertWarehouse(
   return { ok: "Saved." };
 }
 
+const SAILING_STATUSES = [
+  "OPEN_FOR_BOOKING",
+  "CUTOFF_APPROACHING",
+  "CLOSED",
+  "DEPARTED",
+  "IN_TRANSIT",
+  "ARRIVED",
+  "DELAYED",
+  "CANCELLED",
+] as const;
+
 const scheduleSchema = z.object({
+  /* The Monday of the generated week this row stands in for. Blank makes it an
+     extra sailing the weekly rule does not describe. */
+  weekOf: z.string().trim().optional(),
+  origin: z.string().trim().max(120).optional(),
+  destination: z.string().trim().max(120).optional(),
   vessel: z.string().trim().optional(),
   voyage: z.string().trim().optional(),
   shippingLine: z.string().trim().optional(),
   cargoDeadline: z.string().min(1, "When does cargo close?"),
+  loadingDate: z.string().trim().optional(),
   departureDate: z.string().min(1, "When does it sail?"),
-  estimatedArrival: z.string().min(1, "When does it land?"),
+  transitDays: z.coerce
+    .number()
+    .int("Whole days.")
+    .min(1, "A voyage takes at least a day.")
+    .max(120, "Check the transit time."),
+  estimatedArrival: z.string().trim().optional(),
+  status: z.enum(SAILING_STATUSES).optional(),
+  notes: z.string().trim().max(500).optional(),
   published: z.boolean().optional(),
 });
 
 /**
- * Publish a sailing to the website.
+ * OVERRIDE ONE WEEK OF THE SAILING SCHEDULE.
  *
- * Deliberately not derived from a container: the schedule is announced weeks
- * before a box exists, and a website that can only show sailings we have already
- * opened a container for shows nothing useful.
+ * The public page is generated from the weekly rule — see
+ * lib/sailing-schedule.ts — so nothing has to be published for the website to
+ * be right. A row saved here is the week that DIFFERS: one that slipped, one
+ * with a vessel worth naming, one nobody is sailing. `weekOf` says which
+ * generated week it stands in for, and unticking "show on the public website"
+ * takes that week off the page altogether.
+ *
+ * Deliberately not derived from a container: a sailing is announced weeks
+ * before a box exists.
  */
 export async function upsertSchedule(
   _prev: ActionState,
@@ -104,12 +137,19 @@ export async function upsertSchedule(
 
   const id = String(formData.get("scheduleId") ?? "");
   const parsed = scheduleSchema.safeParse({
+    weekOf: formData.get("weekOf") || undefined,
+    origin: formData.get("origin") || undefined,
+    destination: formData.get("destination") || undefined,
     vessel: formData.get("vessel") || undefined,
     voyage: formData.get("voyage") || undefined,
     shippingLine: formData.get("shippingLine") || undefined,
     cargoDeadline: formData.get("cargoDeadline"),
+    loadingDate: formData.get("loadingDate") || undefined,
     departureDate: formData.get("departureDate"),
-    estimatedArrival: formData.get("estimatedArrival"),
+    transitDays: formData.get("transitDays") || DEFAULT_TRANSIT_DAYS,
+    estimatedArrival: formData.get("estimatedArrival") || undefined,
+    status: formData.get("status") || undefined,
+    notes: formData.get("notes") || undefined,
     published: formData.get("published") === "on",
   });
   if (!parsed.success) {
@@ -117,20 +157,58 @@ export async function upsertSchedule(
   }
   const d = parsed.data;
 
+  let dates: { cargoDeadline: Date; departureDate: Date; weekOf: Date | null };
+  let loadingDate: Date | null;
+  try {
+    dates = {
+      cargoDeadline: formDate(d.cargoDeadline, "cargo deadline")!,
+      departureDate: formDate(d.departureDate, "departure date")!,
+      weekOf: formDate(d.weekOf, "sailing week"),
+    };
+    loadingDate = formDate(d.loadingDate, "loading day");
+  } catch (error) {
+    return { error: formMessage(error, "Check the dates.") };
+  }
+
+  if (dates.departureDate < dates.cargoDeadline) {
+    return { error: "A ship cannot leave before the cargo deadline." };
+  }
+
+  /* An arrival typed by hand wins; otherwise it is departure plus the days at
+     sea, which is the same arithmetic the public page does. */
+  const arrival =
+    formDate(d.estimatedArrival, "arrival") ??
+    new Date(dates.departureDate.getTime() + d.transitDays * 24 * 60 * 60 * 1000);
+
   const data = {
+    weekOf: dates.weekOf,
+    origin: d.origin || "Guangzhou",
+    destination: d.destination || "Dar es Salaam",
     vessel: d.vessel || null,
     voyage: d.voyage || null,
     shippingLine: d.shippingLine || null,
-    cargoDeadline: new Date(d.cargoDeadline),
-    departureDate: new Date(d.departureDate),
-    estimatedArrival: new Date(d.estimatedArrival),
+    cargoDeadline: dates.cargoDeadline,
+    loadingDate: loadingDate ?? dates.cargoDeadline,
+    departureDate: dates.departureDate,
+    transitDays: d.transitDays,
+    estimatedArrival: arrival,
+    status: d.status ?? "OPEN_FOR_BOOKING",
+    notes: d.notes || null,
     published: d.published ?? true,
   };
 
-  if (id) {
-    await prisma.shipmentSchedule.update({ where: { id }, data });
-  } else {
-    await prisma.shipmentSchedule.create({ data });
+  try {
+    if (id) {
+      await prisma.shipmentSchedule.update({ where: { id }, data });
+    } else {
+      await prisma.shipmentSchedule.create({ data });
+    }
+  } catch (error) {
+    /* One row per week, enforced by the database: two people cannot publish two
+       versions of the same Monday. */
+    return {
+      error: formMessage(error, "That sailing week has already been published. Edit the one that is there."),
+    };
   }
 
   await recordAudit({
@@ -138,7 +216,7 @@ export async function upsertSchedule(
     action: id ? "schedule.update" : "schedule.create",
     entity: "ShipmentSchedule",
     entityId: id || null,
-    summary: `${id ? "Updated" : "Published"} sailing ${d.vessel ?? "TBC"} departing ${d.departureDate}`,
+    summary: `${id ? "Updated" : "Published"} sailing ${d.vessel ?? "TBC"} departing ${d.departureDate} (${data.status})`,
   });
 
   revalidatePath("/app/admin/content");

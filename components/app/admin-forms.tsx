@@ -18,6 +18,17 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+const SAILING_STATUSES = [
+  ["OPEN_FOR_BOOKING", "Open for booking"],
+  ["CUTOFF_APPROACHING", "Cut-off approaching"],
+  ["CLOSED", "Closed for cargo"],
+  ["DEPARTED", "Departed China"],
+  ["IN_TRANSIT", "In transit"],
+  ["ARRIVED", "Arrived"],
+  ["DELAYED", "Delayed"],
+  ["CANCELLED", "Cancelled"],
+] as const;
+
 export function WarehouseForm({
   warehouse,
 }: {
@@ -153,32 +164,84 @@ export function WarehouseForm({
   );
 }
 
-export function ScheduleForm() {
+/**
+ * OVERRIDE ONE WEEK OF THE PUBLISHED SCHEDULE.
+ *
+ * The public page needs nothing here to be right — it is generated from the
+ * weekly rule. This is for the week that is not ordinary: a sailing that
+ * slipped, a vessel worth naming, a week nobody is sailing. Picking the week
+ * fills the dates the rule would have given, so the only thing left to type is
+ * whatever differs.
+ */
+export function ScheduleForm({
+  weeks,
+  defaultTransitDays,
+}: {
+  /** The generated weeks, newest first, as the public page would show them. */
+  weeks: {
+    weekOf: string;
+    label: string;
+    cargoDeadline: string;
+    loadingDate: string;
+    departureDate: string;
+    taken: boolean;
+  }[];
+  defaultTransitDays: number;
+}) {
   const [state, action] = useActionState<ActionState, FormData>(
     upsertSchedule,
     {}
   );
   const [open, setOpen] = useState(false);
+  const free = weeks.filter((w) => !w.taken);
+  const [weekOf, setWeekOf] = useState(free[0]?.weekOf ?? "");
+
+  const chosen = weeks.find((w) => w.weekOf === weekOf) ?? null;
 
   if (!open) {
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Publish a sailing
+        Override a sailing week
       </Button>
     );
   }
 
   return (
     <Card className="p-6">
-      <form action={action} className="space-y-4">
+      {/* Keyed on the week so picking a different one refills the date inputs:
+          an uncontrolled input keeps the first defaultValue it was given. */}
+      <form action={action} className="space-y-4" key={weekOf}>
+        <div className="space-y-2">
+          <Label htmlFor="weekOf">Which sailing week</Label>
+          <NativeSelect
+            id="weekOf"
+            name="weekOf"
+            value={weekOf}
+            onChange={(e) => setWeekOf(e.target.value)}
+          >
+            <option value="">An extra sailing — no generated week</option>
+            {weeks.map((week) => (
+              <option key={week.weekOf} value={week.weekOf} disabled={week.taken}>
+                {week.label}
+                {week.taken ? " — already published" : ""}
+              </option>
+            ))}
+          </NativeSelect>
+          <p className="text-xs text-muted-foreground">
+            The week this row stands in for. Everything else that week is
+            generated from the rule: cargo in by Friday, packed that Friday,
+            sails Monday.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="vessel">Vessel</Label>
             <Input id="vessel" name="vessel" placeholder="MSC Kalamata" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="voyage">Voyage</Label>
+            <Label htmlFor="voyage">Voyage reference</Label>
             <Input id="voyage" name="voyage" placeholder="FR429A" />
           </div>
           <div className="space-y-2">
@@ -186,34 +249,109 @@ export function ScheduleForm() {
             <Input id="shippingLine" name="shippingLine" placeholder="MSC" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoDeadline">Cargo deadline</Label>
-            <Input id="cargoDeadline" name="cargoDeadline" type="date" min="2000-01-01" max="2099-12-31" required />
+            <Label htmlFor="origin">Origin</Label>
+            <Input id="origin" name="origin" defaultValue="Guangzhou" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="departureDate">Departs</Label>
-            <Input id="departureDate" name="departureDate" type="date" min="2000-01-01" max="2099-12-31" required />
+            <Label htmlFor="destination">Destination</Label>
+            <Input id="destination" name="destination" defaultValue="Dar es Salaam" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="estimatedArrival">Arrives</Label>
+            <Label htmlFor="status">Status</Label>
+            <NativeSelect id="status" name="status" defaultValue="OPEN_FOR_BOOKING">
+              {SAILING_STATUSES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cargoDeadline">Last day for cargo</Label>
+            <Input
+              id="cargoDeadline"
+              name="cargoDeadline"
+              type="date"
+              min="2000-01-01"
+              max="2099-12-31"
+              defaultValue={chosen?.cargoDeadline}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="loadingDate">Container packed</Label>
+            <Input
+              id="loadingDate"
+              name="loadingDate"
+              type="date"
+              min="2000-01-01"
+              max="2099-12-31"
+              defaultValue={chosen?.loadingDate}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="departureDate">Departs China</Label>
+            <Input
+              id="departureDate"
+              name="departureDate"
+              type="date"
+              min="2000-01-01"
+              max="2099-12-31"
+              defaultValue={chosen?.departureDate}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="transitDays">Days at sea</Label>
+            <Input
+              id="transitDays"
+              name="transitDays"
+              type="number"
+              min={1}
+              max={120}
+              step={1}
+              defaultValue={defaultTransitDays}
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="estimatedArrival">
+              Estimated arrival{" "}
+              <span className="font-normal text-muted-foreground">
+                (left blank: departure plus the days at sea)
+              </span>
+            </Label>
             <Input
               id="estimatedArrival"
               name="estimatedArrival"
               type="date"
               min="2000-01-01"
               max="2099-12-31"
-              required
             />
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="notes">Note for the website</Label>
+          <Textarea
+            id="notes"
+            name="notes"
+            rows={2}
+            maxLength={500}
+            placeholder="Deadline brought forward for the public holiday."
+          />
         </div>
 
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="published" defaultChecked />
           Show on the public website
+          <span className="text-xs text-muted-foreground">
+            — unticked, this week comes off the schedule altogether
+          </span>
         </label>
 
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Publish</SubmitButton>
+          <SubmitButton>Save</SubmitButton>
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>

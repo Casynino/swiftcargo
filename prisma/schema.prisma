@@ -174,6 +174,9 @@ model User {
   payrollApproved    PayrollRun[]         @relation("PayrollApprovedBy")
   payrollPaid        PayrollRun[]         @relation("PayrollPaidBy")
   payrollLines       PayrollItem[]        @relation("PayrollItemStaff")
+  pickupsAssigned    PickupRequest[]      @relation("PickupAssignee")
+  bookingsAssigned   ContainerBooking[]   @relation("BookingAssignee")
+  requestFiles       RequestDocument[]    @relation("RequestDocumentBy")
 
   @@index([role, status])
   @@index([department])
@@ -249,6 +252,7 @@ model Customer {
   exceptions        ExceptionCase[]
   pickupRequests    PickupRequest[]
   containerBookings ContainerBooking[]
+  bookingsConverted ContainerBooking[] @relation("BookingConverted")
   quoteRequests     QuoteRequest[]
   deliveryRequests  DeliveryRequest[]
   customerRates     CustomerRate[]
@@ -484,6 +488,9 @@ model Cargo {
   history         CargoStatusHistory[]
   conversations   Conversation[]
   contacts        CustomerContact[]
+  /// The website pickup requests this receiving record answered. A request is
+  /// never cargo; this is the only thread between the promise and the boxes.
+  pickupRequests  PickupRequest[]      @relation("PickupCargo")
 
   @@index([shippingMark])
   @@index([createdAt])
@@ -2019,7 +2026,16 @@ enum RequestStatus {
 
 enum BookingType {
   FULL_CONTAINER
+  /// Loose cargo consolidated with other customers. The company's own word for
+  /// it on every screen is "loose cargo"; the enum keeps the name it was born
+  /// with, because renaming a stored value to improve a label is a migration
+  /// that can only lose rows.
   SHARED_CARGO
+  /// Out of gauge, heavy lift, a machine on a frame. Never priced from the rate
+  /// book — somebody looks at it.
+  SPECIAL_CARGO
+  /// Clearing somebody else's cargo through Dar. No freight, no sailing.
+  CUSTOMS_CLEARANCE
 }
 
 model ContainerBooking {
@@ -2049,18 +2065,63 @@ model ContainerBooking {
   estimatedWeightKg Decimal? @db.Decimal(12, 3)
   estimatedCbm      Decimal? @db.Decimal(12, 4)
 
-  preferredShipment String?
-  requirements      String?
-  termsAccepted     Boolean @default(false)
+  preferredShipment    String?
+  /// The Monday of the sailing week the customer picked off the public
+  /// schedule, when they picked one. A date rather than the sentence they saw,
+  /// so Support can line the request up against the week it asked for.
+  preferredSailingWeek DateTime? @db.Date
+
+  /// Where the goods are now, and when they will be ready to move.
+  originCity    String?
+  readinessDate DateTime?
+  supplierName  String?
+
+  /// How the cargo has to be handled. Hazardous is `dangerousGoods` above; the
+  /// other two ride beside it because a shipper ticks all three on one form.
+  fragile    Boolean @default(false)
+  perishable Boolean @default(false)
+  /// Special cargo only: lifting, cradling, temperature, escorts.
+  handling   String?
+
+  /// Customs clearance only. Nothing here is freight — it is somebody else's
+  /// container arriving at a port with papers that need working.
+  portOfDischarge       String?
+  shipmentRef           String?
+  declaredValue         Decimal? @db.Decimal(14, 2)
+  declaredValueCurrency String   @default("USD")
+
+  requirements  String?
+  termsAccepted Boolean @default(false)
 
   status     RequestStatus @default(SUBMITTED)
   staffNotes String?
+
+  assignedToId String?
+  assignedTo   User?   @relation("BookingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  /// What Support came back with. A figure here is an answer to an enquiry, not
+  /// an invoice: nothing is owed until cargo exists and Finance issues a bill.
+  quotedAmount   Decimal?  @db.Decimal(14, 2)
+  quotedCurrency String    @default("USD")
+  quotedAt       DateTime?
+
+  /// SET AT CONVERSION AND NOWHERE ELSE.
+  ///
+  /// An approved request becomes operational by being attached to a customer on
+  /// the books — found by phone before one is created, so answering the same
+  /// enquiry twice cannot mint two customers. The form can never write it.
+  convertedCustomerId String?
+  convertedCustomer   Customer? @relation("BookingConverted", fields: [convertedCustomerId], references: [id], onDelete: SetNull)
+  convertedAt         DateTime?
+
+  documents RequestDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([customerId])
+  @@index([assignedToId, status])
 }
 
 model PickupRequest {
@@ -2071,13 +2132,28 @@ model PickupRequest {
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
-  pickupLocation String
-  contactName    String
-  contactPhone   String
+  pickupLocation  String
+  /// The Guangzhou-area city the address is in. Held apart from the address so
+  /// the floor can sort a morning's runs by town.
+  city            String?
+  contactName     String
+  contactPhone    String
+  contactWhatsapp String?
+  contactEmail    String?
 
-  cargoDescription String?
-  packages         Int?
-  commodity        String?
+  /// The factory. Not a customer — Swift Cargo bills nobody here — but the only
+  /// thread back to an owner when a mark goes missing.
+  supplierName    String?
+  supplierContact String?
+
+  cargoDescription  String?
+  packages          Int?
+  commodity         String?
+  estimatedCbm      Decimal? @db.Decimal(12, 4)
+  estimatedWeightKg Decimal? @db.Decimal(12, 3)
+  /// What the customer says will be written on the boxes. A claim, not the mark
+  /// on the customer row — the counter decides that when the goods arrive.
+  shippingMark      String?
 
   preferredDate DateTime?
   preferredTime String?
@@ -2086,11 +2162,55 @@ model PickupRequest {
   status     RequestStatus @default(SUBMITTED)
   staffNotes String?
 
+  assignedToId  String?
+  assignedTo    User?     @relation("PickupAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  /// The day Guangzhou is actually going. Never the day the customer asked for.
+  scheduledDate DateTime?
+  completedAt   DateTime?
+
+  /**
+   * A PICKUP REQUEST IS NOT CARGO.
+   * It stays a request until the boxes are physically on the Guangzhou floor
+   * and a clerk takes them in through the receiving counter. This points at the
+   * consignment that came of it, and is written only by that act.
+   */
+  cargoId String?
+  cargo   Cargo?  @relation("PickupCargo", fields: [cargoId], references: [id], onDelete: SetNull)
+
+  documents RequestDocument[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([customerId])
+  @@index([assignedToId, status])
+}
+
+/// A file hung on a website request: a proforma the customer sent in, a photo
+/// of the pallet the Guangzhou driver took at the factory gate. Uploaded by
+/// staff only — see lib/actions/request-files.ts — and read back through
+/// /api/files like every other private paper.
+model RequestDocument {
+  id String @id @default(cuid())
+
+  pickupRequestId String?
+  pickupRequest   PickupRequest?    @relation(fields: [pickupRequestId], references: [id], onDelete: Cascade)
+  bookingId       String?
+  booking         ContainerBooking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  /// DOCUMENT for paperwork, PROOF for evidence the job was done.
+  kind  String  @default("DOCUMENT")
+  label String?
+  url   String
+
+  uploadedById String?
+  uploadedBy   User?   @relation("RequestDocumentBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([pickupRequestId])
+  @@index([bookingId])
 }
 
 model QuoteRequest {
@@ -2130,19 +2250,51 @@ model QuoteRequest {
   @@index([customerId])
 }
 
-/// What the website publishes about upcoming sailings. Controlled by staff; it
-/// is a commitment to a deadline, so it is not derived from a container that
-/// may not exist yet.
+/// Where a sailing is in its booking window. Not ShipmentStatus: that describes
+/// a voyage that exists and is being worked, and this describes whether a
+/// customer may still put cargo on a boat that has not been booked yet.
+enum SailingStatus {
+  OPEN_FOR_BOOKING
+  CUTOFF_APPROACHING
+  CLOSED
+  DEPARTED
+  IN_TRANSIT
+  ARRIVED
+  DELAYED
+  CANCELLED
+}
+
+/**
+ * A SAILING THE WEBSITE PUBLISHES, WHEN IT DIFFERS FROM THE WEEKLY RULE.
+ * The schedule is a rule, not a list: cargo is received until Friday, the box
+ * is packed that Friday, the ship leaves Monday, and it is thirty days at sea.
+ * lib/sailing-schedule.ts generates the weeks from that rule, so the public
+ * page is never a table of dates somebody has to remember to extend.
+ * A row here is an EXCEPTION to the rule — a week that slipped, a vessel worth
+ * naming, a public holiday that moved the deadline, a week cancelled outright.
+ * `weekOf` names the generated week it replaces; a row without one is an extra
+ * sailing the rule does not describe.
+ */
 model ShipmentSchedule {
   id String @id @default(cuid())
+
+  /// The Monday of the generated week this row stands in for. Unique, so two
+  /// staff cannot publish two versions of the same week. Null for an extra
+  /// sailing that answers to no generated week.
+  weekOf DateTime? @unique @db.Date
 
   origin      String @default("Guangzhou")
   destination String @default("Dar es Salaam")
 
   /// Last day the Guangzhou warehouse accepts cargo for this sailing.
   cargoDeadline    DateTime
-  closingDate      DateTime?
+  /// The day the box is packed. The same Friday under the rule, and the reason
+  /// it is stored separately is the week where it is not.
+  loadingDate      DateTime?
   departureDate    DateTime
+  /// Days at sea. Stored rather than assumed, because thirty is this lane's
+  /// habit and not a law.
+  transitDays      Int       @default(30)
   estimatedArrival DateTime
 
   vessel       String?
@@ -2152,8 +2304,8 @@ model ShipmentSchedule {
   /// Linked once the box exists. Null while the sailing is only announced.
   containerId String?
 
-  status    ShipmentStatus @default(PREPARING)
-  published Boolean        @default(true)
+  status    SailingStatus @default(OPEN_FOR_BOOKING)
+  published Boolean       @default(true)
   notes     String?
 
   createdAt DateTime @default(now())

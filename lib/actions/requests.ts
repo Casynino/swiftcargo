@@ -11,6 +11,7 @@ import {
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
+import { SERVICE_LABEL } from "@/lib/constants";
 import { clientAddress, hit } from "@/lib/rate-limit";
 import { recordAudit } from "@/lib/audit";
 import { authorize, currentUser, type SessionUser } from "@/lib/session";
@@ -69,6 +70,17 @@ const longText = z.string().trim().max(2000, L("Keep that under 2,000 characters
 const volume = z.coerce.number().min(0, L("Volume cannot be negative.")).max(10_000, L("Check the volume.")).optional();
 const weight = z.coerce.number().min(0, L("Weight cannot be negative.")).max(1_000_000, L("Check the weight.")).optional();
 const count = z.coerce.number().int(L("Use a whole number.")).min(0).max(1_000_000).optional();
+const money = z.coerce.number().min(0, L("That cannot be negative.")).max(1_000_000_000).optional();
+/* A date the customer names. Today or later; a readiness date in the past is a
+   typing slip, and a collection cannot be arranged for last Tuesday. */
+const futureDate = z
+  .string()
+  .trim()
+  .optional()
+  .refine(
+    (v) => !v || (!Number.isNaN(Date.parse(v)) && Date.parse(v) >= Date.now() - 24 * 60 * 60 * 1000),
+    L("Choose a date from today onwards.")
+  );
 
 type Kind = "quote" | "pickup" | "booking";
 
@@ -193,6 +205,17 @@ export async function submitQuoteRequest(
       },
     });
 
+    await recordAudit(
+      {
+        actor: null,
+        action: "request.quote.create",
+        entity: "QuoteRequest",
+        entityId: created.id,
+        summary: `${reference} raised on the website by ${data.contactName} — ${data.service}`,
+      },
+      tx
+    );
+
     await notifyStaff(
       await staffInDepartment("CUSTOMER_SUPPORT", tx),
       {
@@ -214,22 +237,36 @@ export async function submitQuoteRequest(
   };
 }
 
+/**
+ * THE CHINA COLLECTION FORM.
+ *
+ * Everything the Guangzhou floor needs to find a factory and know what it is
+ * looking at before it sends a van: who is asking, who to ask for at the gate,
+ * where, when, and roughly what. Every figure on it is the customer's estimate
+ * and stays an estimate — the counter measures when the boxes land, and nothing
+ * here becomes a receiving record on its own.
+ */
 const pickupSchema = z.object({
-  pickupLocation: z.string().trim().min(3, L("Where are we collecting from?")).max(300, L("Keep the address under 300 characters.")),
   contactName: name,
   contactPhone: phone,
-  cargoDescription: longText,
-  packages: count,
-  commodity: shortText,
-  preferredDate: z
+  contactWhatsapp: z.string().trim().max(40).optional(),
+  contactEmail: email,
+  supplierName: shortText,
+  supplierContact: z.string().trim().max(120).optional(),
+  pickupLocation: z
     .string()
     .trim()
-    .optional()
-    .refine(
-      (v) => !v || (!Number.isNaN(Date.parse(v)) && Date.parse(v) >= Date.now() - 24 * 60 * 60 * 1000),
-      L("Choose a date from today onwards.")
-    ),
+    .min(3, L("Where are we collecting from?"))
+    .max(300, L("Keep the address under 300 characters.")),
+  city: shortText,
+  preferredDate: futureDate,
   preferredTime: z.string().trim().max(60).optional(),
+  commodity: shortText,
+  cargoDescription: longText,
+  packages: count,
+  estimatedCbm: volume,
+  estimatedWeightKg: weight,
+  shippingMark: z.string().trim().max(120).optional(),
   notes: longText,
 });
 
@@ -238,14 +275,22 @@ export async function submitPickupRequest(
   formData: FormData
 ): Promise<ActionState> {
   const parsed = pickupSchema.safeParse({
-    pickupLocation: formData.get("pickupLocation") ?? "",
     contactName: formData.get("contactName") ?? "",
     contactPhone: formData.get("contactPhone") ?? "",
-    cargoDescription: formData.get("cargoDescription") || undefined,
-    packages: formData.get("packages") || undefined,
-    commodity: formData.get("commodity") || undefined,
+    contactWhatsapp: formData.get("contactWhatsapp") || undefined,
+    contactEmail: formData.get("contactEmail") || "",
+    supplierName: formData.get("supplierName") || undefined,
+    supplierContact: formData.get("supplierContact") || undefined,
+    pickupLocation: formData.get("pickupLocation") ?? "",
+    city: formData.get("city") || undefined,
     preferredDate: formData.get("preferredDate") || undefined,
     preferredTime: formData.get("preferredTime") || undefined,
+    commodity: formData.get("commodity") || undefined,
+    cargoDescription: formData.get("cargoDescription") || undefined,
+    packages: formData.get("packages") || undefined,
+    estimatedCbm: formData.get("estimatedCbm") || undefined,
+    estimatedWeightKg: formData.get("estimatedWeightKg") || undefined,
+    shippingMark: formData.get("shippingMark") || undefined,
     notes: formData.get("notes") || undefined,
   });
   if (!parsed.success) {
@@ -274,20 +319,45 @@ export async function submitPickupRequest(
       data: {
         reference,
         customerId,
-        pickupLocation: data.pickupLocation,
         contactName: data.contactName,
         contactPhone: data.contactPhone,
-        cargoDescription: data.cargoDescription || null,
-        packages: data.packages ?? null,
-        commodity: data.commodity || null,
+        contactWhatsapp: data.contactWhatsapp || null,
+        contactEmail: data.contactEmail || null,
+        supplierName: data.supplierName || null,
+        supplierContact: data.supplierContact || null,
+        pickupLocation: data.pickupLocation,
+        city: data.city || null,
         preferredDate: data.preferredDate ? new Date(data.preferredDate) : null,
         preferredTime: data.preferredTime || null,
+        commodity: data.commodity || null,
+        cargoDescription: data.cargoDescription || null,
+        packages: data.packages ?? null,
+        estimatedCbm: data.estimatedCbm ?? null,
+        estimatedWeightKg: data.estimatedWeightKg ?? null,
+        shippingMark: data.shippingMark || null,
         notes: data.notes || null,
       },
     });
 
+    /* The status and the desk fields are not in the create above and cannot be:
+       every column a stranger may write is named there by hand, so a form field
+       called "status" or "cargoId" reaches nothing. */
+    await recordAudit(
+      {
+        actor: null,
+        action: "request.pickup.create",
+        entity: "PickupRequest",
+        entityId: created.id,
+        summary: `${reference} raised on the website by ${data.contactName} — ${data.pickupLocation}`,
+      },
+      tx
+    );
+
     await notifyStaff(
-      await staffInDepartment("CUSTOMER_SUPPORT", tx),
+      [
+        ...(await staffInDepartment("CUSTOMER_SUPPORT", tx)),
+        ...(await staffInDepartment("CHINA_WAREHOUSE", tx)),
+      ],
       {
         kind: "request.pickup",
         title: `Pickup request ${reference}`,
@@ -307,27 +377,81 @@ export async function submitPickupRequest(
   };
 }
 
+/**
+ * THE FOUR SERVICES, ON ONE FORM.
+ *
+ * A full container, loose cargo, something that needs looking at, and clearing
+ * somebody else's box through Dar. They ask for different things — a clearance
+ * job has no CBM and special cargo has no rate — so the schema is one shape
+ * with the parts each service fills, and the checks below are what each service
+ * genuinely cannot do without.
+ *
+ * `type` is the only field that decides anything. Everything to do with status,
+ * price, assignment and conversion is absent from this schema and from the
+ * create call, so a crafted post cannot approve its own request or name its own
+ * price.
+ */
+const SERVICES = ["FULL_CONTAINER", "SHARED_CARGO", "SPECIAL_CARGO", "CUSTOMS_CLEARANCE"] as const;
+
 const bookingSchema = z.object({
-  type: z.enum(["FULL_CONTAINER", "SHARED_CARGO"]),
+  type: z.enum(SERVICES),
   contactName: name,
   contactPhone: phone,
   contactEmail: email,
+
+  originCity: shortText,
   pickupAddress: z.string().trim().max(300).optional(),
   destination: shortText,
+  readinessDate: futureDate,
+  supplierName: shortText,
+
   commodity: shortText,
   containerType: z
     .enum(["GP_20", "GP_40", "HQ_40", "HQ_45", "LCL_CONSOLIDATED"])
     .optional(),
-  dangerousGoods: z.boolean().optional(),
   packages: count,
   quantity: count,
   dimensions: shortText,
   estimatedWeightKg: weight,
   estimatedCbm: volume,
+
   preferredShipment: shortText,
+  preferredSailingWeek: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || !Number.isNaN(Date.parse(v)), L("Choose a sailing from the list.")),
+
+  dangerousGoods: z.boolean().optional(),
+  fragile: z.boolean().optional(),
+  perishable: z.boolean().optional(),
+  handling: longText,
+
+  portOfDischarge: shortText,
+  shipmentRef: shortText,
+  declaredValue: money,
+  declaredValueCurrency: z.enum(["USD", "TZS"]).optional(),
+
   requirements: longText,
   termsAccepted: z.boolean(),
 });
+
+/** What each service cannot be sent without. */
+function missingForService(data: z.infer<typeof bookingSchema>): string | null {
+  if (data.type === "CUSTOMS_CLEARANCE") {
+    if (!data.commodity) return L("Tell us what the cargo is so we can quote the clearance.");
+    if (!data.portOfDischarge) return L("Which port is the cargo arriving at?");
+    return null;
+  }
+  if (data.type === "FULL_CONTAINER" && !data.containerType) {
+    return L("Which container size do you need?");
+  }
+  if (data.type === "SPECIAL_CARGO" && !data.dimensions && !data.handling) {
+    return L("Tell us the dimensions, or how the cargo has to be handled.");
+  }
+  if (!data.commodity) return L("What are you shipping?");
+  return null;
+}
 
 export async function submitBooking(
   _prev: ActionState,
@@ -338,17 +462,28 @@ export async function submitBooking(
     contactName: formData.get("contactName") ?? "",
     contactPhone: formData.get("contactPhone") ?? "",
     contactEmail: formData.get("contactEmail") || "",
+    originCity: formData.get("originCity") || undefined,
     pickupAddress: formData.get("pickupAddress") || undefined,
     destination: formData.get("destination") || undefined,
+    readinessDate: formData.get("readinessDate") || undefined,
+    supplierName: formData.get("supplierName") || undefined,
     commodity: formData.get("commodity") || undefined,
     containerType: formData.get("containerType") || undefined,
-    dangerousGoods: formData.get("dangerousGoods") === "on",
     packages: formData.get("packages") || undefined,
     quantity: formData.get("quantity") || undefined,
     dimensions: formData.get("dimensions") || undefined,
     estimatedWeightKg: formData.get("estimatedWeightKg") || undefined,
     estimatedCbm: formData.get("estimatedCbm") || undefined,
     preferredShipment: formData.get("preferredShipment") || undefined,
+    preferredSailingWeek: formData.get("preferredSailingWeek") || undefined,
+    dangerousGoods: formData.get("dangerousGoods") === "on",
+    fragile: formData.get("fragile") === "on",
+    perishable: formData.get("perishable") === "on",
+    handling: formData.get("handling") || undefined,
+    portOfDischarge: formData.get("portOfDischarge") || undefined,
+    shipmentRef: formData.get("shipmentRef") || undefined,
+    declaredValue: formData.get("declaredValue") || undefined,
+    declaredValueCurrency: formData.get("declaredValueCurrency") || undefined,
     requirements: formData.get("requirements") || undefined,
     termsAccepted: formData.get("termsAccepted") === "on",
   });
@@ -360,6 +495,8 @@ export async function submitBooking(
   if (!data.termsAccepted) {
     return { error: L("Please confirm you understand this is a request, not a confirmed booking.") };
   }
+  const missing = missingForService(data);
+  if (missing) return { error: missing };
 
   const refused = await screen(formData, data.contactPhone);
   if (refused) return refused;
@@ -387,28 +524,52 @@ export async function submitBooking(
         contactName: data.contactName,
         contactPhone: data.contactPhone,
         contactEmail: data.contactEmail || null,
+        originCity: data.originCity || null,
         pickupAddress: data.pickupAddress || null,
         destination: data.destination || null,
+        readinessDate: data.readinessDate ? new Date(data.readinessDate) : null,
+        supplierName: data.supplierName || null,
         commodity: data.commodity || null,
         containerType: data.containerType ?? null,
-        dangerousGoods: data.dangerousGoods ?? false,
         packages: data.packages ?? null,
         quantity: data.quantity ?? null,
         dimensions: data.dimensions || null,
         estimatedWeightKg: data.estimatedWeightKg ?? null,
         estimatedCbm: data.estimatedCbm ?? null,
         preferredShipment: data.preferredShipment || null,
+        preferredSailingWeek: data.preferredSailingWeek
+          ? new Date(data.preferredSailingWeek)
+          : null,
+        dangerousGoods: data.dangerousGoods ?? false,
+        fragile: data.fragile ?? false,
+        perishable: data.perishable ?? false,
+        handling: data.handling || null,
+        portOfDischarge: data.portOfDischarge || null,
+        shipmentRef: data.shipmentRef || null,
+        declaredValue: data.declaredValue ?? null,
+        declaredValueCurrency: data.declaredValueCurrency ?? "USD",
         requirements: data.requirements || null,
         termsAccepted: true,
       },
     });
 
+    await recordAudit(
+      {
+        actor: null,
+        action: "request.service.create",
+        entity: "ContainerBooking",
+        entityId: created.id,
+        summary: `${reference} raised on the website by ${data.contactName} — ${SERVICE_LABEL[data.type]}`,
+      },
+      tx
+    );
+
     await notifyStaff(
       await staffInDepartment("CUSTOMER_SUPPORT", tx),
       {
         kind: "request.booking",
-        title: `Booking request ${reference}`,
-        body: `${data.contactName} · ${data.type.replace("_", " ").toLowerCase()}`,
+        title: `Service request ${reference}`,
+        body: `${data.contactName} · ${SERVICE_LABEL[data.type]}`,
         href: "/app/support/requests",
       },
       tx
@@ -419,7 +580,10 @@ export async function submitBooking(
 
   revalidatePath("/app/support/requests");
   return {
-    ok: `${L("Thank you. Your reference is")} ${request.reference}. ${L("This is a request, not a confirmed booking — we will be in touch to confirm space and price.")}`,
+    ok:
+      data.type === "CUSTOMS_CLEARANCE"
+        ? `${L("Thank you. Your reference is")} ${request.reference}. ${L("Swift Cargo will review the shipment and come back to you with a clearance quotation.")}`
+        : `${L("Thank you. Your reference is")} ${request.reference}. ${L("This is a request, not a confirmed booking — we will be in touch to confirm space and price.")}`,
     reference: request.reference,
   };
 }

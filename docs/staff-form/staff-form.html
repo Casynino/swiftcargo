@@ -1,0 +1,132 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Swift Cargo — Staff Accounts for the New System</title>
+<style>
+@page { size: A4; margin: 12mm 15mm 12mm; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; color: #1c2b3a; font-size: 10pt; line-height: 1.38; margin: 0; }
+:root { --navy:#0b4f8a; --orange:#f37021; --soft:#eef4fa; --line:#c9d6e3; }
+.head { display:flex; align-items:center; justify-content:space-between; border-bottom: 3px solid var(--navy); padding-bottom: 8px; }
+.head img { height: 92px; }
+.head .meta { text-align:right; font-size: 9pt; color:#5b6b7b; }
+.head .meta b { color: var(--navy); font-size: 10pt; }
+h1 { font-size: 19pt; color: var(--navy); margin: 16px 0 2px; letter-spacing: .2px; }
+.sub { color: var(--orange); font-weight: 600; margin: 0 0 12px; }
+.note { background: var(--soft); border-left: 4px solid var(--orange); padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; }
+.note p { margin: 0 0 6px; } .note p:last-child { margin: 0; }
+.steps { display:flex; gap:8px; margin: 10px 0 16px; }
+.step { flex:1; border:1px solid var(--line); border-radius:6px; padding:7px 9px; font-size:9pt; }
+.step b { display:block; color: var(--navy); font-size: 9.5pt; }
+.role { border: 1px solid var(--line); border-radius: 8px; margin: 0 0 9px; page-break-inside: avoid; overflow:hidden; }
+.role .top { background: var(--navy); color: #fff; padding: 7px 12px; display:flex; justify-content:space-between; align-items:center; }
+.role .top h2 { font-size: 12pt; margin: 0; }
+.role .top span { font-size: 8.5pt; background: var(--orange); padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.role .body { padding: 8px 12px 10px; }
+.role .job { margin: 0 0 4px; font-weight: 600; }
+.role ul { margin: 0 0 8px 16px; padding: 0; }
+.role li { margin: 1px 0; }
+.fields { display:grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 6px; }
+.field label { display:block; font-size: 8.5pt; color:#5b6b7b; text-transform: uppercase; letter-spacing:.5px; margin-bottom: 11px; }
+.field div { border-bottom: 1.2px solid #1c2b3a; height: 1px; }
+.extra table { width:100%; border-collapse: collapse; margin-top: 6px; }
+.extra th { background: var(--soft); color: var(--navy); text-align:left; font-size: 9pt; padding: 6px 8px; border:1px solid var(--line); }
+.extra td { border:1px solid var(--line); height: 22px; }
+.flow { font-size: 9pt; color:#3d4d5d; background: var(--soft); border-radius:6px; padding:8px 12px; margin: 4px 0 14px; }
+.flow b { color: var(--navy); }
+.sign { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 12px; }
+.foot { margin-top: 14px; font-size: 8.5pt; color:#7a8896; text-align:center; border-top:1px solid var(--line); padding-top:6px; }
+.pb { page-break-before: always; }
+</style></head><body>
+
+<div class="head">
+  <img src="logo.png" alt="Swift Cargo">
+  <div class="meta"><b>SWIFT CARGO</b><br>Guangzhou → Dar es Salaam<br>Staff preparation form</div>
+</div>
+
+<h1>Staff Accounts for the New System</h1>
+<p class="sub">Please prepare the names and email addresses of the people for each role</p>
+
+<div class="note">
+  <p>Swift Cargo is moving all its work — receiving in China, shipping, Dar warehouse, invoices, payments and customer service — into one new system.</p>
+  <p>Every staff member will have <b>their own personal login</b>, so the system records who did what. To create these accounts we only need each person's <b>full name</b> and <b>work email address</b>. Passwords are not needed on this form — each person will set their own when they first sign in.</p>
+</div>
+
+<div class="flow"><b>How work moves:</b> China Warehouse receives &amp; loads → Dar Warehouse checks in → Accountant prices &amp; invoices → Customer Support informs the customer → Accountant confirms payment → Dar Warehouse releases the cargo. Manager and Boss supervise every step.</div>
+
+<div class="role"><div class="top"><h2>1. Boss / Administrator</h2><span>Full control</span></div><div class="body">
+<p class="job">Owner of the system with the final say on everything.</p>
+<ul>
+<li>Sets company details, VAT, storage charges and invoice terms</li>
+<li>Manages the bank, mobile money and cash accounts printed on invoices</li>
+<li>Creates staff accounts, sets roles and salaries, removes people who leave</li>
+<li>Reviews the audit log — every action, who did it and when</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role"><div class="top"><h2>2. Manager</h2><span>Supervision &amp; approvals</span></div><div class="body">
+<p class="job">Supervises the whole operation and approves decisions.</p>
+<ul>
+<li>Follows the daily command centre: cargo in China, at sea and in Dar, money owed, alerts</li>
+<li>Approves credit, pricing, claims and the monthly payroll</li>
+<li>Reconciles payments and costs against bank and cash records</li>
+<li>Reviews what each container earned against what it cost; runs monthly reports</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role"><div class="top"><h2>3. Accountant (Finance)</h2><span>All money</span></div><div class="body">
+<p class="job">Responsible for pricing, invoices, payments, costs and the books.</p>
+<ul>
+<li>Confirms prices when cargo arrives in Dar and issues invoices (TZS / USD)</li>
+<li>Records and verifies customer payments; follows up unpaid bills</li>
+<li>Issues pickup notes for paid cargo; manages credit</li>
+<li>Records every expense with receipt; counts the office cash; prepares payroll</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role"><div class="top"><h2>4. China Warehouse Manager</h2><span>Guangzhou</span></div><div class="body">
+<p class="job">Receives goods in Guangzhou, measures them and loads containers.</p>
+<ul>
+<li>Records each consignment: customer, shipping mark, packages, weight, CBM, photos</li>
+<li>Prints labels and delivery notes</li>
+<li>Loads cargo into containers, records vessel and seal number, marks departure</li>
+<li>Reports damaged or unidentified goods</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role"><div class="top"><h2>5. Dar Warehouse Manager</h2><span>Dar es Salaam</span></div><div class="body">
+<p class="job">Receives containers in Dar and hands cargo to the right person.</p>
+<ul>
+<li>Records container arrival and checks every consignment against China's figures</li>
+<li>Reports missing or damaged cargo with photos</li>
+<li>Keeps warehouse locations up to date</li>
+<li>Releases cargo only by scanning the customer's pickup note, only to the receiver</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role"><div class="top"><h2>6. Customer Support</h2><span>Customer service</span></div><div class="body">
+<p class="job">The customer's point of contact.</p>
+<ul>
+<li>Answers customer questions and tracks their cargo, container and arrival date</li>
+<li>Registers customers and keeps their details correct</li>
+<li>Handles quote, pickup and booking requests from the website and China sourcing</li>
+<li>Reminds customers about payments and informs them about any cargo issue</li>
+</ul>
+<div class="fields"><div class="field"><label>Full name</label><div></div></div><div class="field"><label>Work email</label><div></div></div></div>
+</div></div>
+
+<div class="role extra"><div class="top"><h2>Additional staff (if more than one person per role)</h2><span>Optional</span></div><div class="body">
+<table><tr><th style="width:26%">Role</th><th style="width:37%">Full name</th><th>Work email</th></tr>
+<tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td></tr></table>
+</div></div>
+
+<div class="sign">
+  <div class="field"><label>Prepared by</label><div></div></div>
+  <div class="field"><label>Approved by (Boss)</label><div></div></div>
+  <div class="field"><label>Date</label><div></div></div>
+</div>
+
+<div class="foot">Swift Cargo · On time, Every time · Please use a work email each person can open — account details will be sent there.</div>
+</body></html>

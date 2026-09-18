@@ -56,7 +56,16 @@ const ZERO = new Prisma.Decimal(0);
  */
 export async function resolveRate(
   client: TxClient | typeof prisma,
-  input: { customerId: string; service: ServiceType; cargoType?: string | null }
+  input: {
+    /**
+     * Whose terms to look for. Absent for the public calculator, which is
+     * asking what the rate book says and has nobody to ask it about — an
+     * agreed rate belongs to a customer and is not a figure to show a stranger.
+     */
+    customerId?: string | null;
+    service: ServiceType;
+    cargoType?: string | null;
+  }
 ) {
   const now = new Date();
   const live = {
@@ -91,27 +100,29 @@ export async function resolveRate(
       orderBy: { effectiveFrom: "desc" },
     }));
 
-  const agreed =
-    (named
-      ? await client.customerRate.findFirst({
-          where: {
-            ...live,
-            customerId: input.customerId,
-            service: input.service,
-            cargoType: named,
-          },
-          orderBy: { effectiveFrom: "desc" },
-        })
-      : null) ??
-    (await client.customerRate.findFirst({
-      where: {
-        ...live,
-        customerId: input.customerId,
-        service: input.service,
-        cargoType: null,
-      },
-      orderBy: { effectiveFrom: "desc" },
-    }));
+  const forCustomer = input.customerId ?? null;
+  const agreed = !forCustomer
+    ? null
+    : ((named
+        ? await client.customerRate.findFirst({
+            where: {
+              ...live,
+              customerId: forCustomer,
+              service: input.service,
+              cargoType: named,
+            },
+            orderBy: { effectiveFrom: "desc" },
+          })
+        : null) ??
+      (await client.customerRate.findFirst({
+        where: {
+          ...live,
+          customerId: forCustomer,
+          service: input.service,
+          cargoType: null,
+        },
+        orderBy: { effectiveFrom: "desc" },
+      })));
 
   return { standard, agreed };
 }
@@ -128,7 +139,7 @@ export async function resolveRate(
 export async function quote(
   client: TxClient | typeof prisma,
   input: {
-    customerId: string;
+    customerId?: string | null;
     service: ServiceType;
     cargoType?: string | null;
     measured: Measured;

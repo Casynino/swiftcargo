@@ -1,4 +1,5 @@
 import type {
+  BookingType,
   CargoStatus,
   ContainerStatus,
   Department,
@@ -6,7 +7,9 @@ import type {
   ExceptionStatus,
   InvoiceStatus,
   PaymentStatus,
+  RequestStatus,
   Role,
+  SailingStatus,
   ShipmentStatus,
 } from "@prisma/client";
 
@@ -243,3 +246,40 @@ export const COMPANY = {
   name: "Swift Cargo",
   tagline: "On time, Every time",
 } as const;
+
+/**
+ * The four services the website takes requests for, in the company's own words.
+ *
+ * SHARED_CARGO is what the enum has always been called and what the database
+ * holds; "loose cargo" is what the business says out loud. The label lives here
+ * so the two never have to be the same string.
+ */
+export const SERVICE_LABEL: Record<BookingType, string> = {
+  FULL_CONTAINER: "Full container",
+  SHARED_CARGO: "Loose cargo",
+  SPECIAL_CARGO: "Special cargo",
+  CUSTOMS_CLEARANCE: "Customs clearance",
+};
+
+/** Where a sailing is in its booking window, said to a customer. */
+export const SAILING_STATUS_LABEL: Record<SailingStatus, string> = {
+  OPEN_FOR_BOOKING: "Open for booking",
+  CUTOFF_APPROACHING: "Cut-off approaching",
+  CLOSED: "Closed for cargo",
+  DEPARTED: "Departed China",
+  IN_TRANSIT: "In transit",
+  ARRIVED: "Arrived",
+  DELAYED: "Delayed",
+  CANCELLED: "Cancelled",
+};
+
+/** How a website request is progressing. */
+export const REQUEST_STATUS_LABEL: Record<RequestStatus, string> = {
+  SUBMITTED: "Submitted",
+  UNDER_REVIEW: "Under review",
+  APPROVED: "Approved",
+  SCHEDULED: "Scheduled",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  REJECTED: "Rejected",
+};

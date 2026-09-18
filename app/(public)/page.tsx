@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { ARRIVAL_CAVEAT, publicSailings } from "@/lib/sailing-schedule";
 import { formatDate, formatMoney } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { telHref } from "@/lib/site-contact";
@@ -46,11 +47,9 @@ export default async function HomePage() {
       orderBy: [{ service: "asc" }, { rate: "asc" }],
       take: 3,
     }),
-    prisma.shipmentSchedule.findMany({
-      where: { published: true, departureDate: { gte: new Date() } },
-      orderBy: { departureDate: "asc" },
-      take: 3,
-    }),
+    /* The weekly rule, not a table somebody has to remember to extend. See
+       lib/sailing-schedule.ts. */
+    publicSailings({ count: 3 }),
     Promise.all([
       prisma.customer.count({ where: { deletedAt: null } }),
       prisma.container.count({
@@ -370,16 +369,17 @@ export default async function HomePage() {
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {sailings.map((sailing) => (
-                <Card key={sailing.id} className="p-6">
+                <Card key={sailing.weekOf.toISOString()} className="p-6">
                   <p className="flex items-center gap-2 text-sm font-medium">
                     <Ship className="size-4 text-marine" />
                     {sailing.vessel ?? t(locale, "Vessel to be confirmed")}
                   </p>
                   <dl className="mt-5 space-y-3 text-sm">
                     {[
-                      ["Cargo deadline", formatDate(sailing.cargoDeadline)],
-                      ["Departs", formatDate(sailing.departureDate)],
-                      ["Arrives", formatDate(sailing.estimatedArrival)],
+                      ["Last day for cargo", formatDate(sailing.cargoDeadline)],
+                      ["Container packed", formatDate(sailing.loadingDate)],
+                      ["Departs China", formatDate(sailing.departureDate)],
+                      ["Estimated arrival", formatDate(sailing.estimatedArrival)],
                     ].map(([label, value]) => (
                       <div key={label} className="flex justify-between gap-3">
                         <dt className="text-muted-foreground">{t(locale, label)}</dt>
@@ -390,6 +390,9 @@ export default async function HomePage() {
                 </Card>
               ))}
             </div>
+            <p className="mt-6 text-xs text-muted-foreground">
+              {t(locale, ARRIVAL_CAVEAT)}
+            </p>
           </div>
         </section>
       ) : null}

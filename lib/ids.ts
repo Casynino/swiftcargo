@@ -192,12 +192,22 @@ export async function nextSourcingReference(tx: TxClient, y = year()) {
   return `SRC-${y}-${pad(await nextSequence(tx, `sourcing:${y}`))}`;
 }
 
+/**
+ * A SERVICE REQUEST OFF THE WEBSITE: SVC-000001.
+ *
+ * One series for all four services — a full container, loose cargo, special
+ * cargo and a clearance job — because a customer quoting a reference back over
+ * the phone should not also have to remember which of our forms they filled in.
+ * The counter is the one bookings have always been minted from, so a reference
+ * issued under the old BK- shape is never reissued under this one.
+ */
 export async function nextBookingReference(tx: TxClient) {
-  return `BK-${pad(await nextSequence(tx, "booking"))}`;
+  return `SVC-${pad(await nextSequence(tx, "booking"))}`;
 }
 
+/** A collection asked for in China: SPU-000001. */
 export async function nextPickupReference(tx: TxClient) {
-  return `PU-${pad(await nextSequence(tx, "pickup"))}`;
+  return `SPU-${pad(await nextSequence(tx, "pickup"))}`;
 }
 
 export async function nextQuoteReference(tx: TxClient) {

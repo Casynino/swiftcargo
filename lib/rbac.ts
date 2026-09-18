@@ -238,6 +238,14 @@ const CHINA_WAREHOUSE: Permission[] = [
   "exception.raise",
   "exception.resolve",
   "customer.view",
+  /* A COLLECTION IN CHINA IS A CHINA JOB.
+     The van goes out of Guangzhou, so the queue of people asking for one has to
+     be openable by the floor that answers it. Support still sees the same rows;
+     what China gains is taking one, putting a day against it and closing it when
+     the boxes are in. None of it prices anything — the requests screen carries no
+     money, for the same reason the receiving screens do not. */
+  "request.view",
+  "request.manage",
   "search.global",
 ];
 
