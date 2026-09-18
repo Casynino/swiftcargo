@@ -131,240 +131,270 @@ export function PackingListSheet({
   const shipper = company?.chinaEntity || company?.name || "Swift Cargo";
   const consignee = company?.darEntity || company?.name || "Swift Cargo";
 
-  const th = "px-2 py-2 text-[9px] font-bold uppercase tracking-wider";
+  const th = "px-1.5 py-1.5 text-[7.5px] font-bold uppercase tracking-wider";
+  const td = "border-b border-[#e3eaf1] px-1.5 py-[3px] align-top leading-tight";
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-6">
-      {/* The sheet prints the way the paper one always has: A4 across. */}
-      <style>{`@page { size: A4 landscape; margin: 9mm; } @media print { .pl-sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }`}</style>
+    <div className="mx-auto max-w-[860px] space-y-6 print:max-w-none print:space-y-0">
+      {/*
+        A4 PORTRAIT, EDGE TO EDGE.
+
+        The page has no margin of its own, so the browser has nowhere to print
+        its date and address across the top and bottom; the sheet carries its
+        own 10mm instead. The table's heading repeats on every page and a row
+        never splits across two.
+      */}
+      <style>{`
+        @page { size: A4 portrait; margin: 0; }
+        @media print {
+          html, body { background: #fff !important; }
+          .pl-sheet { width: 210mm; padding: 10mm 10mm 12mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .pl-sheet thead { display: table-header-group; }
+          .pl-sheet tr { break-inside: avoid; }
+          .update-pill { display: none !important; }
+        }
+      `}</style>
 
       <div className="flex items-center justify-between print:hidden">
         <SmartBack fallbackHref={`/app/containers/${id}`} fallbackLabel={`${snap.container}`} />
         <PrintButton label={list ? "Download / print" : "Download / print provisional"} />
       </div>
 
-      <article className="pl-sheet overflow-hidden rounded-2xl border bg-white text-[#0b1b2b] shadow-raised print:rounded-none print:border-0 print:shadow-none">
+      <article className="pl-sheet mx-auto bg-white p-[10mm] text-[#0b1b2b] shadow-raised ring-1 ring-black/5 print:shadow-none print:ring-0">
         {/* ------------------------------------------------------ Letterhead */}
-        <header className="relative overflow-hidden bg-[#0b2742] px-8 py-6 text-white">
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_-20%,rgba(79,201,240,0.35),transparent_60%),radial-gradient(ellipse_at_0%_120%,rgba(244,97,31,0.3),transparent_55%)]"
-          />
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <span className="grid size-16 place-items-center rounded-2xl bg-white p-1.5">
-                <Image src="/brand/swift-cargo.png" alt="" width={56} height={56} className="object-contain" />
-              </span>
-              <div>
-                <p className="text-2xl font-extrabold uppercase tracking-[0.12em]">
-                  {company?.name ?? "Swift Cargo"}
-                </p>
-                {company?.tagline ? <p className="text-xs text-white/70">{company.tagline}</p> : null}
-                {company?.chinaAddress ? (
-                  <p className="mt-1 max-w-xl text-[11px] leading-snug text-white/80">{company.chinaAddress}</p>
-                ) : null}
-                {company?.phone || company?.email ? (
-                  <p className="text-[11px] text-white/70">
-                    {[company?.phone, company?.altPhone, company?.email].filter(Boolean).join(" · ")}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#ffb27d]">Packing list &amp; invoice</p>
-              <p className="tnum mt-1 text-3xl font-extrabold tracking-tight">{list ? list.number : "PROVISIONAL"}</p>
-              <p className="text-xs text-white/75">
-                {list ? `Date ${formatDate(list.issuedAt)}` : "Updates as cargo is loaded"}
-                {snap.version > 1 ? ` · drawing ${snap.version}` : ""}
+        <header className="flex items-start justify-between gap-4 border-b-[3px] border-[#0b2742] pb-3">
+          <div className="flex items-center gap-3">
+            <Image src="/brand/swift-cargo.png" alt="" width={58} height={58} className="object-contain" />
+            <div>
+              <p className="text-[19px] font-extrabold uppercase leading-none tracking-[0.1em] text-[#0b2742]">
+                {company?.name ?? "Swift Cargo"}
               </p>
+              <p className="mt-0.5 text-[8.5px] font-semibold uppercase tracking-[0.2em] text-[#f4611f]">
+                {company?.tagline ?? "On time, every time"}
+              </p>
+              {company?.chinaAddress ? (
+                <p className="mt-1 max-w-[95mm] text-[8px] leading-snug text-neutral-600">{company.chinaAddress}</p>
+              ) : null}
+              {company?.phone || company?.email ? (
+                <p className="text-[8px] text-neutral-600">
+                  {[company?.phone, company?.altPhone, company?.email].filter(Boolean).join(" · ")}
+                </p>
+              ) : null}
             </div>
           </div>
-          <div className="relative mt-5 h-1 rounded-full bg-gradient-to-r from-[#f4611f] via-[#ffb27d] to-[#4fc9f0]" />
+          <div className="text-right">
+            <p className="text-[17px] font-extrabold uppercase leading-none tracking-tight text-[#0b2742]">
+              Packing list
+            </p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#f4611f]">&amp; invoice</p>
+            <p className="tnum mt-1.5 text-[13px] font-bold">{list ? list.number : "PROVISIONAL"}</p>
+            <p className="text-[8px] text-neutral-500">
+              {list ? `Date ${formatDate(list.issuedAt)}` : "Updates as cargo is loaded"}
+              {snap.version > 1 ? ` · drawing ${snap.version}` : ""}
+            </p>
+          </div>
         </header>
 
-        <div className="px-8 py-6">
-          {/* ------------------------------------------------------ Parties */}
-          <section className="grid gap-4 sm:grid-cols-3">
-            {(
-              [
-                ["Shipper", shipper, company?.chinaAddress],
-                ["Consignee (To)", consignee, company?.darAddress],
-                ["Route", `${snap.originPort ?? "Guangzhou"} → ${snap.destinationPort ?? "Dar es Salaam"}`, snap.originWarehouse ? `Loaded at ${snap.originWarehouse}` : null],
-              ] as const
-            ).map(([label, name, detail]) => (
-              <div key={label} className="rounded-xl border border-[#d6e2ee] bg-[#f5f9fc] px-4 py-3">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#f4611f]">{label}</p>
-                <p className="mt-1 text-sm font-bold uppercase">{name}</p>
-                {detail ? <p className="mt-0.5 text-[11px] leading-snug text-neutral-600">{detail}</p> : null}
-              </div>
-            ))}
-          </section>
+        {/* ------------------------------------------------------ Parties */}
+        <section className="mt-3 grid grid-cols-2 gap-2">
+          {(
+            [
+              ["Shipper", shipper, company?.chinaAddress],
+              ["Consignee (To)", consignee, company?.darAddress],
+            ] as const
+          ).map(([label, name, detail]) => (
+            <div key={label} className="rounded-md border border-[#d6e2ee] bg-[#f5f9fc] px-3 py-2">
+              <p className="text-[7px] font-bold uppercase tracking-[0.2em] text-[#f4611f]">{label}</p>
+              <p className="mt-0.5 text-[9.5px] font-bold uppercase leading-tight">{name}</p>
+              {detail ? <p className="mt-0.5 text-[8px] leading-snug text-neutral-600">{detail}</p> : null}
+            </div>
+          ))}
+        </section>
 
-          {/* ---------------------------------------------- The shipment */}
-          <section className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#d6e2ee] bg-[#d6e2ee] sm:grid-cols-5">
-            {[
-              ["Container no.", snap.container],
-              ["Seal no.", snap.sealNumber ?? "—"],
-              ["Vessel / voyage", snap.vessel ? `${snap.vessel}${snap.voyage ? ` / ${snap.voyage}` : ""}` : "—"],
-              ["Shipping line", snap.shippingLine ?? "—"],
-              ["Our reference", snap.reference],
-              ["Port of loading", snap.originPort ?? "—"],
-              ["Port of discharge", snap.destinationPort ?? "—"],
-              ["Packed", snap.packedAt ? formatDate(new Date(snap.packedAt)) : "—"],
-              ["Sailed", snap.shippedAt ? formatDate(new Date(snap.shippedAt)) : "—"],
-              ["ETA", snap.eta ? formatDate(new Date(snap.eta)) : "—"],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-white px-3 py-2">
-                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
-                <p className="tnum mt-0.5 text-sm font-semibold">{value}</p>
-              </div>
-            ))}
-          </section>
+        {/* ---------------------------------------------- The shipment */}
+        <section className="mt-2 grid grid-cols-5 overflow-hidden rounded-md border border-[#d6e2ee]">
+          {[
+            ["Container no.", snap.container],
+            ["Seal no.", snap.sealNumber ?? "—"],
+            ["Vessel / voyage", snap.vessel ? `${snap.vessel}${snap.voyage ? ` / ${snap.voyage}` : ""}` : "—"],
+            ["Shipping line", snap.shippingLine ?? "—"],
+            ["Our reference", snap.reference],
+            ["Port of loading", snap.originPort ?? "—"],
+            ["Port of discharge", snap.destinationPort ?? "—"],
+            ["Packed", snap.packedAt ? formatDate(new Date(snap.packedAt)) : "—"],
+            ["Sailed", snap.shippedAt ? formatDate(new Date(snap.shippedAt)) : "—"],
+            ["ETA", snap.eta ? formatDate(new Date(snap.eta)) : "—"],
+          ].map(([label, value], i) => (
+            <div
+              key={label}
+              className={`px-2 py-1.5 ${i % 5 !== 4 ? "border-r" : ""} ${i < 5 ? "border-b" : ""} border-[#d6e2ee]`}
+            >
+              <p className="text-[6.5px] font-bold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
+              <p className="tnum text-[9px] font-semibold leading-tight">{value}</p>
+            </div>
+          ))}
+        </section>
 
-          {/* ---------------------------------------------- At a glance */}
-          <section className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-7">
-            {[
-              ["Customers", n(groups.length)],
-              ["Consignments", n(snap.lines.length)],
-              ["Packages", n(totals.qty)],
-              ["Pieces", n(totals.pcs)],
-              ["Volume", `${n(totals.cbm, 3)} CBM`],
-              ["Gross weight", totals.gw === null ? "—" : `${kg(totals.gw)} kg`],
-              ["Declared value", totals.amount === null ? "—" : `USD ${usd(totals.amount)}`],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-[#0b2742] px-3 py-2.5 text-white">
-                <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#9fd8f5]">{label}</p>
-                <p className="tnum mt-0.5 text-base font-extrabold">{value}</p>
-              </div>
-            ))}
-          </section>
+        {/* ---------------------------------------------- At a glance */}
+        <section className="mt-2 grid grid-cols-7 overflow-hidden rounded-md bg-[#0b2742] text-white">
+          {[
+            ["Customers", n(groups.length)],
+            ["Consignments", n(snap.lines.length)],
+            ["Packages", n(totals.qty)],
+            ["Pieces", n(totals.pcs)],
+            ["Volume CBM", n(totals.cbm, 3)],
+            ["Gross kg", kg(totals.gw)],
+            ["Value USD", usd(totals.amount)],
+          ].map(([label, value], i) => (
+            <div key={label} className={`px-2 py-1.5 ${i < 6 ? "border-r border-white/15" : ""}`}>
+              <p className="text-[6.5px] font-bold uppercase tracking-[0.14em] text-[#9fd8f5]">{label}</p>
+              <p className="tnum text-[11px] font-extrabold">{value}</p>
+            </div>
+          ))}
+        </section>
 
-          {/* ---------------------------------------------- The goods */}
-          <div className="mt-6 overflow-x-auto print:overflow-visible">
-            <table className="w-full min-w-[1040px] border-collapse text-[11px] print:min-w-0">
-              <thead>
-                <tr className="bg-[#0b2742] text-left text-white">
-                  <th className={`${th} w-[13%]`}>Customer name</th>
-                  <th className={th}>Inquiry no.</th>
-                  <th className={`${th} w-[18%]`}>Description · 品名</th>
-                  <th className={th}>Model no.</th>
-                  <th className={`${th} text-right`}>Qty</th>
-                  <th className={`${th} text-right`}>Pcs / set</th>
-                  <th className={`${th} text-right`}>Unit price USD</th>
-                  <th className={`${th} text-right`}>Amount USD</th>
-                  <th className={`${th} text-right`}>CBM</th>
-                  <th className={`${th} text-right`}>G.W. kg</th>
-                  <th className={`${th} text-right`}>N.W. kg</th>
-                  <th className={th}>Shipping mark</th>
-                </tr>
-              </thead>
-              {groups.map((group, gi) => {
-                const sub = {
-                  qty: sum(group.rows, (r) => r.qty) ?? 0,
-                  pcs: sum(group.rows, (r) => r.pcs),
-                  amount: sum(group.rows, (r) => r.amount),
-                  cbm: sum(group.rows, (r) => r.cbm) ?? 0,
-                  gw: sum(group.rows, (r) => r.gw),
-                  nw: sum(group.rows, (r) => r.nw),
-                };
-                return (
-                  <tbody key={group.code} className="break-inside-avoid">
-                    {group.rows.map((row, ri) => (
-                      <tr key={row.key} className={ri % 2 ? "bg-[#f7fafc]" : "bg-white"}>
-                        {ri === 0 ? (
-                          <td rowSpan={group.rows.length} className="border-b border-r border-[#d6e2ee] bg-white px-2 py-2 align-top">
-                            <span className="grid size-5 place-items-center rounded-full bg-[#f4611f] text-[9px] font-bold text-white">
-                              {gi + 1}
-                            </span>
-                            <p className="mt-1 text-xs font-extrabold uppercase leading-tight">{group.customer}</p>
-                            <p className="tnum mt-0.5 text-[10px] text-neutral-500">{group.code}</p>
-                            <p className="tnum text-[10px] text-neutral-500">{group.phone}</p>
-                          </td>
+        {/* ---------------------------------------------- The goods */}
+        <table className="mt-2.5 w-full border-collapse text-[8.5px]">
+          <colgroup>
+            <col className="w-[17%]" />
+            <col className="w-[9%]" />
+            <col className="w-[20%]" />
+            <col className="w-[8%]" />
+            <col className="w-[5%]" />
+            <col className="w-[6%]" />
+            <col className="w-[7%]" />
+            <col className="w-[8%]" />
+            <col className="w-[7%]" />
+            <col className="w-[6.5%]" />
+            <col className="w-[6.5%]" />
+          </colgroup>
+          <thead>
+            <tr className="bg-[#0b2742] text-left text-white">
+              <th className={th}>Customer</th>
+              <th className={th}>Inquiry no.</th>
+              <th className={th}>Description · 品名</th>
+              <th className={th}>Model</th>
+              <th className={`${th} text-right`}>Qty</th>
+              <th className={`${th} text-right`}>Pcs/set</th>
+              <th className={`${th} text-right`}>Unit USD</th>
+              <th className={`${th} text-right`}>Amount USD</th>
+              <th className={`${th} text-right`}>CBM</th>
+              <th className={`${th} text-right`}>G.W. kg</th>
+              <th className={`${th} text-right`}>N.W. kg</th>
+            </tr>
+          </thead>
+          {groups.map((group, gi) => {
+            const sub = {
+              qty: sum(group.rows, (r) => r.qty) ?? 0,
+              pcs: sum(group.rows, (r) => r.pcs),
+              amount: sum(group.rows, (r) => r.amount),
+              cbm: sum(group.rows, (r) => r.cbm) ?? 0,
+              gw: sum(group.rows, (r) => r.gw),
+              nw: sum(group.rows, (r) => r.nw),
+            };
+            const groupMark = group.rows[0]?.mark ?? group.customer;
+            return (
+              <tbody key={group.code}>
+                {group.rows.map((row, ri) => (
+                  <tr key={row.key} className={ri % 2 ? "bg-[#f7fafc]" : "bg-white"}>
+                    {ri === 0 ? (
+                      <td rowSpan={group.rows.length} className={`${td} border-r bg-white`}>
+                        <p className="flex items-start gap-1 font-extrabold uppercase leading-tight">
+                          <span className="tnum mt-px grid size-3.5 shrink-0 place-items-center rounded-full bg-[#f4611f] text-[6.5px] text-white">
+                            {gi + 1}
+                          </span>
+                          {group.customer}
+                        </p>
+                        <p className="tnum text-[7.5px] text-neutral-500">
+                          {group.code} · {group.phone}
+                        </p>
+                        {/* The mark only when it says something the name does not. */}
+                        {groupMark.trim().toLowerCase() !== group.customer.trim().toLowerCase() ? (
+                          <p className="font-mono text-[7.5px] uppercase text-[#0b2742]">Mark: {groupMark}</p>
                         ) : null}
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 align-top">
-                          <span className="font-semibold">{row.inquiry ?? "—"}</span>
-                          <span className="block text-[9px] text-neutral-400">{row.cargoRef}</span>
-                        </td>
-                        <td className="border-b border-[#e6edf3] px-2 py-1.5 align-top">
-                          <span className="font-semibold uppercase">{row.en}</span>
-                          {row.zh ? <span className="block text-neutral-500">{row.zh}</span> : null}
-                          {row.bale ? <span className="tnum block text-[9px] text-neutral-400">Bale {row.bale}</span> : null}
-                        </td>
-                        <td className="border-b border-[#e6edf3] px-2 py-1.5 align-top text-neutral-600">{row.model ?? "—"}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top font-semibold">{n(row.qty)}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top">{n(row.pcs)}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top">{usd(row.unit)}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top font-semibold">{usd(row.amount)}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top font-semibold">
-                          {row.cbm > 0 ? n(row.cbm, 3) : <span className="text-[9px] text-neutral-400">with above</span>}
-                        </td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top">{kg(row.gw)}</td>
-                        <td className="tnum border-b border-[#e6edf3] px-2 py-1.5 text-right align-top">{kg(row.nw)}</td>
-                        <td className="border-b border-[#e6edf3] px-2 py-1.5 align-top font-mono text-[10px] uppercase text-neutral-600">
-                          {row.mark ?? group.customer}
-                        </td>
-                      </tr>
-                    ))}
-                    <tr className="bg-[#fff2ea] font-bold">
-                      <td className="border-b-2 border-[#f4c7a9] px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#b3440f]" colSpan={4}>
-                        Subtotal · {group.customer}
                       </td>
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{n(sub.qty)}</td>
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{n(sub.pcs)}</td>
-                      <td className="border-b-2 border-[#f4c7a9]" />
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{usd(sub.amount)}</td>
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{n(sub.cbm, 3)}</td>
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{kg(sub.gw)}</td>
-                      <td className="tnum border-b-2 border-[#f4c7a9] px-2 py-1.5 text-right">{kg(sub.nw)}</td>
-                      <td className="border-b-2 border-[#f4c7a9]" />
-                    </tr>
-                  </tbody>
-                );
-              })}
-              <tfoot>
-                <tr className="bg-[#0b2742] font-extrabold text-white">
-                  <td className="px-2 py-2.5 text-[10px] uppercase tracking-wider" colSpan={4}>
-                    Grand total · {groups.length} customer{groups.length === 1 ? "" : "s"} · {snap.lines.length} consignment
-                    {snap.lines.length === 1 ? "" : "s"}
+                    ) : null}
+                    <td className={`${td} tnum`}>
+                      <span className="font-semibold">{row.inquiry ?? "—"}</span>
+                      <span className="block text-[7px] text-neutral-400">{row.cargoRef}</span>
+                    </td>
+                    <td className={td}>
+                      <span className="font-semibold uppercase">{row.en}</span>
+                      {row.zh ? <span className="block text-neutral-500">{row.zh}</span> : null}
+                      {row.mark && row.mark !== groupMark ? (
+                        <span className="block font-mono text-[7px] uppercase text-neutral-500">Mark: {row.mark}</span>
+                      ) : null}
+                      {row.bale ? <span className="tnum block text-[7px] text-neutral-400">Bale {row.bale}</span> : null}
+                    </td>
+                    <td className={`${td} text-neutral-600`}>{row.model ?? "—"}</td>
+                    <td className={`${td} tnum text-right font-semibold`}>{n(row.qty)}</td>
+                    <td className={`${td} tnum text-right`}>{n(row.pcs)}</td>
+                    <td className={`${td} tnum text-right`}>{usd(row.unit)}</td>
+                    <td className={`${td} tnum text-right font-semibold`}>{usd(row.amount)}</td>
+                    <td className={`${td} tnum text-right font-semibold`}>
+                      {row.cbm > 0 ? n(row.cbm, 3) : <span className="text-[7px] text-neutral-400">with above</span>}
+                    </td>
+                    <td className={`${td} tnum text-right`}>{kg(row.gw)}</td>
+                    <td className={`${td} tnum text-right`}>{kg(row.nw)}</td>
+                  </tr>
+                ))}
+                <tr className="bg-[#fff2ea] font-bold">
+                  <td className="border-b-2 border-[#f4c7a9] px-1.5 py-1 text-[7.5px] uppercase tracking-wider text-[#b3440f]" colSpan={4}>
+                    Subtotal · {group.customer}
                   </td>
-                  <td className="tnum px-2 py-2.5 text-right">{n(totals.qty)}</td>
-                  <td className="tnum px-2 py-2.5 text-right">{n(totals.pcs)}</td>
-                  <td />
-                  <td className="tnum px-2 py-2.5 text-right">{usd(totals.amount)}</td>
-                  <td className="tnum px-2 py-2.5 text-right text-[#ffb27d]">{n(totals.cbm, 3)}</td>
-                  <td className="tnum px-2 py-2.5 text-right">{kg(totals.gw)}</td>
-                  <td className="tnum px-2 py-2.5 text-right">{kg(totals.nw)}</td>
-                  <td />
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{n(sub.qty)}</td>
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{n(sub.pcs)}</td>
+                  <td className="border-b-2 border-[#f4c7a9]" />
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{usd(sub.amount)}</td>
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{n(sub.cbm, 3)}</td>
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{kg(sub.gw)}</td>
+                  <td className="tnum border-b-2 border-[#f4c7a9] px-1.5 py-1 text-right">{kg(sub.nw)}</td>
                 </tr>
-              </tfoot>
-            </table>
-          </div>
+              </tbody>
+            );
+          })}
+          <tbody>
+            <tr className="bg-[#0b2742] font-extrabold text-white">
+              <td className="px-1.5 py-1.5 text-[7.5px] uppercase tracking-wider" colSpan={4}>
+                Grand total · {groups.length} customer{groups.length === 1 ? "" : "s"} · {snap.lines.length} consignment
+                {snap.lines.length === 1 ? "" : "s"}
+              </td>
+              <td className="tnum px-1.5 py-1.5 text-right">{n(totals.qty)}</td>
+              <td className="tnum px-1.5 py-1.5 text-right">{n(totals.pcs)}</td>
+              <td />
+              <td className="tnum px-1.5 py-1.5 text-right">{usd(totals.amount)}</td>
+              <td className="tnum px-1.5 py-1.5 text-right text-[#ffb27d]">{n(totals.cbm, 3)}</td>
+              <td className="tnum px-1.5 py-1.5 text-right">{kg(totals.gw)}</td>
+              <td className="tnum px-1.5 py-1.5 text-right">{kg(totals.nw)}</td>
+            </tr>
+          </tbody>
+        </table>
 
-          {/* ---------------------------------------------- Signatures */}
-          <section className="mt-8 grid gap-6 sm:grid-cols-3">
+        {/* ---------------------------------------------- Signatures */}
+        <section className="mt-4 break-inside-avoid">
+          <div className="grid grid-cols-3 gap-5">
             {["Prepared by (Guangzhou)", "Checked by", "Received at Dar es Salaam"].map((label) => (
               <div key={label}>
-                <div className="h-12 border-b border-dashed border-neutral-400" />
-                <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-neutral-500">{label}</p>
-                <p className="text-[10px] text-neutral-400">Name · signature · date</p>
+                <div className="h-7 border-b border-dashed border-neutral-400" />
+                <p className="mt-1 text-[7px] font-bold uppercase tracking-[0.16em] text-neutral-600">{label}</p>
+                <p className="text-[7px] text-neutral-400">Name · signature · date</p>
               </div>
             ))}
-          </section>
-
-          <footer className="mt-6 flex flex-wrap items-end justify-between gap-4 border-t border-[#d6e2ee] pt-4 text-[10px] text-neutral-500">
-            <p className="max-w-2xl">
+          </div>
+          <footer className="mt-4 flex items-end justify-between gap-4 border-t border-[#d6e2ee] pt-2 text-[7px] text-neutral-500">
+            <p className="max-w-[140mm]">
               {list
                 ? `Issued by ${snap.issuedBy ?? list.issuedBy ?? "Swift Cargo"} on ${formatDate(
                     snap.issuedAt ? new Date(snap.issuedAt) : list.issuedAt
                   )}${snap.version > 1 ? ` · drawing ${snap.version}, frozen at the seal` : ""}.`
-                : "Not yet issued. Drawn from what is in the container right now; it changes as cargo is loaded or taken out, and is frozen when the container is sealed."}{" "}
+                : "Not yet issued — drawn from what is in the container now, and frozen when it is sealed."}{" "}
               Unit price and amount are the declared value of the goods for customs, in US dollars — not the freight charge.
             </p>
-            <p className="font-bold uppercase tracking-[0.2em] text-[#0b2742]">
-              {company?.name ?? "Swift Cargo"} · {company?.tagline ?? "On time, every time"}
+            <p className="shrink-0 font-bold uppercase tracking-[0.18em] text-[#0b2742]">
+              {company?.name ?? "Swift Cargo"}
             </p>
           </footer>
-        </div>
+        </section>
       </article>
     </div>
   );

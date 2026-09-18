@@ -122,7 +122,7 @@ export function AppShell({
   return (
     <div className="flex min-h-dvh bg-surface-2">
       {/* Desktop rail */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex print:!hidden">
         <div className="flex h-16 items-center border-b px-4">
           <Link href={home.href}>
             <BrandMark size={32} />
@@ -154,7 +154,7 @@ export function AppShell({
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 lg:px-8">
+        <header className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 lg:px-8 print:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -201,7 +201,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 print:p-0">
           {/* Records where the reader walked, for every back control. */}
           <Suspense fallback={null}>
             <NavTrail />
