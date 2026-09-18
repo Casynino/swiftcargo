@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Ship } from "lucide-react";
 
 import { SeaScene } from "@/components/site/sea-scene";
 import { TrackForm } from "@/components/site/track-form";
@@ -54,12 +53,8 @@ export function TrackHero({
           is reserved before paint so nothing on the page ever moves. */}
       <div className="container relative flex min-h-[calc(72vw+26rem)] flex-col justify-start pb-[calc(72vw+1rem)] pt-28 sm:min-h-[calc(42vw+26rem)] sm:pb-[calc(42vw+1.5rem)] sm:pt-32 lg:min-h-[40rem] lg:justify-center lg:py-32 xl:min-h-[44rem] 2xl:min-h-[48rem]">
         <div className="animate-in-up max-w-xl lg:max-w-[30rem]">
-          <p className="eyebrow inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-cyan-300 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14)] backdrop-blur-md">
-            <Ship aria-hidden className="size-3.5" />
-            {t(locale, "Fuatilia mzigo")}
-          </p>
 
-          <h1 className="hero-display mt-6 text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-6xl">
+          <h1 className="hero-display text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-6xl">
             {t(locale, "Track your cargo")}
           </h1>
 

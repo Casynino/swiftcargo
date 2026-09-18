@@ -21,7 +21,6 @@ import {
   Marquee,
   PageHero,
   PhotoFrame,
-  Pill,
   SectionHead,
   heroButton,
 } from "@/components/site/kit";
@@ -222,7 +221,6 @@ export default async function HomePage() {
 
         <div>
           <SectionHead
-            eyebrow={t(locale, "Who we are")}
             lead={t(locale, "One sea route,")}
             trail={t(locale, "run properly from end to end.")}
             body={t(
@@ -260,7 +258,6 @@ export default async function HomePage() {
         <div className="container">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
-              eyebrow={t(locale, "What we do")}
               lead={t(locale, "Two ways to ship,")}
               trail={t(locale, "and help finding what to ship.")}
             />
@@ -332,7 +329,6 @@ export default async function HomePage() {
       <section className="container py-20 sm:py-28">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHead
-            eyebrow={t(locale, "Explore China")}
             lead={t(locale, "Where the world's goods")}
             trail={t(locale, "are made and sold.")}
             body={t(
@@ -380,7 +376,6 @@ export default async function HomePage() {
           <div>
             <SectionHead
               dark
-              eyebrow={t(locale, "How it works")}
               lead={t(locale, "Five steps,")}
               trail={t(locale, "factory to your shop.")}
             />
@@ -431,7 +426,6 @@ export default async function HomePage() {
         <section className="container py-20 sm:py-28">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
-              eyebrow={t(locale, "Next out")}
               lead={t(locale, "A ship every Monday.")}
               trail={t(locale, "Cargo in by Friday.")}
             />
@@ -455,11 +449,10 @@ export default async function HomePage() {
       <section className="bg-surface-2 py-20 sm:py-28">
         <div className="container grid gap-8 lg:grid-cols-2">
           <Reveal className="flex flex-col rounded-[2rem] border bg-card p-7 shadow-soft sm:p-10">
-            <Pill>{t(locale, "What it costs")}</Pill>
             <Headline
               lead={t(locale, "Priced by the cubic metre,")}
               trail={t(locale, "published in the open.")}
-              className="mt-5 text-3xl leading-[1.08] sm:text-4xl"
+              className="text-3xl leading-[1.08] sm:text-4xl"
             />
             {rates.length > 0 ? (
               <ul className="mt-8 divide-y">
@@ -534,7 +527,6 @@ export default async function HomePage() {
       <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
         <div className="lg:order-2">
           <SectionHead
-            eyebrow={t(locale, "Who we ship for")}
             lead={t(locale, "Shops, wholesalers and importers")}
             trail={t(locale, "across Tanzania.")}
             body={t(
@@ -578,7 +570,6 @@ export default async function HomePage() {
       <section className="bg-surface-2 py-20 sm:py-28">
         <div className="container">
           <SectionHead
-            eyebrow={t(locale, "Where to send your goods")}
             lead={t(locale, "A warehouse at each end")}
             trail={t(locale, "of the voyage.")}
           />

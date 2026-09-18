@@ -14,35 +14,6 @@ import { cn } from "@/lib/utils";
  * version of any of these is a page that stops looking like the rest.
  */
 
-/** The small rounded label above a headline. */
-export function Pill({
-  children,
-  dark,
-  className,
-}: {
-  children: React.ReactNode;
-  dark?: boolean;
-  className?: string;
-}) {
-  return (
-    <p
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em]",
-        dark
-          ? "border border-white/20 bg-white/10 text-cyan-200 backdrop-blur-md"
-          : "border border-brand/15 bg-brand/5 text-brand",
-        className
-      )}
-    >
-      <span
-        aria-hidden
-        className={cn("size-1.5 rounded-full", dark ? "bg-cyan-300" : "bg-signal")}
-      />
-      {children}
-    </p>
-  );
-}
-
 /**
  * A headline in two tones: the words that carry it, then the rest set hollow
  * on a photograph or in the brand blue on paper.
@@ -79,9 +50,8 @@ export function Headline({
   );
 }
 
-/** Pill, headline and a line of text, the way every section opens. */
+/** Headline and a line of text, the way every section opens. */
 export function SectionHead({
-  eyebrow,
   lead,
   trail,
   body,
@@ -90,7 +60,6 @@ export function SectionHead({
   className,
   children,
 }: {
-  eyebrow: React.ReactNode;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -101,12 +70,11 @@ export function SectionHead({
 }) {
   return (
     <Reveal className={cn(center && "mx-auto text-center", "max-w-3xl", className)}>
-      <Pill dark={dark}>{eyebrow}</Pill>
       <Headline
         lead={lead}
         trail={trail}
         dark={dark}
-        className="mt-5 text-3xl leading-[1.08] sm:text-4xl lg:text-5xl"
+        className="text-3xl leading-[1.08] sm:text-4xl lg:text-5xl"
       />
       {body ? (
         <p

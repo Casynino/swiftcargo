@@ -80,7 +80,6 @@ export default async function ChinaPage() {
         <div className="container">
           <SectionHead
             dark
-            eyebrow={t(locale, "Factories and showrooms")}
             lead={t(locale, "Where it is made,")}
             trail={t(locale, "where it is sold.")}
             body={t(
@@ -118,7 +117,6 @@ export default async function ChinaPage() {
       <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
         <div>
           <SectionHead
-            eyebrow={t(locale, "Bought it? Here is what happens")}
             lead={t(locale, "From the market")}
             trail={t(locale, "to your shop in Tanzania.")}
           />
@@ -169,7 +167,6 @@ export default async function ChinaPage() {
         <section className="bg-surface-2 py-20 sm:py-24">
           <div className="container">
             <SectionHead
-              eyebrow={t(locale, "Our recommendations")}
               lead={t(locale, "Markets we recommend")}
               trail={t(locale, "by name.")}
               body={t(locale, "If you know what you want but not where to get it, we probably do.")}

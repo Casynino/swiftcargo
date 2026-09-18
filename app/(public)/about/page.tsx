@@ -101,7 +101,6 @@ export default async function AboutPage() {
         </Reveal>
         <div>
           <SectionHead
-            eyebrow={t(locale, "How we work")}
             lead={t(locale, "Nothing on this page")}
             trail={t(locale, "is a promise we cannot keep.")}
             body={t(
@@ -131,7 +130,6 @@ export default async function AboutPage() {
         <div className="container grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
           <SectionHead
             dark
-            eyebrow={t(locale, "One route")}
             lead={`${ROUTE.originCity} → ${ROUTE.destinationCity},`}
             trail={`${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} ${t(locale, "days at sea.")}`}
             body={t(locale, "A ship every week. Cargo in Guangzhou by Friday sails on Monday.")}
@@ -145,7 +143,6 @@ export default async function AboutPage() {
       {company?.chinaAddress || company?.darAddress ? (
         <section className="container py-20 sm:py-28">
           <SectionHead
-            eyebrow={t(locale, "Where we are")}
             lead={t(locale, "Two warehouses,")}
             trail={t(locale, "one company.")}
           />
