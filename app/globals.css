@@ -58,6 +58,13 @@
     --surface-1: 210 40% 99%;
     --surface-2: 210 34% 97%;
     --surface-3: 210 30% 94%;
+
+    /* The pale field the public site's light sections sit on. Not a surface —
+       a surface is a card ON a field, and this is the paper. It carries a
+       little of the sea, so that a page of white cards does not read as a form
+       rather than as a company that moves things across an ocean. */
+    --field: 203 76% 97%;
+    --field-edge: 203 40% 89%;
     --glass: 0 0% 100% / 0.72;
     --glass-border: 212 26% 88% / 0.9;
 
@@ -140,6 +147,11 @@
     --surface-1: 213 20% 11%;
     --surface-2: 213 19% 14%;
     --surface-3: 213 18% 18%;
+
+    /* In the dark theme the same field has to sit BELOW the cards on it, so it
+       goes darker than the page rather than lighter. */
+    --field: 213 30% 8%;
+    --field-edge: 213 20% 17%;
     --glass: 213 26% 12% / 0.64;
     --glass-border: 210 40% 98% / 0.12;
 
@@ -616,4 +628,68 @@
    a bridge display is written in. */
 .hero-rule {
   background-image: linear-gradient(to right, rgba(79, 201, 240, 0.55), rgba(79, 201, 240, 0));
+}
+
+/**
+ * THE DRAWN SCENES, WHERE THE PHOTOGRAPHS WILL GO.
+ *
+ * See components/site/scenes.tsx. Nothing here moves a layout or wakes the main
+ * thread: opacity and transform only, and all of it stops under
+ * prefers-reduced-motion. A lamp that flickers on a page somebody is trying to
+ * read a reference off is not atmosphere, it is a nuisance.
+ */
+@keyframes sc-lamp {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0.45;
+  }
+  96% {
+    opacity: 0.95;
+  }
+}
+
+.sc-lamp {
+  animation: sc-lamp 9s steps(1, end) infinite;
+}
+
+/* The lane on the route drawing, walking west the way the ship does. The dash
+   gap is 10 units, so one period of 10 puts it back where it started. */
+@keyframes rt-lane {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.rt-lane {
+  animation: rt-lane 1.6s linear infinite;
+}
+
+@keyframes rt-ping {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.16;
+  }
+}
+
+.rt-ping {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rt-ping 4.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-lamp,
+  .rt-lane,
+  .rt-ping {
+    animation: none;
+  }
 }

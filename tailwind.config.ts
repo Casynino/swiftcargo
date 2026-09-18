@@ -68,6 +68,13 @@ const config: Config = {
           foreground: "hsl(var(--marine-foreground))",
         },
         ink: "hsl(var(--ink))",
+        /* The pale field the public site's light sections sit on. Named for
+           what it is rather than for its colour, because in the dark theme it
+           is the darker of the two. */
+        field: {
+          DEFAULT: "hsl(var(--field))",
+          edge: "hsl(var(--field-edge))",
+        },
         surface: {
           1: "hsl(var(--surface-1))",
           2: "hsl(var(--surface-2))",
