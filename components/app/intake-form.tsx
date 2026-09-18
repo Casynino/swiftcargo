@@ -99,7 +99,6 @@ const blank = (key: number, receiptNo = ""): Line => ({
 export function IntakeForm({
   cargoTypes,
   nextReceiptNo,
-  suppliers = [],
 }: {
   /** The number after the last one written in the book. A suggestion, not a rule. */
   nextReceiptNo?: string;
@@ -108,23 +107,8 @@ export function IntakeForm({
    * Finance's business and deliberately does not appear on this screen.
    */
   cargoTypes: string[];
-  /**
-   * The factories already known to us, to be picked from rather than retyped.
-   * A name not on the list is still accepted — the counter should not have to
-   * go and register a factory before it can take in its boxes.
-   */
-  suppliers?: string[];
 }) {
   const router = useRouter();
-  /* The browser argues first about a forward date; the server is what actually
-     refuses one. Computed on the client because the clerk's own day is the day
-     they mean, and a server rendering from another timezone would stop them
-     entering this morning's deliveries. */
-  const receivedLabel = `Today · ${new Date().toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  })}`;
   const [state, action] = useActionState<ActionState, FormData>(
     receiveNewCargo,
     {},
@@ -445,73 +429,6 @@ export function IntakeForm({
             {newCustomer ? "Pick an existing customer" : "New customer"}
           </Button>
 
-          {/*
-            WHO BROUGHT IT, AND WHEN IT CAME IN.
-
-            The date is the moment the record is saved — never typed.
-
-            The paper book asks both after the customer, and this follows it.
-            All three are optional and none of them holds up a driver at the
-            door: a walk-in with a taxi full of boxes has no factory and no
-            reference, and a delivery being taken in as it happens is today.
-
-            The supplier is typed or picked from the factories already known —
-            a name not on the list is accepted and registered, the same trade
-            the customer above makes, because the counter should not have to go
-            and register a factory before it can take in its boxes.
-          */}
-          <div className="grid grid-cols-1 gap-4 border-t pt-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="supplierName">
-                Supplier 供应商{" "}
-                <span className="font-normal text-muted-foreground">
-                  optional
-                </span>
-              </Label>
-              <Input
-                id="supplierName"
-                name="supplierName"
-                list="known-suppliers"
-                maxLength={120}
-                autoComplete="off"
-                placeholder="Who delivered the boxes"
-              />
-              <datalist id="known-suppliers">
-                {suppliers.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="supplierRef">
-                Supplier ref{" "}
-                <span className="font-normal text-muted-foreground">
-                  optional
-                </span>
-              </Label>
-              <Input
-                id="supplierRef"
-                name="supplierRef"
-                maxLength={60}
-                placeholder="Their own delivery number"
-              />
-              <p className="text-xs text-muted-foreground">
-                What the factory calls this delivery. It is how a customer
-                chasing their supplier is matched to a consignment.
-              </p>
-            </div>
-            <div className="space-y-2">
-              {/* Not asked: the counter records the moment it saves, so the
-                  date is always the day the boxes were taken in. */}
-              <p className="text-sm font-medium">Received on 收货日期</p>
-              <p suppressHydrationWarning className="flex h-10 items-center rounded-md border border-dashed bg-secondary/40 px-3 text-sm">
-                {receivedLabel}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Set automatically when you confirm receiving.
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -907,34 +824,19 @@ export function IntakeForm({
             mark and anything damaged are the two that matter later.
           </p>
 
-          {/*
-            WHERE IT WAS PUT DOWN.
-
-            The one fact about a consignment the building knows and the database
-            cannot work out. Between receiving and loading somebody has to walk
-            to it, and "row C, bay 4" is the difference between that walk and a
-            search of the whole floor. Optional, because a driver at the door
-            waiting on a shelf number is the worse trade.
-          */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="location">
-                Location 位置{" "}
-                <span className="font-normal text-muted-foreground">
-                  optional
-                </span>
-              </Label>
-              <Input
-                id="location"
-                name="location"
-                maxLength={60}
-                placeholder="Row C, bay 4"
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" name="notes" rows={2} />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">
+              Note 备注{" "}
+              <span className="font-normal text-muted-foreground">optional</span>
+            </Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              rows={3}
+              maxLength={1000}
+              placeholder="Anything worth knowing — a torn carton, a box that came wet…"
+              className="resize-none"
+            />
           </div>
         </CardContent>
       </Card>
