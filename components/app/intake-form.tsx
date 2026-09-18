@@ -120,7 +120,11 @@ export function IntakeForm({
      refuses one. Computed on the client because the clerk's own day is the day
      they mean, and a server rendering from another timezone would stop them
      entering this morning's deliveries. */
-  const today = new Date().toLocaleDateString("en-CA");
+  const receivedLabel = `Today · ${new Date().toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })}`;
   const [state, action] = useActionState<ActionState, FormData>(
     receiveNewCargo,
     {},
@@ -444,6 +448,8 @@ export function IntakeForm({
           {/*
             WHO BROUGHT IT, AND WHEN IT CAME IN.
 
+            The date is the moment the record is saved — never typed.
+
             The paper book asks both after the customer, and this follows it.
             All three are optional and none of them holds up a driver at the
             door: a walk-in with a taxi full of boxes has no factory and no
@@ -495,19 +501,14 @@ export function IntakeForm({
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="receivedAt">Received on</Label>
-              <Input
-                id="receivedAt"
-                name="receivedAt"
-                type="date"
-                min="2000-01-01"
-                max={today}
-                defaultValue=""
-              />
+              {/* Not asked: the counter records the moment it saves, so the
+                  date is always the day the boxes were taken in. */}
+              <p className="text-sm font-medium">Received on 收货日期</p>
+              <p suppressHydrationWarning className="flex h-10 items-center rounded-md border border-dashed bg-secondary/40 px-3 text-sm">
+                {receivedLabel}
+              </p>
               <p className="text-xs text-muted-foreground">
-                Leave blank for today. Set it back for a page of the book being
-                typed up later — never forward, and the date you enter is kept
-                with your name.
+                Set automatically when you confirm receiving.
               </p>
             </div>
           </div>
