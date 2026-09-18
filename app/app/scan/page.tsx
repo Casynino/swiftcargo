@@ -18,7 +18,8 @@ export default async function ScanPage() {
         description="Scan a label or a pickup note, or type the reference. It opens the consignment."
       />
       <Card className="p-6">
-        <span className="grid size-12 place-items-center rounded-xl bg-brand/8 text-brand">
+        {/* /8 is not a step Tailwind emits, so the tile drew nothing. */}
+        <span className="grid size-12 place-items-center rounded-xl bg-brand/10 text-brand">
           <ScanLine className="size-6" />
         </span>
         <div className="mt-6">

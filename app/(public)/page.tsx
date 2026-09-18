@@ -122,11 +122,21 @@ export default async function HomePage() {
                 is true and tells a visitor the wrong thing. */}
             {stats.some((value) => value > 0) ? (
               <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-white/10 pt-8">
+                {/* Singular where the count is one. "1 Containers shipped" is
+                    the sentence of a database, not of a shipping line. */}
                 {(
                   [
-                    ["Customers", customers],
-                    ["Containers shipped", containers],
-                    ["Consignments delivered", delivered],
+                    [customers === 1 ? "Customer" : "Customers", customers],
+                    [
+                      containers === 1 ? "Container shipped" : "Containers shipped",
+                      containers,
+                    ],
+                    [
+                      delivered === 1
+                        ? "Consignment delivered"
+                        : "Consignments delivered",
+                      delivered,
+                    ],
                   ] as const
                 )
                   .filter(([, value]) => value > 0)

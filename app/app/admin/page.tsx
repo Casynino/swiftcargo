@@ -96,7 +96,8 @@ export default async function AdminPage() {
           return (
             <Link key={area.href} href={area.href} className="focus-ring rounded-xl">
               <Card className="h-full p-6 transition-all hover:-translate-y-0.5 hover:shadow-raised">
-                <span className="grid size-10 place-items-center rounded-lg bg-brand/8 text-brand">
+                {/* /8 is not a step Tailwind emits, so the tile drew nothing. */}
+                <span className="grid size-10 place-items-center rounded-lg bg-brand/10 text-brand">
                   {Icon ? <Icon className="size-4.5" /> : null}
                 </span>
                 <p className="mt-4 font-semibold">{area.title}</p>
