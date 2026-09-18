@@ -64,12 +64,14 @@ type Balance = typeof import("@/lib/invoice-balance");
 type Note = typeof import("@/lib/pickup-note");
 type Rbac = typeof import("@/lib/rbac");
 type PriceActions = typeof import("@/lib/actions/price-list");
+type PaymentActions = typeof import("@/lib/actions/payments");
 let confirmLib: Confirm;
 let listLib: List;
 let balanceLib: Balance;
 let noteLib: Note;
 let rbac: Rbac;
 let priceActions: PriceActions;
+let paymentActions: PaymentActions;
 
 before(async () => {
   rbac = await import("@/lib/rbac");
@@ -103,6 +105,7 @@ before(async () => {
   balanceLib = await import("@/lib/invoice-balance");
   noteLib = await import("@/lib/pickup-note");
   priceActions = await import("@/lib/actions/price-list");
+  paymentActions = await import("@/lib/actions/payments");
 });
 
 async function authorizeAs(permission: string) {
@@ -220,6 +223,53 @@ async function unseed(cargoId: string, customerId: string) {
   await prisma.cargoPackage.deleteMany({ where: { cargoId } });
   await prisma.cargo.deleteMany({ where: { id: cargoId } });
   await prisma.customer.deleteMany({ where: { id: customerId } });
+}
+
+/**
+ * A bill of USD 13.50 already in the customer's hands, at the live rate.
+ *
+ * Written rather than confirmed from the rate book: these tests are about what
+ * the counter does with a bill, and a round figure the arithmetic can be
+ * checked against by hand is worth more here than a figure derived from a rate
+ * that may be re-published tomorrow.
+ */
+async function issuedBill(
+  cargoId: string,
+  customerId: string,
+  actorId: string,
+  rate: { id: string; rate: Prisma.Decimal }
+) {
+  const { nextInvoiceNumber } = await import("@/lib/ids");
+  return prisma.$transaction(async (tx) =>
+    tx.invoice.create({
+      data: {
+        /* From the Counter, inside this transaction, like every other number. */
+        number: await nextInvoiceNumber(tx),
+        customerId,
+        cargoId,
+        status: "ISSUED",
+        issuedAt: new Date(),
+        dueAt: new Date(Date.now() + 7 * 86_400_000),
+        subtotal: new Prisma.Decimal("13.50"),
+        total: new Prisma.Decimal("13.50"),
+        currency: "USD",
+        exchangeRateId: rate.id,
+        fxRate: rate.rate,
+        totalTzs: new Prisma.Decimal("36450"),
+        issuedById: actorId,
+      },
+    })
+  );
+}
+
+/** What the bill still owes, read back from the rows. */
+async function owing(invoiceId: string) {
+  return balanceLib.balanceOf(
+    await prisma.invoice.findUniqueOrThrow({
+      where: { id: invoiceId },
+      include: { payments: true },
+    })
+  );
 }
 
 /** Holds every caller until `count` of them have arrived. */
@@ -726,6 +776,207 @@ describe("the note that lets somebody collect", () => {
       assert.equal(await tx.pickupNote.count({ where: { cargoId: cargo.id } }), 1);
       assert.notEqual(again.qrToken, note.qrToken, "a withdrawn code is never revived");
     });
+  });
+});
+
+/**
+ * THE COUNTER, THROUGH THE REAL ACTIONS.
+ *
+ * A bill of USD 13.50 at 2,700 — TZS 36,450. Ten dollars in cash, then the rest
+ * in shillings, which is how a Dar counter actually takes money: two payments,
+ * two rows, two rates, one bill. This commits, and clears up afterwards.
+ */
+describe("one bill settled in two currencies, at the counter", () => {
+  test("USD 10 then TZS 9,450: two rows, and the balance to the shilling", async () => {
+    const me = await actor(prisma);
+    const { cargo, customer } = await landed(prisma, "MIX", { confirmed: true });
+    try {
+      const rate = await prisma.exchangeRate.findFirstOrThrow({
+        where: { fromCurrency: "USD", toCurrency: "TZS", active: true },
+        orderBy: { effectiveFrom: "desc" },
+      });
+      const invoice = await issuedBill(cargo.id, customer.id, me.id, rate);
+      const invoiceId = invoice.id;
+      assert.equal(invoice.totalTzs?.toString(), "36450", "the bill in shillings");
+
+      signedIn = { id: me.id, name: me.name ?? "Finance", role: "FINANCE" };
+
+      const press = () =>
+        paymentActions.recordPayment(
+          {},
+          form({
+            invoiceId,
+            amount: "10",
+            currency: "USD",
+            method: "CASH",
+            idempotencyKey: `mix-usd-${invoiceId}`,
+          })
+        );
+      const cash = await press();
+      assert.ok(cash.ok, cash.error);
+      /* The same press landing twice — a double click, a retry on a bad line. */
+      assert.ok((await press()).ok, "a repeat press is accepted and changes nothing");
+      assert.equal(
+        await prisma.payment.count({ where: { invoiceId, currency: "USD" } }),
+        1,
+        "one row, not two"
+      );
+
+      const usd = await prisma.payment.findFirstOrThrow({
+        where: { invoiceId, currency: "USD" },
+      });
+      assert.equal(usd.status, "PENDING", "money is worth nothing until it is checked");
+      assert.equal(usd.fxRate?.toString(), rate.rate.toString(), "its own rate");
+      assert.equal(usd.baseCurrencyAmount?.toString(), "27000", "and its own shillings");
+      assert.equal(usd.method, "CASH");
+      assert.equal(usd.recordedById, me.id, "and who took it");
+      assert.ok(usd.paidAt, "and when");
+      assert.match(usd.reference, /^PAY-/);
+      assert.equal(
+        (await owing(invoiceId)).outstandingTzs?.toString(),
+        "36450",
+        "the bill still owes it all while the claim is unverified"
+      );
+
+      const verified = await paymentActions.verifyPayment({}, form({ paymentId: usd.id }));
+      assert.ok(verified.ok, verified.error);
+      assert.equal((await owing(invoiceId)).outstandingTzs?.toString(), "9450");
+      assert.equal(
+        (await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } })).status,
+        "PARTIALLY_PAID"
+      );
+      assert.ok(
+        await prisma.receipt.findFirst({ where: { paymentId: usd.id } }),
+        "and a receipt the customer can hold"
+      );
+
+      /* TZS 9,500 is fifty more than the bill has left. Refused until somebody
+         says, on the record, that they meant it. */
+      const over = await paymentActions.recordPayment(
+        {},
+        form({ invoiceId, amount: "9500", currency: "TZS", method: "MOBILE_MONEY" })
+      );
+      assert.ok(over.error, "overpayment refused");
+      assert.match(over.error!, /more than/);
+      assert.equal(
+        await prisma.payment.count({ where: { invoiceId } }),
+        1,
+        "and nothing was written by the refusal"
+      );
+
+      const shillings = await paymentActions.recordPayment(
+        {},
+        form({
+          invoiceId,
+          amount: "9450",
+          currency: "TZS",
+          method: "MOBILE_MONEY",
+          transactionRef: "MPESA-TEST-1",
+          notes: "Second half, at the counter",
+        })
+      );
+      assert.ok(shillings.ok, shillings.error);
+      const tzs = await prisma.payment.findFirstOrThrow({
+        where: { invoiceId, currency: "TZS" },
+      });
+      assert.equal(tzs.baseCurrencyAmount?.toString(), "9450");
+      assert.equal(tzs.method, "MOBILE_MONEY");
+      assert.equal(tzs.transactionRef, "MPESA-TEST-1");
+      assert.equal(tzs.notes, "Second half, at the counter");
+      assert.notEqual(tzs.id, usd.id, "its own row against the same bill");
+
+      const settled = await paymentActions.verifyPayment({}, form({ paymentId: tzs.id }));
+      assert.ok(settled.ok, settled.error);
+
+      const done = await prisma.invoice.findUniqueOrThrow({
+        where: { id: invoiceId },
+        include: { payments: true },
+      });
+      const balance = balanceLib.balanceOf(done);
+      assert.equal(balance.paidTzs?.toString(), "36450");
+      assert.equal(balance.outstandingTzs?.toString(), "0");
+      assert.equal(balance.creditTzs?.toString(), "0", "nothing over");
+      assert.equal(done.status, "PAID");
+      assert.equal(
+        done.payments.filter((p) => p.status === "VERIFIED").length,
+        2,
+        "two payments, one bill"
+      );
+
+      const note = await prisma.pickupNote.findUnique({ where: { cargoId: cargo.id } });
+      assert.ok(note, "settled in full is the moment the note is written");
+      assert.equal(note.status, "ACTIVE");
+      assert.equal(note.customerId, customer.id);
+      assert.ok(note.qrToken);
+
+      const reversed = await paymentActions.reversePayment(
+        {},
+        form({ paymentId: usd.id, reason: "The cash was miscounted" })
+      );
+      assert.ok(reversed.ok, reversed.error);
+      assert.equal(
+        (await owing(invoiceId)).outstandingTzs?.toString(),
+        "27000",
+        "the balance goes back up by exactly what was taken back"
+      );
+      const withdrawn = await prisma.pickupNote.findUniqueOrThrow({
+        where: { cargoId: cargo.id },
+      });
+      assert.equal(
+        withdrawn.status,
+        "CANCELLED",
+        "and the permission to collect goes with it"
+      );
+    } finally {
+      signedIn = null;
+      await unseed(cargo.id, customer.id);
+    }
+  });
+
+  test("Support hands a claim up and can never make it true", async () => {
+    const me = await actor(prisma);
+    const { cargo, customer } = await landed(prisma, "SUPQ", { confirmed: true });
+    try {
+      const rate = await prisma.exchangeRate.findFirstOrThrow({
+        where: { active: true },
+        orderBy: { effectiveFrom: "desc" },
+      });
+      const invoice = await issuedBill(cargo.id, customer.id, me.id, rate);
+
+      signedIn = { id: me.id, name: "Support", role: "CUSTOMER_SUPPORT" };
+      const claimed = await paymentActions.recordPayment(
+        {},
+        form({
+          invoiceId: invoice.id,
+          amount: "36450",
+          currency: "TZS",
+          method: "MOBILE_MONEY",
+        })
+      );
+      assert.ok(claimed.ok, claimed.error);
+      const claim = await prisma.payment.findFirstOrThrow({
+        where: { invoiceId: invoice.id },
+      });
+      assert.equal(claim.status, "PENDING");
+
+      await assert.rejects(
+        paymentActions.verifyPayment({}, form({ paymentId: claim.id })),
+        /permission/,
+        "and cannot verify it"
+      );
+      assert.equal(
+        (await prisma.payment.findUniqueOrThrow({ where: { id: claim.id } })).status,
+        "PENDING"
+      );
+      assert.equal(
+        await prisma.pickupNote.count({ where: { cargoId: cargo.id } }),
+        0,
+        "so nothing may be collected on it"
+      );
+    } finally {
+      signedIn = null;
+      await unseed(cargo.id, customer.id);
+    }
   });
 });
 
