@@ -682,11 +682,26 @@ export async function ContainerMoney({
       ) : null}
 
       {/* A container is not finished because the boxes have gone. It is
-          finished when every one of them has been asked for money. */}
+          finished when every one of them has been asked for money.
+
+          WHICH IS A DIFFERENT SENTENCE ONCE THE BOX IS CLOSED. Closing is the
+          Dar floor saying the container is empty and there is nothing left to
+          take off it; it is not a statement about money, and it can happen — it
+          usually does — while bills are still unraised. Telling a desk that a
+          container it closed last week "cannot be closed yet" reads as a fault
+          in the system, and the thing it should be reading is that somebody has
+          never been asked to pay. So the box is only named while the box is
+          still the point; afterwards the sentence is about the bills. */}
       {noBillAtAll > 0 ? (
         <p className="rounded-xl border border-dashed px-5 py-3 text-sm text-muted-foreground">
-          This container cannot be closed yet — {noBillAtAll} with no bill at
-          all. Nobody has been asked for that money yet.
+          {container.status === "CLOSED"
+            ? `This container is closed with ${noBillAtAll} consignment${
+                noBillAtAll === 1 ? "" : "s"
+              } never billed.`
+            : `This container cannot be closed yet — ${noBillAtAll} consignment${
+                noBillAtAll === 1 ? "" : "s"
+              } with no bill at all.`}{" "}
+          Nobody has been asked for that money.
         </p>
       ) : null}
 
