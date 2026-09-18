@@ -10,7 +10,7 @@ import { telHref, whatsappLink, WHATSAPP_OPENER } from "@/lib/site-contact";
 const SHIP = [
   ["/services", "Services"],
   ["/rates", "Shipping rates"],
-  ["/calculator", "CBM calculator"],
+  ["/calculator", "Price calculator"],
   ["/schedule", "Sailing schedule"],
   ["/china", "Explore China"],
   ["/track", "Track cargo"],

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/services", label: "Services" },
   { href: "/rates", label: "Rates" },
-  { href: "/calculator", label: "CBM calculator" },
+  { href: "/calculator", label: "Price calculator" },
   { href: "/schedule", label: "Sailings" },
   { href: "/china", label: "Explore China" },
   { href: "/about", label: "About" },

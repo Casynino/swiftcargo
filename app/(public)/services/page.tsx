@@ -182,7 +182,7 @@ export default async function ServicesPage() {
               <ArrowRight className="size-4" />
             </Link>
             <Link href="/calculator" className={heroButton.ghost}>
-              {t(locale, "Work out my CBM")}
+              {t(locale, "Price calculator")}
             </Link>
           </>
         }

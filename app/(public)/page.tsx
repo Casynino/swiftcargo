@@ -27,19 +27,20 @@ import {
 import { CountUp, Reveal } from "@/components/site/motion";
 import { RouteMap } from "@/components/site/route-map";
 import { SailingCard, bookHref } from "@/components/site/sailing-card";
+import { PriceCalculator } from "@/components/site/price-calculator";
 import { TrackForm } from "@/components/site/track-form";
 import { CITIES } from "@/lib/china-guide";
 import { ROUTE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { publicRateBook } from "@/lib/public-estimate";
 import { ARRIVAL_CAVEAT, publicSailings } from "@/lib/sailing-schedule";
-import { formatMoney } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { telHref } from "@/lib/site-contact";
 
 export const metadata: Metadata = {
   title: "Sea freight from China to Tanzania",
   description:
-    "Swift Cargo ships loose cargo and full containers from Guangzhou to Dar es Salaam in 28–30 days. Track your cargo, calculate CBM and see live rates.",
+    "Swift Cargo ships loose cargo and full containers from Guangzhou to Dar es Salaam in 28–30 days. Track your cargo, calculate CBM and check your price.",
 };
 
 /* The public site is read far more often than it changes, and the rate card is
@@ -49,16 +50,11 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const locale = DEFAULT_LOCALE;
-  const [company, rates, sailings, stats] = await Promise.all([
+  const [company, cargoTypes, sailings, stats] = await Promise.all([
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),
-    /* Named cargo types only. A rate with no type is the house fallback, and
-       leading the home page with it advertises a price no named category is
-       actually billed at. */
-    prisma.shippingRate.findMany({
-      where: { active: true, published: true, cargoType: { not: null } },
-      orderBy: [{ service: "asc" }, { rate: "asc" }],
-      take: 4,
-    }),
+    /* The names of the cargo types only. The rate book is not printed on the
+       public site; a price is the answer to "this much of this". */
+    publicRateBook("LCL"),
     /* The weekly rule, not a table somebody has to remember to extend. See
        lib/sailing-schedule.ts. */
     publicSailings({ count: 3 }),
@@ -122,7 +118,7 @@ export default async function HomePage() {
             </Link>
             <Link href="/calculator" className={heroButton.ghost}>
               <Calculator className="size-4" />
-              {t(locale, "CBM calculator")}
+              {t(locale, "Price calculator")}
             </Link>
             {/* Tracking, in the hero — it is what most visitors came for. */}
             <div className="mt-4 w-full max-w-xl">
@@ -445,80 +441,16 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* ------------------------------------------------- Rates and calculator */}
+      {/* ------------------------------------------------------- Price check */}
       <section className="bg-surface-2 py-20 sm:py-28">
-        <div className="container grid gap-8 lg:grid-cols-2">
-          <Reveal className="flex flex-col rounded-[2rem] border bg-card p-7 shadow-soft sm:p-10">
-            <Headline
-              lead={t(locale, "Priced by the cubic metre,")}
-              trail={t(locale, "published in the open.")}
-              className="text-3xl leading-[1.08] sm:text-4xl"
-            />
-            {rates.length > 0 ? (
-              <ul className="mt-8 divide-y">
-                {rates.map((rate) => (
-                  <li key={rate.id} className="flex items-center justify-between gap-4 py-4">
-                    <span className="min-w-0">
-                      <span className="block truncate font-semibold">{rate.cargoType}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {rate.service === "LCL" ? t(locale, "Loose cargo") : t(locale, "Full container")}
-                      </span>
-                    </span>
-                    <span className="tnum shrink-0 text-right font-display text-xl font-bold text-brand">
-                      {formatMoney(rate.rate, rate.currency)}
-                      <span className="ml-1 text-sm font-medium text-muted-foreground">
-                        {rate.basis === "PER_CBM" ? "/ CBM" : rate.basis === "PER_KG" ? "/ kg" : t(locale, "flat")}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-8 text-muted-foreground">
-                {t(locale, "Our rate card is being updated. Please ask us for a quote.")}
-              </p>
-            )}
-            <p className="mt-6 text-xs text-muted-foreground">
-              {t(
-                locale,
-                "Rates exclude VAT, duty and clearing. Final charges are based on the measurements taken at our warehouse."
-              )}
-            </p>
-            <div className="mt-auto pt-8">
-              <Link href="/rates" className={heroButton.solid}>
-                {t(locale, "All rates")}
-                <ArrowRight className="size-4" />
-              </Link>
-            </div>
-          </Reveal>
-
-          <Reveal delay={120}>
-            <Link href="/calculator" className="focus-ring block h-full rounded-[2rem]">
-              <PhotoFrame name="parcels" className="h-full min-h-[30rem] rounded-[2rem]">
-                <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/60 to-ink/10" />
-                <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-10">
-                  <span className="grid size-14 place-items-center rounded-2xl bg-white/15 backdrop-blur-md">
-                    <Calculator className="size-7" />
-                  </span>
-                  <p className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                    {t(locale, "How much space do my boxes take?")}
-                  </p>
-                  <p className="mt-3 max-w-md text-white/75">
-                    {t(
-                      locale,
-                      "Put in the sides of your boxes and how many there are. We work out the CBM and roughly what it costs to ship."
-                    )}
-                  </p>
-                  <span className="tnum mt-6 inline-block rounded-xl bg-white/10 px-4 py-2 font-mono text-sm backdrop-blur-md">
-                    60 × 40 × 40 cm × 12 = 1.152 CBM
-                  </span>
-                  <span className={`${heroButton.primary} mt-7 flex w-fit`}>
-                    {t(locale, "Open the calculator")}
-                    <ArrowRight className="size-4" />
-                  </span>
-                </div>
-              </PhotoFrame>
-            </Link>
+        <div className="container">
+          <SectionHead
+            lead={t(locale, "What will my shipping cost?")}
+            trail={t(locale, "Find out in seconds.")}
+            body={t(locale, "Choose your goods, enter your CBM or your box sizes, and your price appears.")}
+          />
+          <Reveal className="mt-12">
+            <PriceCalculator cargoTypes={cargoTypes.map((r) => r.cargoType)} />
           </Reveal>
         </div>
       </section>
