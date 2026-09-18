@@ -40,7 +40,9 @@ function Optional() {
  */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <fieldset className="space-y-4 border-t pt-5 first:border-t-0 first:pt-0">
+    /* `first-of-type` rather than `first`: the honeypot div is the form's first
+       child, so the first fieldset is never the first element. */
+    <fieldset className="space-y-4 border-t pt-5 first-of-type:border-t-0 first-of-type:pt-0">
       <legend className="sr-only">{title}</legend>
       <p className="text-sm font-semibold">{title}</p>
       {children}

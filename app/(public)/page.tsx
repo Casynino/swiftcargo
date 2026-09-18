@@ -379,7 +379,7 @@ export default async function HomePage() {
 
             <div className="mt-10 grid gap-4 md:grid-cols-3">
               {sailings.map((sailing) => (
-                <Card key={sailing.weekOf.toISOString()} className="p-6">
+                <Card key={sailing.key} className="p-6">
                   <p className="flex items-center gap-2 text-sm font-medium">
                     <Ship className="size-4 text-marine" />
                     {sailing.vessel ?? t(locale, "Vessel to be confirmed")}

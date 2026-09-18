@@ -70,7 +70,7 @@ export default async function ContentPage() {
         <p className="text-sm font-medium">What the website is showing</p>
         <ul className="tnum mt-3 space-y-1 text-sm text-muted-foreground">
           {preview.slice(0, 6).map((sailing) => (
-            <li key={sailing.weekOf.toISOString()}>
+            <li key={sailing.key}>
               {formatDate(sailing.departureDate)} · cargo in by{" "}
               {formatDate(sailing.cargoDeadline)} · arrives about{" "}
               {formatDate(sailing.estimatedArrival)} ·{" "}

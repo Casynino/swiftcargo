@@ -62,6 +62,12 @@ export type Sailing = {
   shippingLine: string | null;
   /** The Monday this sailing departs. The key a week is known by. */
   weekOf: Date;
+  /**
+   * Unique across the list, which `weekOf` is not: an extra sailing on a
+   * Saturday belongs to the same week as the generated Monday beside it, and
+   * two rows keyed on that week are two rows a list cannot tell apart.
+   */
+  key: string;
   /** Last day Guangzhou accepts cargo. Friday. */
   cargoDeadline: Date;
   /** The day the container is packed. The same Friday, unless a row says not. */
@@ -145,6 +151,7 @@ export function generatedSailing(
       vessel: null,
       shippingLine: null,
       weekOf: departureDate,
+      key: departureDate.toISOString().slice(0, 10),
       cargoDeadline,
       loadingDate: cargoDeadline,
       departureDate,
@@ -248,6 +255,7 @@ function fromRow(row: StoredRow, now: Date): Sailing {
       vessel: row.vessel,
       shippingLine: row.shippingLine,
       weekOf: row.weekOf ? utcMidnight(row.weekOf) : mondayOf(row.departureDate),
+      key: row.id,
       cargoDeadline: row.cargoDeadline,
       loadingDate: row.loadingDate ?? row.cargoDeadline,
       departureDate: row.departureDate,
@@ -317,8 +325,20 @@ export async function publicSailings(
   const overrides = new Map<number, StoredRow>();
   const extras: StoredRow[] = [];
   for (const row of rows) {
-    if (row.weekOf) overrides.set(utcMidnight(row.weekOf).getTime(), row);
-    else extras.push(row);
+    if (row.weekOf) {
+      overrides.set(utcMidnight(row.weekOf).getTime(), row);
+      continue;
+    }
+    /* A row published before `weekOf` existed still stands in for its week when
+       it sails on that week's Monday — otherwise the page would show the boat
+       twice, once as the rule imagines it and once as somebody typed it. A
+       sailing on any other day is a genuine extra and stays one. */
+    const departure = utcMidnight(row.departureDate);
+    if (departure.getUTCDay() === MONDAY && !overrides.has(departure.getTime())) {
+      overrides.set(departure.getTime(), row);
+    } else {
+      extras.push(row);
+    }
   }
 
   const merged: Sailing[] = [];

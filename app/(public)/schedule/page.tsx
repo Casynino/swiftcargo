@@ -85,7 +85,7 @@ export default async function SchedulePage() {
           {/* Cards on a phone: six columns of dates do not fit 375 pixels. */}
           <ul className="mt-10 grid gap-3 sm:hidden">
             {sailings.map((sailing) => (
-              <li key={sailing.weekOf.toISOString()}>
+              <li key={sailing.key}>
                 <Card className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -146,7 +146,7 @@ export default async function SchedulePage() {
               </TableHeader>
               <TableBody>
                 {sailings.map((sailing) => (
-                  <TableRow key={sailing.weekOf.toISOString()}>
+                  <TableRow key={sailing.key}>
                     <TableCell>
                       <span className="font-medium">
                         {sailing.vessel ?? t(locale, "To be confirmed")}
