@@ -25,6 +25,7 @@ export default async function CalculatorPage() {
       <PageHero
         overlap
         photo="parcels"
+        eyebrow={t(locale, "Price calculator")}
         lead={t(locale, "Shipping price calculator.")}
         trail={t(locale, "Measure, choose, done.")}
         body={

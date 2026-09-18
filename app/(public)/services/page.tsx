@@ -5,6 +5,7 @@ import { ArrowRight, CheckCircle2, Container, Package, Search, Truck, Warehouse 
 import { CtaBand, PageHero, PhotoFrame, heroButton } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
 import type { PhotoName } from "@/components/site/photos";
+import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
@@ -107,6 +108,7 @@ export default async function ServicesPage() {
     <>
       <PageHero
         photo="portCranes"
+        eyebrow={`${ROUTE.originCity} → ${ROUTE.destinationCity}`}
         lead={t(locale, "Everything between your supplier")}
         trail={t(locale, "and your shop.")}
         body={

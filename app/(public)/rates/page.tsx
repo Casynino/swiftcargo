@@ -50,6 +50,7 @@ export default async function RatesPage() {
       <PageHero
         overlap
         photo="containerStack"
+        eyebrow={t(locale, "Shipping rates")}
         lead={t(locale, "What will my shipping cost?")}
         trail={t(locale, "Find out in seconds.")}
         body={

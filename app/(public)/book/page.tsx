@@ -63,6 +63,7 @@ export default async function Page({
       <PageHero
         overlap
         photo="shipAerial"
+        eyebrow={t(locale, "Book a service")}
         lead={t(locale, "Book your space")}
         trail={t(locale, "on the next ship.")}
         body={

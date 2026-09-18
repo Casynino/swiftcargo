@@ -15,6 +15,34 @@ import { cn } from "@/lib/utils";
  */
 
 /**
+ * The words over a headline — plain text, no shape around it: a short rule and
+ * the label in bold capitals, in the orange on paper and a lighter orange on
+ * a photograph, so it reads first without looking like a button.
+ */
+export function Eyebrow({
+  children,
+  dark,
+  className,
+}: {
+  children: React.ReactNode;
+  dark?: boolean;
+  className?: string;
+}) {
+  return (
+    <p
+      className={cn(
+        "flex items-center gap-3 text-base font-bold uppercase tracking-[0.14em]",
+        dark ? "text-orange-300" : "text-signal",
+        className
+      )}
+    >
+      <span aria-hidden className={cn("h-0.5 w-8 rounded-full", dark ? "bg-orange-300" : "bg-signal")} />
+      {children}
+    </p>
+  );
+}
+
+/**
  * A headline in two tones: the words that carry it, then the rest set hollow
  * on a photograph or in the brand blue on paper.
  */
@@ -50,8 +78,9 @@ export function Headline({
   );
 }
 
-/** Headline and a line of text, the way every section opens. */
+/** Label, headline and a line of text, the way every section opens. */
 export function SectionHead({
+  eyebrow,
   lead,
   trail,
   body,
@@ -60,6 +89,7 @@ export function SectionHead({
   className,
   children,
 }: {
+  eyebrow?: React.ReactNode;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -70,6 +100,7 @@ export function SectionHead({
 }) {
   return (
     <Reveal className={cn(center && "mx-auto text-center", "max-w-3xl", className)}>
+      {eyebrow ? <Eyebrow dark={dark} className={cn("mb-4", center && "justify-center")}>{eyebrow}</Eyebrow> : null}
       <Headline
         lead={lead}
         trail={trail}
@@ -136,6 +167,7 @@ export function PhotoFrame({
  */
 export function PageHero({
   photo,
+  eyebrow,
   lead,
   trail,
   body,
@@ -148,6 +180,7 @@ export function PageHero({
   /** Leave room at the foot for a panel that rides up over the hero. */
   overlap?: boolean;
   photo: PhotoName;
+  eyebrow?: React.ReactNode;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -197,6 +230,7 @@ export function PageHero({
         )}
       >
         <div className="animate-in-up max-w-3xl">
+          {eyebrow ? <Eyebrow dark className="mb-5">{eyebrow}</Eyebrow> : null}
           <Headline
             as="h1"
             dark
