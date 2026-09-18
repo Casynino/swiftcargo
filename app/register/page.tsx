@@ -18,7 +18,7 @@ export default function RegisterPage() {
       title={
         <>
           One account, and your supplier knows{" "}
-          <span className="site-outline">where to send the boxes.</span>
+          <span className="text-orange-300">where to send the boxes.</span>
         </>
       }
       points={[
@@ -29,7 +29,7 @@ export default function RegisterPage() {
       ]}
     >
       <h1 className="font-display text-3xl font-bold tracking-tight text-white">Create your account</h1>
-      <p className="mt-2 text-sm text-white/65">
+      <p className="mt-2 text-sm text-white/85">
         You will get a shipping mark and our Guangzhou warehouse address straight away.
       </p>
 
@@ -37,7 +37,7 @@ export default function RegisterPage() {
         <RegisterForm />
       </div>
 
-      <p className="mt-8 text-sm text-white/65">
+      <p className="mt-8 text-sm text-white/85">
         Already have an account?{" "}
         <Link href="/login" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Sign in

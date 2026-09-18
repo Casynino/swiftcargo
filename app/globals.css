@@ -818,3 +818,23 @@
 .auth-card.site-glass {
   background: rgba(6, 16, 28, 0.74);
 }
+
+.auth-card.site-glass {
+  background: rgba(6, 16, 28, 0.86);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-card label {
+  color: #fff;
+  font-weight: 600;
+}
+
+.auth-card input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-card input,
+.auth-card select {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.28);
+}

@@ -21,7 +21,7 @@ export default async function LoginPage({
       welcome="Karibu tena"
       title={
         <>
-          Welcome back to <span className="site-outline">Swift Cargo.</span>
+          Welcome back to <span className="text-orange-300">Swift Cargo.</span>
         </>
       }
       subtitle={`Your cargo, from ${ROUTE.originCity} to ${ROUTE.destinationCity} — ${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} days at sea, tracked the whole way.`}
@@ -33,7 +33,7 @@ export default async function LoginPage({
       ]}
     >
       <h1 className="font-display text-3xl font-bold tracking-tight text-white">Sign in</h1>
-      <p className="mt-2 text-sm text-white/65">
+      <p className="mt-2 text-sm text-white/85">
         Staff and customers use the same door. You will land in the right place.
       </p>
 
@@ -46,7 +46,7 @@ export default async function LoginPage({
 
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
-      <p className="mt-8 text-sm text-white/65">
+      <p className="mt-8 text-sm text-white/85">
         New customer?{" "}
         <Link href="/register" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Create an account
