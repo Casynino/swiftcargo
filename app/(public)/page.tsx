@@ -172,9 +172,11 @@ export default async function HomePage() {
         }
       >
         <div className="container relative pb-10">
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 backdrop-blur-md sm:grid-cols-3 lg:grid-cols-6">
+          {/* Flex rather than a grid: however many figures there are, the last
+              row stretches to the edge instead of leaving an empty cell. */}
+          <dl className="flex flex-wrap gap-px overflow-hidden rounded-3xl border border-white/10 bg-white/10 backdrop-blur-md">
             {facts.slice(0, 6).map(([value, label]) => (
-              <div key={label} className="flex flex-col-reverse bg-ink/50 px-5 py-5">
+              <div key={label} className="flex min-w-0 flex-1 basis-[45%] flex-col-reverse bg-ink/50 px-5 py-5 sm:basis-[30%] lg:basis-0">
                 <dt className="mt-1 text-xs text-white/60">{t(locale, label)}</dt>
                 <dd className="tnum font-display text-3xl font-extrabold tracking-tight">
                   {/^\d+$/.test(value) ? <CountUp value={Number(value)} /> : value}
