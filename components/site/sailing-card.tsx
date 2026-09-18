@@ -102,7 +102,7 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
       </dl>
 
       <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">{t(locale, "Last day for cargo")}</span>
+        <span className="text-muted-foreground">{t(locale, "Last day to receive cargo")}</span>
         <span className="tnum font-semibold text-signal">{formatDate(sailing.cargoDeadline)}</span>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">

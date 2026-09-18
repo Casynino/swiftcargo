@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { CopyField } from "@/components/app/copy-field";
+import { SupplierAddressCard } from "@/components/app/supplier-address-card";
+import { supplierAddress } from "@/lib/supplier-address";
 import { Field } from "@/components/app/field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
@@ -16,6 +18,8 @@ export default async function PortalProfilePage() {
     prisma.customer.findUnique({ where: { id: user.customerId } }),
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),
   ]);
+
+  const forSupplier = await supplierAddress(customer?.shippingMark ?? null);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -48,10 +52,11 @@ export default async function PortalProfilePage() {
           <CardTitle className="text-base">Where to send your goods</CardTitle>
         </CardHeader>
         <CardContent>
-          <CopyField
-            value={company?.chinaAddress ?? "Ask us for the address"}
-            label="warehouse address"
-          />
+          {forSupplier ? (
+            <SupplierAddressCard {...forSupplier} />
+          ) : (
+            <CopyField value={company?.chinaAddress ?? "Ask us for the address"} label="warehouse address" />
+          )}
         </CardContent>
       </Card>
 

@@ -46,6 +46,7 @@ export default async function WarehousesPage() {
                 city: warehouse.city,
                 country: warehouse.country,
                 phone: warehouse.phone,
+                contactName: warehouse.contactName,
               }}
             />
           </div>

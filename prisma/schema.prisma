@@ -304,6 +304,9 @@ model Warehouse {
   city           String?
   country        String?
   phone          String?
+  /// Who receives deliveries at this door — the 收货人 a supplier writes on
+  /// the waybill.
+  contactName    String?
 
   active Boolean @default(true)
 

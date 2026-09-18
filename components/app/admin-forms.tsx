@@ -42,6 +42,7 @@ export function WarehouseForm({
     city: string | null;
     country: string | null;
     phone: string | null;
+    contactName?: string | null;
   };
 }) {
   const [state, action] = useActionState<ActionState, FormData>(
@@ -146,6 +147,14 @@ export function WarehouseForm({
               id={`phone-${warehouse?.id ?? "new"}`}
               name="phone"
               defaultValue={warehouse?.phone ?? ""}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`contact-${warehouse?.id ?? "new"}`}>Receiver at the door (收货人)</Label>
+            <Input
+              id={`contact-${warehouse?.id ?? "new"}`}
+              name="contactName"
+              defaultValue={warehouse?.contactName ?? ""}
             />
           </div>
         </div>
@@ -267,7 +276,7 @@ export function ScheduleForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoDeadline">Last day for cargo</Label>
+            <Label htmlFor="cargoDeadline">Last day to receive cargo</Label>
             <Input
               id="cargoDeadline"
               name="cargoDeadline"

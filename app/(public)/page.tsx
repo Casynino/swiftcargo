@@ -135,7 +135,7 @@ export default async function HomePage() {
                   </div>
                 </div>
                 <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-xs text-orange-800">
-                  {t(locale, "Cargo in Guangzhou by")}{" "}
+                  {t(locale, "Last day to receive cargo:")}{" "}
                   <span className="tnum font-semibold">{short(next.cargoDeadline)}</span>
                 </p>
               </Link>

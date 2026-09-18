@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { ArrowRight, MapPin, Package, Ship } from "lucide-react";
 
 import { CopyField } from "@/components/app/copy-field";
+import { SupplierAddressCard } from "@/components/app/supplier-address-card";
+import { supplierAddress } from "@/lib/supplier-address";
 import { EmptyState } from "@/components/app/empty-state";
 import { KpiCard } from "@/components/app/kpi-card";
 import { SectionLabel } from "@/components/app/section-label";
@@ -93,6 +95,8 @@ export default async function PortalPage() {
       r.item.receiverId === user.customerId
   );
 
+  const forSupplier = await supplierAddress(customer?.shippingMark ?? null);
+
   return (
     <div className="space-y-8">
       <header>
@@ -166,13 +170,14 @@ export default async function PortalPage() {
               {t(locale, "Our Guangzhou warehouse")}
             </p>
             <div className="mt-2">
-              <CopyField
-                value={company?.chinaAddress ?? t(locale, "Ask us for the address")}
-                label="warehouse address"
-              />
+              {forSupplier ? (
+                <SupplierAddressCard {...forSupplier} />
+              ) : (
+                <CopyField value={company?.chinaAddress ?? t(locale, "Ask us for the address")} label="warehouse address" />
+              )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {t(locale, "Your supplier delivers here.")}
+              {t(locale, "Press copy and send it to your supplier — it is in Chinese, with your mark already on it.")}
             </p>
           </div>
         </CardContent>

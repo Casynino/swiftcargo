@@ -5,6 +5,8 @@ import { Copy, Package, Plus } from "lucide-react";
 
 import { CargoStatusBadge } from "@/components/app/status-badge";
 import { CopyField } from "@/components/app/copy-field";
+import { SupplierAddressCard } from "@/components/app/supplier-address-card";
+import { supplierAddress } from "@/lib/supplier-address";
 import { EmptyState } from "@/components/app/empty-state";
 import { Field } from "@/components/app/field";
 import { PageHeader } from "@/components/app/page-header";
@@ -86,6 +88,8 @@ export default async function CustomerPage({
     .filter((i) => i.status !== "CANCELLED" && i.status !== "DRAFT")
     .reduce((sum, invoice) => sum + Number(outstandingOf(invoice)), 0);
 
+  const forSupplier = await supplierAddress(customer.shippingMark ?? customer.fullName.toUpperCase());
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -164,6 +168,17 @@ export default async function CustomerPage({
               </p>
             </CardContent>
           </Card>
+
+          {forSupplier ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Address for their supplier</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SupplierAddressCard {...forSupplier} />
+              </CardContent>
+            </Card>
+          ) : null}
 
           {showMoney ? (
           <Card>

@@ -21,6 +21,7 @@ const warehouseSchema = z.object({
   city: z.string().trim().optional(),
   country: z.string().trim().optional(),
   phone: z.string().trim().optional(),
+  contactName: z.string().trim().max(80).optional(),
 });
 
 export async function upsertWarehouse(
@@ -39,6 +40,7 @@ export async function upsertWarehouse(
     city: formData.get("city") || undefined,
     country: formData.get("country") || undefined,
     phone: formData.get("phone") || undefined,
+    contactName: formData.get("contactName") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
@@ -51,6 +53,7 @@ export async function upsertWarehouse(
     city: parsed.data.city || null,
     country: parsed.data.country || null,
     phone: parsed.data.phone || null,
+    contactName: parsed.data.contactName || null,
   };
 
   /* Asked on an edit as well as on an add: renaming a code onto another

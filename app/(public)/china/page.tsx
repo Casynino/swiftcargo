@@ -12,7 +12,8 @@ import {
   heroButton,
 } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
-import { CopyField } from "@/components/app/copy-field";
+import { SupplierAddressCard } from "@/components/app/supplier-address-card";
+import { supplierAddress } from "@/lib/supplier-address";
 import { CITIES, HOW_WE_HELP, MARKETS } from "@/lib/china-guide";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -41,6 +42,9 @@ export default async function ChinaPage() {
       select: { id: true, name: true, summary: true, category: true },
     }),
   ]);
+
+  /* No customer here, so the mark line asks the reader to fill theirs in. */
+  const forSupplier = await supplierAddress(null);
 
   return (
     <>
@@ -140,21 +144,22 @@ export default async function ChinaPage() {
         </div>
 
         <Reveal>
-          <PhotoFrame name="guangzhouDusk" className="min-h-[30rem] rounded-[2rem]">
+          <PhotoFrame name="guangzhouDusk" className="min-h-[34rem] rounded-[2rem]">
             <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
               <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
                 <MapPin className="size-4" />
                 {t(locale, "Swift Cargo Guangzhou warehouse")}
               </p>
-              <p className="mt-3 text-lg leading-relaxed sm:text-xl">
-                {company?.chinaAddress ?? t(locale, "Available on request")}
-              </p>
-              {company?.chinaAddress ? (
-                <div className="mt-4 max-w-md rounded-xl bg-white p-1 text-foreground">
-                  <CopyField value={company.chinaAddress} label="warehouse address" />
+              {forSupplier ? (
+                <div className="mt-4 max-w-lg">
+                  <SupplierAddressCard {...forSupplier} dark />
                 </div>
-              ) : null}
+              ) : (
+                <p className="mt-3 text-lg leading-relaxed sm:text-xl">
+                  {company?.chinaAddress ?? t(locale, "Available on request")}
+                </p>
+              )}
               <p className="mt-4 text-sm text-white/70">
                 {t(
                   locale,
