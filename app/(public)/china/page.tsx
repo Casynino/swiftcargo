@@ -167,7 +167,7 @@ export default async function ChinaPage() {
       </section>
 
       {markets.length > 0 ? (
-        <section className="bg-surface-2 py-20 sm:py-24">
+        <section className="site-band py-20 sm:py-24">
           <div className="container">
             <SectionHead
               eyebrow={t(locale, "Our recommendations")}

@@ -188,7 +188,7 @@ export default async function HomePage() {
       </PageHero>
 
       <Marquee
-        className="bg-background text-foreground/85"
+        className="bg-background/50 text-foreground/85 backdrop-blur-sm"
         items={[
           "Guangzhou",
           "Dar es Salaam",
@@ -253,7 +253,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------ Services */}
-      <section className="bg-surface-2 py-20 sm:py-28">
+      <section className="site-band py-20 sm:py-28">
         <div className="container">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
@@ -449,7 +449,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* ------------------------------------------------------- Price check */}
-      <section className="bg-surface-2 py-20 sm:py-28">
+      <section className="site-band py-20 sm:py-28">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "What it costs")}
@@ -508,7 +508,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------ Warehouses */}
-      <section className="bg-surface-2 py-20 sm:py-28">
+      <section className="site-band py-20 sm:py-28">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "Where to send your goods")}
