@@ -416,7 +416,7 @@ const bookingSchema = z.object({
   estimatedCbm: volume,
 
   preferredShipment: shortText,
-  preferredSailingWeek: z
+  preferredSailingDate: z
     .string()
     .trim()
     .optional()
@@ -475,7 +475,7 @@ export async function submitBooking(
     estimatedWeightKg: formData.get("estimatedWeightKg") || undefined,
     estimatedCbm: formData.get("estimatedCbm") || undefined,
     preferredShipment: formData.get("preferredShipment") || undefined,
-    preferredSailingWeek: formData.get("preferredSailingWeek") || undefined,
+    preferredSailingDate: formData.get("preferredSailingDate") || undefined,
     dangerousGoods: formData.get("dangerousGoods") === "on",
     fragile: formData.get("fragile") === "on",
     perishable: formData.get("perishable") === "on",
@@ -537,8 +537,8 @@ export async function submitBooking(
         estimatedWeightKg: data.estimatedWeightKg ?? null,
         estimatedCbm: data.estimatedCbm ?? null,
         preferredShipment: data.preferredShipment || null,
-        preferredSailingWeek: data.preferredSailingWeek
-          ? new Date(data.preferredSailingWeek)
+        preferredSailingDate: data.preferredSailingDate
+          ? new Date(data.preferredSailingDate)
           : null,
         dangerousGoods: data.dangerousGoods ?? false,
         fragile: data.fragile ?? false,

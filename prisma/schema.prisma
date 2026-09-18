@@ -2066,10 +2066,10 @@ model ContainerBooking {
   estimatedCbm      Decimal? @db.Decimal(12, 4)
 
   preferredShipment    String?
-  /// The Monday of the sailing week the customer picked off the public
+  /// The departure date of the sailing the customer picked off the public
   /// schedule, when they picked one. A date rather than the sentence they saw,
-  /// so Support can line the request up against the week it asked for.
-  preferredSailingWeek DateTime? @db.Date
+  /// so Support can line the request up against the boat it asked for.
+  preferredSailingDate DateTime? @db.Date
 
   /// Where the goods are now, and when they will be ready to move.
   originCity    String?

@@ -273,8 +273,8 @@ export default async function RequestsPage() {
                           ["Dimensions", booking.dimensions],
                           [
                             "Sailing",
-                            booking.preferredSailingWeek
-                              ? formatDate(booking.preferredSailingWeek)
+                            booking.preferredSailingDate
+                              ? formatDate(booking.preferredSailingDate)
                               : booking.preferredShipment,
                           ],
                           ["Port", booking.portOfDischarge],

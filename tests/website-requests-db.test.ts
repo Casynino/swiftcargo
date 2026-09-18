@@ -21,6 +21,8 @@ const { estimate, publicRateBook } =
   load("@/lib/public-estimate") as typeof import("@/lib/public-estimate");
 const { submitBooking, submitPickupRequest } =
   load("@/lib/actions/requests") as typeof import("@/lib/actions/requests");
+const { publicSailings, generateSailings } =
+  load("@/lib/sailing-schedule") as typeof import("@/lib/sailing-schedule");
 
 /**
  * THE WEBSITE, AGAINST THE REAL DATABASE.
@@ -390,5 +392,159 @@ describe("what a stranger may write", () => {
     assert.ok(result.ok);
     assert.equal(result.reference, undefined);
     assert.equal(await prisma.pickupRequest.count(), before);
+  });
+});
+
+describe("what the website publishes as its schedule", () => {
+  const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const on = (iso: string) => new Date(`${iso}T09:00:00.000Z`);
+
+  /** A published row for one week, inside the caller's transaction. */
+  async function publish(
+    tx: Prisma.TransactionClient,
+    row: {
+      weekOf?: string | null;
+      cargoDeadline: string;
+      departureDate: string;
+      vessel?: string;
+      published?: boolean;
+      status?: "OPEN_FOR_BOOKING" | "DELAYED" | "CANCELLED";
+      notes?: string;
+    }
+  ) {
+    await tx.shipmentSchedule.create({
+      data: {
+        weekOf: row.weekOf ? day(row.weekOf) : null,
+        cargoDeadline: day(row.cargoDeadline),
+        loadingDate: day(row.cargoDeadline),
+        departureDate: day(row.departureDate),
+        transitDays: 30,
+        estimatedArrival: new Date(
+          day(row.departureDate).getTime() + 30 * 24 * 60 * 60 * 1000
+        ),
+        vessel: row.vessel ?? null,
+        published: row.published ?? true,
+        status: row.status ?? "OPEN_FOR_BOOKING",
+        notes: row.notes ?? null,
+      },
+    });
+  }
+
+  /** Nothing but the rows a test writes. */
+  const only = (tx: Prisma.TransactionClient) =>
+    tx.shipmentSchedule.deleteMany({ where: {} });
+
+  test("with nothing published it is the rule, week after week", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 4, client: tx });
+      assert.deepEqual(
+        sailings.map((s) => s.departureDate.toISOString().slice(0, 10)),
+        ["2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19"]
+      );
+      assert.ok(sailings.every((s) => s.source === "generated"));
+    });
+  });
+
+  test("a published week replaces the generated one rather than doubling it", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      /* Slipped by two days, and named. */
+      await publish(tx, {
+        weekOf: "2026-10-05",
+        cargoDeadline: "2026-10-02",
+        departureDate: "2026-10-07",
+        vessel: "MSC Kalamata",
+        notes: "Two days late out of Nansha.",
+      });
+
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 4, client: tx });
+      const week = sailings.filter(
+        (s) => s.weekOf.toISOString().slice(0, 10) === "2026-10-05"
+      );
+      assert.equal(week.length, 1);
+      assert.equal(week[0].source, "published");
+      assert.equal(week[0].vessel, "MSC Kalamata");
+      assert.equal(week[0].departureDate.toISOString().slice(0, 10), "2026-10-07");
+      assert.equal(week[0].notes, "Two days late out of Nansha.");
+      /* Every other week is still the rule. */
+      assert.equal(sailings.length, 4);
+      assert.equal(sailings.filter((s) => s.source === "generated").length, 3);
+    });
+  });
+
+  test("a row published without a week is placed by the week it sails in", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      await publish(tx, {
+        cargoDeadline: "2026-09-30",
+        departureDate: "2026-10-03",
+        vessel: "Maersk Cabo Verde",
+      });
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 4, client: tx });
+      const week = sailings.filter(
+        (s) => s.weekOf.toISOString().slice(0, 10) === "2026-09-28"
+      );
+      assert.equal(week.length, 1);
+      assert.equal(week[0].vessel, "Maersk Cabo Verde");
+    });
+  });
+
+  test("a second sailing in one week is an extra, shown beside the first", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      await publish(tx, { weekOf: "2026-09-28", cargoDeadline: "2026-09-25", departureDate: "2026-09-28", vessel: "First" });
+      await publish(tx, { cargoDeadline: "2026-09-30", departureDate: "2026-10-02", vessel: "Second" });
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 2, client: tx });
+      const names = sailings.map((s) => s.vessel);
+      assert.ok(names.includes("First"));
+      assert.ok(names.includes("Second"));
+      /* And no two rows share the key a list is drawn by. */
+      assert.equal(new Set(sailings.map((s) => s.key)).size, sailings.length);
+    });
+  });
+
+  test("an unpublished row takes its week off the page altogether", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      await publish(tx, {
+        weekOf: "2026-10-05",
+        cargoDeadline: "2026-10-02",
+        departureDate: "2026-10-05",
+        published: false,
+      });
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 4, client: tx });
+      assert.ok(
+        !sailings.some((s) => s.weekOf.toISOString().slice(0, 10) === "2026-10-05")
+      );
+      assert.equal(sailings.length, 3);
+    });
+  });
+
+  test("delayed and cancelled are kept; the clock does not talk them out of it", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      await publish(tx, { weekOf: "2026-09-28", cargoDeadline: "2026-09-25", departureDate: "2026-09-28", status: "DELAYED" });
+      await publish(tx, { weekOf: "2026-10-05", cargoDeadline: "2026-10-02", departureDate: "2026-10-05", status: "CANCELLED" });
+      const sailings = await publicSailings({ now: on("2026-09-22"), count: 3, client: tx });
+      assert.equal(sailings[0].status, "DELAYED");
+      assert.equal(sailings[0].bookingOpen, false);
+      assert.equal(sailings[1].status, "CANCELLED");
+      assert.equal(sailings[1].bookingOpen, false);
+      /* The untouched week is still open. */
+      assert.equal(sailings[2].status, "OPEN_FOR_BOOKING");
+    });
+  });
+
+  test("the generated weeks the page asks for are the weeks it gets", async () => {
+    await inRollback(async (tx) => {
+      await only(tx);
+      const generated = generateSailings({ now: on("2026-12-28"), count: 3 });
+      const sailings = await publicSailings({ now: on("2026-12-28"), count: 3, client: tx });
+      assert.deepEqual(
+        sailings.map((s) => s.departureDate.toISOString()),
+        generated.map((s) => s.departureDate.toISOString())
+      );
+    });
   });
 });

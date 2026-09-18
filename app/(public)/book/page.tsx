@@ -44,28 +44,17 @@ export default async function Page({
     publicRateBook("LCL"),
   ]);
 
-  /*
-    ONE OPTION PER WEEK.
-
-    An extra sailing published mid-week belongs to the same week as the
-    generated Monday beside it, and two rows offering the same week is a choice
-    with no difference in it. The published one wins, because somebody typed it
-    and the other is only the rule imagining a boat.
-  */
-  const byWeek = new Map<string, { weekOf: string; label: string }>();
-  for (const sailing of sailings) {
-    if (!sailing.bookingOpen) continue;
-    const weekOf = sailing.weekOf.toISOString().slice(0, 10);
-    if (byWeek.has(weekOf) && sailing.source !== "published") continue;
-    byWeek.set(weekOf, {
-      weekOf,
+  /* One option per sailing, named by the day it leaves — which is what a
+     customer means when they say "put me on the boat on the third". */
+  const options = sailings
+    .filter((sailing) => sailing.bookingOpen)
+    .map((sailing) => ({
+      departure: sailing.departureDate.toISOString().slice(0, 10),
       label: `${t(locale, "Sails")} ${formatDate(sailing.departureDate)} — ${t(
         locale,
         "cargo in by"
       )} ${formatDate(sailing.cargoDeadline)}`,
-    });
-  }
-  const options = [...byWeek.values()];
+    }));
 
   return (
     <div className="container max-w-3xl py-12 sm:py-16">

@@ -43,8 +43,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     /* `first-of-type` rather than `first`: the honeypot div is the form's first
        child, so the first fieldset is never the first element. */
     <fieldset className="space-y-4 border-t pt-5 first-of-type:border-t-0 first-of-type:pt-0">
-      <legend className="sr-only">{title}</legend>
-      <p className="text-sm font-semibold">{title}</p>
+      {/* The legend IS the heading. A visually-hidden legend beside a visible
+          paragraph of the same words reads the heading twice to a screen
+          reader and once to everybody else. */}
+      <legend className="text-sm font-semibold">{title}</legend>
       {children}
     </fieldset>
   );
@@ -360,8 +362,8 @@ export function PickupForm({ cargoTypes = [] }: { cargoTypes?: string[] }) {
 
 /** One sailing, as the booking form offers it. */
 export type SailingOption = {
-  /** The Monday, as a date string. What the form posts. */
-  weekOf: string;
+  /** The departure date, as a date string. What the form posts. */
+  departure: string;
   label: string;
 };
 
@@ -478,15 +480,15 @@ export function BookingForm({
               </div>
               {sailings.length > 0 ? (
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="b-preferredSailingWeek">{t(locale, "Preferred sailing")}</Label>
+                  <Label htmlFor="b-preferredSailingDate">{t(locale, "Preferred sailing")}</Label>
                   <NativeSelect
-                    id="b-preferredSailingWeek"
-                    name="preferredSailingWeek"
+                    id="b-preferredSailingDate"
+                    name="preferredSailingDate"
                     defaultValue={defaults.sailing ?? ""}
                   >
                     <option value="">{t(locale, "The next one with space")}</option>
                     {sailings.map((sailing) => (
-                      <option key={sailing.weekOf} value={sailing.weekOf}>
+                      <option key={sailing.departure} value={sailing.departure}>
                         {sailing.label}
                       </option>
                     ))}

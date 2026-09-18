@@ -54,7 +54,7 @@ export default async function SchedulePage() {
   );
 
   const bookHref = (sailing: Sailing) =>
-    `/book?sailing=${sailing.weekOf.toISOString().slice(0, 10)}`;
+    `/book?sailing=${sailing.departureDate.toISOString().slice(0, 10)}`;
 
   return (
     <div className="container max-w-5xl py-12 sm:py-16">

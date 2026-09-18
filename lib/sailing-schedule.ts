@@ -322,23 +322,31 @@ export async function publicSailings(
     },
   })) as StoredRow[];
 
+  /*
+    A STORED ROW TAKES THE WEEK IT SAILS IN.
+
+    The rule is one sailing a week, so a published row and the generated week it
+    falls in are the same boat described twice — showing both is how a customer
+    ends up planning around a ship that does not exist. `weekOf` says which week
+    outright; a row published before that column existed is placed by the week
+    its departure falls in, which is the same answer for every row anybody has
+    actually typed. A SECOND row in one week is a genuine extra sailing and is
+    shown beside the first.
+  */
   const overrides = new Map<number, StoredRow>();
   const extras: StoredRow[] = [];
+  const claim = (week: Date, row: StoredRow) => {
+    const key = week.getTime();
+    const held = overrides.get(key);
+    /* An explicit `weekOf` beats a row that only happens to fall in the week. */
+    if (!held) overrides.set(key, row);
+    else if (row.weekOf && !held.weekOf) {
+      overrides.set(key, row);
+      extras.push(held);
+    } else extras.push(row);
+  };
   for (const row of rows) {
-    if (row.weekOf) {
-      overrides.set(utcMidnight(row.weekOf).getTime(), row);
-      continue;
-    }
-    /* A row published before `weekOf` existed still stands in for its week when
-       it sails on that week's Monday — otherwise the page would show the boat
-       twice, once as the rule imagines it and once as somebody typed it. A
-       sailing on any other day is a genuine extra and stays one. */
-    const departure = utcMidnight(row.departureDate);
-    if (departure.getUTCDay() === MONDAY && !overrides.has(departure.getTime())) {
-      overrides.set(departure.getTime(), row);
-    } else {
-      extras.push(row);
-    }
+    claim(row.weekOf ? utcMidnight(row.weekOf) : mondayOf(row.departureDate), row);
   }
 
   const merged: Sailing[] = [];
