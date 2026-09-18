@@ -891,6 +891,7 @@ export default async function CargoDetailPage({
               canPay={can(user.role, "payment.submit")}
               canDecide={can(user.role, "payment.verify")}
               canChangeBill={can(user.role, "invoice.discount")}
+              canChangeRate={can(user.role, "invoice.edit")}
               canOpenBill={can(user.role, "finance.view")}
               atDar={Boolean(dar) && ["RECEIVED_DAR", "READY_FOR_RELEASE"].includes(cargo.status)}
               raiseBill={

@@ -453,14 +453,13 @@ const ALL: Permission[] = Array.from(
  * exists as a role rather than as a second ADMIN — the owner can hand over the
  * running of the business without handing over the keys to the system.
  *
- * `user.manage` is first on that list and was the one missing from it. A
- * manager who may open the users screen may raise an account with the owner's
- * role and sign in as it, and every other exclusion below is then a formality.
- * It is the difference between running the business and owning it.
+ * The manager does hire and move staff — the owner's decision, and the air
+ * side's habit: the person running the floor is the person who knows who has
+ * left. What they may not do is make another owner, which `lib/actions/users.ts`
+ * refuses at the action, so the Staff screen is theirs without the keys being.
  */
 const MANAGER: Permission[] = ALL.filter(
   (p) =>
-    p !== "user.manage" &&
     p !== "settings.manage" &&
     /* The rate every new bill is priced at moves only on Finance's word or the
        owner's — the people who answer for the books. */

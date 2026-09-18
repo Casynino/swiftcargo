@@ -159,7 +159,6 @@ describe("the support desk explains; it does not do", () => {
 describe("the manager runs the business; the owner owns it", () => {
   /** The keys to the system, as opposed to the running of it. */
   const OWNER_ONLY: Permission[] = [
-    "user.manage",
     "settings.manage",
     "fx.manage",
     "warehouse.manage",
@@ -174,9 +173,13 @@ describe("the manager runs the business; the owner owns it", () => {
     });
   }
 
-  test("a manager cannot make an account and become the owner through it", () => {
-    /* Every other exclusion is a formality if this one is missing. */
-    assert.equal(can("MANAGER", "user.manage"), false);
+  test("the manager hires and moves staff, by the owner's decision", () => {
+    /* The person running the floor is the person who knows who has left, so
+       the Staff screen is theirs. What stops it becoming a second set of keys
+       is `lib/actions/users.ts`, which refuses to create an ADMIN, to move
+       anybody into or out of ADMIN, or to touch an ADMIN's account, for any
+       actor who is not one — and writes `user.escalationBlocked` when it does. */
+    assert.ok(can("MANAGER", "user.manage"));
   });
 
   test("the manager holds oversight and the approvals the split depends on", () => {

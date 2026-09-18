@@ -1027,7 +1027,10 @@ export async function changeInvoiceRate(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const actor = await authorize("invoice.discount");
+  /* The shillings a customer was told to pay move with this figure while the
+     dollar total sits still, so it is the bill's own desk that moves it —
+     never the desk that only quotes it over the phone. */
+  const actor = await authorize("invoice.edit");
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const raw = String(formData.get("rate") ?? "").replace(/,/g, "").trim();

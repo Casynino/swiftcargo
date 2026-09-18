@@ -73,6 +73,9 @@ type Props = {
   /** Finance: confirms the payment, releases on credit, issues the note. */
   canDecide: boolean;
   canChangeBill: boolean;
+  /** The rate pinned on a bill belongs to the desk that owns the bill, not to
+      every desk that quotes it: moving it moves what is owed in shillings. */
+  canChangeRate: boolean;
   canOpenBill: boolean;
   atDar: boolean;
   /**
@@ -225,7 +228,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {corrections}
-            {props.canChangeBill ? (
+            {props.canChangeRate ? (
               <button type="button" onClick={() => setDialog("fx")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
                 <ArrowLeftRight className="size-3.5" />
                 Change the rate
@@ -330,7 +333,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
               <p className="tnum rounded-md border bg-secondary/30 px-3 py-2 text-xs text-muted-foreground">{settles}</p>
             ) : null}
 
-            {props.canChangeBill ? (
+            {props.canChangeRate ? (
               <button type="button" onClick={() => setDialog("fx")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
                 <ArrowLeftRight className="size-3.5" />
                 Change the rate

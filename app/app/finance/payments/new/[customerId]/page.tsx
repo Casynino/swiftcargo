@@ -178,6 +178,7 @@ export default async function MergePaymentForCustomer({
         <MergePaymentForm
           canClear={can(user.role, "payment.verify")}
           canChangeBill={can(user.role, "invoice.discount")}
+          canChangeRate={can(user.role, "invoice.edit")}
           customerId={customer.id}
           customerName={name}
           bills={bills}

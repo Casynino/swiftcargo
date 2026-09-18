@@ -69,6 +69,7 @@ export function MergePaymentForm({
   combinedBillHref,
   canClear = false,
   canChangeBill = false,
+  canChangeRate = false,
 }: {
   customerId: string;
   customerName: string;
@@ -78,8 +79,10 @@ export function MergePaymentForm({
   combinedBillHref: string | null;
   /** May write off a shortfall — the desk that verifies money. */
   canClear?: boolean;
-  /** May give a discount, change the rate or add storage on a bill. */
+  /** May give a discount or add storage on a bill. */
   canChangeBill?: boolean;
+  /** May move the rate the bill was pinned at — the desk that owns the bill. */
+  canChangeRate?: boolean;
 }) {
   const [state, action] = useActionState<MergeState, FormData>(
     recordCombinedPayment,
@@ -578,10 +581,12 @@ export function MergePaymentForm({
                       <Tag className="size-3.5" />
                       Give a discount
                     </button>
-                    <button type="button" onClick={() => setDialog("fx")} className="inline-flex items-center gap-1.5 text-brand hover:underline">
-                      <ArrowLeftRight className="size-3.5" />
-                      Change the rate
-                    </button>
+                    {canChangeRate ? (
+                      <button type="button" onClick={() => setDialog("fx")} className="inline-flex items-center gap-1.5 text-brand hover:underline">
+                        <ArrowLeftRight className="size-3.5" />
+                        Change the rate
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
                 {dialog === "discount" ? (
