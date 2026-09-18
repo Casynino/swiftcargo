@@ -53,6 +53,9 @@ function form(rows: Record<string, string>[]) {
       "itemWidth",
       "itemHeight",
       "itemWeightKg",
+      "itemNetWeightKg",
+      "itemModelNo",
+      "itemUnitValue",
     ]) {
       data.append(field, row[field] ?? "");
     }
@@ -140,6 +143,9 @@ describe("what a good delivery reads as", () => {
           itemLength: "60",
           itemWidth: "40",
           itemHeight: "50",
+          itemModelNo: "XR-200",
+          itemNetWeightKg: "72.5",
+          itemUnitValue: "3",
         },
       ])
     );
@@ -158,6 +164,9 @@ describe("what a good delivery reads as", () => {
         width: 40,
         height: 50,
         weightKg: 80,
+        netWeightKg: 72.5,
+        modelNo: "XR-200",
+        declaredUnitValue: 3,
       },
     ]);
   });
@@ -175,6 +184,11 @@ describe("what a good delivery reads as", () => {
       form([{ ...goodRow, itemPackageType: "SUBMARINE" }])
     );
     assert.equal(lines[0].packageType, "CARTON");
+  });
+
+  test("a negative unit price is refused like any other figure", () => {
+    const { error } = readIntakeLines(form([{ ...goodRow, itemUnitValue: "-1" }]));
+    assert.match(error ?? "", /unit price cannot be below zero/);
   });
 
   test("zero is a legitimate weight and is not confused with a negative one", () => {

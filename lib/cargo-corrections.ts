@@ -276,11 +276,23 @@ export type PackageLineInput = {
   /** A volume typed straight in. Wins over the three sides. */
   cbm: number | null;
   balerNumber: string | null;
+  /* The packing list's own columns. Undefined leaves the saved value alone —
+     an editor that does not show a field must not blank it. */
+  descriptionZh?: string | null;
+  pieces?: number | null;
+  netWeightKg?: number | null;
+  modelNo?: string | null;
+  declaredUnitValue?: number | null;
   /** Offered, not demanded. Blank is stored as the plain description of the act. */
   reason: string | null;
 };
 
 const LINE_LABELS: Record<string, string> = {
+  descriptionZh: "Chinese name",
+  pieces: "Pieces",
+  netWeightKg: "Net weight",
+  modelNo: "Model no.",
+  declaredUnitValue: "Unit price (USD)",
   packageType: "Packed as",
   cargoType: "Cargo type",
   description: "Description",
@@ -486,6 +498,13 @@ export async function applyPackageLine(
     weightKg: dec(input.weightKg),
     balerNumber: clean(input.balerNumber),
     cbm,
+    ...(input.descriptionZh !== undefined ? { descriptionZh: clean(input.descriptionZh) } : {}),
+    ...(input.pieces !== undefined ? { pieces: input.pieces } : {}),
+    ...(input.netWeightKg !== undefined ? { netWeightKg: dec(input.netWeightKg) } : {}),
+    ...(input.modelNo !== undefined ? { modelNo: clean(input.modelNo) } : {}),
+    ...(input.declaredUnitValue !== undefined
+      ? { declaredUnitValue: dec(input.declaredUnitValue) }
+      : {}),
   };
 
   if (input.packageId) {
@@ -516,6 +535,13 @@ export async function applyPackageLine(
     num("weightKg", before.weightKg, next.weightKg);
     num("cbm", before.cbm, next.cbm);
     text("balerNumber", before.balerNumber, next.balerNumber);
+    if ("descriptionZh" in next) text("descriptionZh", before.descriptionZh, next.descriptionZh ?? null);
+    if ("pieces" in next)
+      text("pieces", before.pieces === null ? null : String(before.pieces), next.pieces == null ? null : String(next.pieces));
+    if ("netWeightKg" in next) num("netWeightKg", before.netWeightKg, next.netWeightKg ?? null);
+    if ("modelNo" in next) text("modelNo", before.modelNo, next.modelNo ?? null);
+    if ("declaredUnitValue" in next)
+      num("declaredUnitValue", before.declaredUnitValue, next.declaredUnitValue ?? null);
 
     if (changes.length === 0) throw new CorrectionRefused("Nothing was changed.");
 

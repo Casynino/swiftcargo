@@ -554,7 +554,20 @@ model CargoPackage {
   /// screen can mark the figure as not-computed without joining to find out.
   cbmOverridden Boolean @default(false)
 
+  /// Gross weight: goods and packing, as the scale reads it.
   weightKg Decimal? @db.Decimal(12, 3)
+
+  /**
+   * WHAT CUSTOMS IS TOLD, AS THE GUANGZHOU PACKING LIST HAS ALWAYS SAID IT.
+   * The net weight (goods without the packing), the maker's model number, and
+   * the declared value of one piece in US dollars — the "UNIT PRICE/USD" column
+   * of the paper list, whose AMOUNT is pieces × this figure. It is the goods'
+   * value for the manifest and the clearing agent, not what we charge: freight
+   * is priced from the rate book and never from this.
+   */
+  netWeightKg       Decimal? @db.Decimal(12, 3)
+  modelNo           String?
+  declaredUnitValue Decimal? @db.Decimal(14, 4)
 
   /**
    * THE CODE PRINTED ON THIS BOX'S LABEL.

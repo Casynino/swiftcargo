@@ -31,6 +31,13 @@ export type PackingLine = {
     cbm: string;
     weightKg: string | null;
     balerNumber: string | null;
+    /* Customs columns. Absent on lists frozen before they existed. */
+    netWeightKg?: string | null;
+    modelNo?: string | null;
+    /** Declared value of one piece, USD. */
+    unitValue?: string | null;
+    /** Pieces × unit value, USD — worked out here, never typed. */
+    amount?: string | null;
   }[];
 };
 
@@ -127,6 +134,9 @@ export async function buildSnapshot(
                   cbm: true,
                   weightKg: true,
                   balerNumber: true,
+                  netWeightKg: true,
+                  modelNo: true,
+                  declaredUnitValue: true,
                 },
               },
             },
@@ -171,6 +181,17 @@ export async function buildSnapshot(
         cbm: k.cbm.toString(),
         weightKg: k.weightKg?.toString() ?? null,
         balerNumber: k.balerNumber,
+        netWeightKg: k.netWeightKg?.toString() ?? null,
+        modelNo: k.modelNo,
+        unitValue: k.declaredUnitValue?.toString() ?? null,
+        /* The paper list's AMOUNT: pieces × unit price, or packages × unit
+           price where no pieces were counted. Decimal, rounded to the cent. */
+        amount: k.declaredUnitValue
+          ? k.declaredUnitValue
+              .mul(k.pieces ?? k.quantity)
+              .toDecimalPlaces(2)
+              .toString()
+          : null,
       })),
     };
   });

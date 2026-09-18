@@ -50,6 +50,9 @@ type Line = {
   width: string;
   height: string;
   weightKg: string;
+  netWeightKg: string;
+  modelNo: string;
+  unitValue: string;
 };
 
 type KnownCustomer = {
@@ -77,6 +80,9 @@ const blank = (key: number, receiptNo = ""): Line => ({
   width: "",
   height: "",
   weightKg: "",
+  netWeightKg: "",
+  modelNo: "",
+  unitValue: "",
 });
 
 /**
@@ -720,7 +726,7 @@ export function IntakeForm({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor={`w-${line.key}`}>
-                      Weight kg{" "}
+                      Gross weight kg 毛重{" "}
                       <span className="font-normal text-muted-foreground">
                         optional
                       </span>
@@ -736,6 +742,54 @@ export function IntakeForm({
                       onChange={(e) =>
                         update(line.key, "weightKg", e.target.value)
                       }
+                    />
+                  </div>
+                </div>
+
+                {/* The customs columns of the packing list. All optional. */}
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`mo-${line.key}`}>
+                      Model no. 型号{" "}
+                      <span className="font-normal text-muted-foreground">optional</span>
+                    </Label>
+                    <Input
+                      id={`mo-${line.key}`}
+                      name="itemModelNo"
+                      value={line.modelNo}
+                      onChange={(e) => update(line.key, "modelNo", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`nw-${line.key}`}>
+                      Net weight kg 净重{" "}
+                      <span className="font-normal text-muted-foreground">optional</span>
+                    </Label>
+                    <Input
+                      id={`nw-${line.key}`}
+                      name="itemNetWeightKg"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      inputMode="decimal"
+                      value={line.netWeightKg}
+                      onChange={(e) => update(line.key, "netWeightKg", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`uv-${line.key}`}>
+                      Unit price USD 单价{" "}
+                      <span className="font-normal text-muted-foreground">optional</span>
+                    </Label>
+                    <Input
+                      id={`uv-${line.key}`}
+                      name="itemUnitValue"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      inputMode="decimal"
+                      value={line.unitValue}
+                      onChange={(e) => update(line.key, "unitValue", e.target.value)}
                     />
                   </div>
                 </div>

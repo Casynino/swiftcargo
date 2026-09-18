@@ -657,6 +657,11 @@ export default async function CargoDetailPage({
                   cbmOverridden: p.cbmOverridden,
                   balerNumber: p.balerNumber,
                   paperReceiptNo: p.paperReceiptNo,
+                  descriptionZh: p.descriptionZh,
+                  pieces: p.pieces,
+                  netWeightKg: p.netWeightKg?.toString() ?? null,
+                  modelNo: p.modelNo,
+                  declaredUnitValue: p.declaredUnitValue?.toString() ?? null,
                 }))}
               />
             </CardContent>

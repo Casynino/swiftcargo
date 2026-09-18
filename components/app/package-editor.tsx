@@ -42,6 +42,12 @@ type Line = {
   balerNumber: string | null;
   /** The carbon page this kind of goods was written on. */
   paperReceiptNo: string | null;
+  /* The packing list's customs columns. */
+  descriptionZh?: string | null;
+  pieces?: number | null;
+  netWeightKg?: string | null;
+  modelNo?: string | null;
+  declaredUnitValue?: string | null;
 };
 
 const TYPES = [
@@ -310,7 +316,7 @@ export function PackageEditor({
               </div>
             ))}
             <div className="space-y-2">
-              <Label htmlFor="weightKg">Weight (kg)</Label>
+              <Label htmlFor="weightKg">Gross weight (kg)</Label>
               <Input
                 id="weightKg"
                 name="weightKg"
@@ -353,6 +359,33 @@ export function PackageEditor({
                 placeholder="Written on the outside in China"
                 defaultValue={editing?.balerNumber ?? ""}
               />
+            </div>
+          </div>
+
+          {/* What the packing list prints beside the measurements, for the
+              shipping line and the clearing agent. */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="descriptionZh">Chinese name 中文品名</Label>
+              <Input id="descriptionZh" name="descriptionZh" defaultValue={editing?.descriptionZh ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="modelNo">Model no.</Label>
+              <Input id="modelNo" name="modelNo" defaultValue={editing?.modelNo ?? ""} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="pieces">Pieces / sets</Label>
+              <Input id="pieces" name="pieces" type="number" min={0} inputMode="numeric" defaultValue={editing?.pieces ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="netWeightKg">Net weight (kg)</Label>
+              <Input id="netWeightKg" name="netWeightKg" type="number" step="0.001" min={0} inputMode="decimal" defaultValue={editing?.netWeightKg ?? ""} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="declaredUnitValue">Unit price (USD)</Label>
+              <Input id="declaredUnitValue" name="declaredUnitValue" type="number" step="0.01" min={0} inputMode="decimal" defaultValue={editing?.declaredUnitValue ?? ""} />
             </div>
           </div>
 

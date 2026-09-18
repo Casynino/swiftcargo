@@ -78,6 +78,10 @@ export type IntakeLine = {
   width: number | null;
   height: number | null;
   weightKg: number | null;
+  /** The customs columns of the packing list — see CargoPackage. */
+  netWeightKg: number | null;
+  modelNo: string | null;
+  declaredUnitValue: number | null;
 };
 
 /**
@@ -115,6 +119,9 @@ export function readIntakeLines(formData: FormData): {
   const heights = get("itemHeight");
   const weights = get("itemWeightKg");
   const receiptNos = get("itemReceiptNo");
+  const netWeights = get("itemNetWeightKg");
+  const models = get("itemModelNo");
+  const unitValues = get("itemUnitValue");
 
   let refusal: string | undefined;
 
@@ -169,6 +176,9 @@ export function readIntakeLines(formData: FormData): {
       width: num(widths[i], row, "width"),
       height: num(heights[i], row, "height"),
       weightKg: num(weights[i], row, "weight"),
+      netWeightKg: num(netWeights[i], row, "net weight"),
+      modelNo: models[i]?.trim() || null,
+      declaredUnitValue: num(unitValues[i], row, "unit price"),
     });
   }
 
