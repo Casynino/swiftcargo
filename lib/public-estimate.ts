@@ -2,9 +2,12 @@ import "server-only";
 
 import { Prisma, type ServiceType } from "@prisma/client";
 
+import { ESTIMATE_CAVEAT, FX_CAVEAT } from "@/lib/constants";
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { applyVat, companySettings, currentExchangeRate, quote } from "@/lib/pricing";
 import { prisma, type TxClient } from "@/lib/prisma";
+
+export { ESTIMATE_CAVEAT, FX_CAVEAT };
 
 /**
  * WHAT THE PUBLIC CALCULATOR IS ALLOWED TO SAY.
@@ -23,11 +26,6 @@ import { prisma, type TxClient } from "@/lib/prisma";
  * because an agreed rate is somebody's private terms and the website is a
  * stranger asking.
  */
-
-export const ESTIMATE_CAVEAT =
-  "This is an estimated shipping charge. Final pricing may change after cargo verification, measurement, documentation review and Finance confirmation.";
-
-export const FX_CAVEAT = "Prices may vary as exchange rates fluctuate.";
 
 export type EstimateLine = { label: string; amount: string };
 

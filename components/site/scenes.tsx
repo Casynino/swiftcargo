@@ -89,24 +89,26 @@ function Container({
   fill: string;
   shade?: number;
 }) {
-  /* Ribs every eight units. Fewer and it is a coloured rectangle; more and at
-     thumbnail size it turns into a moiré. */
-  const ribs = Math.max(2, Math.floor(w / 9));
-  const step = w / ribs;
   return (
     <g>
       <rect x={x} y={y} width={w} height={h} fill={fill} />
-      {Array.from({ length: ribs - 1 }, (_, i) => (
-        <rect
-          key={i}
-          x={x + step * (i + 1) - 0.8}
-          y={y + h * 0.1}
-          width={1.6}
-          height={h * 0.8}
-          fill="#000"
-          fillOpacity="0.14"
-        />
-      ))}
+      {/*
+        The corrugation, as one rectangle filled with a pattern rather than one
+        rectangle per rib.
+
+        A terminal in this set holds about seventy boxes. Drawn rib by rib that
+        was thirteen hundred elements and 125 KB of markup in the page — for a
+        backdrop, on a connection where that is somebody's airtime. The pattern
+        is in userSpaceOnUse, so the pitch stays the same across every box
+        whatever its width, which is also what real corrugation does.
+      */}
+      <rect
+        x={x}
+        y={y + h * 0.1}
+        width={w}
+        height={h * 0.8}
+        fill="url(#sc-ribs)"
+      />
       {/* Top rail catching the light, bottom rail in its own shadow. */}
       <rect x={x} y={y} width={w} height={h * 0.13} fill="#fff" fillOpacity="0.1" />
       <rect
@@ -210,6 +212,9 @@ function Defs({ id, sky }: { id: string; sky: [string, string, string] }) {
         <stop offset="0%" stopColor="#ffe3bb" stopOpacity="0.5" />
         <stop offset="100%" stopColor="#ffe3bb" stopOpacity="0" />
       </linearGradient>
+      <pattern id="sc-ribs" width="9" height="9" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="1.6" height="9" fill="#000" fillOpacity="0.14" />
+      </pattern>
       <filter id="sc-soft" x="-60%" y="-60%" width="220%" height="220%">
         <feGaussianBlur stdDeviation="14" />
       </filter>

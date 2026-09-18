@@ -283,3 +283,15 @@ export const REQUEST_STATUS_LABEL: Record<RequestStatus, string> = {
   CANCELLED: "Cancelled",
   REJECTED: "Rejected",
 };
+
+/**
+ * The two sentences that must sit under any estimated price on a public screen.
+ *
+ * Here rather than in lib/public-estimate.ts because the calculator prints them
+ * in the browser and that module is server-only — and because the wording is
+ * the owner's, not a programmer's, so it lives where wording lives.
+ */
+export const ESTIMATE_CAVEAT =
+  "This is an estimated shipping charge. Final pricing may change after cargo verification, measurement, documentation review and Finance confirmation.";
+
+export const FX_CAVEAT = "Prices may vary as exchange rates fluctuate.";

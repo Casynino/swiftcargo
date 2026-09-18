@@ -5,7 +5,7 @@ import { Calculator } from "lucide-react";
 import { CbmCalculator } from "@/components/site/cbm-calculator";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
-import { prisma } from "@/lib/prisma";
+import { publicRateBook } from "@/lib/public-estimate";
 
 export const metadata: Metadata = {
   title: "CBM calculator",
@@ -18,37 +18,9 @@ export const revalidate = 60;
 
 export default async function CalculatorPage() {
   const locale = DEFAULT_LOCALE;
-  /* Loose cargo priced by volume, one row per named cargo type — the rows the
-     invoice will be priced from. Weight-priced and container rates do not
-     answer "how much for these boxes". */
-  const rows = await prisma.shippingRate.findMany({
-    where: {
-      active: true,
-      published: true,
-      service: "LCL",
-      basis: "PER_CBM",
-      cargoType: { not: null },
-    },
-    orderBy: [{ cargoType: "asc" }, { effectiveFrom: "desc" }],
-    select: { id: true, cargoType: true, rate: true, currency: true, minimumCbm: true },
-  });
-
-  /* One rate per type: the newest, if the rate book holds an old row beside it. */
-  const seen = new Set<string>();
-  const rates = rows
-    .filter((row) => {
-      const key = row.cargoType!.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .map((row) => ({
-      id: row.id,
-      cargoType: row.cargoType!,
-      rate: Number(row.rate),
-      currency: row.currency,
-      minimumCbm: row.minimumCbm ? Number(row.minimumCbm) : null,
-    }));
+  /* One row per named cargo type, straight from the rate book — the same rows
+     the invoice will be priced from. See lib/public-estimate.ts. */
+  const rates = await publicRateBook("LCL");
 
   return (
     <div className="container max-w-5xl py-12 sm:py-16">

@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useActionState, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 
+import { estimateFreight, type EstimateState } from "@/lib/actions/estimate";
+import { ESTIMATE_CAVEAT, FX_CAVEAT } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,12 +22,19 @@ type Line = {
   quantity: string;
 };
 
+/**
+ * A row of the rate book, as the page read it.
+ *
+ * The rate and the minimum are strings, not numbers: they are Decimals in the
+ * database and they are only ever displayed here. Nothing in this file
+ * multiplies them — see lib/public-estimate.ts, which is where the money is
+ * worked out, on the server, in Decimal.
+ */
 export type CalculatorRate = {
-  id: string;
   cargoType: string;
-  rate: number;
+  rate: string;
   currency: string;
-  minimumCbm: number | null;
+  minimumCbm: string | null;
 };
 
 const blank = (id: number): Line => ({
@@ -36,28 +46,40 @@ const blank = (id: number): Line => ({
 });
 
 /**
- * The public CBM calculator.
+ * THE PUBLIC CBM CALCULATOR.
  *
  * The volume comes from lib/cbm.ts — the same function the Guangzhou counter
  * uses, rounded the same way — so a customer who works out 1.152 m³ at home is
  * not told something else at the counter for any reason but the tape measure.
+ * That much happens as they type, because they are standing over a pile of
+ * boxes.
+ *
+ * THE MONEY DOES NOT HAPPEN HERE. Pressing the button asks the server, which
+ * prices the volume off the live rate book in Decimal, applies the minimum the
+ * invoice would apply, adds VAT at the configured percentage and converts at
+ * the exchange-rate row Finance has published. A price multiplied out in a
+ * browser is a price that can disagree with the bill, and the figure a customer
+ * remembers is the one the website gave them.
  *
  * The price is per cargo type, because that is how the rate book charges: two
  * hundred cartons of shoes and a machine are not the same money per cubic
- * metre. No type chosen, no price — a figure at some house average would be
- * the number a customer remembers and the invoice would not match it.
- *
- * It calls no server action: the whole point is that it answers instantly while
- * somebody is standing over a pile of boxes with a tape measure.
+ * metre. A type the book cannot price says the team will quote, and never
+ * invents a figure.
  */
 export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
   const locale = DEFAULT_LOCALE;
   const [unit, setUnit] = useState<"CM" | "M">("CM");
   const [lines, setLines] = useState<Line[]>([blank(1)]);
   const [nextId, setNextId] = useState(2);
-  const [rateId, setRateId] = useState("");
+  const [cargoType, setCargoType] = useState("");
 
-  const chosen = rates.find((r) => r.id === rateId) ?? null;
+  const [state, price, pending] = useActionState<EstimateState, FormData>(
+    estimateFreight,
+    {}
+  );
+  const [, startTransition] = useTransition();
+
+  const chosen = rates.find((r) => r.cargoType === cargoType) ?? null;
 
   const totals = useMemo(() => {
     const perLine = lines.map((line) => {
@@ -73,18 +95,17 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
       return value && value > 0 ? value : 0;
     });
 
-    const cbm = perLine.reduce((sum, v) => sum + v, 0);
-    const minimum = chosen?.minimumCbm ?? null;
-    const atMinimum = !!minimum && cbm > 0 && cbm < minimum;
-    const billable = atMinimum ? minimum! : cbm;
-    return {
-      perLine,
-      cbm,
-      billable,
-      atMinimum,
-      estimate: chosen && cbm > 0 ? billable * chosen.rate : null,
-    };
-  }, [lines, unit, chosen]);
+    return { perLine, cbm: perLine.reduce((sum, v) => sum + v, 0) };
+  }, [lines, unit]);
+
+  /* A figure worked out for one volume must not sit under a different one, so
+     the answer is stamped with what was asked and hidden the moment the boxes
+     or the goods change. Somebody who adds a carton and does not press again
+     would otherwise be reading a price for the pile they had before. */
+  const [pricedFor, setPricedFor] = useState<string | null>(null);
+  const key = `${totals.cbm.toFixed(3)}:${cargoType}`;
+  const current = pricedFor === key;
+  const answer = current ? state.estimate : undefined;
 
   const update = (id: number, field: keyof Line, value: string) =>
     setLines((rows) =>
@@ -203,48 +224,103 @@ export function CbmCalculator({ rates }: { rates: CalculatorRate[] }) {
               <Label htmlFor="cargoType">{t(locale, "What are you shipping?")}</Label>
               <NativeSelect
                 id="cargoType"
-                value={rateId}
-                onChange={(e) => setRateId(e.target.value)}
+                value={cargoType}
+                onChange={(e) => setCargoType(e.target.value)}
               >
                 <option value="">{t(locale, "Choose a cargo type")}</option>
                 {rates.map((r) => (
-                  <option key={r.id} value={r.id}>
+                  <option key={r.cargoType} value={r.cargoType}>
                     {r.cargoType}
                   </option>
                 ))}
               </NativeSelect>
+              {chosen ? (
+                <p className="tnum text-xs text-muted-foreground">
+                  {chosen.currency} {chosen.rate}/CBM
+                  {chosen.minimumCbm
+                    ? ` · ${t(locale, "minimum")} ${chosen.minimumCbm} CBM`
+                    : ""}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
-          {totals.atMinimum && chosen?.minimumCbm ? (
-            <p className="mt-3 rounded-md bg-warning/10 px-3 py-2 text-xs text-warning">
-              {t(locale, "Below the minimum of")} {chosen.minimumCbm.toFixed(2)} CBM.{" "}
-              {t(locale, "You would be charged for")} {totals.billable.toFixed(3)} CBM.
+          <Button
+            className="mt-5 w-full"
+            disabled={pending || totals.cbm <= 0}
+            onClick={() => {
+              const data = new FormData();
+              data.set("cbm", totals.cbm.toFixed(4));
+              if (cargoType) data.set("cargoType", cargoType);
+              setPricedFor(key);
+              startTransition(() => price(data));
+            }}
+          >
+            {pending ? <Loader2 className="animate-spin" /> : null}
+            {pending ? t(locale, "Working it out…") : t(locale, "Estimate the cost")}
+          </Button>
+
+          {state.error && current ? (
+            <p className="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {state.error}
             </p>
           ) : null}
 
-          {chosen && totals.estimate !== null ? (
+          {answer?.kind === "quote-required" ? (
             <div className="mt-5 border-t pt-5">
+              <p className="text-sm font-medium">
+                {t(locale, "We will quote this one by hand")}
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {t(
+                  locale,
+                  "There is no standing rate for this cargo, so our team will look at it and come back to you with a price."
+                )}
+              </p>
+            </div>
+          ) : null}
+
+          {answer?.kind === "priced" ? (
+            <div className="mt-5 space-y-3 border-t pt-5">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t(locale, "Estimated freight")}
+                {t(locale, "Estimated shipping charge")}
               </p>
-              <p className="tnum mt-1.5 text-2xl font-semibold text-brand">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: chosen.currency,
-                }).format(totals.estimate)}
-              </p>
-              <p className="tnum mt-1 text-xs text-muted-foreground">
-                {chosen.cargoType} · {chosen.currency} {chosen.rate}/CBM
-              </p>
+              <p className="tnum text-2xl font-semibold text-brand">{answer.total}</p>
+              {answer.totalTzs ? (
+                <p className="tnum text-sm text-muted-foreground">
+                  ≈ {answer.totalTzs}
+                </p>
+              ) : null}
+              <dl className="tnum space-y-1 text-xs text-muted-foreground">
+                {answer.lines.map((line) => (
+                  <div key={line.label} className="flex justify-between gap-3">
+                    <dt>{t(locale, line.label)}</dt>
+                    <dd>{line.amount}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="tnum text-xs text-muted-foreground">{answer.explanation}</p>
+              {answer.minimumApplied && answer.billableCbm ? (
+                <p className="rounded-md bg-warning/10 px-3 py-2 text-xs text-warning">
+                  {t(locale, "Below the minimum — you would be charged for")}{" "}
+                  {answer.billableCbm} CBM.
+                </p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">{t(locale, FX_CAVEAT)}</p>
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link
+                  href={`/book?service=SHARED_CARGO&cbm=${totals.cbm.toFixed(3)}${
+                    cargoType ? `&commodity=${encodeURIComponent(cargoType)}` : ""
+                  }`}
+                >
+                  {t(locale, "Request a booking")}
+                </Link>
+              </Button>
             </div>
           ) : null}
 
           <p className="mt-5 border-t pt-5 text-xs leading-relaxed text-muted-foreground">
-            {t(
-              locale,
-              "This is an estimate. Final charges are based on the measurements taken at our warehouse, the cargo type, and any duty, VAT and clearing costs."
-            )}
+            {t(locale, ESTIMATE_CAVEAT)}
           </p>
         </Card>
       </div>
