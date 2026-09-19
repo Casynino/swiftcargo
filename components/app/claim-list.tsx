@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 export type ClaimRow = {
   id: string;
   customer: string;
+  customerPhone?: string | null;
   container: string | null;
   reference: string;
   cargo: string;
@@ -232,6 +233,7 @@ function ClaimRowItem({
 }) {
   const [open, setOpen] = useState<null | "edit" | "back" | "cancel">(null);
   const [billDialog, setBillDialog] = useState<null | "discount" | "price" | "fx">(null);
+  const [currency, setCurrency] = useState(row.currency);
   const router = useRouter();
   const [verifyState, verify] = useActionState<ClaimState, FormData>(
     verifyClaims,
@@ -379,78 +381,32 @@ function ClaimRowItem({
           onClose={close}
           className="max-w-lg"
         >
-          <p className="tnum text-sm text-muted-foreground">
-            {row.customer} · {row.reference}
-            {row.invoice ? ` · ${row.invoice}` : ""}
-          </p>
+          {/* Whose, for what, and who sent it — read, not edited. */}
+          <div className="rounded-xl border bg-secondary/30 px-4 py-3 text-sm">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-semibold">{row.customer}</p>
+              <p className="tnum shrink-0 text-xs text-muted-foreground">{row.reference}</p>
+            </div>
+            {row.customerPhone ? <p className="tnum text-xs text-muted-foreground">{row.customerPhone}</p> : null}
+            <p className="tnum mt-1 text-xs text-muted-foreground">
+              {[row.cargo, row.container, row.invoice, `owed ${row.owedLabel}`].filter(Boolean).join(" · ")}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Submitted by <span className="text-brand">{row.submittedBy}</span> · {row.submittedAt}
+            </p>
+          </div>
           <form action={edit} className="space-y-4">
             <input type="hidden" name="paymentId" value={row.id} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={`Amount (${row.currency})`}>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="How much came in">
                 <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={row.amount} required />
               </Field>
-              <Field label="Date paid">
-                <Input name="paidAt" type="date" defaultValue={row.paidAt} max={new Date().toISOString().slice(0, 10)} />
-              </Field>
-            </div>
-            <Field label="Paid into">
-              <NativeSelect name="accountId" defaultValue={row.accountId ?? ""}>
-                <option value="">— not said —</option>
-                {accounts
-                  .filter((a) => a.currency === row.currency || a.id === row.accountId)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.label}
-                    </option>
-                  ))}
-              </NativeSelect>
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="How it was paid">
-                <NativeSelect name="method" defaultValue={row.method}>
-                  <option value="BANK_TRANSFER">Bank transfer</option>
-                  <option value="MOBILE_MONEY">Mobile money</option>
-                  <option value="CASH">Cash</option>
-                  <option value="CHEQUE">Cheque</option>
-                  <option value="OTHER">Other</option>
+              <Field label="Paid in">
+                <NativeSelect name="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  <option value="TZS">TZS</option>
+                  <option value="USD">USD</option>
                 </NativeSelect>
               </Field>
-              <Field label="Their reference">
-                <Input name="transactionRef" defaultValue={row.transactionRef ?? ""} placeholder="M-Pesa code, slip number…" />
-              </Field>
-            </div>
-            <Field label="Paid by">
-              <Input name="payerName" defaultValue={row.payerName ?? ""} placeholder={row.customer} />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Payer's bank">
-                <Input name="payerBank" defaultValue={row.payerBank ?? ""} />
-              </Field>
-              <Field label="Payer's account or number">
-                <Input name="payerAccount" defaultValue={row.payerAccount ?? ""} />
-              </Field>
-            </div>
-            <Field label="Note">
-              <Textarea name="notes" rows={2} defaultValue={row.notes ?? ""} />
-            </Field>
-            <div className="space-y-1.5">
-              <Label>Proof</Label>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-signal/50 bg-signal/[0.06] px-3 py-2.5 text-sm">
-                <Upload className="size-4 shrink-0 text-signal" />
-                <span className="font-medium">{row.proofUrl ? "Replace proof" : "Add proof"}</span>
-                <input
-                  name="proof"
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="min-w-0 flex-1 text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-foreground"
-                />
-              </label>
-              {row.proofUrl ? (
-                <a href={row.proofUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-brand hover:underline">
-                  <Paperclip className="size-3" />
-                  View the proof on file
-                </a>
-              ) : null}
             </div>
             {/* The bill behind the claim, put right without leaving: Target's
                 three doors, in the same order. */}
@@ -476,6 +432,48 @@ function ClaimRowItem({
                 ) : null}
               </div>
             ) : null}
+            <Field label="Where the customer's money landed">
+              <NativeSelect
+                key={currency}
+                name="accountId"
+                defaultValue={currency === row.currency ? (row.accountId ?? "") : ""}
+              >
+                <option value="">— not said —</option>
+                {accounts
+                  .filter((acc) => acc.currency === currency || acc.id === row.accountId)
+                  .map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.label}
+                    </option>
+                  ))}
+              </NativeSelect>
+            </Field>
+            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-signal/50 bg-signal/[0.06] px-3 py-2.5 text-sm">
+              <Upload className="size-4 shrink-0 text-signal" />
+              <span className="font-medium">Proof</span>
+              <input
+                name="proof"
+                type="file"
+                accept="image/*,application/pdf"
+                className="min-w-0 flex-1 text-xs text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-foreground"
+              />
+            </label>
+            {row.proofUrl ? (
+              <a href={row.proofUrl} target="_blank" rel="noreferrer" className="-mt-2 inline-flex items-center gap-1 text-xs text-brand hover:underline">
+                <Paperclip className="size-3" />
+                View the proof on file
+              </a>
+            ) : null}
+            <Field label="What was wrong with it? (optional)">
+              <Textarea name="wrong" rows={3} placeholder="Reference typed wrong" className="resize-none" />
+            </Field>
+            <button
+              type="button"
+              onClick={() => setOpen("cancel")}
+              className="text-xs text-muted-foreground hover:text-destructive hover:underline"
+            >
+              Delete this submission instead
+            </button>
             <FormMessage error={editState.error} />
             <div className="flex flex-wrap gap-2">
               <SubmitButton size="sm">

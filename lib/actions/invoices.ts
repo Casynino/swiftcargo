@@ -826,7 +826,9 @@ export async function repriceInvoice(
   if (cbmIn !== undefined && (!Number.isFinite(cbmIn) || cbmIn <= 0 || cbmIn > 5000)) {
     return { error: "Check the volume." };
   }
-  if (reason.length < 3) return { error: "Say why the price is changing." };
+  /* No reason is asked for: who changed it, when, and from what to what are
+     all written down regardless. */
+  const why = reason.length >= 3 ? reason : "Price edited";
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
@@ -922,21 +924,21 @@ export async function repriceInvoice(
           field: "appliedRate",
           oldValue: invoice.appliedRate?.toString() ?? "mixed",
           newValue: next.toString(),
-          reason,
+          reason: why,
         },
         tx
       );
     }
     if (newCategory !== undefined && invoice.cargo) {
       await recordFieldChange(
-        { actor, entity: "Invoice", entityId: invoice.id, field: "cargoType", oldValue: oldCategory, newValue: newCategory, reason },
+        { actor, entity: "Invoice", entityId: invoice.id, field: "cargoType", oldValue: oldCategory, newValue: newCategory, reason: why },
         tx
       );
       /* The cargo follows the bill, so the next draft, the packing list and
          the price list all read the category that was charged. */
       if (invoice.cargo.packages.length === 0) {
         await recordFieldChange(
-          { actor, entity: "Cargo", entityId: invoice.cargo.id, field: "commodity", oldValue: invoice.cargo.commodity, newValue: newCategory, reason },
+          { actor, entity: "Cargo", entityId: invoice.cargo.id, field: "commodity", oldValue: invoice.cargo.commodity, newValue: newCategory, reason: why },
           tx
         );
         await tx.cargo.update({ where: { id: invoice.cargo.id }, data: { commodity: newCategory } });
@@ -944,7 +946,7 @@ export async function repriceInvoice(
         for (const line of invoice.cargo.packages) {
           if (line.cargoType === newCategory) continue;
           await recordFieldChange(
-            { actor, entity: "CargoPackage", entityId: line.id, field: "cargoType", oldValue: line.cargoType, newValue: newCategory, reason },
+            { actor, entity: "CargoPackage", entityId: line.id, field: "cargoType", oldValue: line.cargoType, newValue: newCategory, reason: why },
             tx
           );
           await tx.cargoPackage.update({ where: { id: line.id }, data: { cargoType: newCategory } });
@@ -953,7 +955,7 @@ export async function repriceInvoice(
     }
     if (newCbm !== undefined) {
       await recordFieldChange(
-        { actor, entity: "Invoice", entityId: invoice.id, field: "billableCbm", oldValue: oldTotalCbm.toString(), newValue: newCbm.toString(), reason },
+        { actor, entity: "Invoice", entityId: invoice.id, field: "billableCbm", oldValue: oldTotalCbm.toString(), newValue: newCbm.toString(), reason: why },
         tx
       );
     }
@@ -991,12 +993,12 @@ export async function repriceInvoice(
     action: "invoice.reprice",
     entity: "Invoice",
     entityId: invoice.id,
-    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${reason}`,
+    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${why}`,
   });
   await tellFinance(
     actor,
     invoice,
-    `Price changed to ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${reason}`
+    `Price changed to ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${why}`
   );
 
   await refreshInvoiceStatus(invoice.id);

@@ -48,7 +48,7 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
       orderBy: { createdAt: "desc" },
       take: 200,
       include: {
-        customer: { select: { fullName: true } },
+        customer: { select: { fullName: true, phone: true } },
         account: { select: { bankName: true, currency: true } },
         recordedBy: { select: { name: true } },
         proofs: { select: { url: true }, take: 1 },
@@ -92,6 +92,7 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
     return {
       id: p.id,
       customer: p.customer.fullName,
+      customerPhone: p.customer.phone,
       container: p.invoice.cargo.containerLines[0]?.container.reference ?? null,
       reference: p.reference,
       cargo: p.invoice.cargo.reference,

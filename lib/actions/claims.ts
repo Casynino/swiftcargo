@@ -71,7 +71,10 @@ export async function editClaim(
 
   const id = String(formData.get("paymentId") ?? "");
   const amount = Number(formData.get("amount") ?? 0);
-  const transactionRef = String(formData.get("transactionRef") ?? "").trim();
+  /* Left alone when the form does not carry it — the edit dialog no longer
+     asks for a slip number, and not asking must not mean erasing one. */
+  const transactionRefSent = formData.has("transactionRef");
+  const transactionRefIn = String(formData.get("transactionRef") ?? "").trim();
   if (!(amount > 0)) return { error: "An amount is required." };
 
   const payment = await prisma.payment.findUnique({
@@ -83,20 +86,30 @@ export async function editClaim(
     return { error: `It is already ${payment.status.toLowerCase()} and cannot be edited.` };
   }
 
-  const parsedAmount = parseAmount(formData.get("amount"), payment.currency);
+  const transactionRef = transactionRefSent ? transactionRefIn : (payment.transactionRef ?? "");
+
+  /* What it was paid in may be corrected too: shillings typed as dollars is
+     the commonest slip at the counter. */
+  const currencyIn = String(formData.get("currency") ?? "").trim().toUpperCase();
+  const currency = currencyIn === "TZS" || currencyIn === "USD" ? currencyIn : payment.currency;
+
+  const parsedAmount = parseAmount(formData.get("amount"), currency);
   if ("error" in parsedAmount) return { error: parsedAmount.error };
   const next = parsedAmount.amount;
   /* Valued at the rate pinned on THIS payment — the same rule it was recorded
      under, so an edit cannot quietly re-rate it. */
-  const { baseCurrencyAmount, creditedAmount } = valuePayment(
-    next,
-    payment.currency,
-    payment.invoice.currency,
-    payment.fxRate ?? payment.invoice.fxRate
-  );
+  let valued;
+  try {
+    valued = valuePayment(next, currency, payment.invoice.currency, payment.fxRate ?? payment.invoice.fxRate);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "That amount cannot be valued." };
+  }
+  const { baseCurrencyAmount, creditedAmount } = valued;
 
   const resubmit = payment.status === "REJECTED";
-  const reason = resubmit ? "Fixed and sent again" : "Corrected before verification";
+  /* "What was wrong with it?" — the desk's own words go on every change. */
+  const wrong = String(formData.get("wrong") ?? "").trim().slice(0, 300);
+  const reason = wrong || (resubmit ? "Fixed and sent again" : "Corrected before verification");
 
   /* Everything else the record says, as the form sent it back. A field the
      form did not send stays as it was. */
@@ -110,17 +123,22 @@ export async function editClaim(
   const method = methodRaw && (METHODS as readonly string[]).includes(methodRaw)
     ? (methodRaw as (typeof METHODS)[number])
     : undefined;
+  let derivedMethod: (typeof METHODS)[number] | undefined;
   const accountRaw = text("accountId");
   let accountId: string | null | undefined = accountRaw === undefined ? undefined : accountRaw;
   if (accountId) {
     const account = await prisma.bankAccount.findFirst({
       where: { id: accountId, active: true },
-      select: { currency: true, bankName: true },
+      select: { currency: true, bankName: true, kind: true },
     });
     if (!account) return { error: "That account is not one we collect into." };
-    if (account.currency !== payment.currency) {
-      return { error: `${account.bankName} holds ${account.currency}; this payment is in ${payment.currency}.` };
+    if (account.currency !== currency) {
+      return { error: `${account.bankName} holds ${account.currency}; this payment is in ${currency}.` };
     }
+    /* How it was paid follows where it landed — nobody is asked to say
+       "bank transfer" about money that landed in a bank. */
+    derivedMethod =
+      account.kind === "CASH" ? "CASH" : account.kind === "MOBILE_MONEY" ? "MOBILE_MONEY" : "BANK_TRANSFER";
   }
   const paidAtRaw = text("paidAt");
   let paidAt: Date | null | undefined = undefined;
@@ -139,8 +157,10 @@ export async function editClaim(
     return { error: error instanceof UploadError ? error.message : "That upload failed." };
   }
 
+  const methodNext = method ?? derivedMethod;
   const others: [string, string | null, string | null | undefined][] = [
-    ["method", payment.method, method],
+    ["currency", payment.currency, currency],
+    ["method", payment.method, methodNext],
     ["accountId", payment.accountId, accountId],
     ["paidAt", payment.paidAt?.toISOString().slice(0, 10) ?? null, paidAt === undefined ? undefined : paidAt?.toISOString().slice(0, 10) ?? null],
     ["payerName", payment.payerName, text("payerName")],
@@ -184,7 +204,8 @@ export async function editClaim(
         baseCurrencyAmount,
         creditedAmount,
         transactionRef: transactionRef || null,
-        ...(method !== undefined ? { method } : {}),
+        currency,
+        ...(methodNext !== undefined ? { method: methodNext } : {}),
         ...(accountId !== undefined ? { accountId } : {}),
         ...(paidAt !== undefined ? { paidAt: paidAt ?? payment.paidAt } : {}),
         ...(text("payerName") !== undefined ? { payerName: text("payerName") } : {}),

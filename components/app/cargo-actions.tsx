@@ -423,18 +423,8 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
               />
             </label>
 
-            {dated ? (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Date paid</Label>
-                <Input name="paidAt" type="date" max={new Date().toISOString().slice(0, 10)} className="h-10" />
-              </div>
-            ) : (
-              <button type="button" onClick={() => setDated(true)} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
-                <CalendarDays className="size-3.5" />
-                Click here if you wish to change the date
-              </button>
-            )}
-
+            {/* No date to type: the payment is dated the moment it is
+                recorded, and every later change keeps its own time. */}
             <FormMessage error={state.error} ok={state.ok} />
             <div className="flex flex-wrap items-center gap-2">
               <SubmitButton size="sm" pendingLabel="Recording…" disabled={cargo <= 0 || (over && !acceptOver)}>

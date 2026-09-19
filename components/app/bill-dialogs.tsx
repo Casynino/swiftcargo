@@ -222,7 +222,6 @@ export function RateDialog({
             ) : null}
           </p>
         ) : null}
-        <Input name="reason" required minLength={3} placeholder="Why — agreed with the customer, large cargo…" className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
           <SubmitButton size="sm" pendingLabel="Saving…">Save price</SubmitButton>
