@@ -666,12 +666,6 @@ export function IntakeForm({
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
           <div className="flex flex-wrap gap-8">
             {[
-              [
-                /* Every row on the form counts from the moment it is added,
-                   so the footer never reads 0 over a row the clerk can see. */
-                "Lines",
-                String(lines.length),
-              ],
               ["Packages", String(totals.packages)],
               ["Pieces", totals.pieces > 0 ? String(totals.pieces) : "—"],
               ["Total CBM", `${totals.cbm.toFixed(3)} CBM`],
