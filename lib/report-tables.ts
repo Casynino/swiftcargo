@@ -74,17 +74,22 @@ export function buildReport(
 
   switch (key) {
     case "profit-loss": {
-      const revenue = sum(bills, (b) => b.total);
+      /* VAT is collected for TRA and never the company's revenue. */
+      const billedGross = sum(bills, (b) => b.total);
+      const vatOwed = sum(bills, (b) => b.vat);
+      const revenue = f.revenue;
       const operating = pick(sum(costs.filter((c) => c.scope === "CONTAINER"), (c) => c.amount));
       const office = pick(sum(costs.filter((c) => c.scope === "OFFICE"), (c) => c.amount));
       const special = pick(sum(costs.filter((c) => c.scope === "SPECIAL" || c.scope === "EXECUTIVE"), (c) => c.amount));
       return {
         title: "Profit & loss",
         description:
-          "Revenue billed against costs incurred in the period. Container costs are the operating costs; office and special costs are shown beneath, not mixed in.",
+          "Revenue billed against costs incurred in the period, VAT taken out: it is collected for TRA and was never the company's money. Container costs are the operating costs; office and special costs are shown beneath, not mixed in.",
         columns: [{ label: "Line" }, M("Amount")],
         rows: [
-          ["Revenue (confirmed bills)", pick(revenue)],
+          ["Billed to customers (confirmed bills)", pick(billedGross)],
+          ["Less VAT owed to TRA", -pick(vatOwed)],
+          ["Revenue", pick(revenue)],
           ["Operating costs (container)", -operating],
           ["Operating profit", pick(revenue) - operating],
           ["Office costs", -office],
@@ -205,7 +210,9 @@ export function buildReport(
         description: "The period's figures on one page.",
         columns: [{ label: "Line" }, { label: "Value" }],
         rows: [
-          ["Revenue billed", pick(f.revenue)],
+          ["Billed to customers", pick(f.billed)],
+          ["VAT owed to TRA", pick(f.vat)],
+          ["Revenue (excl. VAT)", pick(f.revenue)],
           ["Costs incurred", pick(f.expenses)],
           ["Profit", pick(f.profit)],
           ["Collected", pick(f.collected)],

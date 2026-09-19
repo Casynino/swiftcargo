@@ -171,6 +171,14 @@ export async function loadBooks() {
       containerId: i.cargo.containerLines[0]?.containerId ?? null,
       /* The bill's own shilling figures, not dollars times a rate again. */
       total: balance.totalTzs ? { usd: Number(i.total), tzs: balance.totalTzs.toNumber() } : pair(Number(i.total)),
+      /* VAT is the government's money passing through: collected with the
+         bill, owed to TRA, never the company's revenue. Taken off in the bill's
+         own proportion so the shilling side follows the pinned total. */
+      vat: (() => {
+        const t = balance.totalTzs ? { usd: Number(i.total), tzs: balance.totalTzs.toNumber() } : pair(Number(i.total));
+        const share = Number(i.total) > 0 ? Number(i.vatAmount) / Number(i.total) : 0;
+        return { usd: t.usd * share, tzs: t.tzs * share } as Money;
+      })(),
       owing: balance.outstandingTzs ? { usd: owing, tzs: balance.outstandingTzs.toNumber() } : pair(owing),
       discount: pair(Number(i.discount)),
       storage: pair(
@@ -245,6 +253,8 @@ export async function loadBooks() {
     const onIt = billsByBox.get(c.id) ?? [];
     const spent = sum(costsByBox.get(c.id) ?? [], (e) => e.amount);
     const billed = sum(onIt, (b) => b.total);
+    const vat = sum(onIt, (b) => b.vat);
+    const earned = sub(billed, vat);
     const owed = sum(onIt, (b) => b.owing);
     return {
       id: c.id,
@@ -261,7 +271,9 @@ export async function loadBooks() {
       collected: sub(billed, owed),
       owed,
       spent,
-      profit: sub(billed, spent),
+      vat,
+      revenue: earned,
+      profit: sub(earned, spent),
     };
   });
 
@@ -286,19 +298,26 @@ export function figures(books: Books, r: Range) {
   const money = books.money.filter((m) => within(m.at, r));
   const costs = books.costs.filter((c) => within(c.at, r));
 
-  const revenue = sum(bills, (b) => b.total);
+  /* What customers were billed, VAT and all, is what they are chased for.
+     What the company earned is that less the VAT it collects for TRA. */
+  const billed = sum(bills, (b) => b.total);
+  const vat = sum(bills, (b) => b.vat);
+  const revenue = sub(billed, vat);
   const expenses = sum(costs, (c) => c.amount);
   const collected = sum(money, (m) => m.amount);
   const paidOut = sum(costs.filter((c) => c.paid), (c) => c.amount);
   const profit = sub(revenue, expenses);
   const outstanding = sum(bills, (b) => b.owing);
-  const collectedOnPeriod = sub(revenue, outstanding);
+  const collectedOnPeriod = sub(billed, outstanding);
+  const net = (list: typeof bills) => sub(sum(list, (b) => b.total), sum(list, (b) => b.vat));
 
   return {
     range: r,
     bills,
     money,
     costs,
+    billed,
+    vat,
     revenue,
     expenses,
     collected,
@@ -306,14 +325,14 @@ export function figures(books: Books, r: Range) {
     profit,
     netCash: sub(collected, paidOut),
     margin: revenue.usd > 0 ? (profit.usd / revenue.usd) * 100 : null,
-    creditRevenue: sum(bills.filter((b) => b.credit), (b) => b.total),
-    cashRevenue: sum(bills.filter((b) => !b.credit), (b) => b.total),
+    creditRevenue: net(bills.filter((b) => b.credit)),
+    cashRevenue: net(bills.filter((b) => !b.credit)),
     outstanding,
     writtenOff: sum(bills, (b) => b.discount),
     storage: sum(bills, (b) => b.storage),
-    collectionRate: revenue.usd > 0 ? (collectedOnPeriod.usd / revenue.usd) * 100 : null,
+    collectionRate: billed.usd > 0 ? (collectedOnPeriod.usd / billed.usd) * 100 : null,
     expenseRatio: revenue.usd > 0 ? (expenses.usd / revenue.usd) * 100 : null,
-    outstandingRatio: revenue.usd > 0 ? (outstanding.usd / revenue.usd) * 100 : null,
+    outstandingRatio: billed.usd > 0 ? (outstanding.usd / billed.usd) * 100 : null,
     cbmReceived: books.china.filter((c) => within(c.receivedAt, r)).reduce((s, c) => s + Number(c.cbm), 0),
     packages: books.china.filter((c) => within(c.receivedAt, r)).reduce((s, c) => s + c.packagesCount, 0),
     cbmLanded: books.dar.filter((d) => within(d.receivedAt, r)).reduce((s, d) => s + Number(d.cbm ?? 0), 0),

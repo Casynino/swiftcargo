@@ -164,7 +164,7 @@ export default async function ProfitAndLossPage({
       {/* SIX HEADLINE FIGURES */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 xl:grid-cols-6">
         {[
-          { l: "Revenue", m: now.revenue, prev: before.revenue, tone: "" },
+          { l: "Revenue (excl. VAT)", m: now.revenue, prev: before.revenue, tone: "" },
           { l: "Total expenses", m: now.expenses, prev: before.expenses, tone: "text-destructive" },
           { l: "Net profit", m: now.profit, prev: before.profit, tone: now.profit.usd >= 0 ? "text-success" : "text-destructive" },
           null,
@@ -199,6 +199,7 @@ export default async function ProfitAndLossPage({
             ["Credit still owed", creditOwed, "text-brand"],
             ["Overdue credit", creditOverdue, "text-destructive"],
             ["Written off", now.writtenOff, "text-warning"],
+            ["VAT billed — owed to TRA", now.vat, "text-muted-foreground"],
           ].map(([l, m, tone]) => (
             <div key={l as string} className="bg-card px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{l as string}</p>
@@ -207,7 +208,7 @@ export default async function ProfitAndLossPage({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          Credit revenue is inside Revenue above, because the sale happened. It is not in Collected, and none of it is in the bank. Written off is discounts given on the period&rsquo;s bills.
+          {T("Revenue is what the company earned: the bills less the VAT on them, which is collected for TRA and never the company's money. Credit revenue is inside Revenue above, because the sale happened. It is not in Collected, and none of it is in the bank. Written off is discounts given on the period's bills.")}
         </p>
       </div>
 
@@ -225,7 +226,8 @@ export default async function ProfitAndLossPage({
           <span className="tnum text-sm text-muted-foreground">{beside(now.profit)}</span>
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          {lead(now.revenue)} billed on {now.bills.length} confirmed invoice{now.bills.length === 1 ? "" : "s"}, less {lead(now.expenses)} of costs incurred. Counted from the day the work happened, not the day the money moved.
+          {lead(now.billed)} billed on {now.bills.length} confirmed invoice{now.bills.length === 1 ? "" : "s"}
+          {now.vat.usd > 0 ? `, ${lead(now.vat)} of it VAT for TRA` : ""}, less {lead(now.expenses)} of costs incurred. Counted from the day the work happened, not the day the money moved.
         </p>
       </div>
 
@@ -235,7 +237,7 @@ export default async function ProfitAndLossPage({
           {
             title: "Did the work make money",
             note: "Accrual — bills raised and costs incurred in this period, whether or not anyone has paid yet.",
-            lines: [["Revenue billed", now.revenue], ["Costs incurred", now.expenses]] as [string, Money][],
+            lines: [["Billed to customers", now.billed], ["Less VAT owed to TRA", now.vat], ["Revenue", now.revenue], ["Costs incurred", now.expenses]] as [string, Money][],
             total: ["Profit", now.profit] as [string, Money],
           },
           {

@@ -35,7 +35,7 @@ export default async function ContainerFinancesPage() {
   const rows = books.boxes
     .map((c) => ({
       ...c,
-      margin: c.billed.usd > 0 ? c.profit.usd / c.billed.usd : null,
+      margin: c.revenue.usd > 0 ? c.profit.usd / c.revenue.usd : null,
     }))
     .sort((a, b) => {
       if (a.margin === null && b.margin === null)

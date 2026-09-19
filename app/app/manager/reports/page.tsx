@@ -109,7 +109,7 @@ export default async function ManagerReport({
     tone?: "good" | "bad";
   }[] = [
     {
-      label: "Billed",
+      label: "Revenue (excl. VAT)",
       value: money(now.revenue),
       sub: `${now.bills.length} ${t(locale, "bills raised")}`,
       delta: delta(now.revenue.tzs, before.revenue.tzs),

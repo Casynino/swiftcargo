@@ -380,10 +380,12 @@ export async function managerOverview(locale: Locale = "en", now = new Date()) {
 
   const f = figures(books, month);
   const prior = figures(books, lastMonth);
-  const billedMonthTzs = f.revenue.tzs;
+  /* Billed is what customers are chased for, VAT included; the margin is
+     taken on revenue, which leaves out the VAT collected for TRA. */
+  const billedMonthTzs = f.billed.tzs;
   const costMonthTzs = f.expenses.tzs;
   const profitMonthTzs = f.profit.tzs;
-  const marginPct = billedMonthTzs > 0 ? (profitMonthTzs / billedMonthTzs) * 100 : null;
+  const marginPct = f.revenue.tzs > 0 ? (profitMonthTzs / f.revenue.tzs) * 100 : null;
   const collectionRatePct =
     billedMonthTzs > 0 ? ((billedMonthTzs - f.outstanding.tzs) / billedMonthTzs) * 100 : null;
 
@@ -446,7 +448,7 @@ export async function managerOverview(locale: Locale = "en", now = new Date()) {
       outstandingTzs: c.owed.tzs,
       costsTzs: c.spent.tzs,
       profitTzs: c.profit.tzs,
-      margin: c.billed.tzs > 0 ? (c.profit.tzs / c.billed.tzs) * 100 : null,
+      margin: c.revenue.tzs > 0 ? (c.profit.tzs / c.revenue.tzs) * 100 : null,
       unconfirmed: draftsOn.get(c.id) ?? 0,
       hasCosts: c.spent.tzs > 0,
     }));

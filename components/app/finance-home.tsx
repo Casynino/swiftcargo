@@ -212,12 +212,12 @@ export async function FinanceHome() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="tnum px-4 py-2.5 text-right">{tzs(c.billed.tzs)}</td>
+                    <td className="tnum px-4 py-2.5 text-right">{tzs(c.revenue.tzs)}</td>
                     <td className="tnum px-4 py-2.5 text-right text-success">{tzs(c.collected.tzs)}</td>
                     <td className="tnum px-4 py-2.5 text-right text-destructive">{tzs(c.owed.tzs)}</td>
                     <td className="tnum px-4 py-2.5 text-right text-destructive">{tzs(c.spent.tzs)}</td>
                     <td className={cn("tnum px-4 py-2.5 text-right font-semibold", c.profit.usd < 0 && "text-destructive")}>{tzs(c.profit.tzs)}</td>
-                    <td className="tnum px-4 py-2.5 text-right">{c.billed.usd > 0 ? `${Math.round((c.profit.usd / c.billed.usd) * 100)}%` : "—"}</td>
+                    <td className="tnum px-4 py-2.5 text-right">{c.revenue.usd > 0 ? `${Math.round((c.profit.usd / c.revenue.usd) * 100)}%` : "—"}</td>
                   </tr>
                 ))}
               </tbody>
