@@ -32,6 +32,7 @@ import { EXCEPTION_TYPE_LABELS, cargoIsHere, daysOpen } from "@/lib/exception-gr
 import { formatDate, formatDateTime } from "@/lib/format";
 import { t, type Locale } from "@/lib/i18n";
 
+import { Tx } from "@/components/app/tx";
 /**
  * The issues queue, as a table.
  *
@@ -486,8 +487,8 @@ function CaseRecord({
               <span className="tnum text-xs text-muted-foreground">{record.reference}</span>
             }
           >
-            <p className="text-sm font-medium">{record.title}</p>
-            <p className="mt-1 whitespace-pre-wrap text-sm">{record.description}</p>
+            <p className="text-sm font-medium"><Tx>{record.title}</Tx></p>
+            <p className="mt-1 whitespace-pre-wrap text-sm"><Tx>{record.description}</Tx></p>
             {record.evidence.length > 0 ? (
               <ul className="mt-2 flex flex-wrap gap-2">
                 {record.evidence.map((url, index) => (
@@ -527,7 +528,7 @@ function CaseRecord({
                 {cargo ? (
                   <>
                     <span className="tnum font-mono">{cargo.reference}</span>
-                    <span className="block text-muted-foreground">{cargo.description}</span>
+                    <span className="block text-muted-foreground"><Tx>{cargo.description}</Tx></span>
                   </>
                 ) : (
                   t(locale, "Not on a consignment")
@@ -572,7 +573,7 @@ function CaseRecord({
               <ol className="space-y-3">
                 {record.events.map((event) => (
                   <li key={event.id} className="border-l-2 border-border pl-3">
-                    <p className="text-sm">{event.note}</p>
+                    <p className="text-sm"><Tx>{event.note}</Tx></p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDateTime(event.createdAt)}
                       {event.actorName ? ` · ${event.actorName}` : ""}
@@ -629,7 +630,7 @@ function Panel({
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-muted-foreground">{label}</dt>
+      <dt className="text-muted-foreground"><Tx>{label}</Tx></dt>
       <dd className="truncate">{children}</dd>
     </div>
   );

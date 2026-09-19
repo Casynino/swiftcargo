@@ -14,6 +14,7 @@ import {
 } from "@/lib/actions/containers";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 /**
  * PUT A CONSIGNMENT ON THE CONTAINER IT ACTUALLY CAME OFF.
  *
@@ -150,7 +151,7 @@ export function AddToContainer({
         <option value="">{tx("Add a consignment that came off this box…")}</option>
         {candidates.map((c) => (
           <option key={c.id} value={c.id}>
-            {c.label}
+            <Tx>{c.label}</Tx>
           </option>
         ))}
       </NativeSelect>

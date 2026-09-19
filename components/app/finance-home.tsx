@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 const tzs = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(n);
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -131,7 +132,7 @@ export async function FinanceHome() {
     ...(notesOut.length ? [{ id: "notes", group: "Pickup", count: notesOut.length, tone: "neutral" as const, title: `${notesOut.length} cleared, not collected`, detail: "Paid for and released. The cargo is still on our floor waiting for the customer to turn up.", href: "/app/finance/pickup-notes", meta: "already paid for" }] : []),
     ...(toPrice ? [{ id: "price", group: "Containers", count: toPrice, tone: "warn" as const, title: `${toPrice} consignment${toPrice === 1 ? "" : "s"} waiting for prices`, detail: "Counted at Dar with no bill. Nobody can be asked for this money until Finance confirms the price.", href: "/app/containers/arrived?view=pricing", meta: "confirm prices" }] : []),
     ...(noCosts.length ? [{ id: "nocosts", group: "Containers", count: noCosts.length, tone: "warn" as const, title: `${noCosts.length} sailing${noCosts.length === 1 ? "" : "s"} with no costs recorded`, detail: `${noCosts.map((c) => c.reference).join(", ")} — freight and clearing not entered, so the margin reads higher than it is.`, href: "/app/finance/containers", meta: "record costs" }] : []),
-    ...cases.map((c) => ({ id: c.id, group: "Cargo", count: 1, tone: (c.priority === "URGENT" || c.priority === "HIGH" ? "bad" : "warn") as "bad" | "warn", title: `${c.title} — ${c.reference}`, detail: c.description, href: `/app/exceptions/${c.id}`, meta: `Open for ${days(c.createdAt)} day(s)` })),
+    ...cases.map((c) => ({ id: c.id, group: "Cargo", count: 1, tone: (c.priority === "URGENT" || c.priority === "HIGH" ? "bad" : "warn") as "bad" | "warn", title: `$<Tx>{c.title}</Tx> — ${c.reference}`, detail: c.description, href: `/app/exceptions/${c.id}`, meta: `Open for ${days(c.createdAt)} day(s)` })),
   ];
 
   /* --------------------------------------------------- what each one made */
@@ -238,7 +239,7 @@ export async function FinanceHome() {
           ].map((c) => (
             <Link key={c.title} href={c.href} className={cn(card, c.wash, "transition-colors hover:border-foreground/20")}>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">{c.title}</p>
+                <p className="text-sm text-muted-foreground"><Tx>{c.title}</Tx></p>
                 <span className={cn("grid size-7 place-items-center rounded-md bg-secondary", c.tone)}><c.icon className="size-4" /></span>
               </div>
               <p className={cn("tnum mt-3 text-2xl font-bold", c.tone)}>{tzs(c.lead)}</p>
@@ -246,7 +247,7 @@ export async function FinanceHome() {
                 on the invoice <span className="text-foreground">{usd(c.usd)}</span>
               </p>
               <p className="mt-auto pt-4 text-sm font-medium">{c.foot}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{c.note}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground"><Tx>{c.note}</Tx></p>
             </Link>
           ))}
         </div>
@@ -300,7 +301,7 @@ export async function FinanceHome() {
                     <div className="w-1/2 rounded-t bg-success/80" style={{ height: `${(m.in.tzs / peak) * 100}%` }} title={`In ${tzs(m.in.tzs)}`} />
                     <div className="w-1/2 rounded-t bg-destructive/80" style={{ height: `${(m.out.tzs / peak) * 100}%` }} title={`Out ${tzs(m.out.tzs)}`} />
                   </div>
-                  <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}>{m.label}</span>
+                  <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}><Tx>{m.label}</Tx></span>
                 </div>
               ))}
             </div>
@@ -325,7 +326,7 @@ export async function FinanceHome() {
             <ul className="mt-3 space-y-2 text-sm">
               {bands.map((b) => (
                 <li key={b.label} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-2 sm:gap-3", b.rows.length === 0 && "opacity-50")}>
-                  <span className="flex min-w-0 items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", b.tone)} /><span className="truncate" title={b.label}>{b.label}</span></span>
+                  <span className="flex min-w-0 items-center gap-2"><span className={cn("size-2 shrink-0 rounded-full", b.tone)} /><span className="truncate" title={b.label}><Tx>{b.label}</Tx></span></span>
                   <span className="tnum text-xs text-muted-foreground">{b.rows.length} bills</span>
                   <span className={cn("tnum text-xs", b.rows.length && b.text)}>{tzs(b.owed)}</span>
                   <span className="tnum w-9 text-right text-xs text-muted-foreground">{owed.tzs && b.owed ? `${Math.round((b.owed / owed.tzs) * 100)}%` : "—"}</span>

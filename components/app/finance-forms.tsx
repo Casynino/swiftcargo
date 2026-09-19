@@ -34,6 +34,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 // --- Rates -----------------------------------------------------------------
 
 export function RateForm({
@@ -166,7 +167,7 @@ export function CustomerRateForm({
               </option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.label}
+                  <Tx>{c.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

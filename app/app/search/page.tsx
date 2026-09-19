@@ -14,6 +14,7 @@ import { globalSearch, type SearchHit } from "@/lib/search";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Search cargo" };
 
 const TONES = {
@@ -163,7 +164,7 @@ export default async function SearchPage({
         <div className="rounded-xl border border-brand/40 bg-brand/5 p-4">
           <p className="flex items-center gap-2 text-sm font-medium">
             <QrCode className="h-4 w-4 text-brand" />
-            {t(locale, "Label read")} — {scanned.title}
+            {t(locale, "Label read")} — <Tx>{scanned.title}</Tx>
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {t(locale, "Its cargo is first in the results below.")}
@@ -216,7 +217,7 @@ export default async function SearchPage({
                       href={hit.href}
                       className="font-mono text-sm font-semibold tabular-nums after:absolute after:inset-0 group-hover:text-brand"
                     >
-                      {hit.title}
+                      <Tx>{hit.title}</Tx>
                     </Link>
                     {hit.fromLabel ? (
                       <Badge tone="progress" className="ml-2 align-middle">
@@ -279,7 +280,7 @@ async function cargoForToken(
   return {
     kind: "Cargo",
     title: cargo.reference,
-    subtitle: `${cargo.sender.fullName} · ${cargo.description} · ${cargo.status.replace(/_/g, " ").toLowerCase()}`,
+    subtitle: `${cargo.sender.fullName} · $<Tx>{cargo.description}</Tx> · ${cargo.status.replace(/_/g, " ").toLowerCase()}`,
     href: `/app/cargo/${cargo.id}`,
     fromLabel: true,
   };

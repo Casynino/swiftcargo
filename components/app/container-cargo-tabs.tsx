@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type CargoRow = {
   id: string;
   reference: string;
@@ -226,7 +227,7 @@ export function ContainerCargoTabs({
               )}
             >
               <Icon className="size-4" />
-              {t.label}
+              <Tx>{t.label}</Tx>
               <span className="tnum rounded bg-background/60 px-1.5 py-0.5 text-xs">
                 {t.count}
               </span>
@@ -335,9 +336,9 @@ export function ContainerCargoTabs({
                   className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium">{doc.title}</p>
+                    <p className="text-sm font-medium"><Tx>{doc.title}</Tx></p>
                     <p className="tnum text-xs text-muted-foreground">
-                      {doc.note}
+                      <Tx>{doc.note}</Tx>
                     </p>
                   </div>
                   {doc.href ? (
@@ -362,7 +363,7 @@ export function ContainerCargoTabs({
               <li key={event.id} className="flex items-start gap-3 px-5 py-3">
                 <span className="mt-1.5 size-2 shrink-0 rounded-full bg-brand" />
                 <div>
-                  <p className="text-sm font-medium">{event.title}</p>
+                  <p className="text-sm font-medium"><Tx>{event.title}</Tx></p>
                   <p className="tnum text-xs text-muted-foreground">
                     {event.at} · {event.by}
                   </p>

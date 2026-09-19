@@ -11,6 +11,7 @@ import { requireStaff } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Notifications" };
 
 export default async function NotificationsPage() {
@@ -47,7 +48,7 @@ export default async function NotificationsPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <p className={cn("text-sm", !n.readAt && "font-medium")}>
-                      {n.title}
+                      <Tx>{n.title}</Tx>
                     </p>
                     {n.body ? (
                       <p className="mt-0.5 text-sm text-muted-foreground">

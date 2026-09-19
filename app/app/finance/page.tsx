@@ -29,6 +29,7 @@ import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
 import { darStartOfMonth } from "@/lib/dar-time";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Finance" };
 
 /**
@@ -421,7 +422,7 @@ export default async function FinanceHubPage() {
               >
                 {cell.v}
               </dd>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">{cell.sub}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground"><Tx>{cell.sub}</Tx></p>
             </div>
           ))}
         </dl>
@@ -521,10 +522,10 @@ export default async function FinanceHubPage() {
               className="bg-card px-4 py-3 transition-colors hover:bg-secondary/50"
             >
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                {cell.label}
+                <Tx>{cell.label}</Tx>
               </p>
               <p className={cn("tnum mt-0.5 text-xl font-bold", cell.tone)}>{cell.value}</p>
-              <p className="text-[11px] text-muted-foreground">{cell.hint}</p>
+              <p className="text-[11px] text-muted-foreground"><Tx>{cell.hint}</Tx></p>
             </Link>
           ))}
         </div>
@@ -555,8 +556,8 @@ export default async function FinanceHubPage() {
                     )}
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium">{row.title}</span>
-                    <span className="block text-xs text-muted-foreground">{row.detail}</span>
+                    <span className="block text-sm font-medium"><Tx>{row.title}</Tx></span>
+                    <span className="block text-xs text-muted-foreground"><Tx>{row.detail}</Tx></span>
                   </span>
                   {row.tzs !== null ? (
                     <span className="text-right">
@@ -628,7 +629,7 @@ export default async function FinanceHubPage() {
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium group-hover:text-brand">
-                  {door.title}
+                  <Tx>{door.title}</Tx>
                 </span>
                 <span className="block text-xs text-muted-foreground">{door.body}</span>
               </span>

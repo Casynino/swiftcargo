@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "General ledger" };
 
 const PAGE_SIZE = 50;
@@ -312,7 +313,7 @@ export default async function LedgerPage({
             <dd className={cn("tnum mt-1 whitespace-nowrap text-2xl font-bold leading-tight", cell.tone)}>
               {cell.v}
             </dd>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">{cell.hint}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground"><Tx>{cell.hint}</Tx></p>
           </div>
         ))}
       </dl>
@@ -443,7 +444,7 @@ export default async function LedgerPage({
                         ) : null}
                         {r.titleHref && mayOpenCustomer ? (
                           <Link href={r.titleHref} className="hover:text-brand hover:underline">
-                            {r.title}
+                            <Tx>{r.title}</Tx>
                           </Link>
                         ) : (
                           r.title

@@ -29,6 +29,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Customer" };
 
 /**
@@ -279,7 +280,7 @@ export default async function CustomerPage({
                       </Link>
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-sm">
-                      {cargo.description}
+                      <Tx>{cargo.description}</Tx>
                     </TableCell>
                     <TableCell className="tnum text-sm text-muted-foreground">
                       {container?.containerNumber ?? container?.reference ?? "—"}

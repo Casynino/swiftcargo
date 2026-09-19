@@ -16,6 +16,7 @@ import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Ledger entry" };
 
 type Fact = { label: string; value: React.ReactNode };
@@ -451,7 +452,7 @@ export default async function LedgerEntryPage({ params }: { params: Promise<{ id
 
           {sections.map((s) => (
             <section key={s.title} className="rounded-2xl border bg-card p-6">
-              <h2 className="font-mono text-sm font-semibold">{s.title}</h2>
+              <h2 className="font-mono text-sm font-semibold"><Tx>{s.title}</Tx></h2>
               <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                 {s.facts.map((f) => (
                   <div key={f.label}>

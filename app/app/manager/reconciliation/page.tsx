@@ -51,6 +51,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Reconciliation" };
 
 /**
@@ -596,7 +597,7 @@ export default async function ManagerReconciliation({
               <div className="px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">{selected.title}</p>
+                    <p className="text-sm font-semibold"><Tx>{selected.title}</Tx></p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-2 font-mono text-[11px] text-muted-foreground">
                       {selected.reference}
                       <StateChip state={selectedState} locale={locale} />
@@ -664,7 +665,7 @@ export default async function ManagerReconciliation({
                     ))}
                 </dl>
                 {selected.description && selected.description !== selected.title ? (
-                  <p className="mt-2 text-xs leading-snug text-muted-foreground">{selected.description}</p>
+                  <p className="mt-2 text-xs leading-snug text-muted-foreground"><Tx>{selected.description}</Tx></p>
                 ) : null}
                 {selected.cancelledReason ? (
                   <p className="mt-2 text-xs leading-snug text-muted-foreground">
@@ -865,7 +866,7 @@ export default async function ManagerReconciliation({
                               · {t(locale, "actual")} {formatCurrency(row.actualAmount, row.currency)}
                             </span>
                           ) : null}
-                          {row.note ? <span className="block text-muted-foreground">{row.note}</span> : null}
+                          {row.note ? <span className="block text-muted-foreground"><Tx>{row.note}</Tx></span> : null}
                         </span>
                       </li>
                     );
@@ -988,7 +989,7 @@ export default async function ManagerReconciliation({
                           : "—"}
                       </p>
                       {check?.note ? (
-                        <p className="truncate text-[11px] text-muted-foreground">{check.note}</p>
+                        <p className="truncate text-[11px] text-muted-foreground"><Tx>{check.note}</Tx></p>
                       ) : null}
                     </div>
                     {canReview ? <AccountCheckButton locale={locale} accounts={[checkable(position)]} /> : null}

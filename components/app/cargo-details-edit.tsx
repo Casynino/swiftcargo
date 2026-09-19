@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { distinctMark } from "@/lib/customer-name";
 import { t, type Locale } from "@/lib/i18n";
 
+import { Tx } from "@/components/app/tx";
 type Party = {
   id: string;
   code: string;
@@ -230,7 +231,7 @@ function Dialog({
                     <div className="min-w-0">
                       <p className="tnum text-sm font-medium">{line.reference}</p>
                       {line.description ? (
-                        <p className="truncate text-xs text-muted-foreground">{line.description}</p>
+                        <p className="truncate text-xs text-muted-foreground"><Tx>{line.description}</Tx></p>
                       ) : null}
                     </div>
                     <NativeSelect

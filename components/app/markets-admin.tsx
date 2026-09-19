@@ -20,6 +20,7 @@ import {
 import { t, type Locale } from "@/lib/i18n";
 import { parseMarketBody } from "@/lib/markets";
 
+import { Tx } from "@/components/app/tx";
 export type MarketRow = {
   id: string;
   slug: string;
@@ -273,7 +274,7 @@ export function MarketsAdmin({
                   <p className="mt-2 text-sm font-medium text-brand">{market.summary}</p>
                 ) : null}
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {parsed.description}
+                  <Tx>{parsed.description}</Tx>
                 </p>
                 <p className="tnum mt-2 text-xs text-muted-foreground">
                   {parsed.products.length} {t(locale, "products")} · {parsed.tips.length}{" "}

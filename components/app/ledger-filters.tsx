@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { t, type Locale } from "@/lib/i18n";
 
+import { Tx } from "@/components/app/tx";
 type Option = { value: string; label: string };
 
 const PERIODS: Option[] = [
@@ -80,7 +81,7 @@ export function LedgerFilters({
       <option value="">{t(locale, all)}</option>
       {options.map((o) => (
         <option key={o.value} value={o.value}>
-          {o.label}
+          <Tx>{o.label}</Tx>
         </option>
       ))}
     </NativeSelect>

@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Support desk" };
 
 const PRIORITY_TONE: Record<string, string> = {
@@ -475,7 +476,7 @@ export default async function SupportHome() {
                       <div className="min-w-0">
                         <p className="font-medium">{row.customerName}</p>
                         <p className="truncate font-mono text-xs text-muted-foreground">
-                          {row.reference} · {row.description}
+                          {row.reference} · <Tx>{row.description}</Tx>
                         </p>
                       </div>
                       <div className="flex items-center gap-4">

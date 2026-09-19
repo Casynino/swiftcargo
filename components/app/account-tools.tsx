@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 type Choice = {
   id: string;
   label: string;
@@ -82,7 +83,7 @@ export function MoveMoneyCard({
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -103,7 +104,7 @@ export function MoveMoneyCard({
             >
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -228,7 +229,7 @@ export function CountTheCashCard({ tins }: { tins: Choice[] }) {
           >
             {tins.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.label}
+                <Tx>{t.label}</Tx>
               </option>
             ))}
           </NativeSelect>

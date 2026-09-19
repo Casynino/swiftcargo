@@ -14,6 +14,7 @@ import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Deleted records" };
 
 type Who = { name: string; at: Date; summary: string; metadata: unknown };
@@ -413,7 +414,7 @@ export default async function DeletedRecordsPage() {
                               <span className="font-mono">{line.reference}</span>
                               {line.description ? (
                                 <span className="ml-2 font-normal text-muted-foreground">
-                                  {line.description}
+                                  <Tx>{line.description}</Tx>
                                 </span>
                               ) : null}
                             </p>

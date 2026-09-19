@@ -20,6 +20,7 @@ import { reviewRecord, type ReviewActionState } from "@/lib/actions/reconciliati
 import { t, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type Verdict = "RECONCILED" | "SENT_BACK" | "QUERIED" | "MISMATCH" | "UNDER_REVIEW";
 
 /**

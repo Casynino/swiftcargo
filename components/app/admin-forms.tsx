@@ -19,6 +19,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 const SAILING_STATUSES = [
   ["OPEN_FOR_BOOKING", "Open for booking"],
   ["CUTOFF_APPROACHING", "Cut-off approaching"],
@@ -235,7 +236,7 @@ export function ScheduleForm({
             <option value="">{tx("An extra sailing — no generated week")}</option>
             {weeks.map((week) => (
               <option key={week.weekOf} value={week.weekOf} disabled={week.taken}>
-                {week.label}
+                <Tx>{week.label}</Tx>
                 {week.taken ? " — already published" : ""}
               </option>
             ))}

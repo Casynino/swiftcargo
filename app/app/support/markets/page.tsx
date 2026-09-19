@@ -18,6 +18,7 @@ import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "China markets" };
 
 /**
@@ -151,7 +152,7 @@ export default async function MarketsPage({
                     <div className="flex-1 space-y-4 p-5">
                       {body.description ? (
                         <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                          {body.description}
+                          <Tx>{body.description}</Tx>
                         </p>
                       ) : null}
 

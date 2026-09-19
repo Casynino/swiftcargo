@@ -5,6 +5,7 @@ import { Ring } from "@/components/charts/ring";
 import { areaPath, ringGeometry, scalePoints, smoothPath } from "@/lib/chart";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * The manager's home, as furniture.
  *
@@ -64,7 +65,7 @@ export function BandHeading({
           href={action.href}
           className="focus-ring inline-flex shrink-0 items-center gap-1 rounded text-xs font-semibold text-brand hover:underline"
         >
-          {action.label}
+          <Tx>{action.label}</Tx>
           <ArrowRight className="size-3.5" />
         </Link>
       ) : null}
@@ -504,7 +505,7 @@ export function CorridorBar({
       <div
         className="mt-4 flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={segments.map((s, i) => `${s.label} ${Math.round(shares[i])}%`).join(", ")}
+        aria-label={segments.map((s, i) => `$<Tx>{s.label}</Tx> ${Math.round(shares[i])}%`).join(", ")}
       >
         {segments.map((segment, index) => (
           <span
@@ -523,7 +524,7 @@ export function CorridorBar({
               className="size-2.5 shrink-0 rounded-full"
               style={{ background: `hsl(var(--chart-${segment.tone}))` }}
             />
-            <span className="min-w-0 flex-1 truncate text-[13px]">{segment.label}</span>
+            <span className="min-w-0 flex-1 truncate text-[13px]"><Tx>{segment.label}</Tx></span>
             <span aria-hidden className="hidden h-1.5 w-20 overflow-hidden rounded-full bg-muted sm:block">
               <span
                 className="block h-full rounded-full"
@@ -686,8 +687,8 @@ export function PipelineStrip({ stages }: { stages: Stage[] }) {
             <p className={cn("tnum mt-2 text-[22px] font-bold leading-none", FIGURE_TONES[stage.tone])}>
               {stage.value}
             </p>
-            <p className="mt-1 text-[13px] font-medium leading-tight">{stage.label}</p>
-            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{stage.hint}</p>
+            <p className="mt-1 text-[13px] font-medium leading-tight"><Tx>{stage.label}</Tx></p>
+            <p className="mt-0.5 text-xs leading-snug text-muted-foreground"><Tx>{stage.hint}</Tx></p>
           </Link>
         );
       })}
@@ -730,8 +731,8 @@ export function QueueList({ lines }: { lines: QueueLine[] }) {
                 <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{line.label}</span>
-                <span className="mt-0.5 block truncate text-xs text-muted-foreground">{line.note}</span>
+                <span className="block truncate text-[13px] font-medium"><Tx>{line.label}</Tx></span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground"><Tx>{line.note}</Tx></span>
               </span>
               <span className={cn("tnum shrink-0 text-[22px] font-bold leading-none", FIGURE_TONES[line.tone])}>
                 {line.value}
@@ -759,7 +760,7 @@ export function StatRows({
       {rows.map((row) => {
         const body = (
           <span className="flex items-baseline justify-between gap-3 py-1.5">
-            <span className="min-w-0 truncate text-xs text-muted-foreground">{row.label}</span>
+            <span className="min-w-0 truncate text-xs text-muted-foreground"><Tx>{row.label}</Tx></span>
             <span className={cn("tnum shrink-0 text-sm font-semibold", FIGURE_TONES[row.tone ?? "plain"])}>
               {row.value}
             </span>

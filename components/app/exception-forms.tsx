@@ -19,6 +19,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 const TYPES = [
   ["MISSING_CARGO", "Missing cargo"],
   ["DAMAGED_CARGO", "Damaged cargo"],
@@ -133,7 +134,7 @@ export function NewExceptionForm({
               <option value="">{tx("Not about one consignment")}</option>
               {cargo.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.label}
+                  <Tx>{c.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

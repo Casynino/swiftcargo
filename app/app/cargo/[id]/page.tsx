@@ -58,7 +58,8 @@ import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
 import { storageStart } from "@/lib/storage-clock";
 
-import { P, primeLocale } from "@/lib/server-t";
+import { P, primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export async function generateMetadata({
   params,
 }: {
@@ -498,7 +499,7 @@ export default async function CargoDetailPage({
             <dl className="grid grid-cols-1 border-t sm:grid-cols-3">
               {(
                 [
-                  ["Goods type", [...new Set(cargo.packages.map((p) => p.cargoType).filter(Boolean))].join(", ") || cargo.commodity || "—"],
+                  ["Goods type", [...new Set(cargo.packages.map((p) => p.cargoType).filter(Boolean))].map((type) => T(String(type))).join(", ") || cargo.commodity || "—"],
                   [
                     "Counted as",
                     dar || china
@@ -556,7 +557,7 @@ export default async function CargoDetailPage({
                     index % 3 !== 2 && "sm:border-r"
                   )}
                 >
-                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dt className="text-sm text-muted-foreground"><Tx>{label}</Tx></dt>
                   <dd className="mt-1 break-words font-medium">{value}</dd>
                 </div>
               ))}

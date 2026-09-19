@@ -15,6 +15,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export function ExpenseForm({
   containers,
   types,
@@ -84,7 +85,7 @@ export function ExpenseForm({
               </option>
               {containers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.label}
+                  <Tx>{c.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -124,7 +125,7 @@ export function ExpenseForm({
               <option value="">{tx("Nobody said yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -235,7 +236,7 @@ export function RecordCostPanel({
                     : "shrink-0 whitespace-nowrap rounded-full border bg-card px-3 py-1 text-xs font-medium hover:bg-secondary"
                 }
               >
-                {item.label}
+                <Tx>{item.label}</Tx>
               </button>
             ))}
           </div>
@@ -321,7 +322,7 @@ export function RecordCostPanel({
               <option value="">{tx("Not paid yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -380,7 +381,7 @@ export function RecordCostPanel({
               <option value="">{tx("Not one container")}</option>
               {containers.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.label}
+                  <Tx>{c.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { t, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type Suggestion = {
   /** What goes into the box when this is picked. */
   value: string;
@@ -100,7 +101,7 @@ export function SearchBox({
     const seen = new Set<string>();
     return suggestions
       .filter((s) => {
-        const hay = `${s.label} ${s.hint ?? ""} ${s.value}`.toLowerCase();
+        const hay = `$<Tx>{s.label}</Tx> ${s.hint ?? ""} ${s.value}`.toLowerCase();
         if (!hay.includes(needle)) return false;
         /* One row per thing. The same customer can own six consignments, and six
            identical lines is a list nobody reads. */
@@ -187,10 +188,10 @@ export function SearchBox({
                     i === cursor ? "bg-accent" : "hover:bg-accent/60"
                   )}
                 >
-                  <span className="min-w-0 truncate text-sm">{s.label}</span>
+                  <span className="min-w-0 truncate text-sm"><Tx>{s.label}</Tx></span>
                   {s.hint ? (
                     <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
-                      {s.hint}
+                      <Tx>{s.hint}</Tx>
                     </span>
                   ) : null}
                 </button>

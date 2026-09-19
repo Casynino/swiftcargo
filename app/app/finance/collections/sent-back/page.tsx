@@ -14,6 +14,7 @@ import { requirePermission } from "@/lib/session";
 import { bookCategories } from "@/lib/rate-categories";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Sent back" };
 
 /**
@@ -53,7 +54,7 @@ export default async function Page({
               {rows.length} sent back
             </p>
             <p className="tnum mt-1 text-3xl font-semibold">{card.lead}</p>
-            <p className="tnum mt-1 text-xs text-muted-foreground">{card.note}</p>
+            <p className="tnum mt-1 text-xs text-muted-foreground"><Tx>{card.note}</Tx></p>
           </div>
         ))}
       </div>

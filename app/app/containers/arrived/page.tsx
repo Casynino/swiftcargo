@@ -37,6 +37,7 @@ import { localeOf } from "@/lib/viewer-locale";
 import { t } from "@/lib/i18n";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Arrived containers" };
 
 /**
@@ -503,7 +504,7 @@ export default async function ArrivedContainersPage({
                 {tile.main}
               </dd>
               <p className="tnum mt-0.5 truncate text-xs text-muted-foreground">
-                {tile.sub}
+                <Tx>{tile.sub}</Tx>
               </p>
             </div>
           ))}
@@ -669,7 +670,7 @@ export default async function ArrivedContainersPage({
                         {item.reference}
                       </span>
                       <span className="block text-xs text-muted-foreground">
-                        {item.description}
+                        <Tx>{item.description}</Tx>
                       </span>
                       {item.invoices.length > 0 ? (
                         <span className="mt-1 block w-fit rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">

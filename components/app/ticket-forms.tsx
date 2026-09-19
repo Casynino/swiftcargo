@@ -19,6 +19,7 @@ import {
 } from "@/lib/actions/tickets";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export const TICKET_PRIORITIES = [
   { value: "LOW", label: "Low" },
   { value: "NORMAL", label: "Normal" },
@@ -136,7 +137,7 @@ function NewTicketForm() {
             <NativeSelect id="priority" name="priority" defaultValue="NORMAL">
               {TICKET_PRIORITIES.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  <Tx>{option.label}</Tx>
                 </option>
               ))}
             </NativeSelect>
@@ -199,7 +200,7 @@ export function TicketWorkflow({
           <NativeSelect id="ticket-status" name="status" defaultValue={ticket.status}>
             {TICKET_STATUSES.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                <Tx>{option.label}</Tx>
               </option>
             ))}
           </NativeSelect>
@@ -214,7 +215,7 @@ export function TicketWorkflow({
           >
             {TICKET_PRIORITIES.map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                <Tx>{option.label}</Tx>
               </option>
             ))}
           </NativeSelect>

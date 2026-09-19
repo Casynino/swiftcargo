@@ -11,7 +11,10 @@ import { useT } from "@/components/app/locale-provider";
  */
 export function Tx({ children }: { children: string }) {
   const t = useT();
-  return <>{t(children)}</>;
+  /* Titles are built with their count in them — "3 payments to verify". The
+     dictionary holds those with {n} where the figure goes, so one entry
+     covers every count; see translateMessage. */
+  return <>{translateMessage(children, t)}</>;
 }
 
 /**

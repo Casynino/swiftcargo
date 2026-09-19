@@ -34,6 +34,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Cargo" };
 
 const STATUSES = Object.keys(CARGO_STATUS_META) as CargoStatus[];
@@ -262,7 +263,7 @@ export default async function CargoPage({
                       {item.sender.fullName}
                     </TableCell>
                     <TableCell className="hidden max-w-xs truncate text-sm text-muted-foreground lg:table-cell">
-                      {item.description}
+                      <Tx>{item.description}</Tx>
                     </TableCell>
                     <TableCell className="tnum hidden text-sm text-muted-foreground md:table-cell">
                       {container?.reference ?? "—"}

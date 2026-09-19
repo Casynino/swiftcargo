@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * Sub-navigation inside one area.
  *
@@ -36,7 +37,7 @@ export function TabPills({
                 : "border bg-card text-foreground/75 hover:bg-secondary hover:text-foreground"
             )}
           >
-            {tab.label}
+            <Tx>{tab.label}</Tx>
             {tab.count !== undefined && tab.count > 0 ? (
               <span
                 className={cn(

@@ -31,7 +31,7 @@ import { formatCbm } from "@/lib/format";
 import { distinctMark } from "@/lib/customer-name";
 
 import { useT } from "@/components/app/locale-provider";
-import { Tm } from "@/components/app/tx";
+import { Tm, Tx } from "@/components/app/tx";
 type Waiting = {
   id: string;
   reference: string;
@@ -351,7 +351,7 @@ export function AdvancePanel({
       <FormMessage error={state.error} ok={state.ok} />
       <SubmitButton>
         {step.icon}
-        {step.label}
+        <Tx>{step.label}</Tx>
       </SubmitButton>
     </form>
   );

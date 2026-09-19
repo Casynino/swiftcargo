@@ -32,6 +32,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
+import { Tx } from "@/components/app/tx";
 export type CheckInRow = {
   id: string;
   reference: string;
@@ -253,7 +254,7 @@ export function CheckInList({
                     : "text-muted-foreground hover:bg-secondary"
                 )}
               >
-                {option.label}
+                <Tx>{option.label}</Tx>
                 <span className="tnum rounded-full bg-secondary px-1.5 text-[0.7rem] text-foreground">
                   {n}
                 </span>
@@ -625,7 +626,7 @@ function CheckInRowView({
         </td>
 
         <td className="max-w-[14rem] truncate px-3 py-2 text-muted-foreground">
-          {row.description}
+          <Tx>{row.description}</Tx>
         </td>
 
         {/* WHAT THE GOODS ARE, ANSWERED BY WHOEVER HAS THEM OPEN.

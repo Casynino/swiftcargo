@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type ClaimRow = {
   id: string;
   customer: string;
@@ -446,7 +447,7 @@ function ClaimRowItem({
                   .filter((acc) => acc.currency === currency || acc.id === row.accountId)
                   .map((acc) => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.label}
+                      <Tx>{acc.label}</Tx>
                     </option>
                   ))}
               </NativeSelect>

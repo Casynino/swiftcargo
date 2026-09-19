@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 type Row = {
   label: string;
   china: string;
@@ -33,7 +34,7 @@ export function MeasurementCompare({ rows }: { rows: Row[] }) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.label} className="border-b last:border-0">
-              <td className="py-2.5">{row.label}</td>
+              <td className="py-2.5"><Tx>{row.label}</Tx></td>
               <td className="tnum py-2.5 text-right">{row.china}</td>
               <td className="tnum py-2.5 text-right">{row.dar}</td>
               <td

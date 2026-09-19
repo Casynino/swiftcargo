@@ -11,6 +11,7 @@ import { SmartBack } from "@/components/app/smart-back";
 import { distinctMark } from "@/lib/customer-name";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Delivery note" };
 
 type Snapshot = {
@@ -195,7 +196,7 @@ export default async function DeliveryNotePage({
 
           <p className="mt-4 text-sm">
             <span className={label}>Goods · Bidhaa</span>
-            <span className="ml-2 font-semibold">{snap.description}</span>
+            <span className="ml-2 font-semibold"><Tx>{snap.description}</Tx></span>
           </p>
 
           {/* ------------------------------------------------ The lines */}

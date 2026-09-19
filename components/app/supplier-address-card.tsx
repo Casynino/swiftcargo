@@ -5,6 +5,7 @@ import { Check, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * THE ADDRESS, READY TO FORWARD.
  *
@@ -50,7 +51,7 @@ export function SupplierAddressCard({
       <dl className="space-y-1.5 px-4 py-3 text-sm">
         {lines.map((line) => (
           <div key={line.label} className="grid grid-cols-[6.5rem_1fr] gap-2">
-            <dt className="font-semibold text-slate-500">{line.label}：</dt>
+            <dt className="font-semibold text-slate-500"><Tx>{line.label}</Tx>：</dt>
             <dd className="font-medium">{line.value}</dd>
           </div>
         ))}

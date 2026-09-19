@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 const METHODS = [
   ["CASH", "Cash"],
   ["BANK_TRANSFER", "Bank transfer"],
@@ -420,7 +421,7 @@ export function TakePaymentPanel({
                   <option value="">{tx("Cash or the till")}</option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.label}>
-                      {a.label}
+                      <Tx>{a.label}</Tx>
                     </option>
                   ))}
                 </NativeSelect>
@@ -491,7 +492,7 @@ export function TakePaymentPanel({
               <option value="">{tx("Choose the account")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

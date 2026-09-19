@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 const tzs = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(n);
 const usd = (n: number) =>
@@ -122,7 +123,7 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
                   <div className="w-1/2 rounded-t bg-success/80" style={{ height: `${(m.in.tzs / peak) * 100}%` }} title={`In ${tzs(m.in.tzs)}`} />
                   <div className="w-1/2 rounded-t bg-destructive/80" style={{ height: `${(m.out.tzs / peak) * 100}%` }} title={`Out ${tzs(m.out.tzs)}`} />
                 </div>
-                <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}>{m.label}</span>
+                <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}><Tx>{m.label}</Tx></span>
               </div>
             ))}
           </div>
@@ -149,7 +150,7 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
           <ul className="mt-3 space-y-1.5 text-sm">
             {bands.map((b) => (
               <li key={b.label} className={cn("grid grid-cols-[1fr_auto_auto_auto] items-center gap-4", b.rows.length === 0 && "text-muted-foreground")}>
-                <span className="flex items-center gap-2"><span className={cn("size-2 rounded-full", b.tone)} />{b.label}</span>
+                <span className="flex items-center gap-2"><span className={cn("size-2 rounded-full", b.tone)} /><Tx>{b.label}</Tx></span>
                 <span className="tnum text-xs text-muted-foreground">{b.rows.length} bills</span>
                 <span className="tnum text-xs">{tzs(b.owed.tzs)}</span>
                 <span className="tnum w-10 text-right text-xs text-muted-foreground">

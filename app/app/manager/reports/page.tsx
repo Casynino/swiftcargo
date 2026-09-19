@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Management report" };
 
 const DAY = 86_400_000;
@@ -260,7 +261,7 @@ export default async function ManagerReport({
             <div key={r.label} className="flex items-baseline gap-3 px-3 py-2.5">
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{t(locale, r.label)}</span>
-                {r.sub ? <span className="block text-[11px] text-muted-foreground">{r.sub}</span> : null}
+                {r.sub ? <span className="block text-[11px] text-muted-foreground"><Tx>{r.sub}</Tx></span> : null}
               </span>
               {r.delta !== undefined ? (
                 <span className={cn("tnum shrink-0 text-[11px]", r.delta >= 0 ? "text-success" : "text-destructive")}>
@@ -304,7 +305,7 @@ export default async function ManagerReport({
           ].map((c) => (
             <div key={c.label} className="rounded-xl border bg-card p-3">
               <p className={cn("tnum text-sm font-semibold", c.tone)}>{c.value}</p>
-              {c.sub ? <p className="tnum text-[11px] text-muted-foreground">{c.sub}</p> : null}
+              {c.sub ? <p className="tnum text-[11px] text-muted-foreground"><Tx>{c.sub}</Tx></p> : null}
               <p className="mt-0.5 text-[11px] text-muted-foreground">{t(locale, c.label)}</p>
             </div>
           ))}

@@ -21,6 +21,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Closed containers" };
 
 /**
@@ -135,7 +136,7 @@ export default async function ClosedContainersPage() {
         ].map((stat) => (
           <div key={stat.label} className="bg-card px-4 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              {stat.label}
+              <Tx>{stat.label}</Tx>
             </p>
             <p className={cn("tnum mt-1 text-xl font-semibold", stat.tone)}>
               {stat.value}

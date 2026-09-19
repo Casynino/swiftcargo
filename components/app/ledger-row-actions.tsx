@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type LedgerKind = "payment" | "expense" | "transfer";
 
 const CANCEL = {
@@ -79,7 +80,7 @@ export function LedgerRowActions({
     return (
       <form action={action} className="min-w-[15rem] space-y-2">
         <input type="hidden" name={spec.field} value={id} />
-        <p className="text-xs text-muted-foreground">{spec.ask}</p>
+        <p className="text-xs text-muted-foreground"><Tx>{spec.ask}</Tx></p>
         <Input name="reason" required minLength={3} placeholder={tx("The reason")} />
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">

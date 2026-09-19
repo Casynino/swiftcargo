@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Payroll" };
 
 /**
@@ -208,7 +209,7 @@ export default async function FinancePayrollPage({
 
           {run.note && run.status !== "REJECTED" ? (
             <p className="text-xs text-muted-foreground">
-              {t(locale, "Sent up with a note:")} “{run.note}”
+              {t(locale, "Sent up with a note:")} “<Tx>{run.note}</Tx>”
             </p>
           ) : null}
 

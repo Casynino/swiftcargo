@@ -9,6 +9,7 @@ import { useT } from "@/components/app/locale-provider";
 import { backLabel, labelForPath, previousFrom, readTrail, titleFor } from "@/lib/nav-trail";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * Where back goes, and what it is called — one decision, so the word and the
  * destination cannot disagree.
@@ -60,7 +61,7 @@ export function SmartBack({
       )}
     >
       <ChevronLeft className="size-4 shrink-0" />
-      <span className="truncate">{target.label}</span>
+      <span className="truncate"><Tx>{target.label}</Tx></span>
     </Link>
   );
 }

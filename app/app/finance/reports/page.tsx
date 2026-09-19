@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
 import { darFields } from "@/lib/dar-time";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Profit & loss" };
 
 /**
@@ -250,8 +251,8 @@ export default async function ProfitAndLossPage({
           },
         ].map((box) => (
           <section key={box.title} className="rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">{box.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{box.note}</p>
+            <h2 className="font-semibold"><Tx>{box.title}</Tx></h2>
+            <p className="mt-1 text-sm text-muted-foreground"><Tx>{box.note}</Tx></p>
             <dl className="mt-4 space-y-3">
               {box.lines.map(([l, m], i) => (
                 <div key={l} className="flex items-start justify-between">
@@ -326,8 +327,8 @@ export default async function ProfitAndLossPage({
       {/* THE MONTH IN REVIEW */}
       <section className="overflow-hidden rounded-xl border bg-card">
         <header className="flex items-center justify-between border-b px-5 py-3">
-          <h2 className="font-semibold">In review · {thisMonth.label}</h2>
-          <span className="text-xs text-muted-foreground">against {lastMonth.label}</span>
+          <h2 className="font-semibold">In review · <Tx>{thisMonth.label}</Tx></h2>
+          <span className="text-xs text-muted-foreground">against <Tx>{lastMonth.label}</Tx></span>
         </header>
         <div className="grid grid-cols-2 gap-px bg-border md:grid-cols-4 xl:grid-cols-7">
           {[
@@ -568,7 +569,7 @@ export default async function ProfitAndLossPage({
                     <div className="w-1/2 rounded-t bg-success/70" style={{ height: `${(val(m.in) / maxMoney) * 100}%` }} title={`In ${lead(m.in)}`} />
                     <div className="w-1/2 rounded-t bg-destructive/70" style={{ height: `${(val(m.out) / maxMoney) * 100}%` }} title={`Out ${lead(m.out)}`} />
                   </div>
-                  <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}>{m.label}</span>
+                  <span className={cn("text-[10px] uppercase", m.current ? "font-semibold" : "text-muted-foreground")}><Tx>{m.label}</Tx></span>
                 </div>
               ))}
             </div>
@@ -586,7 +587,7 @@ export default async function ProfitAndLossPage({
                   <div className="flex h-32 w-full items-end">
                     <div className={cn("w-full rounded-t", m.current ? "bg-brand" : "bg-brand/50")} style={{ height: `${Math.max(2, (m.cbm / maxCbm) * 100)}%` }} title={`${m.cbm.toFixed(3)} CBM`} />
                   </div>
-                  <span className={cn("text-[10px]", m.current ? "font-semibold" : "text-muted-foreground")}>{m.label}</span>
+                  <span className={cn("text-[10px]", m.current ? "font-semibold" : "text-muted-foreground")}><Tx>{m.label}</Tx></span>
                 </div>
               ))}
             </div>
@@ -655,8 +656,8 @@ export default async function ProfitAndLossPage({
           </form>
           <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
             <div className="max-w-2xl">
-              <h3 className="font-semibold">{table.title}</h3>
-              <p className="mt-0.5 text-sm text-muted-foreground">{table.description}</p>
+              <h3 className="font-semibold"><Tx>{table.title}</Tx></h3>
+              <p className="mt-0.5 text-sm text-muted-foreground"><Tx>{table.description}</Tx></p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {p.reportRange.label} · in {cur === "TZS" ? "shillings" : "dollars"}{books.today ? `, USD 1 = TZS ${books.today.toLocaleString()}` : ""}
               </p>

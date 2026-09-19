@@ -22,6 +22,7 @@ import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale, T } from "@/lib/server-t";
 import { darStartOfDay, darStartOfMonth, darStartOfWeek, darStartOfYear } from "@/lib/dar-time";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Expenses" };
 
 const PERIODS = {
@@ -188,7 +189,7 @@ export default async function ExpensesPage({
           id: r.id,
           kind: transport ? "transport" : "transfer",
           recordId: r.recordId,
-          title: transport ? `Transport for ${r.detail}` : `Moved to ${r.detail}`,
+          title: transport ? `Transport for $<Tx>{r.detail}</Tx>` : `Moved to $<Tx>{r.detail}</Tx>`,
           reference: r.reference,
           category: transport ? "Transport out" : "Between accounts",
           groups: r.cancelled
@@ -222,7 +223,7 @@ export default async function ExpensesPage({
     .filter(
       (o) =>
         !query ||
-        `${o.title} ${o.reference} ${o.category} ${o.paidFrom ?? ""}`.toLowerCase().includes(query)
+        `$<Tx>{o.title}</Tx> ${o.reference} ${o.category} ${o.paidFrom ?? ""}`.toLowerCase().includes(query)
     )
     .sort((a, b) => b.at.getTime() - a.at.getTime());
   const correctable = mayCorrect
@@ -359,7 +360,7 @@ export default async function ExpensesPage({
               <li key={o.id} className={cn("flex flex-wrap items-center gap-4 px-5 py-3", o.status === "Cancelled" && "opacity-70")}>
                 <div className="min-w-0 flex-1">
                   <Link href={o.href} className={cn("font-medium hover:underline", o.status === "Cancelled" && "line-through")}>
-                    {o.title}
+                    <Tx>{o.title}</Tx>
                   </Link>
                   <p className="tnum mt-0.5 text-xs text-muted-foreground">
                     {[o.reference, o.category, formatDate(o.at)].filter(Boolean).join(" · ")}

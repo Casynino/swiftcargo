@@ -24,6 +24,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export async function generateMetadata({
   params,
 }: {
@@ -232,7 +233,7 @@ export default async function ContainerFinancePage({
               className="rounded-xl border bg-card p-4 shadow-soft"
             >
               <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {card.label}
+                <Tx>{card.label}</Tx>
               </p>
               {/* Shilling totals run to tens of millions. At one fixed size the
                   figure broke after "TZS" and the card lost its shape, so the
@@ -372,7 +373,7 @@ export default async function ContainerFinancePage({
                       {e.expenseType?.name ?? "Cost"}
                       <span className="tnum block text-[11px] text-muted-foreground">
                         {e.reference}
-                        {e.description ? ` · ${e.description}` : ""}
+                        {e.description ? ` · $<Tx>{e.description}</Tx>` : ""}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">

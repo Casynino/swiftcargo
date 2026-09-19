@@ -71,6 +71,7 @@ import type { SessionUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { Tx } from "@/components/app/tx";
 /** Where the latest salary run has got to, in the manager's words. */
 const PAYROLL_STATUS: Record<string, string> = {
   DRAFT: "being prepared by Finance",
@@ -289,7 +290,7 @@ export async function CommandCentre({ user }: { user: SessionUser }) {
 
             <div className="relative flex flex-1 flex-col">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-signal">{month.label}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-signal"><Tx>{month.label}</Tx></p>
                 <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white">
                   <MonthIcon className="size-4" />
                 </span>

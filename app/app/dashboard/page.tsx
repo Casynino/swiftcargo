@@ -58,6 +58,7 @@ import { cn } from "@/lib/utils";
 import { viewerLocale } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Dashboard" };
 
 function Glyph({ name, className }: { name: string; className?: string }) {
@@ -110,9 +111,9 @@ function QueueCard({ card, index }: { card: ActionCard; index: number }) {
         >
           {card.count}
         </p>
-        <p className="mt-1.5 text-sm font-medium">{card.label}</p>
+        <p className="mt-1.5 text-sm font-medium"><Tx>{card.label}</Tx></p>
         {card.hint ? (
-          <p className="mt-1 text-xs text-muted-foreground">{card.hint}</p>
+          <p className="mt-1 text-xs text-muted-foreground"><Tx>{card.hint}</Tx></p>
         ) : null}
       </div>
     </Link>
@@ -636,7 +637,7 @@ export default async function DashboardPage() {
                           className="block rounded-lg border p-4 transition-colors hover:bg-secondary/50"
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <span className="tnum font-medium">{box.label}</span>
+                            <span className="tnum font-medium"><Tx>{box.label}</Tx></span>
                             <span className="text-xs text-muted-foreground">
                               {t(locale, CONTAINER_STATUS_LABELS[box.status])} ·{" "}
                               {formatDate(box.since)}

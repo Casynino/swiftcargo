@@ -18,6 +18,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export async function generateMetadata({
   params,
 }: {
@@ -109,7 +110,7 @@ export default async function ExceptionPage({
               <CardTitle className="text-base">{T("What happened")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="whitespace-pre-wrap text-sm">{item.description}</p>
+              <p className="whitespace-pre-wrap text-sm"><Tx>{item.description}</Tx></p>
               {evidence.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {evidence.map((url) => (
@@ -145,7 +146,7 @@ export default async function ExceptionPage({
               <ol className="space-y-4">
                 {item.events.map((event) => (
                   <li key={event.id} className="border-l-2 border-border pl-4">
-                    <p className="text-sm">{event.note}</p>
+                    <p className="text-sm"><Tx>{event.note}</Tx></p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDateTime(event.createdAt)}
                       {event.actor ? ` · ${event.actor.name}` : ""}

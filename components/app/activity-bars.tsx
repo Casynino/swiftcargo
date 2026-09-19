@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type BarPoint = { label: string; value: number };
 
 /**
@@ -33,9 +34,9 @@ export function ActivityBars({
           const height = (point.value / max) * 100;
           return (
             <div
-              key={`${point.label}-${index}`}
+              key={`$<Tx>{point.label}</Tx>-${index}`}
               className={cn("group relative flex h-full flex-1 flex-col justify-end", sparse && "max-w-[5.5rem]")}
-              title={`${point.label}: ${show(point.value)} ${unit}`}
+              title={`$<Tx>{point.label}</Tx>: ${show(point.value)} ${unit}`}
             >
               {sparse && point.value > 0 ? (
                 <span className="tnum mb-1 text-center text-[11px] font-semibold">{show(point.value)}</span>
@@ -59,8 +60,8 @@ export function ActivityBars({
       <div className={cn("mt-2 flex text-[11px] text-muted-foreground", sparse ? "gap-2" : "justify-between")}>
         {sparse ? (
           points.map((point, index) => (
-            <span key={`${point.label}-l-${index}`} className="tnum max-w-[5.5rem] flex-1 truncate text-center">
-              {point.label}
+            <span key={`$<Tx>{point.label}</Tx>-l-${index}`} className="tnum max-w-[5.5rem] flex-1 truncate text-center">
+              <Tx>{point.label}</Tx>
             </span>
           ))
         ) : (

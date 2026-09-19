@@ -16,6 +16,7 @@ import type { CorrectableExpense, CorrectionAccount } from "@/lib/expense-correc
 import { t, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export const pillButton =
   "inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border bg-card px-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -246,7 +247,7 @@ export function CorrectExpenseDialog({
                         )}
                         {accountOptions.map((a) => (
                           <option key={a.id} value={a.id}>
-                            {a.label}
+                            <Tx>{a.label}</Tx>
                           </option>
                         ))}
                       </NativeSelect>

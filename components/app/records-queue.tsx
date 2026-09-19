@@ -11,6 +11,7 @@ import { reviewRecords, type ReviewActionState } from "@/lib/actions/reconciliat
 import { t, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type QueueRowView = {
   /** "Payment:clx…" — the queue mixes three registers, so the kind travels with the id. */
   key: string;
@@ -197,7 +198,7 @@ export function RecordsQueue({
                     className="size-4 accent-[hsl(var(--brand))]"
                     checked={picked.has(row.key)}
                     onChange={() => toggle(row.key)}
-                    aria-label={`${t(locale, "Pick")} ${row.title}`}
+                    aria-label={`${t(locale, "Pick")} $<Tx>{row.title}</Tx>`}
                   />
                 </label>
               ) : null}
@@ -210,7 +211,7 @@ export function RecordsQueue({
                 )}
               >
                 <div className="flex items-baseline justify-between gap-3">
-                  <p className="truncate text-sm font-medium">{row.title}</p>
+                  <p className="truncate text-sm font-medium"><Tx>{row.title}</Tx></p>
                   <p
                     className={cn(
                       "tnum shrink-0 text-sm font-semibold",

@@ -20,6 +20,7 @@ import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type ContainerExpenseRow = {
   id: string;
   reference: string;
@@ -188,7 +189,7 @@ export function ContainerExpenses({
               <option value="">{tx("Not paid yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  <Tx>{a.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

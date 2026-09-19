@@ -19,6 +19,7 @@ import { SmartBack } from "@/components/app/smart-back";
 
 import { primeLocale, T } from "@/lib/server-t";
 import { darFields } from "@/lib/dar-time";
+import { Tx } from "@/components/app/tx";
 function readMonth(v?: string) {
   const now = new Date();
   const m = v && /^(\d{4})-(\d{2})$/.exec(v);
@@ -32,7 +33,7 @@ export async function generateMetadata({
   searchParams: Promise<{ month?: string }>;
 }): Promise<Metadata> {
   const r = readMonth((await searchParams).month);
-  return { title: { absolute: `Swift Cargo - Financial statement - ${r.label}` } };
+  return { title: { absolute: `Swift Cargo - Financial statement - $<Tx>{r.label}</Tx>` } };
 }
 
 /**
@@ -94,7 +95,7 @@ export default async function StatementPage({
           </div>
           <div className="text-right">
             <p className="text-lg font-bold uppercase tracking-wider">{T("Financial statement")}</p>
-            <p className="text-sm">{range.label}</p>
+            <p className="text-sm"><Tx>{range.label}</Tx></p>
             <p className="text-xs text-neutral-600">
               In {cur === "TZS" ? "Tanzanian shillings" : "US dollars"}
               {books.today ? ` · USD 1 = TZS ${books.today.toLocaleString()}` : ""}

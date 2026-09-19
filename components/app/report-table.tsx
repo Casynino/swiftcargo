@@ -2,6 +2,7 @@ import type { Currency, ReportTable } from "@/lib/report-tables";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 /** One report table, the same on the page and on paper. */
 export function ReportTableView({
   table,
@@ -27,7 +28,7 @@ export function ReportTableView({
           <tr className={cn("border-b text-left text-[11px] uppercase tracking-wider", printable ? "border-black" : "text-muted-foreground")}>
             {table.columns.map((c, i) => (
               <th key={i} className={cn("px-4 py-2 font-medium", (c.money || c.numeric) && "text-right")}>
-                {c.label}
+                <Tx>{c.label}</Tx>
               </th>
             ))}
           </tr>

@@ -26,6 +26,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Tickets" };
 
 const STATUS_FILTERS: {
@@ -220,7 +221,7 @@ export default async function TicketsPage({
                   : "bg-card hover:bg-secondary"
               )}
             >
-              {option.label}
+              <Tx>{option.label}</Tx>
               <span
                 className={cn(
                   "tnum rounded-full px-1.5 text-xs",
@@ -258,7 +259,7 @@ export default async function TicketsPage({
           >
             {PRIORITY_FILTERS.map((option) => (
               <option key={option.key} value={option.key}>
-                {option.label}
+                <Tx>{option.label}</Tx>
               </option>
             ))}
           </NativeSelect>

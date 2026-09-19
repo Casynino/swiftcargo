@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/price-list";
 import { t, type Locale } from "@/lib/i18n";
 
+import { Tx } from "@/components/app/tx";
 /**
  * FIX ONE PRICE WITHOUT LEAVING THE LIST.
  *
@@ -374,7 +375,7 @@ export function RowPriceEditor({
                         : "text-muted-foreground hover:bg-secondary")
                     }
                   >
-                    {option.label}
+                    <Tx>{option.label}</Tx>
                   </button>
                 ))}
               </div>
@@ -483,7 +484,7 @@ export function RowPriceEditor({
             ].map((box) => (
               <label key={box.name} className="flex-1 space-y-1">
                 <span className="block text-xs font-medium text-muted-foreground">
-                  {box.label}
+                  <Tx>{box.label}</Tx>
                 </span>
                 <Input
                   name={box.name}
@@ -491,7 +492,7 @@ export function RowPriceEditor({
                   value={box.value}
                   onChange={(event) => box.set(event.target.value)}
                   placeholder={box.placeholder}
-                  aria-label={`${box.label} — ${reference}`}
+                  aria-label={`$<Tx>{box.label}</Tx> — ${reference}`}
                 />
               </label>
             ))}

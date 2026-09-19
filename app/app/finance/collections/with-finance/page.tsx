@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { bookCategories } from "@/lib/rate-categories";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "With Finance" };
 
 /**
@@ -57,7 +58,7 @@ export default async function Page({
               {rows.length} waiting on Finance
             </p>
             <p className="tnum mt-1 text-3xl font-semibold">{card.lead}</p>
-            <p className="tnum mt-1 text-xs text-muted-foreground">{card.note}</p>
+            <p className="tnum mt-1 text-xs text-muted-foreground"><Tx>{card.note}</Tx></p>
           </div>
         ))}
       </div>

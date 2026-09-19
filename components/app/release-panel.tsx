@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 /**
  * The seven conditions, spelled out.
  *
@@ -39,10 +40,10 @@ export function ReleaseChecklist({
             {c.passed ? <Check className="size-3" /> : <X className="size-3" />}
           </span>
           <span className={c.passed ? "" : "font-medium"}>
-            {c.label}
+            <Tx>{c.label}</Tx>
             {c.detail ? (
               <span className="block text-xs font-normal text-muted-foreground">
-                {c.detail}
+                <Tx>{c.detail}</Tx>
               </span>
             ) : null}
           </span>

@@ -18,6 +18,7 @@ import { t, type Locale } from "@/lib/i18n";
 import type { PriceList as PriceListData, PriceListRow } from "@/lib/price-list";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /** What the Dar floor wrote on the receiving row, said in words. */
 const CONDITION_LABEL: Record<string, string> = {
   GOOD: "Good",
@@ -254,7 +255,7 @@ function PriceRow({
             {t(locale, "Difference")}
           </Badge>
         ) : null}
-        <span className="block text-xs text-muted-foreground">{row.description}</span>
+        <span className="block text-xs text-muted-foreground"><Tx>{row.description}</Tx></span>
         <span className="block text-xs text-muted-foreground">
           {row.customer} · {row.customerCode}
         </span>

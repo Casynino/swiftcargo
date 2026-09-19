@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type MergeBill = {
   invoiceId: string;
   number: string;
@@ -284,7 +285,7 @@ export function MergePaymentForm({
                       <span className="block truncate text-sm font-medium">
                         {bill.cargo}{" "}
                         <span className="font-normal text-muted-foreground">
-                          {bill.description}
+                          <Tx>{bill.description}</Tx>
                         </span>
                       </span>
                       <span className="tnum block text-xs text-muted-foreground">
@@ -340,7 +341,7 @@ export function MergePaymentForm({
                   <span className="block truncate text-sm font-medium">
                     {w.cargo}{" "}
                     <span className="font-normal text-muted-foreground">
-                      {w.description}
+                      <Tx>{w.description}</Tx>
                     </span>
                   </span>
                   <span className="block text-[11px] font-medium text-warning">

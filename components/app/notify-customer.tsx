@@ -13,6 +13,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type MessageOption = {
   kind: string;
   label: string;
@@ -87,7 +88,7 @@ export function NotifyCustomer({
             <p className="text-sm font-medium">Tell {customerName}</p>
             <p className="text-xs text-muted-foreground">
               {lastContact
-                ? `Last contacted about "${lastContact.label}" on ${lastContact.when} by ${lastContact.by}.`
+                ? `Last contacted about "$<Tx>{lastContact.label}</Tx>" on ${lastContact.when} by ${lastContact.by}.`
                 : "Nobody has messaged them about this consignment yet."}
             </p>
           </div>
@@ -142,7 +143,7 @@ export function NotifyCustomer({
             >
               {options.map((option) => (
                 <option key={option.kind} value={option.kind}>
-                  {option.label}
+                  <Tx>{option.label}</Tx>
                   {option.suggested ? " — where it is now" : ""}
                 </option>
               ))}
@@ -241,7 +242,7 @@ export function SendInvoice({
             <NativeSelect id="send-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
               {options.map((option) => (
                 <option key={option.kind} value={option.kind}>
-                  {option.label}
+                  <Tx>{option.label}</Tx>
                 </option>
               ))}
             </NativeSelect>

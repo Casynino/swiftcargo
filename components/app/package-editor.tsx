@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 type Line = {
   id: string;
   reference: string;
@@ -132,7 +133,7 @@ export function PackageEditor({
                   <span className="tnum text-sm font-medium">{line.reference}</span>
                   {line.description ? (
                     <span className="block text-xs text-muted-foreground">
-                      {line.description}
+                      <Tx>{line.description}</Tx>
                     </span>
                   ) : null}
                   {/* The page the customer is holding. Each kind of goods has

@@ -30,6 +30,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Accounts" };
 
 const KIND = {
@@ -212,7 +213,7 @@ export default async function AccountsPage() {
                   </div>
                   <p className="mt-3 font-semibold">{account.bankName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {kind.label}
+                    <Tx>{kind.label}</Tx>
                     {account.branch ? ` · ${account.branch}` : ""}
                   </p>
                   <p
@@ -365,7 +366,7 @@ export default async function AccountsPage() {
                       m.cancelled && "line-through opacity-70"
                     )}
                   >
-                    {m.description}
+                    <Tx>{m.description}</Tx>
                     {m.tag ? (
                       <span className="ml-2 rounded bg-warning/15 px-1.5 py-0.5 text-[11px] text-warning">
                         {m.tag}

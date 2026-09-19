@@ -1,6 +1,7 @@
 import type { PayrollFigure } from "@/lib/payroll";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * One payroll figure, shillings leading and the dollars underneath.
  *
@@ -24,7 +25,7 @@ export function PayrollAmount({
         {figure.lead}
       </span>
       {figure.sub === null ? null : (
-        <span className="tnum block whitespace-nowrap text-[11px] font-normal text-muted-foreground">{figure.sub}</span>
+        <span className="tnum block whitespace-nowrap text-[11px] font-normal text-muted-foreground"><Tx>{figure.sub}</Tx></span>
       )}
     </span>
   );

@@ -23,6 +23,7 @@ import { t, type Locale } from "@/lib/i18n";
 import { visit } from "@/lib/nav-trail";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type Column<T> = {
   id: string;
   header: string;
@@ -376,7 +377,7 @@ export function DataTable<T>({
                 htmlFor={`filter-${filter.id}`}
                 className="text-xs font-medium text-muted-foreground"
               >
-                {filter.label}
+                <Tx>{filter.label}</Tx>
               </label>
               <NativeSelect
                 id={`filter-${filter.id}`}
@@ -390,7 +391,7 @@ export function DataTable<T>({
                 <option value="">{t(locale, "All")}</option>
                 {filter.options.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    <Tx>{option.label}</Tx>
                   </option>
                 ))}
               </NativeSelect>

@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 const KIND = {
   BANK: { label: "Bank account", icon: Building2, tile: "bg-brand/10 text-brand" },
   MOBILE_MONEY: {
@@ -458,7 +459,7 @@ export default async function AccountPage({
                           entry.cancelled && "line-through opacity-70"
                         )}
                       >
-                        {entry.detail}
+                        <Tx>{entry.detail}</Tx>
                       </Link>
                       {/* A cancelled line is not a new event; it answers one,
                           and reads wrongly without saying so. */}
@@ -474,7 +475,7 @@ export default async function AccountPage({
                       ) : null}
                       <span className="tnum block text-xs text-muted-foreground">
                         {entry.type}
-                        {entry.description ? ` · ${entry.description}` : ""}
+                        {entry.description ? ` · $<Tx>{entry.description}</Tx>` : ""}
                         {entry.cancelled && entry.cancelledReason
                           ? ` · ${entry.cancelledReason}`
                           : ""}
@@ -568,7 +569,7 @@ export default async function AccountPage({
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(c.countedAt)} · {c.countedBy?.name ?? "—"}
-                      {c.note ? ` · ${c.note}` : ""}
+                      {c.note ? ` · $<Tx>{c.note}</Tx>` : ""}
                     </p>
                   </div>
                   <Badge tone={diff === 0 ? "good" : "warn"}>

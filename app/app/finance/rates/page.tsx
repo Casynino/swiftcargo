@@ -29,6 +29,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Rate book" };
 
 const PER = { PER_CBM: "CBM", PER_KG: "kg", FLAT: "flat" } as const;
@@ -190,10 +191,10 @@ export default async function RateBookPage() {
           <div key={card.label} className="bg-card p-4">
             <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <card.icon className={cn("size-3.5", card.tone)} />
-              {card.label}
+              <Tx>{card.label}</Tx>
             </dt>
             <dd className="tnum mt-1 text-lg font-semibold">{card.value}</dd>
-            <p className="mt-0.5 text-xs text-muted-foreground">{card.sub}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground"><Tx>{card.sub}</Tx></p>
           </div>
         ))}
       </dl>

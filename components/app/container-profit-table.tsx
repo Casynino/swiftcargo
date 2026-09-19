@@ -6,6 +6,7 @@ import { t, type Locale } from "@/lib/i18n";
 import type { ContainerProfit } from "@/lib/manager-overview";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /**
  * Every recent container, and whether it is expected to make money.
  *

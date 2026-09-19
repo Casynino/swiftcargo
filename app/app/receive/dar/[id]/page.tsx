@@ -26,6 +26,7 @@ import { BoxScanner } from "@/components/app/box-scanner";
 import { cargoTypeOptions } from "@/lib/valuation";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Check in cargo" };
 
 /**
@@ -348,7 +349,7 @@ export default async function CheckInContainerPage({
         canConfirmUnchecked={can(user.role, "container.confirmUnchecked")}
         addable={addable.map((c) => ({
           id: c.id,
-          label: `${c.reference} · ${c.shippingMark ?? c.sender.fullName} · ${c.description}`,
+          label: `${c.reference} · ${c.shippingMark ?? c.sender.fullName} · $<Tx>{c.description}</Tx>`,
         }))}
         rows={container.cargoLines.map((line) => {
           const c = line.cargo;

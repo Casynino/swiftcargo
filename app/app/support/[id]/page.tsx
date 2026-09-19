@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Ticket" };
 
 const PRIORITY_TONE: Record<TicketPriority, BadgeProps["tone"]> = {
@@ -363,7 +364,7 @@ export default async function ConversationPage({
                                       : "neutral"
                             }
                           >
-                            {journey.headline}
+                            <Tx>{journey.headline}</Tx>
                           </Badge>
                           {journey.notice ? (
                             <span className="mt-1.5 block text-xs text-muted-foreground">

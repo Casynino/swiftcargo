@@ -5,6 +5,7 @@ import { t, type Locale } from "@/lib/i18n";
 import type { DeskPulse } from "@/lib/manager-overview";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /* Written out in full — Tailwind scans source text, so `text-${tone}` is a class
    that never exists and the figure would render with no colour at all. */
 const VALUE: Record<DeskPulse["tone"], string> = {
@@ -54,12 +55,12 @@ export function DeskPulsePanel({ desks, locale }: { desks: DeskPulse[]; locale: 
 
           <p className="mt-2 flex items-baseline gap-1.5">
             <span className={cn("tnum text-[26px] font-bold leading-none", VALUE[desk.tone])}>
-              {desk.headline}
+              <Tx>{desk.headline}</Tx>
             </span>
             <span className="text-xs text-muted-foreground">{desk.headlineLabel}</span>
           </p>
 
-          <p className="mt-1 text-xs leading-snug text-muted-foreground">{desk.detail}</p>
+          <p className="mt-1 text-xs leading-snug text-muted-foreground"><Tx>{desk.detail}</Tx></p>
 
           <p
             className={cn(

@@ -15,6 +15,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
+import { Tx } from "@/components/app/tx";
 export type PayableBill = {
   invoiceId: string;
   number: string;
@@ -399,7 +400,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                   { label: "Exchange rate", value: `1 USD = ${Number(picked.rate).toLocaleString("en-US")} TZS` },
                 ].map((cell) => (
                   <div key={cell.label} className="bg-card px-3 py-2">
-                    <p className="text-[11px] text-muted-foreground">{cell.label}</p>
+                    <p className="text-[11px] text-muted-foreground"><Tx>{cell.label}</Tx></p>
                     <p className={cn("tnum text-sm", cell.strong ? "font-semibold text-destructive" : "font-medium")}>
                       {cell.value}
                     </p>

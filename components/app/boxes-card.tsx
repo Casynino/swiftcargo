@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 /**
  * EVERY PHYSICAL BOX OF THE CONSIGNMENT, EACH WITH ITS OWN STORY.
  *
@@ -198,7 +199,7 @@ export async function BoxesCard({
                     <span className={cn("font-semibold", resultTone[scan.result] ?? "")}>{scan.action.replace(/-/g, " ")}</span>
                     {scan.box ? <span className="text-muted-foreground"> · box {scan.box.sequence}</span> : null}
                     <span className="text-muted-foreground"> · {scan.workflow.replace(/-/g, " ")}</span>
-                    {scan.detail ? <span className="block text-muted-foreground">{scan.detail}</span> : null}
+                    {scan.detail ? <span className="block text-muted-foreground"><Tx>{scan.detail}</Tx></span> : null}
                   </span>
                   <span className="text-muted-foreground">
                     {who(scan.userId)}

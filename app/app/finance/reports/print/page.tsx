@@ -11,6 +11,7 @@ import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export async function generateMetadata({
   searchParams,
 }: {
@@ -46,7 +47,7 @@ export default async function PrintReportPage({
             <Image src="/brand/swift-cargo.png" alt="" width={44} height={44} className="object-contain" />
             <div>
               <p className="font-bold uppercase tracking-wider">Swift Cargo</p>
-              <p className="text-xs text-neutral-600">{table.title}</p>
+              <p className="text-xs text-neutral-600"><Tx>{table.title}</Tx></p>
             </div>
           </div>
           <div className="text-right text-xs text-neutral-600">
@@ -55,7 +56,7 @@ export default async function PrintReportPage({
             <p>Printed {new Date().toLocaleString("en-GB")}</p>
           </div>
         </header>
-        <p className="mb-4 text-xs text-neutral-600">{table.description}</p>
+        <p className="mb-4 text-xs text-neutral-600"><Tx>{table.description}</Tx></p>
         <ReportTableView table={table} cur={p.cur} printable />
       </article>
     </div>

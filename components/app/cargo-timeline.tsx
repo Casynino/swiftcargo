@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import type { CargoStatus } from "@prisma/client";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 type Entry = { to: CargoStatus; at: string; by: string | null; reason: string | null };
 
 /**
@@ -84,7 +85,7 @@ export function CargoTimeline({
                   current ? "font-semibold" : done ? "font-medium" : "text-muted-foreground"
                 )}
               >
-                {meta.label}
+                <Tx>{meta.label}</Tx>
               </p>
               <p className="text-xs text-muted-foreground">
                 {stamp ? (

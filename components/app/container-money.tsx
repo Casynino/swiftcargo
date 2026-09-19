@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { storageStart } from "@/lib/storage-clock";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 /**
  * ONE CONTAINER, AS FINANCE READS IT.
  *
@@ -613,14 +614,14 @@ export async function ContainerMoney({
           ].map((cell) => (
             <div key={cell.label} className="bg-card px-4 py-4">
               <dt className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {cell.label}
+                <Tx>{cell.label}</Tx>
               </dt>
               <dd className={cn("tnum mt-1 text-xl font-semibold", cell.tone)}>
                 {cell.value}
               </dd>
               {cell.sub ? (
                 <p className="tnum mt-0.5 text-xs text-muted-foreground">
-                  {cell.sub}
+                  <Tx>{cell.sub}</Tx>
                 </p>
               ) : null}
             </div>

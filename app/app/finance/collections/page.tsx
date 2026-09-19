@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { storageStart } from "@/lib/storage-clock";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Payment follow-up" };
 
 /** One square in the row. Same size as every other, coloured by what it does. */
@@ -486,7 +487,7 @@ export default async function CollectionsPage({
           ].map((stat) => (
             <div key={stat.label}>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                {stat.label}
+                <Tx>{stat.label}</Tx>
               </p>
               <p className={cn("tnum mt-1 text-2xl font-semibold", stat.tone)}>
                 {formatMoney(stat.tzs, "TZS")}

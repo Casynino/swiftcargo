@@ -24,6 +24,7 @@ import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Employee" };
 
 /**

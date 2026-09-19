@@ -8,6 +8,7 @@ import { canAny, type Permission } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tx } from "@/components/app/tx";
 export const metadata: Metadata = { title: "Admin" };
 
 const AREAS: {
@@ -102,7 +103,7 @@ export default async function AdminPage() {
                 <span className="grid size-10 place-items-center rounded-lg bg-brand/10 text-brand">
                   {Icon ? <Icon className="size-4.5" /> : null}
                 </span>
-                <p className="mt-4 font-semibold">{area.title}</p>
+                <p className="mt-4 font-semibold"><Tx>{area.title}</Tx></p>
                 <p className="mt-1.5 text-sm text-muted-foreground">{area.body}</p>
               </Card>
             </Link>

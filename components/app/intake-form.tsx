@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
+import { Tx } from "@/components/app/tx";
 const PACKAGE_TYPES = [
   ["CARTON", "Carton 纸箱"],
   ["BALE", "Bale 包"],
@@ -677,7 +678,7 @@ export function IntakeForm({
           ].map(([label, value]) => (
             <div key={label} className="min-w-0">
               <dd className={cn("truncate text-sm font-bold", label === "CBM" && "text-marine")}>{value}</dd>
-              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground"><Tx>{label}</Tx></dt>
             </div>
           ))}
         </dl>
