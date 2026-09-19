@@ -656,7 +656,7 @@ export function IntakeForm({
       */}
       {/* One slim bar: the running totals on a single line and the button
           beside them — small enough never to cover the form it saves. */}
-      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl border-2 border-brand/40 bg-card px-3 py-2 shadow-raised">
+      <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 lg:bottom-3 flex items-center gap-3 rounded-2xl border-2 border-brand/40 bg-card px-3 py-2 shadow-raised">
         <dl className="tnum grid min-w-0 flex-1 grid-cols-4 gap-2 text-center">
           {[
             [t("pkg"), String(totals.packages)],

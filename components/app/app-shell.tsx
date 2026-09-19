@@ -4,8 +4,10 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icons from "lucide-react";
-import { Bell, ChevronRight, LogOut, Menu, X } from "lucide-react";
+import { Bell, ChevronRight, Globe, LogOut, Menu, X } from "lucide-react";
+import type { Role } from "@prisma/client";
 
+import { MobileTabbar } from "@/components/app/mobile-tabbar";
 import { NavTrail } from "@/components/app/nav-trail";
 import { NewVersionNotice } from "@/components/app/new-version-notice";
 import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
@@ -48,7 +50,7 @@ export function AppShell({
   sections: NavSection[];
   /** Where this desk's Home row goes. */
   home: NavItem;
-  user: { name: string; email: string; roleLabel: string; departmentLabel: string | null };
+  user: { name: string; email: string; role: Role; roleLabel: string; departmentLabel: string | null };
   unread: number;
   children: React.ReactNode;
 }) {
@@ -184,6 +186,20 @@ export function AppShell({
               {tr(user.departmentLabel ?? user.roleLabel)}
             </span>
 
+            {/* THE WAY OUT TO THE PUBLIC SITE, from every desk. Without it the
+                only door out of the app was Sign out. An ordinary in-tab link:
+                same origin, so the session stays and coming back lands on the
+                desk they left. */}
+            <Link
+              href="/"
+              title={tr("Open the public website — you stay signed in")}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:px-2.5"
+            >
+              <Globe className="size-[18px]" />
+              <span className="hidden sm:inline">{tr("Main site")}</span>
+              <span className="sr-only sm:hidden">{tr("Main site")}</span>
+            </Link>
+
             {/* THE BELL BELONGS WHERE PEOPLE LOOK FOR IT. Buried in the menu it
                 was a row you scrolled past; up here the count is visible from
                 every screen, which is the only reason to keep a count at all. */}
@@ -224,6 +240,10 @@ export function AppShell({
             <NavProvider sections={sections}>{children}</NavProvider>
           </div>
         </main>
+        {/* The room the bottom bar stands in, so the last row of a list is
+            never under it. */}
+        <div aria-hidden className="h-[calc(3.5rem_+_env(safe-area-inset-bottom))] lg:hidden print:hidden" />
+        <MobileTabbar sections={sections} home={home} role={user.role} onMore={() => setOpen(true)} />
         {/* One dialog for the whole app, opened from any button or any link
             to #record-payment, over whatever screen the desk is on. */}
         {canRecordPayment ? <RecordPaymentDialog canClear={canClearShortfall} /> : null}

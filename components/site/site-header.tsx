@@ -114,7 +114,11 @@ export function SiteHeader() {
           </Button>
           <Button asChild size="sm" className="track-go rounded-full border-0 px-4 text-white">
             <Link href={signedIn ? home : "/login"}>
-              {signedIn ? t(locale, "My account") : t(locale, "Sign in")}
+              {signedIn === "staff"
+                ? t(locale, "Back to my desk")
+                : signedIn
+                  ? t(locale, "My account")
+                  : t(locale, "Sign in")}
             </Link>
           </Button>
           <Button

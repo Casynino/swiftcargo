@@ -36,6 +36,7 @@ export default async function AppLayout({
       user={{
         name: user.name,
         email: user.email,
+        role: user.role,
         roleLabel: ROLE_LABELS[user.role],
         departmentLabel: user.department
           ? DEPARTMENT_LABELS[user.department]

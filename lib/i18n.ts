@@ -6066,6 +6066,8 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "Back to my desk": "返回工作台",
+  "Control": "管控",
   "All containers": "全部货柜",
   "Packages today": "今日件数",
   "Pieces today": "今日数量",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
+import { useT } from "@/components/app/locale-provider";
 import { backLabel, labelForPath, previousFrom, readTrail, titleFor } from "@/lib/nav-trail";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +93,25 @@ const PARENTS: { prefix: string; parent: string; label: string }[] = [
 ];
 
 /** Tops of a desk — a back control there would name a place nobody came from. */
-const ROOTS = new Set(["/app", "/app/dashboard", "/app/support", "/app/search", "/app/scan"]);
+const ROOTS = new Set([
+  "/app",
+  "/app/dashboard",
+  "/app/support",
+  "/app/search",
+  "/app/scan",
+  /* Every tab on the phone's bottom bar: somebody who pressed a tab did not
+     come from anywhere, and a back control there names a place they were not. */
+  "/app/manager",
+  "/app/manager/control",
+  "/app/receive/new",
+  "/app/containers/loading",
+  "/app/receive/dar",
+  "/app/release",
+  "/app/finance",
+  "/app/finance/collections",
+  "/app/support/tickets",
+  "/app/containers",
+]);
 
 /**
  * THE WAY BACK ON A PHONE.
@@ -102,6 +121,7 @@ const ROOTS = new Set(["/app", "/app/dashboard", "/app/support", "/app/search", 
  * page's parent section, else Home. Hidden at the top of a desk.
  */
 export function MobileBack() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const [walked, setWalked] = useState<{ href: string; label: string } | null>(null);
@@ -123,7 +143,7 @@ export function MobileBack() {
       className="-ml-1 inline-flex h-11 max-w-[10rem] items-center gap-0.5 rounded-md pl-1 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary print:hidden"
     >
       <ChevronLeft className="size-5 shrink-0" />
-      <span className="truncate">{dest.label}</span>
+      <span className="truncate">{t(dest.label)}</span>
     </button>
   );
 }

@@ -71,7 +71,7 @@ export function NewVersionNotice({ build }: { build: string }) {
     pressing it does is shown rather than spelled out twice.
   */
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-[60] flex justify-center px-4 print:hidden lg:bottom-auto lg:top-3">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] flex justify-center px-4 print:hidden lg:bottom-auto lg:top-3">
       <button
         type="button"
         onClick={() => window.location.reload()}
