@@ -10,7 +10,7 @@ import {
 } from "@/lib/actions/merge";
 import { chargeStorage } from "@/lib/actions/invoices";
 import { AskCreditButton } from "@/components/app/ask-for-credit";
-import { CreditButton, DiscountDialog, ExchangeRateDialog } from "@/components/app/bill-dialogs";
+import { CreditButton, DiscountDialog, ExchangeRateDialog, RateDialog } from "@/components/app/bill-dialogs";
 import { FormMessage } from "@/components/app/form-message";
 import { ShortfallNotice } from "@/components/app/shortfall-notice";
 import { SubmitButton } from "@/components/app/submit-button";
@@ -37,6 +37,13 @@ export type MergeBill = {
   rate: number | null;
   /** Storage accrued and NOT yet on the bill, in the bill's currency. */
   storageUncharged: number;
+  /** For the Edit price dialog. */
+  standardRate: number | null;
+  appliedRate: number | null;
+  cbm: number | null;
+  category: string | null;
+  /** Has a freight line charged per CBM — the only kind the dialog edits. */
+  priced: boolean;
 };
 
 export type WaitingBill = {
@@ -70,6 +77,7 @@ export function MergePaymentForm({
   canClear = false,
   canChangeBill = false,
   canChangeRate = false,
+  categories = [],
 }: {
   customerId: string;
   customerName: string;
@@ -83,7 +91,12 @@ export function MergePaymentForm({
   canChangeBill?: boolean;
   /** May move the rate the bill was pinned at — the desk that owns the bill. */
   canChangeRate?: boolean;
+  /** The rate book's categories, for the Edit price dialog. */
+  categories?: { name: string; rate: number }[];
 }) {
+  /* The bill whose price is being edited, in place — never a trip to the
+     invoice and back. */
+  const [pricing, setPricing] = useState<MergeBill | null>(null);
   const [state, action] = useActionState<MergeState, FormData>(
     recordCombinedPayment,
     {}
@@ -192,6 +205,21 @@ export function MergePaymentForm({
       action={action}
       className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]"
     >
+      {pricing ? (
+        <RateDialog
+          invoiceId={pricing.invoiceId}
+          standardRate={pricing.standardRate}
+          appliedRate={pricing.appliedRate}
+          cbm={pricing.cbm}
+          category={pricing.category}
+          categories={categories}
+          onClose={() => setPricing(null)}
+          onSaved={() => {
+            setTyped(null);
+            router.refresh();
+          }}
+        />
+      ) : null}
       <input type="hidden" name="customerId" value={customerId} />
       <input type="hidden" name="currency" value={pay} />
       <input type="hidden" name="cargoAmount" value={cargo || ""} />
@@ -284,14 +312,17 @@ export function MergePaymentForm({
                       ) : null}
                     </span>
                   </label>
-                  <div className="px-5 pb-3 pl-[3.25rem]">
-                    <a
-                      href={`/app/finance/invoices/${bill.invoiceId}#rate`}
-                      className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
-                    >
-                      Edit the rate per CBM
-                    </a>
-                  </div>
+                  {canChangeBill && bill.priced ? (
+                    <div className="px-5 pb-3 pl-[3.25rem]">
+                      <button
+                        type="button"
+                        onClick={() => setPricing(bill)}
+                        className="inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                      >
+                        Edit price — category, CBM or rate
+                      </button>
+                    </div>
+                  ) : null}
                 </li>
               );
             })}

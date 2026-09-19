@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { bookCategories, categoryOfCargo } from "@/lib/rate-categories";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -53,11 +54,13 @@ export default async function MergePaymentForCustomer({
           orderBy: { issuedAt: "asc" },
           include: {
             payments: true,
-            items: { select: { category: true, amount: true } },
+            items: { select: { category: true, amount: true, unit: true } },
             cargo: {
               select: {
                 reference: true,
                 description: true,
+                commodity: true,
+                packages: { where: { deletedAt: null }, select: { cargoType: true } },
                 darReceiving: { select: { receivedAt: true } },
                 clearedAt: true,
                 containerLines: {
@@ -137,6 +140,11 @@ export default async function MergePaymentForCustomer({
       outstandingTzs: balanceOf(invoice).outstandingTzs?.toNumber() ?? null,
       rate,
       storageUncharged: Math.max(0, accruedInBill - onBill),
+      standardRate: invoice.standardRate ? Number(invoice.standardRate) : null,
+      appliedRate: invoice.appliedRate ? Number(invoice.appliedRate) : null,
+      cbm: invoice.billableCbm ? Number(invoice.billableCbm) : null,
+      category: categoryOfCargo({ commodity: invoice.cargo.commodity, packages: invoice.cargo.packages }),
+      priced: invoice.items.some((i) => i.unit === "CBM"),
     });
   }
 
@@ -181,6 +189,7 @@ export default async function MergePaymentForCustomer({
           canClear={can(user.role, "payment.verify")}
           canChangeBill={can(user.role, "invoice.discount")}
           canChangeRate={can(user.role, "invoice.edit")}
+          categories={can(user.role, "invoice.discount") ? await bookCategories() : []}
           customerId={customer.id}
           customerName={name}
           bills={bills}
