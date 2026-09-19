@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { formatDate, formatMoney } from "@/lib/format";
 import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
-import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
+import { billLetter, composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -275,12 +275,36 @@ export default async function CollectionsPage({
 
   const overdue = rows.filter((r) => r.late > 0).length;
 
+  /* Landed in Dar with no bill out: money nobody can chase until its price is
+     confirmed, so it is named here rather than missing from the list. */
+  const unpricedLanded = await prisma.cargo.count({
+    where: {
+      deletedAt: null,
+      status: { in: ["ARRIVED_TANZANIA", "RECEIVED_DAR"] },
+      invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
+    },
+  });
+
   return (
     <div className="space-y-6">
       <CollectionsHeader
         recordPayment={<RecordPaymentButton />}
         canVerify={can(user.role, "payment.verify")}
       />
+
+      {unpricedLanded > 0 ? (
+        <Link
+          href="/app/containers/arrived"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm hover:bg-warning/10"
+        >
+          <span>
+            <span className="font-semibold text-warning">{unpricedLanded}</span>{" "}
+            consignment{unpricedLanded === 1 ? " has" : "s have"} arrived in Dar with no
+            invoice yet — confirm the price to start collecting.
+          </span>
+          <span className="font-medium text-brand">Confirm prices →</span>
+        </Link>
+      ) : null}
 
       {/*
         ONE CARD: FIND, ORDER, NARROW, THEN THE MONEY IT COMES TO.
@@ -553,13 +577,27 @@ export default async function CollectionsPage({
                         cargoId={row.invoice.cargo.id}
                         invoiceId={row.invoice.id}
                         phone={whatsappNumber(row.invoice.customer.phone)}
-                        kind="payment.reminder"
+                        kind={billLetter(
+                          messageStage({
+                            status: row.invoice.cargo.status,
+                            hasDarReceiving: row.invoice.cargo.darReceiving !== null,
+                            clearedAt: row.invoice.cargo.clearedAt,
+                          }),
+                          true
+                        )}
                         label={
                           row.lastContact
                             ? `Chase ${row.invoice.customer.fullName}`
                             : `Tell ${row.invoice.customer.fullName}`
                         }
-                        message={composeMessage("payment.reminder", {
+                        message={composeMessage(billLetter(
+                          messageStage({
+                            status: row.invoice.cargo.status,
+                            hasDarReceiving: row.invoice.cargo.darReceiving !== null,
+                            clearedAt: row.invoice.cargo.clearedAt,
+                          }),
+                          true
+                        ), {
                           customerName: row.invoice.customer.fullName,
                           reference: row.invoice.cargo.reference,
                           description: row.invoice.cargo.description,

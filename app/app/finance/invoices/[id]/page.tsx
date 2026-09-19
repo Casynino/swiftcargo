@@ -142,9 +142,9 @@ export default async function InvoicePage({
               cargoId={invoice.cargoId}
               invoiceId={invoice.id}
               phone={whatsappNumber(invoice.customer.phone)}
-              kind={Number(owing) > 0 ? "payment.reminder" : "cargo.ready"}
+              kind={stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "payment.reminder" : "cargo.ready"}
               label="Notify on WhatsApp"
-              message={composeMessage(Number(owing) > 0 ? "payment.reminder" : "cargo.ready", {
+              message={composeMessage(stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "payment.reminder" : "cargo.ready", {
                 customerName: invoice.customer.fullName,
                 reference: invoice.cargo.reference,
                 invoiceNumber: invoice.number,
@@ -247,11 +247,11 @@ export default async function InvoicePage({
           invoiceId={invoice.id}
           phone={whatsappNumber(invoice.customer.phone)}
           displayPhone={invoice.customer.phone}
-          options={(["invoice.issued", "payment.reminder", "cargo.ready", "general"] as ContactKind[]).map(
+          options={(["cargo.arrived", "invoice.issued", "payment.reminder", "cargo.ready", "general"] as ContactKind[]).map(
             (kind): MessageOption => ({
               kind,
               label: CONTACT_KIND_LABELS[kind],
-              suggested: kind === (Number(owing) > 0 ? "invoice.issued" : "cargo.ready"),
+              suggested: kind === (stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "invoice.issued" : "cargo.ready"),
               body: composeMessage(kind, {
                 customerName: invoice.customer.fullName,
                 reference: invoice.cargo.reference,

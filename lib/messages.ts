@@ -103,6 +103,9 @@ export type MessageContext = {
  * terminal.
  */
 function cargoBlock(context: MessageContext): string {
+  if (!context.statusLine && context.stage === "clearance") {
+    context = { ...context, statusLine: "Clearance in Progress" };
+  }
   const lines: string[] = ["*MAELEZO YA MZIGO*"];
   if (context.reference) lines.push(`• Tracking: ${context.reference}`);
   if (context.invoiceNumber) lines.push(`• Invoice: ${context.invoiceNumber}`);
@@ -197,6 +200,18 @@ export function messageStage(cargo: {
   return "transit";
 }
 
+/**
+ * Which letter a bill goes out in. At the port, in clearance, it is the
+ * arrival letter with the bill inside it; everywhere else, the bill's own.
+ */
+export function billLetter(
+  stage: MessageContext["stage"],
+  owing: boolean
+): ContactKind {
+  if (stage === "clearance") return "cargo.arrived";
+  return owing ? "payment.reminder" : "invoice.issued";
+}
+
 export function trackUrl(): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (configured && !configured.includes("localhost")) {
@@ -281,20 +296,33 @@ export function composeMessage(
       customer to come, and never says ready: a customer who travels to the
       warehouse for goods still in customs has been lied to by us.
     */
-    case "cargo.arrived":
+    case "cargo.arrived": {
+      /* With the bill in it when there is one: the customer can pay while
+         customs has the goods, and be ready the day clearance finishes. */
+      const billed = Boolean(context.amountTzs || context.amount);
       return letter(
         `Mzigo wako umefika salama ${ROUTE.destinationCity} na kwa sasa uko kwenye ` +
           `hatua ya customs clearance. Tunaendelea na taratibu za kuutoa kwenye ` +
           `clearance, na mara tu utakapokuwa umekamilika utapokea notification ` +
-          `nyingine ya kukujulisha kuwa mzigo wako uko tayari kuchukuliwa.`,
+          `nyingine ya kukujulisha kuwa mzigo wako uko tayari kuchukuliwa.` +
+          (billed
+            ? `\n\nInvoice yako iko tayari — unaweza kulipa sasa ili mzigo uwe ` +
+              `tayari kuchukuliwa mara clearance itakapokamilika.`
+            : ""),
         {
-          storageText: arrivalStorageBlock(context),
-          linkLabel: "Angalia taarifa za mzigo wako:",
+          storageText: arrivalStorageBlock({
+            ...context,
+            statusLine: context.statusLine ?? "Clearance in Progress",
+          }),
+          linkLabel: billed
+            ? "Angalia invoice yako kamili na njia za malipo:"
+            : "Angalia taarifa za mzigo wako:",
           closing:
             "Tutakujulisha mara tu mzigo wako utakapokuwa umekamilisha clearance " +
             "na kuwa tayari kuchukuliwa.",
         }
       );
+    }
 
     case "cargo.received_dar":
       return letter(

@@ -97,6 +97,59 @@ export async function announceDarArrival(
 }
 
 /**
+ * THE SHIP IS IN: CLEARANCE, AND WHAT TO PAY.
+ *
+ * One message per consignment when Dar marks the container arrived at the
+ * port: it is here, customs has it, it is not ready, another message follows —
+ * and, when a bill is out, the invoice and the amount, because paying now is
+ * what makes it ready the day clearance finishes.
+ */
+export async function announcePortArrival(tx: TxClient, cargoIds: string[]) {
+  const rows = await tx.cargo.findMany({
+    where: { id: { in: cargoIds }, deletedAt: null, status: "ARRIVED_TANZANIA" },
+    select: {
+      reference: true,
+      senderId: true,
+      receiverId: true,
+      invoices: {
+        where: { status: { notIn: ["DRAFT", "CANCELLED"] } },
+        select: {
+          number: true,
+          status: true,
+          total: true,
+          currency: true,
+          fxRate: true,
+          totalTzs: true,
+          payments: {
+            select: { status: true, amount: true, currency: true, fxRate: true, baseCurrencyAmount: true, creditedAmount: true },
+          },
+        },
+      },
+    },
+  });
+  for (const cargo of rows) {
+    const owed = owedAcross(cargo.invoices);
+    const bill = cargo.invoices[0];
+    await notifyCustomer(
+      [cargo.receiverId, cargo.senderId],
+      {
+        kind: "cargo.arrived",
+        title: `${cargo.reference} has arrived in Dar es Salaam — clearance in progress`,
+        body:
+          "Your goods are at Dar es Salaam port and going through customs clearance. They are not ready to collect yet — we will tell you as soon as clearance is complete." +
+          (bill && owed.owes
+            ? ` Invoice ${bill.number}: ${owed.primary}${owed.equivalent ? ` (${owed.equivalent})` : ""} to pay. Paying now means it is ready the day clearance finishes.`
+            : bill
+              ? ` Invoice ${bill.number} is paid.`
+              : ""),
+        href: bill ? "/portal/invoices" : `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
+      },
+      tx
+    );
+  }
+}
+
+/**
  * READY, SAID ONCE.
  *
  * Runs the release check on a cleared consignment and, the first time it

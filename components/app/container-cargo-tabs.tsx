@@ -68,7 +68,7 @@ export type CargoRow = {
    * nobody retypes an amount into a phone. Null where there is no bill yet, no
    * number to send to, or no authority to send.
    */
-  send: { phone: string; message: string } | null;
+  send: { phone: string; message: string; kind: string } | null;
   /** True where a bill exists, is unpaid, and the viewer may take money. */
   takesPayment: boolean;
   /** The single cargo type on the lines, for the picker on the row. */
@@ -483,8 +483,8 @@ function CargoTableRow({
                 invoiceId={row.invoiceId ?? undefined}
                 phone={row.send.phone}
                 message={row.send.message}
-                kind="invoice.issued"
-                label={t(locale, "Send the bill")}
+                kind={row.send.kind}
+                label={t(locale, row.send.kind === "cargo.arrived" ? "Tell them it is in clearance" : "Send the bill")}
                 iconOnly
               />
             ) : null}

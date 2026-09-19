@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
-import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
+import { billLetter, composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -341,13 +341,7 @@ export async function ContainerMoney({
                     ? "Priced from the book"
                     : waitingRow?.blockedReason
                       ? "Cannot be priced"
-                      : /* Sea freight is billed on what landed, so a
-                           consignment nobody in Dar has counted has nothing to
-                           price yet. Saying "not priced" about it read as a
-                           failure of the rate book. */
-                        c.darReceiving
-                        ? "Not priced"
-                        : "Waiting for Dar's count",
+                      : "Not priced",
       proofUrl: c.photos[0]?.url ?? null,
       proofCount: c._count.photos,
       invoiceHref: r.live[0]
@@ -360,20 +354,23 @@ export async function ContainerMoney({
         if (!mayTellCustomers || !bill) return null;
         const phone = whatsappNumber(c.receiver.phone);
         if (!phone) return null;
+        const stage = messageStage({
+          status: c.status,
+          hasDarReceiving: c.darReceiving !== null,
+          clearedAt: c.clearedAt,
+        });
+        const kind = billLetter(stage, false);
         return {
           phone,
+          kind,
           /* The invoice's own pinned figures, never today's rate: a customer
              quoted at 2,700 who then reads 2,800 believes the bill changed. */
-          message: composeMessage("invoice.issued", {
+          message: composeMessage(kind, {
             customerName: c.receiver.fullName,
             reference: c.reference,
             description: c.description,
             invoiceNumber: bill.number,
-            stage: messageStage({
-              status: c.status,
-              hasDarReceiving: c.darReceiving !== null,
-              clearedAt: c.clearedAt,
-            }),
+            stage,
             packages: measured?.packagesCount ?? null,
             cbm: bill.billableCbm
               ? Number(bill.billableCbm).toFixed(3)

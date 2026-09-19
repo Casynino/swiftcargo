@@ -8,6 +8,8 @@ import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { DateOutOfRange, formDate } from "@/lib/dates";
 import { issueFor as issuePackingListFor } from "@/lib/packing-list";
 import { setCargoStatus, setCargoStatusBulk } from "@/lib/cargo";
+import { announcePortArrival } from "@/lib/clearance";
+import { priceOnCheckIn } from "@/lib/price-confirmation";
 import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
 import {
   nextContainerReference,
@@ -1153,16 +1155,21 @@ export async function advanceContainer(
           `Container ${container.reference}`
         );
 
-        await notifyCustomer(
-          container.cargoLines.flatMap((l) => [l.cargo.senderId, l.cargo.receiverId]),
-          {
-            kind: `container.${to.toLowerCase()}`,
-            title: step.title,
-            body: step.body(container.containerNumber ?? container.reference),
-            href: "/portal",
-          },
-          tx
-        );
+        if (to === "ARRIVED") {
+          /* Each customer's own message, with their own bill in it. */
+          await announcePortArrival(tx, container.cargoLines.map((l) => l.cargoId));
+        } else {
+          await notifyCustomer(
+            container.cargoLines.flatMap((l) => [l.cargo.senderId, l.cargo.receiverId]),
+            {
+              kind: `container.${to.toLowerCase()}`,
+              title: step.title,
+              body: step.body(container.containerNumber ?? container.reference),
+              href: "/portal",
+            },
+            tx
+          );
+        }
       }
     });
   } catch (error) {
@@ -1178,6 +1185,14 @@ export async function advanceContainer(
     entityId: container.id,
     summary: `${container.reference} → ${to.toLowerCase()} (${container.cargoLines.length} consignment(s))`,
   });
+
+  if (to === "ARRIVED") {
+    /* Landed goods are collectable money: anything Finance has not priced yet
+       gets its draft from the rate book now, waiting on the price list. */
+    await priceOnCheckIn(actor, container.cargoLines.map((l) => l.cargoId));
+    revalidatePath("/app/finance/collections");
+    revalidatePath("/app/receive/dar");
+  }
 
   revalidatePath(`/app/containers/${container.id}`);
   revalidatePath("/app/containers");
