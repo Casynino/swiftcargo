@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma, type Role } from "@prisma/client";
 
 import { balanceOf, outstandingOf, paymentTzs } from "@/lib/invoice-balance";
+import { owedAcross } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 
@@ -562,6 +563,9 @@ export type AttentionRow = {
   detail: string;
   href: string;
   tone: "warn" | "bad" | "neutral";
+  /** The figure or state on the right, as on the air side — an amount, a volume, a state. */
+  meta?: string;
+  metaSub?: string;
 };
 
 /**
@@ -1236,9 +1240,13 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
   const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
   if (can(role, "receiving.china")) {
-    const [waiting, loading] = await Promise.all([
+    const [waiting, loading, shelf] = await Promise.all([
       prisma.cargo.count({ where: { deletedAt: null, status: "RECEIVED_CHINA" } }),
       prisma.container.count({ where: { deletedAt: null, status: { in: ["OPEN", "LOADING"] } } }),
+      prisma.chinaReceiving.aggregate({
+        where: { cargo: { deletedAt: null, status: "RECEIVED_CHINA" } },
+        _sum: { cbm: true },
+      }),
     ]);
     rows.push(
       {
@@ -1249,6 +1257,8 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "On the shelf in Guangzhou, not yet loaded.",
         href: "/app/inventory",
         tone: "neutral",
+        meta: `${Number(shelf._sum.cbm ?? 0).toFixed(3)} CBM`,
+        metaSub: "on the shelf",
       },
       {
         id: "desk-loading",
@@ -1258,6 +1268,7 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "Still open for cargo — seal when full.",
         href: "/app/containers/loading",
         tone: "neutral",
+        meta: "loading",
       }
     );
   }
@@ -1282,6 +1293,7 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "Landed at the port. Mark them cleared when customs is done.",
         href: "/app/receive/dar",
         tone: "neutral",
+        meta: "at the port",
       },
       {
         id: "desk-ready",
@@ -1291,6 +1303,7 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "Cleared and paid — waiting for the customer to collect.",
         href: "/app/release",
         tone: "neutral",
+        meta: "to collect",
       }
     );
   }
@@ -1298,11 +1311,28 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
   /* The desk that hands payments up and chases customers, not the one that
      verifies them — Finance has its own rows above. */
   if (can(role, "payment.submit") && !can(role, "payment.verify")) {
-    const [sentBack, withFinance, toChase] = await Promise.all([
+    const [sentBack, withFinance, open] = await Promise.all([
       prisma.payment.count({ where: { status: "REJECTED" } }),
       prisma.payment.count({ where: { status: "PENDING" } }),
-      prisma.invoice.count({ where: { status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } } }),
+      prisma.invoice.findMany({
+        where: { status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } },
+        select: {
+          customerId: true,
+          status: true,
+          total: true,
+          currency: true,
+          fxRate: true,
+          totalTzs: true,
+          payments: {
+            select: { status: true, amount: true, currency: true, fxRate: true, baseCurrencyAmount: true, creditedAmount: true },
+          },
+        },
+      }),
     ]);
+    /* Customers, not bills — one call covers every bill a customer owes. */
+    const owing = open.filter((i) => owedAcross([i]).owes);
+    const toChase = new Set(owing.map((i) => i.customerId)).size;
+    const owed = owedAcross(owing);
     rows.push(
       {
         id: "desk-sent-back",
@@ -1312,15 +1342,18 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "Finance could not verify these. Ring the customer before handing it up again.",
         href: "/app/finance/collections/sent-back",
         tone: "bad",
+        meta: "needs a call",
       },
       {
         id: "desk-to-chase",
         group: "Collections",
         count: toChase,
-        title: `${toChase} ${plural(toChase, "bill", "bills")} to chase`,
+        title: `${toChase} ${plural(toChase, "customer", "customers")} to chase`,
         detail: "Billed, and the money has not arrived.",
         href: "/app/finance/collections",
         tone: "neutral",
+        meta: owed.primary,
+        metaSub: owed.equivalent ?? undefined,
       },
       {
         id: "desk-with-finance",
@@ -1330,6 +1363,7 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         detail: "Payments handed up, waiting to be checked. Nothing to do but watch.",
         href: "/app/finance/collections/with-finance",
         tone: "neutral",
+        meta: "waiting on Finance",
       }
     );
   }

@@ -6066,6 +6066,10 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "on the shelf": "在货架上",
+  "loading": "装柜中",
+  "at the port": "在港口",
+  "to collect": "待提货",
   "Nothing needs you": "暂无需要处理的事项",
   "No missing cargo, no overdue bills, nothing held.": "没有丢失的货物、没有逾期账单、没有被扣留的货物。",
   "All issues": "全部问题",

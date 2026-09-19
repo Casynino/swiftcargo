@@ -71,6 +71,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+      {groups.length > 1 ? (
       <div className="flex gap-2 overflow-x-auto border-b px-3 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {["All", ...groups].map((group) => {
           const count =
@@ -83,10 +84,10 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
               type="button"
               onClick={() => setActive(group)}
               className={cn(
-                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
                 active === group
-                  ? "bg-brand text-brand-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
+                  ? "border-brand bg-brand text-brand-foreground"
+                  : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               {t(group)}
@@ -95,6 +96,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
           );
         })}
       </div>
+      ) : null}
 
       {/* Three rows show; the rest scroll inside the panel, which is the same
           height whether the desk has three things or thirty. */}
@@ -121,9 +123,9 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
               </span>
               {item.meta ? (
                 <span className="shrink-0 text-right">
-                  <span className="tnum block text-sm font-semibold">{item.meta}</span>
+                  <span className="block font-mono text-xs font-semibold tabular-nums">{t(item.meta)}</span>
                   {item.metaSub ? (
-                    <span className="tnum block text-[11px] text-muted-foreground">{item.metaSub}</span>
+                    <span className="block font-mono text-xs tabular-nums text-muted-foreground">{t(item.metaSub)}</span>
                   ) : null}
                 </span>
               ) : null}
