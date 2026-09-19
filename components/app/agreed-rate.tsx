@@ -1,5 +1,6 @@
 import { Tag } from "lucide-react";
 
+import { primeLocale, T } from "@/lib/server-t";
 /**
  * WHAT WAS AGREED, BESIDE WHAT THE BOOK SAYS.
  *
@@ -30,7 +31,7 @@ export function AgreedRate({
     <div className={`rounded-md border border-brand/40 bg-brand/[0.07] px-2.5 py-2 text-[11px] leading-relaxed ${className}`}>
       <p className="flex items-center gap-1.5 font-semibold text-brand">
         <Tag className="size-3.5 shrink-0" />
-        Special rate for this cargo
+        {T("Special rate for this cargo")}
       </p>
       <p className="tnum mt-1 text-muted-foreground">
         {standard !== null ? (

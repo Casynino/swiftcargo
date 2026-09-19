@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * WHAT A DESK DOES WITH A WEBSITE REQUEST.
  *
@@ -39,6 +40,7 @@ export function AssignControl({
   assignedToId: string | null;
   staff: StaffOption[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(assignRequest, {});
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
@@ -48,9 +50,9 @@ export function AssignControl({
         name="assignedToId"
         defaultValue={assignedToId ?? ""}
         className="h-9 w-48"
-        aria-label="Assign to"
+        aria-label={tx("Assign to")}
       >
-        <option value="">Unassigned</option>
+        <option value="">{tx("Unassigned")}</option>
         {staff.map((person) => (
           <option key={person.id} value={person.id}>
             {person.name} · {person.role}
@@ -58,7 +60,7 @@ export function AssignControl({
         ))}
       </NativeSelect>
       <SubmitButton size="sm" variant="outline">
-        Assign
+        {tx("Assign")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>
@@ -72,6 +74,7 @@ export function ScheduleControl({
   id: string;
   scheduledDate: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(schedulePickup, {});
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
@@ -83,10 +86,10 @@ export function ScheduleControl({
         max="2099-12-31"
         defaultValue={scheduledDate ?? ""}
         className="h-9 w-44"
-        aria-label="Collection date"
+        aria-label={tx("Collection date")}
       />
       <SubmitButton size="sm" variant="outline">
-        Set collection day
+        {tx("Set collection day")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>
@@ -102,6 +105,7 @@ export function QuoteControl({
   quotedAmount: string | null;
   quotedCurrency: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(
     quoteServiceRequest,
     {}
@@ -116,31 +120,30 @@ export function QuoteControl({
         min={0}
         defaultValue={quotedAmount ?? ""}
         className="h-9 w-32"
-        aria-label="Quoted amount"
+        aria-label={tx("Quoted amount")}
         placeholder="0.00"
       />
       <NativeSelect
         name="currency"
         defaultValue={quotedCurrency}
         className="h-9 w-24"
-        aria-label="Currency"
+        aria-label={tx("Currency")}
       >
         <option value="USD">USD</option>
         <option value="TZS">TZS</option>
       </NativeSelect>
       <Input
         name="notes"
-        placeholder="What you told them"
+        placeholder={tx("What you told them")}
         className="h-9 min-w-[12rem] flex-1"
-        aria-label="Quotation note"
+        aria-label={tx("Quotation note")}
       />
       <SubmitButton size="sm" variant="outline">
-        Record quotation
+        {tx("Record quotation")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
       <p className="w-full text-xs text-muted-foreground">
-        A quotation is an answer to an enquiry. Nothing is owed until cargo
-        exists and Finance issues a bill against it.
+        {tx("A quotation is an answer to an enquiry. Nothing is owed until cargo exists and Finance issues a bill against it.")}
       </p>
     </form>
   );
@@ -155,6 +158,7 @@ export function ConvertControl({
   status: string;
   convertedTo: { code: string; name: string } | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(
     convertBookingToCustomer,
     {}
@@ -172,7 +176,7 @@ export function ConvertControl({
     <form action={action} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="id" value={id} />
       <SubmitButton size="sm" disabled={status !== "APPROVED"}>
-        Convert to a customer
+        {tx("Convert to a customer")}
       </SubmitButton>
       <span className="text-xs text-muted-foreground">
         {status === "APPROVED"
@@ -191,6 +195,7 @@ export function LinkCargoControl({
   id: string;
   cargoReference: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(
     linkPickupToCargo,
     {}
@@ -209,7 +214,7 @@ export function LinkCargoControl({
   if (!open) {
     return (
       <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        Goods received — link the consignment
+        {tx("Goods received — link the consignment")}
       </Button>
     );
   }
@@ -221,13 +226,13 @@ export function LinkCargoControl({
         name="cargoReference"
         placeholder="SC0042"
         className="tnum h-9 w-32"
-        aria-label="Consignment reference"
+        aria-label={tx("Consignment reference")}
       />
       <SubmitButton size="sm" variant="outline">
-        Link
+        {tx("Link")}
       </SubmitButton>
       <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
-        Cancel
+        {tx("Cancel")}
       </Button>
       <FormMessage error={state.error} ok={state.ok} />
       <p className="w-full text-xs text-muted-foreground">
@@ -261,6 +266,7 @@ export function RequestFiles({
   bookingId?: string;
   files: RequestFile[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<DeskState, FormData>(
     attachRequestFile,
     {}
@@ -296,31 +302,31 @@ export function RequestFiles({
             name="kind"
             defaultValue="DOCUMENT"
             className="h-9 w-32"
-            aria-label="Kind of file"
+            aria-label={tx("Kind of file")}
           >
-            <option value="DOCUMENT">Document</option>
-            <option value="PROOF">Proof</option>
+            <option value="DOCUMENT">{tx("Document")}</option>
+            <option value="PROOF">{tx("Proof")}</option>
           </NativeSelect>
-          <Input name="label" placeholder="What it is" className="h-9 w-40" aria-label="Label" />
+          <Input name="label" placeholder={tx("What it is")} className="h-9 w-40" aria-label={tx("Label")} />
           <Input
             name="files"
             type="file"
             multiple
             accept="image/*,application/pdf"
             className="h-9 w-56"
-            aria-label="Files"
+            aria-label={tx("Files")}
           />
           <SubmitButton size="sm" variant="outline">
-            Attach
+            {tx("Attach")}
           </SubmitButton>
           <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tx("Cancel")}
           </Button>
           <FormMessage error={state.error} ok={state.ok} />
         </form>
       ) : (
         <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
-          Attach a document or proof
+          {tx("Attach a document or proof")}
         </Button>
       )}
     </div>

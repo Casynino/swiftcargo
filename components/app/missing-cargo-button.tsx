@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * "It is not on the container."
  *
@@ -23,6 +24,7 @@ export function MissingCargoButton({
   cargoId: string;
   reference: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     reportMissingAtDar,
     {}
@@ -44,7 +46,7 @@ export function MissingCargoButton({
         onClick={() => setOpen(true)}
       >
         <PackageX />
-        Not here
+        {tx("Not here")}
       </Button>
     );
   }
@@ -56,7 +58,7 @@ export function MissingCargoButton({
         name="note"
         placeholder={`Why is ${reference} not here?`}
         className="h-9 w-64"
-        aria-label="What happened"
+        aria-label={tx("What happened")}
       />
       <div className="flex gap-2">
         <Button
@@ -65,10 +67,10 @@ export function MissingCargoButton({
           size="sm"
           onClick={() => setOpen(false)}
         >
-          Cancel
+          {tx("Cancel")}
         </Button>
         <SubmitButton size="sm" variant="destructive" pendingLabel="Reporting…">
-          Report missing
+          {tx("Report missing")}
         </SubmitButton>
       </div>
       <FormMessage error={state.error} />

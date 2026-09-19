@@ -17,6 +17,7 @@ import { buildReport } from "@/lib/report-tables";
 import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale, T } from "@/lib/server-t";
 function readMonth(v?: string) {
   const now = new Date();
   const m = v && /^(\d{4})-(\d{2})$/.exec(v);
@@ -45,6 +46,7 @@ export default async function StatementPage({
 }: {
   searchParams: Promise<{ month?: string; cur?: string }>;
 }) {
+  await primeLocale();
   await requirePermission("profit.view");
   const sp = await searchParams;
   const range = readMonth(sp.month);
@@ -75,8 +77,8 @@ export default async function StatementPage({
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex items-center justify-between print:hidden">
-        <SmartBack fallbackHref="/app/finance/reports" fallbackLabel="Profit & loss" />
-        <PrintButton label="Download PDF / print" />
+        <SmartBack fallbackHref="/app/finance/reports" fallbackLabel={T("Profit & loss")} />
+        <PrintButton label={T("Download PDF / print")} />
       </div>
 
       <article className="rounded-lg border bg-white p-10 text-black print:border-0 print:p-0">
@@ -84,12 +86,12 @@ export default async function StatementPage({
           <div className="flex items-center gap-3">
             <Image src="/brand/swift-cargo.png" alt="" width={56} height={56} className="object-contain" />
             <div>
-              <p className="text-xl font-bold uppercase tracking-wider">Swift Cargo</p>
-              <p className="text-xs text-neutral-600">Guangzhou → Dar es Salaam</p>
+              <p className="text-xl font-bold uppercase tracking-wider">{T("Swift Cargo")}</p>
+              <p className="text-xs text-neutral-600">{T("Guangzhou → Dar es Salaam")}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-lg font-bold uppercase tracking-wider">Financial statement</p>
+            <p className="text-lg font-bold uppercase tracking-wider">{T("Financial statement")}</p>
             <p className="text-sm">{range.label}</p>
             <p className="text-xs text-neutral-600">
               In {cur === "TZS" ? "Tanzanian shillings" : "US dollars"}

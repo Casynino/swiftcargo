@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 export type CargoRow = {
   id: string;
   reference: string;
@@ -158,6 +159,7 @@ export function ContainerCargoTabs({
   vatPercent: number;
   locale: Locale;
 }) {
+  const tx = useT();
   const [tab, setTab] = useUrlState("tab", "cargo", ["cargo", "documents", "timeline"] as const);
   const [query, setQuery] = useUrlState<string>("q", "");
   const [category, setCategory] = useUrlState<string>("category", "");
@@ -241,18 +243,18 @@ export function ContainerCargoTabs({
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tracking number, customer, phone or goods…"
+                placeholder={tx("Tracking number, customer, phone or goods…")}
                 className="pl-9"
-                aria-label="Search this container"
+                aria-label={tx("Search this container")}
               />
             </div>
             <NativeSelect
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-48"
-              aria-label="Category"
+              aria-label={tx("Category")}
             >
-              <option value="">All categories</option>
+              <option value="">{tx("All categories")}</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -263,7 +265,7 @@ export function ContainerCargoTabs({
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
               className="w-52"
-              aria-label="Sort"
+              aria-label={tx("Sort")}
             >
               {(Object.keys(SORTS) as Sort[]).map((key) => (
                 <option key={key} value={key}>
@@ -281,15 +283,15 @@ export function ContainerCargoTabs({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date received</TableHead>
-                <TableHead>Tracking</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Goods</TableHead>
-                <TableHead className="text-right">Volume</TableHead>
-                <TableHead className="text-right">Counted as</TableHead>
+                <TableHead>{tx("Date received")}</TableHead>
+                <TableHead>{tx("Tracking")}</TableHead>
+                <TableHead>{tx("Customer")}</TableHead>
+                <TableHead>{tx("Goods")}</TableHead>
+                <TableHead className="text-right">{tx("Volume")}</TableHead>
+                <TableHead className="text-right">{tx("Counted as")}</TableHead>
                 <TableHead className="w-40" />
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="w-16">Proof</TableHead>
+                <TableHead className="text-right">{tx("Price")}</TableHead>
+                <TableHead className="w-16">{tx("Proof")}</TableHead>
                 <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
@@ -313,8 +315,7 @@ export function ContainerCargoTabs({
 
           {shown.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nothing matches. Try the tracking number, the customer or the
-              goods.
+              {tx("Nothing matches. Try the tracking number, the customer or the goods.")}
             </p>
           ) : null}
         </div>
@@ -324,7 +325,7 @@ export function ContainerCargoTabs({
         <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
           {documents.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-              Nothing filed against this container yet.
+              {tx("Nothing filed against this container yet.")}
             </p>
           ) : (
             <ul className="divide-y">
@@ -344,7 +345,7 @@ export function ContainerCargoTabs({
                       href={doc.href}
                       className="text-sm text-brand hover:underline"
                     >
-                      Open
+                      {tx("Open")}
                     </Link>
                   ) : null}
                 </li>

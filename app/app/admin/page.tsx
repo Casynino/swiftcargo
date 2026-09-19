@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { canAny, type Permission } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Admin" };
 
 const AREAS: {
@@ -75,14 +76,15 @@ const AREAS: {
 ];
 
 export default async function AdminPage() {
+  await primeLocale();
   const user = await requirePermission("report.view");
   const areas = AREAS.filter((area) => canAny(user.role, area.permissions));
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Administration"
-        description="System configuration. Every change here is audited, including yours."
+        title={T("Administration")}
+        description={T("System configuration. Every change here is audited, including yours.")}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

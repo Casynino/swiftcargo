@@ -9,6 +9,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Control room" };
 
 const TONE = {
@@ -35,6 +36,7 @@ const TONE = {
  * clean rather than a check nobody thought of.
  */
 export default async function ControlRoom() {
+  await primeLocale();
   const user = await requirePermission("record.review");
   const [locale, lines] = await Promise.all([localeOf(user.id), controlRoom()]);
 

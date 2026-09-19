@@ -15,6 +15,7 @@ import {
   type ActionState,
 } from "@/lib/actions/invoices";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * THE FOUR THINGS A CLERK DOES TO A LIVE BILL.
  *
@@ -45,6 +46,7 @@ export function BillControls({
     onTheBill: boolean;
   };
 }) {
+  const tx = useT();
   const [open, setOpen] = useState<"discount" | "rate" | null>(null);
 
   return (
@@ -62,7 +64,7 @@ export function BillControls({
           className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
           <BadgePercent className="size-4" />
-          Give a discount
+          {tx("Give a discount")}
         </button>
       )}
 
@@ -80,7 +82,7 @@ export function BillControls({
           className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
         >
           <Scale className="size-4" />
-          Edit the rate per CBM
+          {tx("Edit the rate per CBM")}
         </button>
       )}
 
@@ -98,6 +100,7 @@ function DiscountForm({
   currency: string;
   onClose: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     discountInvoice,
     {}
@@ -121,27 +124,26 @@ function DiscountForm({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="discount-reason" className="text-xs">
-          Why
+          {tx("Why")}
         </Label>
         <Input
           id="discount-reason"
           name="reason"
           required
-          placeholder="Agreed with the customer…"
+          placeholder={tx("Agreed with the customer…")}
           className="h-9"
         />
       </div>
       {/* It never edits the total in place: a negative line is appended, so the
           printed invoice shows what was charged and what came off. */}
       <p className="text-xs text-muted-foreground">
-        Appended as its own line with your name on it. The original charge stays
-        on the bill.
+        {tx("Appended as its own line with your name on it. The original charge stays on the bill.")}
       </p>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
-        <SubmitButton size="sm">Apply</SubmitButton>
+        <SubmitButton size="sm">{tx("Apply")}</SubmitButton>
         <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>
@@ -159,6 +161,7 @@ function RepriceForm({
   appliedRate: string | null;
   onClose: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     repriceInvoice,
     {}
@@ -183,25 +186,24 @@ function RepriceForm({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="reprice-reason" className="text-xs">
-          Why
+          {tx("Why")}
         </Label>
         <Input
           id="reprice-reason"
           name="reason"
           required
-          placeholder="Rate agreed for this customer…"
+          placeholder={tx("Rate agreed for this customer…")}
           className="h-9"
         />
       </div>
       <p className="text-xs text-muted-foreground">
-        Every line priced per cubic metre is re-multiplied. Flat and per-kilo
-        lines are left alone.
+        {tx("Every line priced per cubic metre is re-multiplied. Flat and per-kilo lines are left alone.")}
       </p>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
-        <SubmitButton size="sm">Re-price</SubmitButton>
+        <SubmitButton size="sm">{tx("Re-price")}</SubmitButton>
         <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>
@@ -224,6 +226,7 @@ function StorageControl({
     onTheBill: boolean;
   };
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     chargeStorage,
     {}
@@ -232,7 +235,7 @@ function StorageControl({
   if (!storage.configured) {
     return (
       <p className="text-xs text-muted-foreground">
-        Storage is not charged. An administrator sets a daily rate in Settings.
+        {tx("Storage is not charged. An administrator sets a daily rate in Settings.")}
       </p>
     );
   }
@@ -252,7 +255,7 @@ function StorageControl({
             <input type="hidden" name="remove" value="1" />
             <SubmitButton size="sm" variant="outline">
               <Ban />
-              Remove the storage fee
+              {tx("Remove the storage fee")}
             </SubmitButton>
           </>
         ) : (
@@ -286,6 +289,7 @@ export function ChangeTheRate({
   rate: number | null;
   onChange: (next: number | null) => void;
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
 
   if (!open) {
@@ -296,7 +300,7 @@ export function ChangeTheRate({
         className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
       >
         <ArrowLeftRight className="size-4" />
-        Change the rate
+        {tx("Change the rate")}
       </button>
     );
   }
@@ -304,7 +308,7 @@ export function ChangeTheRate({
   return (
     <div className="space-y-1.5 rounded-lg border p-3">
       <Label htmlFor="fxRate" className="text-xs">
-        Rate for this payment
+        {tx("Rate for this payment")}
       </Label>
       <Input
         id="fxRate"
@@ -319,7 +323,7 @@ export function ChangeTheRate({
         className="tnum h-9"
       />
       <p className="text-xs text-muted-foreground">
-        Pinned to this payment only. The bill keeps the rate it was raised at.
+        {tx("Pinned to this payment only. The bill keeps the rate it was raised at.")}
       </p>
       <Button
         type="button"
@@ -330,7 +334,7 @@ export function ChangeTheRate({
           onChange(null);
         }}
       >
-        Use the board rate
+        {tx("Use the board rate")}
       </Button>
     </div>
   );

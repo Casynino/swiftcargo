@@ -28,6 +28,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Customer" };
 
 /**
@@ -42,6 +43,7 @@ export default async function CustomerPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("customer.view");
   const { id } = await params;
 
@@ -102,13 +104,13 @@ export default async function CustomerPage({
               <Button asChild>
                 <Link href="/app/receive/new">
                   <Plus />
-                  Receive cargo
+                  {T("Receive cargo")}
                 </Link>
               </Button>
             ) : null}
             {can(user.role, "customer.manage") ? (
               <Button asChild variant="outline">
-                <Link href={`/app/customers/${customer.id}/edit`}>Edit</Link>
+                <Link href={`/app/customers/${customer.id}/edit`}>{T("Edit")}</Link>
               </Button>
             ) : null}
           </>
@@ -118,28 +120,28 @@ export default async function CustomerPage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Details</CardTitle>
+            <CardTitle className="text-base">{T("Details")}</CardTitle>
           </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <Field label="Customer code" value={customer.code} mono />
-              <Field label="Phone" value={customer.phone} mono />
-              <Field label="Second phone" value={customer.altPhone} mono />
-              <Field label="Email" value={customer.email} />
-              <Field label="City" value={customer.city} />
+              <Field label={T("Customer code")} value={customer.code} mono />
+              <Field label={T("Phone")} value={customer.phone} mono />
+              <Field label={T("Second phone")} value={customer.altPhone} mono />
+              <Field label={T("Email")} value={customer.email} />
+              <Field label={T("City")} value={customer.city} />
               <Field label="TIN / VRN" value={customer.taxId} mono />
               <Field
-                label="Registered"
+                label={T("Registered")}
                 value={formatDate(customer.createdAt)}
                 className="sm:col-span-1"
               />
               <Field
-                label="Portal account"
+                label={T("Portal account")}
                 value={
                   customer.login ? (
-                    <Badge tone="good">Registered</Badge>
+                    <Badge tone="good">{T("Registered")}</Badge>
                   ) : (
-                    <span className="text-muted-foreground">Not signed up</span>
+                    <span className="text-muted-foreground">{T("Not signed up")}</span>
                   )
                 }
               />
@@ -155,16 +157,15 @@ export default async function CustomerPage({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Name / shipping mark</CardTitle>
+              <CardTitle className="text-base">{T("Name / shipping mark")}</CardTitle>
             </CardHeader>
             <CardContent>
               <CopyField
                 value={customer.shippingMark ?? customer.fullName.toUpperCase()}
-                label="Name / shipping mark"
+                label={T("Name / shipping mark")}
               />
               <p className="mt-3 text-xs text-muted-foreground">
-                Their name as written on every box — what they give the supplier,
-                and how Guangzhou knows whose cargo has arrived.
+                {T("Their name as written on every box — what they give the supplier, and how Guangzhou knows whose cargo has arrived.")}
               </p>
             </CardContent>
           </Card>
@@ -172,7 +173,7 @@ export default async function CustomerPage({
           {forSupplier ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Address for their supplier</CardTitle>
+                <CardTitle className="text-base">{T("Address for their supplier")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <SupplierAddressCard {...forSupplier} />
@@ -183,7 +184,7 @@ export default async function CustomerPage({
           {showMoney ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Outstanding</CardTitle>
+              <CardTitle className="text-base">{T("Outstanding")}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="tnum text-3xl font-semibold tracking-tight">
@@ -202,23 +203,23 @@ export default async function CustomerPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Cargo</CardTitle>
+          <CardTitle className="text-base">{T("Cargo")}</CardTitle>
         </CardHeader>
         {cargoList.length === 0 ? (
           <EmptyState
             icon="Package"
-            title="No cargo yet"
-            description="Nothing has been booked for this customer."
+            title={T("No cargo yet")}
+            description={T("Nothing has been booked for this customer.")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Container</TableHead>
-                <TableHead>Status</TableHead>
-                {showMoney ? <TableHead className="text-right">Owing</TableHead> : null}
+                <TableHead>{T("Reference")}</TableHead>
+                <TableHead>{T("Description")}</TableHead>
+                <TableHead>{T("Container")}</TableHead>
+                <TableHead>{T("Status")}</TableHead>
+                {showMoney ? <TableHead className="text-right">{T("Owing")}</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -262,16 +263,16 @@ export default async function CustomerPage({
       {showMoney && customer.invoices.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Invoices</CardTitle>
+            <CardTitle className="text-base">{T("Invoices")}</CardTitle>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Number</TableHead>
-                <TableHead>Issued</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Outstanding</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead>{T("Number")}</TableHead>
+                <TableHead>{T("Issued")}</TableHead>
+                <TableHead>{T("Total")}</TableHead>
+                <TableHead>{T("Outstanding")}</TableHead>
+                <TableHead className="text-right">{T("Status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

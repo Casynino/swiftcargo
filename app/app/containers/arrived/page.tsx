@@ -36,6 +36,7 @@ import { cargoTypeOptions } from "@/lib/valuation";
 import { localeOf } from "@/lib/viewer-locale";
 import { t } from "@/lib/i18n";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Arrived containers" };
 
 /**
@@ -94,6 +95,7 @@ export default async function ArrivedContainersPage({
 }: {
   searchParams: Promise<{ view?: string; q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("container.view");
   const { view, q } = await searchParams;
 

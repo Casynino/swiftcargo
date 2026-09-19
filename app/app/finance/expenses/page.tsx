@@ -20,6 +20,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Expenses" };
 
 const PERIODS = {
@@ -91,6 +92,7 @@ export default async function ExpensesPage({
 }: {
   searchParams: Promise<{ q?: string; period?: string; group?: string; category?: string; status?: string; account?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("expense.view");
   const sp = await searchParams;
   const period: Period = sp.period && sp.period in PERIODS ? (sp.period as Period) : "month";
@@ -242,8 +244,8 @@ export default async function ExpensesPage({
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Expenses"
-        description="What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left."
+        title={T("Expenses")}
+        description={T("What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left.")}
         actions={
           can(user.role, "expense.record") ? (
             <ExpenseForm
@@ -305,7 +307,7 @@ export default async function ExpensesPage({
       </div>
 
       {unpaid.length === 0 ? (
-        <p className="text-sm text-success">Everything recorded has been paid.</p>
+        <p className="text-sm text-success">{T("Everything recorded has been paid.")}</p>
       ) : (
         <p className="text-sm text-warning">
           {unpaid.length} cost{unpaid.length === 1 ? "" : "s"} recorded and not yet paid — {tzs(total(unpaid))}.
@@ -318,25 +320,25 @@ export default async function ExpensesPage({
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input name="q" defaultValue={sp.q ?? ""} placeholder="What it was, the number, who was paid, a container…" className="pl-9" />
+            <Input name="q" defaultValue={sp.q ?? ""} placeholder={T("What it was, the number, who was paid, a container…")} className="pl-9" />
           </div>
-          <Button type="submit" variant="outline">Search</Button>
+          <Button type="submit" variant="outline">{T("Search")}</Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <NativeSelect name="category" defaultValue={sp.category ?? ""} className="w-52">
-            <option value="">Every category</option>
+            <option value="">{T("Every category")}</option>
             {[...types.map((t) => t.name), "Transport out", "Between accounts"].map((n) => (
               <option key={n} value={n}>{n}</option>
             ))}
           </NativeSelect>
           <NativeSelect name="status" defaultValue={sp.status ?? ""} className="w-40">
-            <option value="">Any status</option>
-            <option value="Paid">Paid</option>
-            <option value="Not paid">Not paid</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="">{T("Any status")}</option>
+            <option value="Paid">{T("Paid")}</option>
+            <option value="Not paid">{T("Not paid")}</option>
+            <option value="Cancelled">{T("Cancelled")}</option>
           </NativeSelect>
           <NativeSelect name="account" defaultValue={sp.account ?? ""} className="w-56">
-            <option value="">Any account</option>
+            <option value="">{T("Any account")}</option>
             {accounts.map((a) => (
               <option key={a.id} value={`${a.bankName} (${a.currency})`}>{a.bankName} ({a.currency})</option>
             ))}
@@ -351,7 +353,7 @@ export default async function ExpensesPage({
 
       <div className="overflow-hidden rounded-xl border bg-card">
         {shown.length === 0 ? (
-          <p className="px-5 py-12 text-center text-sm text-muted-foreground">Nothing here for this period.</p>
+          <p className="px-5 py-12 text-center text-sm text-muted-foreground">{T("Nothing here for this period.")}</p>
         ) : (
           <ul className="divide-y">
             {shown.map((o) => (
@@ -395,7 +397,7 @@ export default async function ExpensesPage({
                       }
                     />
                   ) : (
-                    <Link href={o.href} className="block text-right text-xs text-brand hover:underline">Open the payment</Link>
+                    <Link href={o.href} className="block text-right text-xs text-brand hover:underline">{T("Open the payment")}</Link>
                   )}
                 </div>
               </li>

@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 const SAILING_STATUSES = [
   ["OPEN_FOR_BOOKING", "Open for booking"],
   ["CUTOFF_APPROACHING", "Cut-off approaching"],
@@ -45,6 +46,7 @@ export function WarehouseForm({
     contactName?: string | null;
   };
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     upsertWarehouse,
     {}
@@ -55,7 +57,7 @@ export function WarehouseForm({
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Add a warehouse
+        {tx("Add a warehouse")}
       </Button>
     );
   }
@@ -69,7 +71,7 @@ export function WarehouseForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor={`code-${warehouse?.id ?? "new"}`}>Code</Label>
+            <Label htmlFor={`code-${warehouse?.id ?? "new"}`}>{tx("Code")}</Label>
             <Input
               id={`code-${warehouse?.id ?? "new"}`}
               name="code"
@@ -79,7 +81,7 @@ export function WarehouseForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`name-${warehouse?.id ?? "new"}`}>Name</Label>
+            <Label htmlFor={`name-${warehouse?.id ?? "new"}`}>{tx("Name")}</Label>
             <Input
               id={`name-${warehouse?.id ?? "new"}`}
               name="name"
@@ -88,21 +90,21 @@ export function WarehouseForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`kind-${warehouse?.id ?? "new"}`}>Country</Label>
+            <Label htmlFor={`kind-${warehouse?.id ?? "new"}`}>{tx("Country")}</Label>
             <NativeSelect
               id={`kind-${warehouse?.id ?? "new"}`}
               name="kind"
               defaultValue={warehouse?.kind ?? "CHINA"}
             >
-              <option value="CHINA">China</option>
-              <option value="TANZANIA">Tanzania</option>
+              <option value="CHINA">{tx("China")}</option>
+              <option value="TANZANIA">{tx("Tanzania")}</option>
             </NativeSelect>
           </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor={`local-${warehouse?.id ?? "new"}`}>
-            Address, in the local script
+            {tx("Address, in the local script")}
           </Label>
           <Textarea
             id={`local-${warehouse?.id ?? "new"}`}
@@ -114,7 +116,7 @@ export function WarehouseForm({
 
         <div className="space-y-2">
           <Label htmlFor={`english-${warehouse?.id ?? "new"}`}>
-            Address, in English
+            {tx("Address, in English")}
           </Label>
           <Textarea
             id={`english-${warehouse?.id ?? "new"}`}
@@ -126,7 +128,7 @@ export function WarehouseForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor={`city-${warehouse?.id ?? "new"}`}>City</Label>
+            <Label htmlFor={`city-${warehouse?.id ?? "new"}`}>{tx("City")}</Label>
             <Input
               id={`city-${warehouse?.id ?? "new"}`}
               name="city"
@@ -134,7 +136,7 @@ export function WarehouseForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`country-${warehouse?.id ?? "new"}`}>Country</Label>
+            <Label htmlFor={`country-${warehouse?.id ?? "new"}`}>{tx("Country")}</Label>
             <Input
               id={`country-${warehouse?.id ?? "new"}`}
               name="country"
@@ -142,7 +144,7 @@ export function WarehouseForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`phone-${warehouse?.id ?? "new"}`}>Phone</Label>
+            <Label htmlFor={`phone-${warehouse?.id ?? "new"}`}>{tx("Phone")}</Label>
             <Input
               id={`phone-${warehouse?.id ?? "new"}`}
               name="phone"
@@ -150,7 +152,7 @@ export function WarehouseForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`contact-${warehouse?.id ?? "new"}`}>Receiver at the door (收货人)</Label>
+            <Label htmlFor={`contact-${warehouse?.id ?? "new"}`}>{tx("Receiver at the door (收货人)")}</Label>
             <Input
               id={`contact-${warehouse?.id ?? "new"}`}
               name="contactName"
@@ -164,7 +166,7 @@ export function WarehouseForm({
           <SubmitButton>{warehouse ? "Save" : "Add warehouse"}</SubmitButton>
           {!warehouse ? (
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
           ) : null}
         </div>
@@ -197,6 +199,7 @@ export function ScheduleForm({
   }[];
   defaultTransitDays: number;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     upsertSchedule,
     {}
@@ -211,7 +214,7 @@ export function ScheduleForm({
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Override a sailing week
+        {tx("Override a sailing week")}
       </Button>
     );
   }
@@ -222,14 +225,14 @@ export function ScheduleForm({
           an uncontrolled input keeps the first defaultValue it was given. */}
       <form action={action} className="space-y-4" key={weekOf}>
         <div className="space-y-2">
-          <Label htmlFor="weekOf">Which sailing week</Label>
+          <Label htmlFor="weekOf">{tx("Which sailing week")}</Label>
           <NativeSelect
             id="weekOf"
             name="weekOf"
             value={weekOf}
             onChange={(e) => setWeekOf(e.target.value)}
           >
-            <option value="">An extra sailing — no generated week</option>
+            <option value="">{tx("An extra sailing — no generated week")}</option>
             {weeks.map((week) => (
               <option key={week.weekOf} value={week.weekOf} disabled={week.taken}>
                 {week.label}
@@ -238,35 +241,33 @@ export function ScheduleForm({
             ))}
           </NativeSelect>
           <p className="text-xs text-muted-foreground">
-            The week this row stands in for. Everything else that week is
-            generated from the rule: cargo in by Friday, packed that Friday,
-            sails Monday.
+            {tx("The week this row stands in for. Everything else that week is generated from the rule: cargo in by Friday, packed that Friday, sails Monday.")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="vessel">Vessel</Label>
-            <Input id="vessel" name="vessel" placeholder="MSC Kalamata" />
+            <Label htmlFor="vessel">{tx("Vessel")}</Label>
+            <Input id="vessel" name="vessel" placeholder={tx("MSC Kalamata")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="voyage">Voyage reference</Label>
+            <Label htmlFor="voyage">{tx("Voyage reference")}</Label>
             <Input id="voyage" name="voyage" placeholder="FR429A" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="shippingLine">Shipping line</Label>
+            <Label htmlFor="shippingLine">{tx("Shipping line")}</Label>
             <Input id="shippingLine" name="shippingLine" placeholder="MSC" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="origin">Origin</Label>
+            <Label htmlFor="origin">{tx("Origin")}</Label>
             <Input id="origin" name="origin" defaultValue="Guangzhou" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="destination">Destination</Label>
+            <Label htmlFor="destination">{tx("Destination")}</Label>
             <Input id="destination" name="destination" defaultValue="Dar es Salaam" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status">{tx("Status")}</Label>
             <NativeSelect id="status" name="status" defaultValue="OPEN_FOR_BOOKING">
               {SAILING_STATUSES.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -276,7 +277,7 @@ export function ScheduleForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoDeadline">Last day to receive cargo</Label>
+            <Label htmlFor="cargoDeadline">{tx("Last day to receive cargo")}</Label>
             <Input
               id="cargoDeadline"
               name="cargoDeadline"
@@ -288,7 +289,7 @@ export function ScheduleForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="loadingDate">Container packed</Label>
+            <Label htmlFor="loadingDate">{tx("Container packed")}</Label>
             <Input
               id="loadingDate"
               name="loadingDate"
@@ -299,7 +300,7 @@ export function ScheduleForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="departureDate">Departs China</Label>
+            <Label htmlFor="departureDate">{tx("Departs China")}</Label>
             <Input
               id="departureDate"
               name="departureDate"
@@ -311,7 +312,7 @@ export function ScheduleForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="transitDays">Days at sea</Label>
+            <Label htmlFor="transitDays">{tx("Days at sea")}</Label>
             <Input
               id="transitDays"
               name="transitDays"
@@ -340,19 +341,19 @@ export function ScheduleForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Note for the website</Label>
+          <Label htmlFor="notes">{tx("Note for the website")}</Label>
           <Textarea
             id="notes"
             name="notes"
             rows={2}
             maxLength={500}
-            placeholder="Deadline brought forward for the public holiday."
+            placeholder={tx("Deadline brought forward for the public holiday.")}
           />
         </div>
 
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="published" defaultChecked />
-          Show on the public website
+          {tx("Show on the public website")}
           <span className="text-xs text-muted-foreground">
             — unticked, this week comes off the schedule altogether
           </span>
@@ -360,9 +361,9 @@ export function ScheduleForm({
 
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Save</SubmitButton>
+          <SubmitButton>{tx("Save")}</SubmitButton>
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tx("Cancel")}
           </Button>
         </div>
       </form>
@@ -371,6 +372,7 @@ export function ScheduleForm({
 }
 
 export function DeleteScheduleButton({ id }: { id: string }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(deleteSchedule, {});
   return (
     <form
@@ -384,7 +386,7 @@ export function DeleteScheduleButton({ id }: { id: string }) {
       }}
     >
       <input type="hidden" name="scheduleId" value={id} />
-      <SubmitButton variant="ghost" size="icon" aria-label="Remove sailing">
+      <SubmitButton variant="ghost" size="icon" aria-label={tx("Remove sailing")}>
         <Trash2 />
       </SubmitButton>
       {state.error ? (

@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Receipt" };
 
 export default async function ReceiptPage({
@@ -16,6 +17,7 @@ export default async function ReceiptPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("finance.view");
   const { id } = await params;
 

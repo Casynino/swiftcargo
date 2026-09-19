@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /*
   The pending claims appear under two names, because they are not the same thing
   to the two desks. "Verify payments" is Finance working the queue; "With
@@ -49,27 +50,28 @@ export function CollectionsHeader({
    */
   canVerify: boolean;
 }) {
+  const tx = useT();
   const pathname = usePathname();
   const sub = canVerify ? VERIFIER_SUB : COLLECTOR_SUB;
 
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Payment follow-up"
-        description="Who owes us money, what has gone to Finance, and what has come back."
+        title={tx("Payment follow-up")}
+        description={tx("Who owes us money, what has gone to Finance, and what has come back.")}
         actions={
           <>
             <Button asChild variant="outline" size="sm">
               <Link href="/app/finance/payments/new">
                 <Layers />
-                Merge Payment
+                {tx("Merge Payment")}
               </Link>
             </Button>
             {canVerify ? (
               <Button asChild variant="outline" size="sm">
                 <Link href="/app/finance/credit">
                   <CalendarClock />
-                  Release on credit
+                  {tx("Release on credit")}
                 </Link>
               </Button>
             ) : (

@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 const METHODS = [
   ["CASH", "Cash"],
   ["BANK_TRANSFER", "Bank transfer"],
@@ -82,6 +83,7 @@ export function TakePaymentPanel({
   /** The WhatsApp button, composed on the server where the wording lives. */
   notify?: ReactNode;
 }) {
+  const tx = useT();
   const [single, singleAction] = useActionState<ActionState, FormData>(
     recordPayment,
     {}
@@ -183,13 +185,13 @@ export function TakePaymentPanel({
       */}
       <CardHeader className="space-y-3 pb-4">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-base">Actions</CardTitle>
+          <CardTitle className="text-base">{tx("Actions")}</CardTitle>
           {notify}
         </div>
         <div className="flex items-center justify-between gap-3 rounded-lg border border-brand/30 bg-brand/[0.04] px-3 py-2">
           <span className="flex items-center gap-2 text-sm font-medium">
             <Banknote className="size-4 text-brand" />
-            Take a payment
+            {tx("Take a payment")}
           </span>
           <span className="text-right">
             <span className="tnum block text-sm font-semibold">
@@ -259,7 +261,7 @@ export function TakePaymentPanel({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="amount">Amount received</Label>
+              <Label htmlFor="amount">{tx("Amount received")}</Label>
               <Input
                 id="amount"
                 name="amount"
@@ -286,7 +288,7 @@ export function TakePaymentPanel({
               ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="currency">Paid in</Label>
+              <Label htmlFor="currency">{tx("Paid in")}</Label>
               <NativeSelect
                 id="currency"
                 name="currency"
@@ -315,14 +317,14 @@ export function TakePaymentPanel({
                       onChange={(e) => setAcceptOver(e.target.checked)}
                       className="size-4"
                     />
-                    Accept overpayment — the extra stays on the bill as a credit
+                    {tx("Accept overpayment — the extra stays on the bill as a credit")}
                   </label>
                   {acceptOver ? (
-                    <Input name="overpaymentReason" required minLength={3} placeholder="Why the extra is being accepted" />
+                    <Input name="overpaymentReason" required minLength={3} placeholder={tx("Why the extra is being accepted")} />
                   ) : null}
                 </>
               ) : (
-                <p className="text-xs text-muted-foreground">Tick another bill or correct the figure.</p>
+                <p className="text-xs text-muted-foreground">{tx("Tick another bill or correct the figure.")}</p>
               )}
             </div>
           ) : null}
@@ -353,7 +355,7 @@ export function TakePaymentPanel({
                     variant="outline"
                     onClick={() => setEditingRate(false)}
                   >
-                    Use this rate
+                    {tx("Use this rate")}
                   </Button>
                   {billRate && rate !== billRate ? (
                     <Button
@@ -376,12 +378,11 @@ export function TakePaymentPanel({
                   className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
                   <ArrowLeftRight className="size-3.5" />
-                  Change the rate for this payment
+                  {tx("Change the rate for this payment")}
                 </button>
               )}
               <p className="text-xs text-muted-foreground">
-                This payment only. The bill does not move — only what these
-                shillings are worth against it.
+                {tx("This payment only. The bill does not move — only what these shillings are worth against it.")}
               </p>
             </div>
           ) : null}
@@ -398,7 +399,7 @@ export function TakePaymentPanel({
           {delivery ? (
             <div className="grid grid-cols-1 gap-3 rounded-lg border p-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="deliveryAdded">Delivery they added</Label>
+                <Label htmlFor="deliveryAdded">{tx("Delivery they added")}</Label>
                 <Input
                   id="deliveryAdded"
                   name="deliveryAdded"
@@ -410,13 +411,13 @@ export function TakePaymentPanel({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="deliverySettledFrom">Settled from</Label>
+                <Label htmlFor="deliverySettledFrom">{tx("Settled from")}</Label>
                 <NativeSelect
                   id="deliverySettledFrom"
                   name="deliverySettledFrom"
                   defaultValue=""
                 >
-                  <option value="">Cash or the till</option>
+                  <option value="">{tx("Cash or the till")}</option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.label}>
                       {a.label}
@@ -425,8 +426,7 @@ export function TakePaymentPanel({
                 </NativeSelect>
               </div>
               <p className="text-xs text-muted-foreground sm:col-span-2">
-                Recorded beside the payment, never added to it. It does not
-                settle any part of the freight.
+                {tx("Recorded beside the payment, never added to it. It does not settle any part of the freight.")}
               </p>
             </div>
           ) : (
@@ -436,13 +436,13 @@ export function TakePaymentPanel({
               className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
             >
               <Truck className="size-4" />
-              They added delivery to this transfer
+              {tx("They added delivery to this transfer")}
             </button>
           )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="method">How it was paid</Label>
+              <Label htmlFor="method">{tx("How it was paid")}</Label>
               <NativeSelect id="method" name="method" defaultValue="CASH">
                 {METHODS.map(([value, label]) => (
                   <option key={value} value={value}>
@@ -452,27 +452,27 @@ export function TakePaymentPanel({
               </NativeSelect>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="transactionRef">Their reference</Label>
+              <Label htmlFor="transactionRef">{tx("Their reference")}</Label>
               <Input
                 id="transactionRef"
                 name="transactionRef"
-                placeholder="M-Pesa code, slip number…"
+                placeholder={tx("M-Pesa code, slip number…")}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="paidAt">When</Label>
+              <Label htmlFor="paidAt">{tx("When")}</Label>
               <Input id="paidAt" name="paidAt" type="date" min="2000-01-01" max="2099-12-31" />
               <p className="text-xs text-muted-foreground">
-                Leave blank for today.
+                {tx("Leave blank for today.")}
               </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="proof" className="flex items-center gap-1.5">
                 <Paperclip className="size-3.5" />
-                Proof
+                {tx("Proof")}
               </Label>
               <Input
                 id="proof"
@@ -486,9 +486,9 @@ export function TakePaymentPanel({
 
           {/* Money nobody can point at is money nobody can reconcile. */}
           <div className="space-y-1.5">
-            <Label htmlFor="accountId">Landed in</Label>
+            <Label htmlFor="accountId">{tx("Landed in")}</Label>
             <NativeSelect id="accountId" name="accountId" defaultValue="">
-              <option value="">Choose the account</option>
+              <option value="">{tx("Choose the account")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
@@ -497,15 +497,14 @@ export function TakePaymentPanel({
             </NativeSelect>
             {accounts.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No accounts are set up yet. An administrator adds the banks and
-                tills in Settings.
+                {tx("No accounts are set up yet. An administrator adds the banks and tills in Settings.")}
               </p>
             ) : null}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Note</Label>
-            <Input id="notes" name="notes" placeholder="Optional" />
+            <Label htmlFor="notes">{tx("Note")}</Label>
+            <Input id="notes" name="notes" placeholder={tx("Optional")} />
           </div>
 
           <FormMessage error={state.error} ok={state.ok} />

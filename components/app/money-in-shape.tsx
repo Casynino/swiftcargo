@@ -6,6 +6,7 @@ import { outstandingOf, outstandingTzsOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 const tzs = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(n);
 const usd = (n: number) =>
@@ -104,16 +105,16 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className={label}>The money, in shape</p>
+        <p className={label}>{T("The money, in shape")}</p>
         <Link href="/app/finance/ledger" className="flex items-center gap-1 text-sm text-primary hover:underline">
-          General ledger <ArrowRight className="size-3.5" />
+          {T("General ledger")} <ArrowRight className="size-3.5" />
         </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-xl border bg-card p-5">
-          <h3 className="font-semibold">Money in and out</h3>
-          <p className="text-xs text-muted-foreground">Cargo money in against costs paid, this year</p>
+          <h3 className="font-semibold">{T("Money in and out")}</h3>
+          <p className="text-xs text-muted-foreground">{T("Cargo money in against costs paid, this year")}</p>
           <div className="mt-4 flex h-36 items-end gap-2">
             {months.map((m) => (
               <div key={m.label} className="flex flex-1 flex-col items-center gap-1.5">
@@ -126,17 +127,17 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
             ))}
           </div>
           <p className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />Money in</span>
-            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />Money out</span>
-            <span className="ml-auto">One scale</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />{T("Money in")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />{T("Money out")}</span>
+            <span className="ml-auto">{T("One scale")}</span>
           </p>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-semibold">What we are owed, by age</h3>
-              <p className="text-xs text-muted-foreground">From the day the bill became real</p>
+              <h3 className="font-semibold">{T("What we are owed, by age")}</h3>
+              <p className="text-xs text-muted-foreground">{T("From the day the bill became real")}</p>
             </div>
             <span className="text-xs text-muted-foreground">oldest <span className="font-semibold text-foreground">{oldest}d</span></span>
           </div>
@@ -164,8 +165,8 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
         <div className="overflow-hidden rounded-xl border bg-card">
           <header className="flex items-start justify-between border-b px-5 py-4">
             <div>
-              <h3 className="font-semibold">Longest waiting</h3>
-              <p className="text-xs text-muted-foreground">On the Dar floor, oldest first</p>
+              <h3 className="font-semibold">{T("Longest waiting")}</h3>
+              <p className="text-xs text-muted-foreground">{T("On the Dar floor, oldest first")}</p>
             </div>
             <Link href="/app/finance/collections?sort=waiting" className="text-sm text-primary hover:underline">Payment follow-up →</Link>
           </header>
@@ -173,15 +174,15 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2 font-medium">Cargo</th>
-                  <th className="px-4 py-2 font-medium">Customer</th>
-                  <th className="px-4 py-2 font-medium">Waiting</th>
-                  <th className="px-4 py-2 text-right font-medium">Worth</th>
+                  <th className="px-4 py-2 font-medium">{T("Cargo")}</th>
+                  <th className="px-4 py-2 font-medium">{T("Customer")}</th>
+                  <th className="px-4 py-2 font-medium">{T("Waiting")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{T("Worth")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {longest.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Nothing unpaid on the Dar floor.</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">{T("Nothing unpaid on the Dar floor.")}</td></tr>
                 ) : longest.map((w) => (
                   <tr key={w.id}>
                     <td className="tnum px-4 py-2.5 text-xs"><Link href={`/app/cargo/${w.id}`} className="hover:underline">{w.cargo}</Link></td>
@@ -198,8 +199,8 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
         <div className="overflow-hidden rounded-xl border bg-card">
           <header className="flex items-start justify-between border-b px-5 py-4">
             <div>
-              <h3 className="font-semibold">Recent payments</h3>
-              <p className="text-xs text-muted-foreground">What was handed over, and where it landed</p>
+              <h3 className="font-semibold">{T("Recent payments")}</h3>
+              <p className="text-xs text-muted-foreground">{T("What was handed over, and where it landed")}</p>
             </div>
             <Link href="/app/finance/ledger?type=sale" className="text-sm text-primary hover:underline">All payments →</Link>
           </header>
@@ -207,15 +208,15 @@ export async function MoneyInShape({ books: loaded }: { books?: Books } = {}) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2 font-medium">Receipt</th>
-                  <th className="px-4 py-2 font-medium">Cargo</th>
-                  <th className="px-4 py-2 font-medium">Landed in</th>
-                  <th className="px-4 py-2 text-right font-medium">Taken</th>
+                  <th className="px-4 py-2 font-medium">{T("Receipt")}</th>
+                  <th className="px-4 py-2 font-medium">{T("Cargo")}</th>
+                  <th className="px-4 py-2 font-medium">{T("Landed in")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{T("Taken")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {recent.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">No payments verified yet.</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">{T("No payments verified yet.")}</td></tr>
                 ) : recent.map((p) => {
                   const credited = Number(p.creditedAmount ?? 0);
                   return (

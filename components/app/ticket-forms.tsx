@@ -18,6 +18,7 @@ import {
   type TicketActionState,
 } from "@/lib/actions/tickets";
 
+import { useT } from "@/components/app/locale-provider";
 export const TICKET_PRIORITIES = [
   { value: "LOW", label: "Low" },
   { value: "NORMAL", label: "Normal" },
@@ -47,12 +48,13 @@ export function NewTicketPanel({
   defaultOpen?: boolean;
   canCreate: boolean;
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(defaultOpen && canCreate);
 
   return (
     <Card>
       <div className="flex items-center justify-between gap-3 p-4">
-        <span className="font-semibold">Support tickets</span>
+        <span className="font-semibold">{tx("Support tickets")}</span>
         {canCreate ? (
           <button
             type="button"
@@ -62,13 +64,13 @@ export function NewTicketPanel({
           >
             {open ? (
               <>
-                Close
+                {tx("Close")}
                 <ChevronDown className="size-4 rotate-180" />
               </>
             ) : (
               <>
                 <Plus className="size-4" />
-                New ticket
+                {tx("New ticket")}
               </>
             )}
           </button>
@@ -84,6 +86,7 @@ export function NewTicketPanel({
 }
 
 function NewTicketForm() {
+  const tx = useT();
   const [state, action] = useActionState<TicketActionState, FormData>(
     createTicket,
     {}
@@ -109,8 +112,8 @@ function NewTicketForm() {
           <div className="sm:col-span-2">
             <CustomerPicker
               name="customerId"
-              label="Customer"
-              hint="Leave empty when the cargo reference below says who it is."
+              label={tx("Customer")}
+              hint={tx("Leave empty when the cargo reference below says who it is.")}
             />
           </div>
 
@@ -129,7 +132,7 @@ function NewTicketForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
+            <Label htmlFor="priority">{tx("Priority")}</Label>
             <NativeSelect id="priority" name="priority" defaultValue="NORMAL">
               {TICKET_PRIORITIES.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -140,25 +143,25 @@ function NewTicketForm() {
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="subject">Summary</Label>
+            <Label htmlFor="subject">{tx("Summary")}</Label>
             <Input
               id="subject"
               name="subject"
-              placeholder="e.g. Carton arrived open, two pairs of shoes missing"
+              placeholder={tx("e.g. Carton arrived open, two pairs of shoes missing")}
               required
             />
           </div>
 
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="body">What the customer said</Label>
+            <Label htmlFor="body">{tx("What the customer said")}</Label>
             <Textarea id="body" name="body" rows={3} required />
             <p className="text-xs text-muted-foreground">
-              Kept on the thread as an internal note. The customer never sees it.
+              {tx("Kept on the thread as an internal note. The customer never sees it.")}
             </p>
           </div>
         </div>
 
-        <SubmitButton pendingLabel="Opening…">Open ticket</SubmitButton>
+        <SubmitButton pendingLabel="Opening…">{tx("Open ticket")}</SubmitButton>
       </form>
     </div>
   );
@@ -179,6 +182,7 @@ export function TicketWorkflow({
   staff: { id: string; name: string }[];
   canAssign: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<TicketActionState, FormData>(
     updateTicket,
     {}
@@ -191,7 +195,7 @@ export function TicketWorkflow({
 
       <div className="grid grid-cols-1 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="ticket-status">Status</Label>
+          <Label htmlFor="ticket-status">{tx("Status")}</Label>
           <NativeSelect id="ticket-status" name="status" defaultValue={ticket.status}>
             {TICKET_STATUSES.map((option) => (
               <option key={option.value} value={option.value}>
@@ -202,7 +206,7 @@ export function TicketWorkflow({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="ticket-priority">Priority</Label>
+          <Label htmlFor="ticket-priority">{tx("Priority")}</Label>
           <NativeSelect
             id="ticket-priority"
             name="priority"
@@ -217,14 +221,14 @@ export function TicketWorkflow({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="ticket-assignee">Handled by</Label>
+          <Label htmlFor="ticket-assignee">{tx("Handled by")}</Label>
           {canAssign ? (
             <NativeSelect
               id="ticket-assignee"
               name="assignedToId"
               defaultValue={ticket.assignedToId ?? ""}
             >
-              <option value="">Unassigned</option>
+              <option value="">{tx("Unassigned")}</option>
               {staff.map((person) => (
                 <option key={person.id} value={person.id}>
                   {person.name}
@@ -249,7 +253,7 @@ export function TicketWorkflow({
         </div>
       </div>
 
-      <SubmitButton pendingLabel="Saving…">Save ticket</SubmitButton>
+      <SubmitButton pendingLabel="Saving…">{tx("Save ticket")}</SubmitButton>
     </form>
   );
 }

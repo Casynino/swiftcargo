@@ -10,9 +10,11 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Notifications" };
 
 export default async function NotificationsPage() {
+  await primeLocale();
   const user = await requireStaff();
 
   const notifications = await prisma.notification.findMany({
@@ -25,13 +27,13 @@ export default async function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
-        title="Notifications"
-        description="What happened that concerns your desk."
+        title={T("Notifications")}
+        description={T("What happened that concerns your desk.")}
         actions={unread > 0 ? <MarkAllRead /> : undefined}
       />
       <Card>
         {notifications.length === 0 ? (
-          <EmptyState icon="Bell" title="Nothing yet" />
+          <EmptyState icon="Bell" title={T("Nothing yet")} />
         ) : (
           <ul className="divide-y">
             {notifications.map((n) => {

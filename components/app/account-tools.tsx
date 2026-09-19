@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 type Choice = {
   id: string;
   label: string;
@@ -38,6 +39,7 @@ export function MoveMoneyCard({
   /** On one account's own page, the money most likely leaves that account. */
   defaultFrom?: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(moveMoney, {});
   const first = accounts.find((a) => a.id === defaultFrom) ?? accounts[0];
   const [from, setFrom] = useState(first?.id ?? "");
@@ -59,7 +61,7 @@ export function MoveMoneyCard({
       <header className="border-b px-5 py-4">
         <h2 className="flex items-center gap-2 font-semibold">
           <ArrowLeftRight className="size-4 text-muted-foreground" />
-          Move money between accounts
+          {tx("Move money between accounts")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Banking the day&rsquo;s cash, topping up the tin, converting dollars.
@@ -70,7 +72,7 @@ export function MoveMoneyCard({
       <form action={action} className="space-y-4 p-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="fromAccountId">Out of</Label>
+            <Label htmlFor="fromAccountId">{tx("Out of")}</Label>
             <NativeSelect
               id="fromAccountId"
               name="fromAccountId"
@@ -91,7 +93,7 @@ export function MoveMoneyCard({
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="toAccountId">Into</Label>
+            <Label htmlFor="toAccountId">{tx("Into")}</Label>
             <NativeSelect
               id="toAccountId"
               name="toAccountId"
@@ -164,21 +166,21 @@ export function MoveMoneyCard({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="purpose">What for (optional)</Label>
+            <Label htmlFor="purpose">{tx("What for (optional)")}</Label>
             <Input
               id="purpose"
               name="purpose"
-              placeholder="Banked Friday&rsquo;s takings"
+              placeholder={tx("Banked Friday&rsquo;s takings")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="transferDate">Date (blank for today)</Label>
+            <Label htmlFor="transferDate">{tx("Date (blank for today)")}</Label>
             <Input id="transferDate" name="transferDate" type="date" />
           </div>
         </div>
 
         <FormMessage error={state.error} ok={state.ok} />
-        <SubmitButton>Record the move</SubmitButton>
+        <SubmitButton>{tx("Record the move")}</SubmitButton>
       </form>
     </section>
   );
@@ -191,6 +193,7 @@ export function MoveMoneyCard({
  * count never writes a balance — see `countTheCash`.
  */
 export function CountTheCashCard({ tins }: { tins: Choice[] }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     countTheCash,
     {}
@@ -206,16 +209,16 @@ export function CountTheCashCard({ tins }: { tins: Choice[] }) {
       <header className="border-b px-5 py-4">
         <h2 className="flex items-center gap-2 font-semibold">
           <Calculator className="size-4 text-muted-foreground" />
-          Count the cash
+          {tx("Count the cash")}
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          What is physically in the tin, against what the ledger says should be.
+          {tx("What is physically in the tin, against what the ledger says should be.")}
         </p>
       </header>
 
       <form action={action} className="space-y-4 p-5">
         <div className="space-y-2">
-          <Label htmlFor="accountId">Which tin</Label>
+          <Label htmlFor="accountId">{tx("Which tin")}</Label>
           <NativeSelect
             id="accountId"
             name="accountId"
@@ -254,16 +257,16 @@ export function CountTheCashCard({ tins }: { tins: Choice[] }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="note">Note (optional)</Label>
+          <Label htmlFor="note">{tx("Note (optional)")}</Label>
           <Input
             id="note"
             name="note"
-            placeholder="Anything that explains a difference"
+            placeholder={tx("Anything that explains a difference")}
           />
         </div>
 
         <FormMessage error={state.error} ok={state.ok} />
-        <SubmitButton>Record the count</SubmitButton>
+        <SubmitButton>{tx("Record the count")}</SubmitButton>
       </form>
     </section>
   );
@@ -286,6 +289,7 @@ export function OpeningBalanceForm({
   current: number;
   isSet: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     setOpeningBalance,
     {}
@@ -322,19 +326,19 @@ export function OpeningBalanceForm({
         placeholder={`What was in it (${currency})`}
         required
       />
-      <Input name="on" type="date" aria-label="As of" />
+      <Input name="on" type="date" aria-label={tx("As of")} />
       {isSet ? (
-        <Input name="reason" placeholder="Why it is changing" required minLength={3} />
+        <Input name="reason" placeholder={tx("Why it is changing")} required minLength={3} />
       ) : null}
       <FormMessage error={state.error} />
       <div className="flex gap-2">
-        <SubmitButton size="sm">Save</SubmitButton>
+        <SubmitButton size="sm">{tx("Save")}</SubmitButton>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="text-xs text-muted-foreground hover:text-foreground"
         >
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </form>

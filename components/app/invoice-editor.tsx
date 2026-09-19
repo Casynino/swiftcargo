@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * ADJUST THIS INVOICE.
  *
@@ -40,6 +41,7 @@ export function InvoiceEditor({
   notes: string | null;
   total: number;
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<{ error?: string; ok?: string }, FormData>(saveInvoiceAdjustments, {});
   const [rate, setRate] = useState(appliedRate !== null ? appliedRate.toFixed(2) : "");
@@ -55,9 +57,9 @@ export function InvoiceEditor({
     <section className="rounded-xl border bg-card shadow-soft print:hidden">
       <div className="flex items-start justify-between gap-3 px-5 py-4">
         <div>
-          <h2 className="font-semibold">Adjust this invoice</h2>
+          <h2 className="font-semibold">{tx("Adjust this invoice")}</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Rate per CBM, storage, extra charges, discount, exchange rate and notes — before it is paid.
+            {tx("Rate per CBM, storage, extra charges, discount, exchange rate and notes — before it is paid.")}
           </p>
         </div>
         <button
@@ -86,12 +88,12 @@ export function InvoiceEditor({
 
           <div className="space-y-4 rounded-lg border p-4">
             <div className="space-y-1.5">
-              <Label>Storage</Label>
+              <Label>{tx("Storage")}</Label>
               {storage.configured ? (
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" name="storage" defaultChecked={storage.onBill} className="mt-0.5 size-4" />
                   <span>
-                    Charge storage on this bill
+                    {tx("Charge storage on this bill")}
                     <span className="block text-xs text-muted-foreground">
                       The clock says {storage.clock}
                       {storage.chargeableDays > 0 ? ` — ${storage.chargeableDays} day(s) past the free window` : " — still inside the free days"}.
@@ -102,13 +104,13 @@ export function InvoiceEditor({
               ) : (
                 <>
                   <input type="hidden" name="storage" value={storage.onBill ? "on" : ""} />
-                  <p className="text-xs text-muted-foreground">No storage rate is set in Settings.</p>
+                  <p className="text-xs text-muted-foreground">{tx("No storage rate is set in Settings.")}</p>
                 </>
               )}
             </div>
 
             <div className="space-y-1.5 border-t pt-4">
-              <Label htmlFor="appliedRate">Sea freight rate (USD per CBM)</Label>
+              <Label htmlFor="appliedRate">{tx("Sea freight rate (USD per CBM)")}</Label>
               <Input
                 id="appliedRate"
                 name="appliedRate"
@@ -129,38 +131,38 @@ export function InvoiceEditor({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="additionalCharge">Additional charge (USD)</Label>
+              <Label htmlFor="additionalCharge">{tx("Additional charge (USD)")}</Label>
               <Input id="additionalCharge" name="additionalCharge" type="number" step="0.01" min={0} placeholder="0.00" className="tnum h-11 font-mono" />
-              <Input name="chargeDescription" placeholder="Repacking, special handling, delivery" className="h-9 text-sm" />
+              <Input name="chargeDescription" placeholder={tx("Repacking, special handling, delivery")} className="h-9 text-sm" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="discount">Discount (USD)</Label>
+              <Label htmlFor="discount">{tx("Discount (USD)")}</Label>
               <Input id="discount" name="discount" type="number" step="0.01" min={0} max={total} placeholder="0.00" className="tnum h-11 font-mono" />
               <p className="text-xs text-muted-foreground">
                 {discount > 0 ? `USD ${discount.toFixed(2)} already off. ` : ""}Added as its own line, against your name.
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="fxRate">Exchange rate (TZS per USD)</Label>
+              <Label htmlFor="fxRate">{tx("Exchange rate (TZS per USD)")}</Label>
               <Input id="fxRate" name="fxRate" inputMode="decimal" value={fx} onChange={(e) => setFx(e.target.value)} className="tnum h-11 font-mono" />
-              <p className="text-xs text-muted-foreground">Changes this invoice only. The dollar total does not move.</p>
+              <p className="text-xs text-muted-foreground">{tx("Changes this invoice only. The dollar total does not move.")}</p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="invoice-notes">Note on the invoice</Label>
-              <Textarea id="invoice-notes" name="notes" defaultValue={notes ?? ""} placeholder="Shown to the customer on the printed invoice." rows={3} />
+              <Label htmlFor="invoice-notes">{tx("Note on the invoice")}</Label>
+              <Textarea id="invoice-notes" name="notes" defaultValue={notes ?? ""} placeholder={tx("Shown to the customer on the printed invoice.")} rows={3} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="adjust-reason">Why</Label>
-            <Input id="adjust-reason" name="reason" placeholder="Agreed with the customer, re-measured, bank rate on the day…" className="h-10" />
+            <Label htmlFor="adjust-reason">{tx("Why")}</Label>
+            <Input id="adjust-reason" name="reason" placeholder={tx("Agreed with the customer, re-measured, bank rate on the day…")} className="h-10" />
           </div>
 
           <FormMessage error={state.error} />
           <div className="flex items-center gap-3">
-            <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
+            <SubmitButton pendingLabel="Saving…">{tx("Save changes")}</SubmitButton>
             <button type="button" onClick={() => setOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </form>

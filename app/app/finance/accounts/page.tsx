@@ -29,6 +29,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Accounts" };
 
 const KIND = {
@@ -85,6 +86,7 @@ function ago(at: Date | null) {
  * shillings, and it is what the bank will say.
  */
 export default async function AccountsPage() {
+  await primeLocale();
   const user = await requirePermission("accounting.view");
   const mayMove = can(user.role, "accounting.manage");
 
@@ -130,15 +132,15 @@ export default async function AccountsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Accounts"
-        description="Where the company's money sits, and everything that has moved through it. Each balance is that account's own history added up — nothing here is typed."
+        title={T("Accounts")}
+        description={T("Where the company's money sits, and everything that has moved through it. Each balance is that account's own history added up — nothing here is typed.")}
       />
       <FinanceTabs />
 
       <div className="flex flex-wrap items-end justify-between gap-6 rounded-xl border bg-card px-5 py-5 shadow-soft">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Across every account
+            {T("Across every account")}
           </p>
           <p className="tnum mt-1 text-3xl font-semibold">
             {formatMoney(grandUsd, "USD")}
@@ -169,8 +171,8 @@ export default async function AccountsPage() {
         <Card>
           <EmptyState
             icon="Building2"
-            title="No accounts yet"
-            description="An administrator adds the banks, mobile-money numbers and tills the business collects into."
+            title={T("No accounts yet")}
+            description={T("An administrator adds the banks, mobile-money numbers and tills the business collects into.")}
           />
         </Card>
       ) : (
@@ -247,7 +249,7 @@ export default async function AccountsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t px-5 py-3 text-xs">
                   {account.movements === 0 ? (
                     <span className="text-muted-foreground">
-                      Nothing has moved through this account yet
+                      {T("Nothing has moved through this account yet")}
                     </span>
                   ) : (
                     <>
@@ -284,11 +286,9 @@ export default async function AccountsPage() {
       {mayMove && choices.length >= 2 ? (
         <section className="space-y-4 pt-2">
           <div>
-            <h2 className="text-lg font-semibold">Office cash</h2>
+            <h2 className="text-lg font-semibold">{T("Office cash")}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              What is in the tin, what went through it, and the two things you do
-              to it. The balance is the ledger added up, so it cannot disagree
-              with its own history.
+              {T("What is in the tin, what went through it, and the two things you do to it. The balance is the ledger added up, so it cannot disagree with its own history.")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {counts[0]
@@ -305,8 +305,8 @@ export default async function AccountsPage() {
               <Card className="p-5">
                 <EmptyState
                   icon="Banknote"
-                  title="No cash tin on the system"
-                  description="An administrator marks an account as cash, and it becomes countable here."
+                  title={T("No cash tin on the system")}
+                  description={T("An administrator marks an account as cash, and it becomes countable here.")}
                 />
               </Card>
             )}
@@ -316,33 +316,33 @@ export default async function AccountsPage() {
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
         <header className="flex items-center justify-between gap-3 border-b px-5 py-4">
-          <h2 className="font-semibold">Everything that went through the tin</h2>
+          <h2 className="font-semibold">{T("Everything that went through the tin")}</h2>
           <Link
             href="/app/finance/ledger"
             className="text-sm text-brand hover:underline"
           >
-            Full report
+            {T("Full report")}
           </Link>
         </header>
         {movements.length === 0 ? (
           <EmptyState
             icon="ArrowLeftRight"
-            title="Nothing has moved yet"
-            description="Verified payments, costs paid out and transfers between accounts appear here as they happen."
+            title={T("Nothing has moved yet")}
+            description={T("Verified payments, costs paid out and transfers between accounts appear here as they happen.")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Entry</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="hidden lg:table-cell">Type</TableHead>
+                <TableHead>{T("Date")}</TableHead>
+                <TableHead>{T("Entry")}</TableHead>
+                <TableHead>{T("Description")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Type")}</TableHead>
                 <TableHead className="hidden xl:table-cell">
-                  Recorded by
+                  {T("Recorded by")}
                 </TableHead>
                 <TableHead className="text-right">In</TableHead>
-                <TableHead className="text-right">Out</TableHead>
+                <TableHead className="text-right">{T("Out")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -424,8 +424,7 @@ async function UnassignedBanner() {
             {unassigned._count === 1 ? "" : "s"} with no account
           </p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            The money arrived and nobody said where it landed. It cannot be
-            reconciled against a bank until somebody does.
+            {T("The money arrived and nobody said where it landed. It cannot be reconciled against a bank until somebody does.")}
           </p>
         </div>
       </div>

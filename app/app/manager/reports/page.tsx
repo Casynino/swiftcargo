@@ -23,6 +23,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Management report" };
 
 const DAY = 86_400_000;
@@ -44,6 +45,7 @@ export default async function ManagerReport({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await primeLocale();
   const user = await requirePermission("record.review");
   const locale = await localeOf(user.id);
   const sp = await searchParams;

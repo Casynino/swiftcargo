@@ -28,6 +28,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Payroll" };
 
 /**
@@ -60,6 +61,7 @@ const STATUS_TONE: Record<PayrollStatus, string> = {
 };
 
 export default async function ManagerPayrollPage() {
+  await primeLocale();
   const user = await requirePermission("payroll.approve");
 
   const [locale, pending, runs, rateRow, roster, accounts] = await Promise.all([

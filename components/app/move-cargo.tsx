@@ -13,6 +13,7 @@ import {
   type ActionState,
 } from "@/lib/actions/containers";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * PUT A CONSIGNMENT ON THE CONTAINER IT ACTUALLY CAME OFF.
  *
@@ -40,6 +41,7 @@ export function MoveCargo({
   /** Landed containers it could belong to instead, this one excluded. */
   containers: { id: string; reference: string }[];
 }) {
+  const tx = useT();
   const [moveState, move] = useActionState<ActionState, FormData>(
     putOnArrivedContainer,
     {}
@@ -56,8 +58,8 @@ export function MoveCargo({
       {containers.length > 0 ? (
         <form action={move} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="cargoId" value={cargoId} />
-          <NativeSelect name="containerId" required className="w-56" aria-label="Move it to">
-            <option value="">Move it to…</option>
+          <NativeSelect name="containerId" required className="w-56" aria-label={tx("Move it to")}>
+            <option value="">{tx("Move it to…")}</option>
             {containers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.reference}
@@ -68,12 +70,12 @@ export function MoveCargo({
             name="reason"
             required
             minLength={3}
-            placeholder="Why — e.g. came off the next box down"
+            placeholder={tx("Why — e.g. came off the next box down")}
             className="min-w-[16rem] flex-1"
           />
           <SubmitButton size="sm" pendingLabel="Moving…">
             <ArrowRightLeft />
-            Move
+            {tx("Move")}
           </SubmitButton>
           <p className="w-full text-xs text-muted-foreground">
             Its draft bill and its history move with it, and both containers&rsquo;
@@ -90,7 +92,7 @@ export function MoveCargo({
           name="reason"
           required
           minLength={3}
-          placeholder="Why it is not on this container"
+          placeholder={tx("Why it is not on this container")}
           className="min-w-[16rem] flex-1"
         />
         {/* NOTHING CLOSES THIS PANEL ON THE WAY OUT.
@@ -102,7 +104,7 @@ export function MoveCargo({
             and the answer is read here first. */}
         <SubmitButton size="sm" variant="outline" pendingLabel="Taking it off…">
           <PackageX />
-          Take it off the manifest
+          {tx("Take it off the manifest")}
         </SubmitButton>
         <p className="w-full text-xs text-muted-foreground">
           For a consignment that was on the paper and not in the box. It goes back
@@ -128,6 +130,7 @@ export function AddToContainer({
   containerId: string;
   candidates: { id: string; label: string }[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     putOnArrivedContainer,
     {}
@@ -142,9 +145,9 @@ export function AddToContainer({
         name="cargoId"
         required
         className="w-72"
-        aria-label="Consignment to add to this container"
+        aria-label={tx("Consignment to add to this container")}
       >
-        <option value="">Add a consignment that came off this box…</option>
+        <option value="">{tx("Add a consignment that came off this box…")}</option>
         {candidates.map((c) => (
           <option key={c.id} value={c.id}>
             {c.label}
@@ -155,11 +158,11 @@ export function AddToContainer({
         name="reason"
         required
         minLength={3}
-        placeholder="Why — e.g. mark not on the packing list"
+        placeholder={tx("Why — e.g. mark not on the packing list")}
         className="min-w-[14rem] flex-1"
       />
       <SubmitButton size="sm" variant="outline" pendingLabel="Adding…">
-        Add to the manifest
+        {tx("Add to the manifest")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

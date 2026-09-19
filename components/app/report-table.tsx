@@ -1,6 +1,7 @@
 import type { Currency, ReportTable } from "@/lib/report-tables";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 /** One report table, the same on the page and on paper. */
 export function ReportTableView({
   table,
@@ -35,7 +36,7 @@ export function ReportTableView({
           {table.rows.length === 0 ? (
             <tr>
               <td colSpan={table.columns.length} className="px-4 py-6 text-center text-muted-foreground">
-                Nothing in this period.
+                {T("Nothing in this period.")}
               </td>
             </tr>
           ) : (

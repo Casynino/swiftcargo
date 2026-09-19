@@ -17,6 +17,7 @@ import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 const tzs = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "TZS", maximumFractionDigits: 0 }).format(n);
 const usd = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
@@ -179,17 +180,17 @@ export async function FinanceHome() {
     <div className="space-y-8">
       <section>
         <SectionLabel count={items.filter((i) => i.tone !== "neutral").length} action={{ href: "/app/finance/collections", label: "The call list" }}>
-          Needs your attention
+          {T("Needs your attention")}
         </SectionLabel>
         <AttentionCenter items={items} />
       </section>
 
       <section>
-        <SectionLabel action={{ href: "/app/finance/containers", label: "All containers" }}>Containers · what each one made</SectionLabel>
+        <SectionLabel action={{ href: "/app/finance/containers", label: "All containers" }}>{T("Containers · what each one made")}</SectionLabel>
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3">
-            <h3 className="font-semibold">What each container is making</h3>
-            <p className="text-xs text-muted-foreground">Billed against what it cost. Only Collected is money in the bank.</p>
+            <h3 className="font-semibold">{T("What each container is making")}</h3>
+            <p className="text-xs text-muted-foreground">{T("Billed against what it cost. Only Collected is money in the bank.")}</p>
           </div>
           <div className="max-h-80 overflow-auto">
             <table className="w-full text-sm">
@@ -226,7 +227,7 @@ export async function FinanceHome() {
       </section>
 
       <section>
-        <SectionLabel action={{ href: "/app/finance/accounts", label: "Full position" }}>The money · right now</SectionLabel>
+        <SectionLabel action={{ href: "/app/finance/accounts", label: "Full position" }}>{T("The money · right now")}</SectionLabel>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {[
             { title: "Cash available", icon: Wallet, tone: "text-success", wash: "from-success/[0.08]", lead: cash, usd: today ? cash / today : 0, foot: `${holding.length} of ${balances.length} accounts holding`, note: "Every till and bank account, added up. Comes from the ledger, so it moves the moment money does.", href: "/app/finance/accounts" },
@@ -252,21 +253,21 @@ export async function FinanceHome() {
       </section>
 
       <section>
-        <SectionLabel action={{ href: "/app/finance/ledger", label: "The ledger" }}>The money, in shape</SectionLabel>
+        <SectionLabel action={{ href: "/app/finance/ledger", label: "The ledger" }}>{T("The money, in shape")}</SectionLabel>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:[&>*:last-child]:col-span-2 2xl:grid-cols-3 2xl:[&>*:last-child]:col-span-1">
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold">Where the cash sits</h3>
+                <h3 className="font-semibold">{T("Where the cash sits")}</h3>
                 <p className="text-xs text-muted-foreground">{holding.length} of {balances.length} accounts holding</p>
               </div>
-              <Link href="/app/finance/accounts" className="text-xs text-primary hover:underline">All</Link>
+              <Link href="/app/finance/accounts" className="text-xs text-primary hover:underline">{T("All")}</Link>
             </div>
             <div className="mt-4 flex items-center gap-5">
               {slices.length ? <Donut slices={slices} size={120} stroke={18} /> : <div className="size-[120px] rounded-full border-8 border-secondary" />}
               <div>
                 <p className="tnum text-2xl font-bold">{Math.round(cash).toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">TZS in hand</p>
+                <p className="text-xs text-muted-foreground">{T("TZS in hand")}</p>
               </div>
             </div>
             <ul className="mt-4 space-y-1.5">
@@ -284,8 +285,8 @@ export async function FinanceHome() {
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold">Money in and out</h3>
-                <p className="text-xs text-muted-foreground">What arrived against what it cost, this year</p>
+                <h3 className="font-semibold">{T("Money in and out")}</h3>
+                <p className="text-xs text-muted-foreground">{T("What arrived against what it cost, this year")}</p>
               </div>
               <p className="text-right">
                 <span className={cn("tnum block text-sm font-semibold", netMonth >= 0 ? "text-success" : "text-destructive")}>{netMonth >= 0 ? "+" : ""}{tzs(netMonth)}</span>
@@ -304,17 +305,17 @@ export async function FinanceHome() {
               ))}
             </div>
             <p className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />Money in</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />Money out</span>
-              <span className="ml-auto">One scale</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />{T("Money in")}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />{T("Money out")}</span>
+              <span className="ml-auto">{T("One scale")}</span>
             </p>
           </div>
 
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold">What we are owed, by age</h3>
-                <p className="text-xs text-muted-foreground">From the day the bill became real</p>
+                <h3 className="font-semibold">{T("What we are owed, by age")}</h3>
+                <p className="text-xs text-muted-foreground">{T("From the day the bill became real")}</p>
               </div>
               <span className="text-xs text-muted-foreground">oldest <span className="font-semibold text-foreground">{oldest}d</span></span>
             </div>
@@ -336,29 +337,29 @@ export async function FinanceHome() {
       </section>
 
       <section>
-        <SectionLabel>Cargo behind the money</SectionLabel>
+        <SectionLabel>{T("Cargo behind the money")}</SectionLabel>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className="overflow-hidden rounded-xl border bg-card">
             <header className="flex items-start justify-between border-b px-5 py-4">
               <div>
-                <h3 className="font-semibold">Longest in the warehouse</h3>
-                <p className="text-xs text-muted-foreground">Oldest arrivals still unpaid — storage is building on every one</p>
+                <h3 className="font-semibold">{T("Longest in the warehouse")}</h3>
+                <p className="text-xs text-muted-foreground">{T("Oldest arrivals still unpaid — storage is building on every one")}</p>
               </div>
-              <Link href="/app/finance/collections?sort=waiting" className="flex items-center gap-1 text-sm text-primary hover:underline">Payment follow-up <ArrowRight className="size-3.5" /></Link>
+              <Link href="/app/finance/collections?sort=waiting" className="flex items-center gap-1 text-sm text-primary hover:underline">{T("Payment follow-up")} <ArrowRight className="size-3.5" /></Link>
             </header>
             <div className="relative overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-2 font-medium">Cargo</th>
-                    <th className="px-4 py-2 font-medium">Customer</th>
-                    <th className="px-4 py-2 text-right font-medium">Value</th>
-                    <th className="px-4 py-2 text-right font-medium">Waiting</th>
+                    <th className="px-4 py-2 font-medium">{T("Cargo")}</th>
+                    <th className="px-4 py-2 font-medium">{T("Customer")}</th>
+                    <th className="px-4 py-2 text-right font-medium">{T("Value")}</th>
+                    <th className="px-4 py-2 text-right font-medium">{T("Waiting")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {longest.length === 0 ? (
-                    <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Nothing unpaid on the Dar floor.</td></tr>
+                    <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">{T("Nothing unpaid on the Dar floor.")}</td></tr>
                   ) : longest.map((w) => (
                     <tr key={w.id} className="hover:bg-secondary/30">
                       <td className="px-4 py-2.5"><Link href={`/app/cargo/${w.id}`} className="tnum font-medium hover:underline">{w.cargo}</Link><span className="block max-w-[10rem] truncate text-xs text-muted-foreground">{w.goods}</span></td>
@@ -375,14 +376,14 @@ export async function FinanceHome() {
           <div className="overflow-hidden rounded-xl border bg-card">
             <header className="flex items-start justify-between border-b px-5 py-4">
               <div>
-                <h3 className="font-semibold">Recent payments</h3>
-                <p className="text-xs text-muted-foreground">What was handed over, and where it landed</p>
+                <h3 className="font-semibold">{T("Recent payments")}</h3>
+                <p className="text-xs text-muted-foreground">{T("What was handed over, and where it landed")}</p>
               </div>
-              <Link href="/app/finance/ledger?type=sale" className="flex items-center gap-1 text-sm text-primary hover:underline">All <ArrowRight className="size-3.5" /></Link>
+              <Link href="/app/finance/ledger?type=sale" className="flex items-center gap-1 text-sm text-primary hover:underline">{T("All")} <ArrowRight className="size-3.5" /></Link>
             </header>
             <ul className="divide-y">
               {recent.length === 0 ? (
-                <li className="px-5 py-6 text-center text-sm text-muted-foreground">No payments verified yet.</li>
+                <li className="px-5 py-6 text-center text-sm text-muted-foreground">{T("No payments verified yet.")}</li>
               ) : recent.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
                   <span className="min-w-0">

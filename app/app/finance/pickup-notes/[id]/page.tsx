@@ -12,6 +12,7 @@ import { qrDataUrl, qrPayload } from "@/lib/qr";
 import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -43,6 +44,7 @@ export default async function PickupNotePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("finance.view");
   const { id } = await params;
 

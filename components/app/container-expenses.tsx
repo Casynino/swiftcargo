@@ -19,6 +19,7 @@ import type { CorrectableExpense, CorrectionAccount } from "@/lib/expense-correc
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 export type ContainerExpenseRow = {
   id: string;
   reference: string;
@@ -77,6 +78,7 @@ export function ContainerExpenses({
   correctionAccounts: readonly CorrectionAccount[];
   correctionCategories: readonly { id: string; name: string }[];
 }) {
+  const tx = useT();
   const correcting: Correcting = {
     locale,
     accounts: [...correctionAccounts],
@@ -91,7 +93,7 @@ export function ContainerExpenses({
     <section className="overflow-hidden rounded-xl border border-destructive/25 bg-destructive/[0.03] shadow-soft">
       <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
         <div>
-          <h2 className="font-semibold">Expenses on this container</h2>
+          <h2 className="font-semibold">{tx("Expenses on this container")}</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {rows.filter((r) => !r.cancelled).length} expense
             {rows.filter((r) => !r.cancelled).length === 1 ? "" : "s"}
@@ -117,8 +119,7 @@ export function ContainerExpenses({
            "nobody has entered the costs" — and the margin above is wrong by
            exactly the difference. */
         <p className="border-t px-5 py-4 text-sm text-muted-foreground">
-          Nothing recorded against this container yet, so its profit has nothing
-          taken off it.
+          {tx("Nothing recorded against this container yet, so its profit has nothing taken off it.")}
         </p>
       ) : null}
 
@@ -138,10 +139,10 @@ export function ContainerExpenses({
           <input type="hidden" name="containerId" value={containerId} />
           <div className="min-w-[14rem] flex-1 space-y-1.5">
             <Label htmlFor="quick-type" className="text-xs">
-              Expense
+              {tx("Expense")}
             </Label>
             <NativeSelect id="quick-type" name="expenseTypeId" defaultValue="">
-              <option value="">Something else</option>
+              <option value="">{tx("Something else")}</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -152,7 +153,7 @@ export function ContainerExpenses({
           </div>
           <div className="w-36 space-y-1.5">
             <Label htmlFor="quick-amount" className="text-xs">
-              Amount
+              {tx("Amount")}
             </Label>
             <Input
               id="quick-amount"
@@ -166,7 +167,7 @@ export function ContainerExpenses({
           </div>
           <div className="w-28 space-y-1.5">
             <Label htmlFor="quick-currency" className="text-xs">
-              Currency
+              {tx("Currency")}
             </Label>
             <NativeSelect
               id="quick-currency"
@@ -179,12 +180,12 @@ export function ContainerExpenses({
           </div>
           <div className="min-w-[12rem] flex-1 space-y-1.5">
             <Label htmlFor="quick-account" className="text-xs">
-              Paid from
+              {tx("Paid from")}
             </Label>
             <NativeSelect id="quick-account" name="accountId" defaultValue="">
               {/* A cost with no account is real money the balances cannot
                   account for, so the screen names that rather than assuming. */}
-              <option value="">Not paid yet</option>
+              <option value="">{tx("Not paid yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
@@ -194,7 +195,7 @@ export function ContainerExpenses({
           </div>
           <SubmitButton>
             <Plus className="mr-1.5 size-4" />
-            Add
+            {tx("Add")}
           </SubmitButton>
           <div className="w-full">
             <FormMessage error={state.error} ok={state.ok} />
@@ -214,6 +215,7 @@ function ExpenseRow({
   mayRecord: boolean;
   correcting: Correcting;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     cancelExpense,
     {}
@@ -254,11 +256,11 @@ function ExpenseRow({
             name="reason"
             required
             minLength={3}
-            placeholder="Why is it being cancelled?"
+            placeholder={tx("Why is it being cancelled?")}
             className="w-60"
           />
           <SubmitButton size="sm" variant="destructive">
-            Cancel it
+            {tx("Cancel it")}
           </SubmitButton>
           <Button
             type="button"
@@ -266,7 +268,7 @@ function ExpenseRow({
             variant="ghost"
             onClick={() => setAsking(false)}
           >
-            Keep it
+            {tx("Keep it")}
           </Button>
           <FormMessage error={state.error} ok={state.ok} />
         </form>
@@ -299,7 +301,7 @@ function ExpenseRow({
               onClick={() => setAsking(true)}
             >
               <Ban className="mr-1 size-3" />
-              Cancel
+              {tx("Cancel")}
             </Button>
           ) : null}
         </div>

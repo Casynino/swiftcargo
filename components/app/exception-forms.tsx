@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 const TYPES = [
   ["MISSING_CARGO", "Missing cargo"],
   ["DAMAGED_CARGO", "Damaged cargo"],
@@ -54,6 +55,7 @@ export function NewExceptionForm({
   /** The consignment the desk arrived here looking at, chosen but changeable. */
   defaultCargoId?: string;
 }) {
+  const tx = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<ActionState, FormData>(
@@ -72,7 +74,7 @@ export function NewExceptionForm({
     return (
       <Button variant="outline" onClick={() => setOpen(true)}>
         <Plus />
-        Raise an issue
+        {tx("Raise an issue")}
       </Button>
     );
   }
@@ -86,7 +88,7 @@ export function NewExceptionForm({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="type">What kind of issue?</Label>
+            <Label htmlFor="type">{tx("What kind of issue?")}</Label>
             <NativeSelect id="type" name="type" defaultValue="OTHER">
               {TYPES.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -96,16 +98,16 @@ export function NewExceptionForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
+            <Label htmlFor="priority">{tx("Priority")}</Label>
             <NativeSelect id="priority" name="priority" defaultValue="NORMAL">
-              <option value="LOW">Low</option>
-              <option value="NORMAL">Normal</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="LOW">{tx("Low")}</option>
+              <option value="NORMAL">{tx("Normal")}</option>
+              <option value="HIGH">{tx("High")}</option>
+              <option value="URGENT">{tx("Urgent")}</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="department">Whose desk?</Label>
+            <Label htmlFor="department">{tx("Whose desk?")}</Label>
             <NativeSelect id="department" name="department" defaultValue="">
               {DEPARTMENTS.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -118,7 +120,7 @@ export function NewExceptionForm({
 
         {!fixedCargoId ? (
           <div className="space-y-2">
-            <Label htmlFor="cargoId">Which consignment? (optional)</Label>
+            <Label htmlFor="cargoId">{tx("Which consignment? (optional)")}</Label>
             <NativeSelect
               id="cargoId"
               name="cargoId"
@@ -128,7 +130,7 @@ export function NewExceptionForm({
                   : ""
               }
             >
-              <option value="">Not about one consignment</option>
+              <option value="">{tx("Not about one consignment")}</option>
               {cargo.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
@@ -139,22 +141,22 @@ export function NewExceptionForm({
         ) : null}
 
         <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title">{tx("Title")}</Label>
           <Input
             id="title"
             name="title"
             required
-            placeholder="Two cartons short on MSCU7741203"
+            placeholder={tx("Two cartons short on MSCU7741203")}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">What happened?</Label>
+          <Label htmlFor="description">{tx("What happened?")}</Label>
           <Textarea id="description" name="description" required rows={4} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="evidence">Photos or documents</Label>
+          <Label htmlFor="evidence">{tx("Photos or documents")}</Label>
           <Input
             id="evidence"
             name="evidence"
@@ -166,9 +168,9 @@ export function NewExceptionForm({
 
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Open case</SubmitButton>
+          <SubmitButton>{tx("Open case")}</SubmitButton>
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tx("Cancel")}
           </Button>
         </div>
       </form>
@@ -191,6 +193,7 @@ export function CaseActions({
   canClose: boolean;
   canAssign: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     updateException,
     {}
@@ -216,7 +219,7 @@ export function CaseActions({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{tx("Status")}</Label>
           <NativeSelect id="status" name="status" defaultValue={status}>
             {statuses.map(([value, label]) => (
               <option key={value} value={value}>
@@ -227,9 +230,9 @@ export function CaseActions({
         </div>
         {canAssign ? (
           <div className="space-y-2">
-            <Label htmlFor="assignedToId">Assign to</Label>
+            <Label htmlFor="assignedToId">{tx("Assign to")}</Label>
             <NativeSelect id="assignedToId" name="assignedToId" defaultValue="">
-              <option value="">Leave as is</option>
+              <option value="">{tx("Leave as is")}</option>
               {staff.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -241,12 +244,12 @@ export function CaseActions({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="note">Add a note</Label>
+        <Label htmlFor="note">{tx("Add a note")}</Label>
         <Textarea id="note" name="note" rows={3} />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="case-evidence">Add photos or documents</Label>
+        <Label htmlFor="case-evidence">{tx("Add photos or documents")}</Label>
         <Input
           id="case-evidence"
           name="evidence"
@@ -258,22 +261,21 @@ export function CaseActions({
 
       {canResolve ? (
         <div className="space-y-2">
-          <Label htmlFor="resolution">Resolution</Label>
+          <Label htmlFor="resolution">{tx("Resolution")}</Label>
           <Textarea
             id="resolution"
             name="resolution"
             rows={2}
-            placeholder="What was actually done about it."
+            placeholder={tx("What was actually done about it.")}
           />
           <p className="text-xs text-muted-foreground">
-            Resolving or closing clears the warehouse flag, so the cargo can be
-            verified and released again.
+            {tx("Resolving or closing clears the warehouse flag, so the cargo can be verified and released again.")}
           </p>
         </div>
       ) : null}
 
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>Record</SubmitButton>
+      <SubmitButton>{tx("Record")}</SubmitButton>
     </form>
   );
 }

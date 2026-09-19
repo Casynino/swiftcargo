@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Merge Payment" };
 
 /**
@@ -43,6 +44,7 @@ export default async function MergePaymentPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("payment.submit");
   const me = await prisma.user.findUnique({
     where: { id: user.id },

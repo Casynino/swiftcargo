@@ -11,6 +11,7 @@ import { formatDate, formatMoney } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Deliveries" };
 
 const TONE: Record<string, "neutral" | "progress" | "good" | "warn" | "bad"> = {
@@ -24,6 +25,7 @@ const TONE: Record<string, "neutral" | "progress" | "good" | "warn" | "bad"> = {
 };
 
 export default async function DeliveriesPage() {
+  await primeLocale();
   await requirePermission("delivery.manage");
 
   const requests = await prisma.deliveryRequest.findMany({
@@ -44,8 +46,8 @@ export default async function DeliveriesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Deliveries"
-        description="Customers who asked us to bring their cargo to them instead of collecting."
+        title={T("Deliveries")}
+        description={T("Customers who asked us to bring their cargo to them instead of collecting.")}
       />
       <SectionTabs />
 
@@ -53,8 +55,8 @@ export default async function DeliveriesPage() {
         <Card>
           <EmptyState
             icon="Truck"
-            title="No deliveries to arrange"
-            description="Customers request delivery from their own portal once their cargo clears."
+            title={T("No deliveries to arrange")}
+            description={T("Customers request delivery from their own portal once their cargo clears.")}
           />
         </Card>
       ) : (
@@ -116,7 +118,7 @@ export default async function DeliveriesPage() {
       {done.length > 0 ? (
         <Card>
           <div className="border-b p-5">
-            <p className="font-medium">Finished</p>
+            <p className="font-medium">{T("Finished")}</p>
           </div>
           <ul className="divide-y">
             {done.map((request) => (

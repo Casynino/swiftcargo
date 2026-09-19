@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale } from "@/lib/server-t";
 /* The filename is the title, so the saved PDF is already named for the person. */
 export async function generateMetadata({
   params,
@@ -41,6 +42,7 @@ export default async function CombinedBillPage({
 }: {
   params: Promise<{ customerId: string }>;
 }) {
+  await primeLocale();
   await requirePermission("finance.view");
   const { customerId } = await params;
 

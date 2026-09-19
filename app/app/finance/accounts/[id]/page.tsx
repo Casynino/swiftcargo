@@ -32,6 +32,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 const KIND = {
   BANK: { label: "Bank account", icon: Building2, tile: "bg-brand/10 text-brand" },
   MOBILE_MONEY: {
@@ -86,6 +87,7 @@ export default async function AccountPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("accounting.view");
   const locale = await localeOf(user.id);
   const L = (english: string) => t(locale, english);

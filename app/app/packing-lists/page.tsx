@@ -16,9 +16,11 @@ import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Packing lists" };
 
 export default async function PackingListsPage() {
+  await primeLocale();
   await requirePermission("packingList.view");
 
   const lists = await prisma.packingList.findMany({

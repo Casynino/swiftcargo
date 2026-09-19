@@ -26,6 +26,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Credit" };
 
 const STATE_TONE: Record<CreditState, string> = {
@@ -81,6 +82,7 @@ export default async function CreditPage({
 }: {
   searchParams: Promise<{ state?: string; q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   const me = await prisma.user.findUnique({
     where: { id: user.id },

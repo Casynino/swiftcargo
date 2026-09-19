@@ -16,9 +16,11 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Staff" };
 
 export default async function UsersPage() {
+  await primeLocale();
   const actor = await requirePermission("user.manage");
 
   const [locale, users, warehouses] = await Promise.all([

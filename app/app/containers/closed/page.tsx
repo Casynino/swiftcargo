@@ -20,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Closed containers" };
 
 /**
@@ -34,6 +35,7 @@ export const metadata: Metadata = { title: "Closed containers" };
  * is the number that decides whether this sailing actually made what it says.
  */
 export default async function ClosedContainersPage() {
+  await primeLocale();
   await requirePermission("accounting.view");
 
   const containers = await prisma.container.findMany({
@@ -102,8 +104,8 @@ export default async function ClosedContainersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Closed containers"
-        description="Sailings where everything has been handed over. Collected against what it cost — the only point at which a margin is a result rather than a forecast."
+        title={T("Closed containers")}
+        description={T("Sailings where everything has been handed over. Collected against what it cost — the only point at which a margin is a result rather than a forecast.")}
       />
       <ContainerTabs />
 
@@ -146,23 +148,23 @@ export default async function ClosedContainersPage() {
         {rows.length === 0 ? (
           <EmptyState
             icon="ClipboardCheck"
-            title="Nothing is closed yet"
-            description="A container closes once every consignment on it has been handed over at the Dar counter."
+            title={T("Nothing is closed yet")}
+            description={T("A container closes once every consignment on it has been handed over at the Dar counter.")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Container</TableHead>
-                <TableHead>Vessel</TableHead>
-                <TableHead className="hidden lg:table-cell">Arrived</TableHead>
-                <TableHead className="text-right">Cargo</TableHead>
-                <TableHead className="text-right">Volume</TableHead>
-                <TableHead className="text-right">Billed</TableHead>
-                <TableHead className="text-right">Collected</TableHead>
-                <TableHead className="text-right">Still owed</TableHead>
-                <TableHead className="text-right">Spent</TableHead>
-                <TableHead className="text-right">Made</TableHead>
+                <TableHead>{T("Container")}</TableHead>
+                <TableHead>{T("Vessel")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Arrived")}</TableHead>
+                <TableHead className="text-right">{T("Cargo")}</TableHead>
+                <TableHead className="text-right">{T("Volume")}</TableHead>
+                <TableHead className="text-right">{T("Billed")}</TableHead>
+                <TableHead className="text-right">{T("Collected")}</TableHead>
+                <TableHead className="text-right">{T("Still owed")}</TableHead>
+                <TableHead className="text-right">{T("Spent")}</TableHead>
+                <TableHead className="text-right">{T("Made")}</TableHead>
                 <TableHead className="w-8" />
               </TableRow>
             </TableHeader>

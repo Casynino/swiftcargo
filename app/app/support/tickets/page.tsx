@@ -25,6 +25,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Tickets" };
 
 const STATUS_FILTERS: {
@@ -95,6 +96,7 @@ export default async function TicketsPage({
     new?: string;
   }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("conversation.view");
   const params = await searchParams;
 
@@ -196,8 +198,8 @@ export default async function TicketsPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tickets"
-        description="Every question, complaint and request the desk has taken, and what happened next."
+        title={T("Tickets")}
+        description={T("Every question, complaint and request the desk has taken, and what happened next.")}
       />
       <SectionTabs />
 
@@ -251,7 +253,7 @@ export default async function TicketsPage({
           <NativeSelect
             name="priority"
             defaultValue={priority}
-            aria-label="Priority"
+            aria-label={T("Priority")}
             className="h-9 w-40"
           >
             {PRIORITY_FILTERS.map((option) => (
@@ -264,11 +266,11 @@ export default async function TicketsPage({
             type="search"
             name="q"
             defaultValue={search}
-            placeholder="Ticket number, customer, phone, cargo reference, what was said…"
+            placeholder={T("Ticket number, customer, phone, cargo reference, what was said…")}
             className="h-9 min-w-0 flex-1 basis-56"
           />
           <Button type="submit" size="sm">
-            Search
+            {T("Search")}
           </Button>
         </form>
 
@@ -284,7 +286,7 @@ export default async function TicketsPage({
               href={link({ q: undefined, priority: undefined })}
               className="underline-offset-2 hover:underline"
             >
-              Clear the filters
+              {T("Clear the filters")}
             </Link>
           ) : null}
         </p>
@@ -294,11 +296,11 @@ export default async function TicketsPage({
         <Card>
           <EmptyState
             icon="MessageSquare"
-            title={filtered ? "Nothing matches those filters" : "No tickets in this view."}
+            title={filtered ? T("Nothing matches those filters") : T("No tickets in this view.")}
             description={
               filtered
-                ? "Try another view, or clear the filters above."
-                : "Every call, complaint and question the desk takes belongs here — that is how the next person picks it up."
+                ? T("Try another view, or clear the filters above.")
+                : T("Every call, complaint and question the desk takes belongs here — that is how the next person picks it up.")
             }
           />
         </Card>
@@ -346,13 +348,13 @@ export default async function TicketsPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ticket</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cargo</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden xl:table-cell">Handled by</TableHead>
-                  <TableHead className="text-right">Last activity</TableHead>
+                  <TableHead>{T("Ticket")}</TableHead>
+                  <TableHead>{T("Customer")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{T("Cargo")}</TableHead>
+                  <TableHead>{T("Priority")}</TableHead>
+                  <TableHead>{T("Status")}</TableHead>
+                  <TableHead className="hidden xl:table-cell">{T("Handled by")}</TableHead>
+                  <TableHead className="text-right">{T("Last activity")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -454,8 +456,8 @@ export default async function TicketsPage({
 function UnreadDot() {
   return (
     <span
-      aria-label="Unread"
-      title="Unread"
+      aria-label={T("Unread")}
+      title={T("Unread")}
       className="mt-1.5 size-2 shrink-0 rounded-full bg-brand"
     />
   );

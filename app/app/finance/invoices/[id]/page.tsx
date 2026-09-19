@@ -40,6 +40,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { storageStart } from "@/lib/storage-clock";
 
+import { primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -58,6 +59,7 @@ export default async function InvoicePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   const { id } = await params;
 
@@ -150,7 +152,7 @@ export default async function InvoicePage({
               invoiceId={invoice.id}
               phone={whatsappNumber(invoice.customer.phone)}
               kind={stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "payment.reminder" : "cargo.ready"}
-              label="Notify on WhatsApp"
+              label={T("Notify on WhatsApp")}
               message={composeMessage(stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "payment.reminder" : "cargo.ready", {
                 customerName: invoice.customer.fullName,
                 reference: invoice.cargo.reference,
@@ -174,14 +176,14 @@ export default async function InvoicePage({
             <Button asChild>
               <a href={`/app/finance/invoices/${invoice.id}/pdf`} download>
                 <Download />
-                Download PDF
+                {T("Download PDF")}
               </a>
             </Button>
           ) : null}
           <Button asChild>
             <a href={`/app/finance/invoices/${invoice.id}/document?download=1`} target="_blank" rel="noreferrer">
               <Printer />
-              Print
+              {T("Print")}
             </a>
           </Button>
         </div>
@@ -191,7 +193,7 @@ export default async function InvoicePage({
         <div className="space-y-3 rounded-xl border border-signal/40 bg-signal/5 p-4 print:hidden">
           <p className="flex items-center gap-2 text-sm text-signal">
             <FileClock className="size-5 shrink-0" />
-            This price has not been confirmed yet. Confirm it before downloading or sending the invoice.
+            {T("This price has not been confirmed yet. Confirm it before downloading or sending the invoice.")}
           </p>
           {can(user.role, "invoice.issue") ? <IssueInvoiceForm invoiceId={invoice.id} /> : null}
         </div>
@@ -200,7 +202,7 @@ export default async function InvoicePage({
       {live && Number(owing) > 0 && can(user.role, "payment.verify") ? (
         onCredit ? (
           <p className="rounded-xl border border-warning/40 bg-warning/5 px-4 py-3 text-sm print:hidden">
-            <span className="font-medium text-warning">Released on credit</span>
+            <span className="font-medium text-warning">{T("Released on credit")}</span>
             {onCredit.creditDueAt ? ` · due ${formatDate(onCredit.creditDueAt)}` : ""}
             {onCredit.creditReason ? ` · ${onCredit.creditReason}` : ""}
           </p>
@@ -309,23 +311,23 @@ export default async function InvoicePage({
                 outstanding figure is. Two forms for one act was two places to
                 get the amount wrong. */}
             <CardHeader>
-              <CardTitle className="text-base">Payments</CardTitle>
+              <CardTitle className="text-base">{T("Payments")}</CardTitle>
             </CardHeader>
             {invoice.payments.length === 0 ? (
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Nothing recorded against this invoice yet.
+                  {T("Nothing recorded against this invoice yet.")}
                 </p>
               </CardContent>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Reference</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Credited</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>{T("Reference")}</TableHead>
+                    <TableHead className="text-right">{T("Amount")}</TableHead>
+                    <TableHead className="text-right">{T("Credited")}</TableHead>
+                    <TableHead>{T("Method")}</TableHead>
+                    <TableHead>{T("Status")}</TableHead>
                     <TableHead className="text-right" />
                   </TableRow>
                 </TableHeader>
@@ -352,7 +354,7 @@ export default async function InvoicePage({
                                 rel="noreferrer"
                                 className="text-xs text-primary hover:underline"
                               >
-                                Proof
+                                {T("Proof")}
                               </a>
                             ))}
                           </span>
@@ -426,7 +428,7 @@ export default async function InvoicePage({
         {invoice.receipts.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Receipts</CardTitle>
+              <CardTitle className="text-base">{T("Receipts")}</CardTitle>
             </CardHeader>
             <CardContent className="divide-y p-0">
               {invoice.receipts.map((receipt) => (
@@ -450,7 +452,7 @@ export default async function InvoicePage({
             <span className="font-medium">
               {invoice.customer.fullName} has {otherUnpaid} other unpaid consignment{otherUnpaid === 1 ? "" : "s"}
             </span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">Paying for several at once? Take it as one payment.</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{T("Paying for several at once? Take it as one payment.")}</span>
           </Link>
         ) : null}
       </div>

@@ -17,6 +17,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "China markets" };
 
 /**
@@ -31,6 +32,7 @@ export default async function MarketsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("conversation.view");
   const { q } = await searchParams;
   const query = (q ?? "").trim();

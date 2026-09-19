@@ -24,6 +24,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Payroll" };
 
 /**
@@ -66,6 +67,7 @@ export default async function FinancePayrollPage({
 }: {
   searchParams: Promise<{ run?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("payroll.prepare");
   const { run: asked } = await searchParams;
 

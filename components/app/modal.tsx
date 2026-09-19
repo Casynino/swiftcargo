@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * A DIALOG OVER THE PAGE.
  *
@@ -24,6 +25,7 @@ export function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
+  const tx = useT();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -61,7 +63,7 @@ export function Modal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={tx("Close")}
             className="focus-ring rounded p-1 text-muted-foreground hover:text-foreground"
           >
             <X className="size-4" />

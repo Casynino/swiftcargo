@@ -11,6 +11,7 @@ import { formatDate } from "@/lib/format";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Container finances" };
 
 const fmt = (n: number) =>
@@ -27,6 +28,7 @@ const fmt = (n: number) =>
  * read its whole book: every payment, every cost, everything still owed.
  */
 export default async function ContainerFinancesPage() {
+  await primeLocale();
   await requirePermission("finance.view");
   const books = await loadBooks();
 
@@ -46,25 +48,25 @@ export default async function ContainerFinancesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Container finances"
-        description="What every sailing earned and what it cost. Open one to read its whole book — every payment, every cost, and everything still owed on it."
+        title={T("Container finances")}
+        description={T("What every sailing earned and what it cost. Open one to read its whole book — every payment, every cost, and everything still owed on it.")}
       />
       <ContainerTabs />
 
       <section className="space-y-2">
         <h2 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-          Every container, worst margin first
+          {T("Every container, worst margin first")}
         </h2>
         <div className="relative overflow-x-auto rounded-xl border bg-card">
           <table className="w-full min-w-[44rem] text-sm">
             <thead>
               <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Container</th>
-                <th className="px-4 py-3 text-right font-medium">Revenue</th>
-                <th className="px-4 py-3 text-right font-medium">Collected</th>
-                <th className="px-4 py-3 text-right font-medium">Outstanding</th>
-                <th className="px-4 py-3 text-right font-medium">Costs</th>
-                <th className="px-4 py-3 text-right font-medium">Profit / loss</th>
+                <th className="px-4 py-3 font-medium">{T("Container")}</th>
+                <th className="px-4 py-3 text-right font-medium">{T("Revenue")}</th>
+                <th className="px-4 py-3 text-right font-medium">{T("Collected")}</th>
+                <th className="px-4 py-3 text-right font-medium">{T("Outstanding")}</th>
+                <th className="px-4 py-3 text-right font-medium">{T("Costs")}</th>
+                <th className="px-4 py-3 text-right font-medium">{T("Profit / loss")}</th>
                 <th className="w-8" />
               </tr>
             </thead>
@@ -113,7 +115,7 @@ export default async function ContainerFinancesPage() {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                    No container has a bill or a cost on it yet.
+                    {T("No container has a bill or a cost on it yet.")}
                   </td>
                 </tr>
               ) : null}

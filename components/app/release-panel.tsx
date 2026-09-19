@@ -13,6 +13,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * The seven conditions, spelled out.
  *
@@ -62,6 +63,7 @@ export function ReleaseForm({
   receiverName: string;
   receiverPhone: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     releaseCargo,
     {}
@@ -73,7 +75,7 @@ export function ReleaseForm({
     return (
       <Button onClick={() => setOpen(true)}>
         <DoorOpen />
-        Hand it over
+        {tx("Hand it over")}
       </Button>
     );
   }
@@ -84,14 +86,14 @@ export function ReleaseForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="method">How is it going?</Label>
+          <Label htmlFor="method">{tx("How is it going?")}</Label>
           <NativeSelect id="method" name="method" defaultValue="COLLECTION">
-            <option value="COLLECTION">Collected from the warehouse</option>
-            <option value="DELIVERY">Delivered</option>
+            <option value="COLLECTION">{tx("Collected from the warehouse")}</option>
+            <option value="DELIVERY">{tx("Delivered")}</option>
           </NativeSelect>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="packagesReleased">Packages handed over</Label>
+          <Label htmlFor="packagesReleased">{tx("Packages handed over")}</Label>
           <Input
             id="packagesReleased"
             name="packagesReleased"
@@ -114,15 +116,14 @@ export function ReleaseForm({
         <span>
           Somebody other than {receiverName} is collecting
           <span className="mt-0.5 block text-xs text-muted-foreground">
-            A driver, a relative, a clearing agent. Record who actually walked
-            out with the boxes — not who was supposed to.
+            {tx("A driver, a relative, a clearing agent. Record who actually walked out with the boxes — not who was supposed to.")}
           </span>
         </span>
       </label>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="collectedByName">Collected by</Label>
+          <Label htmlFor="collectedByName">{tx("Collected by")}</Label>
           <Input
             id="collectedByName"
             name="collectedByName"
@@ -132,7 +133,7 @@ export function ReleaseForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="collectedByPhone">Phone</Label>
+          <Label htmlFor="collectedByPhone">{tx("Phone")}</Label>
           <Input
             id="collectedByPhone"
             name="collectedByPhone"
@@ -143,15 +144,15 @@ export function ReleaseForm({
         {somebodyElse ? (
           <>
             <div className="space-y-2">
-              <Label htmlFor="collectedByIdNo">ID number</Label>
+              <Label htmlFor="collectedByIdNo">{tx("ID number")}</Label>
               <Input id="collectedByIdNo" name="collectedByIdNo" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="relationship">Relationship</Label>
+              <Label htmlFor="relationship">{tx("Relationship")}</Label>
               <Input
                 id="relationship"
                 name="relationship"
-                placeholder="Driver, brother, agent…"
+                placeholder={tx("Driver, brother, agent…")}
               />
             </div>
           </>
@@ -159,7 +160,7 @@ export function ReleaseForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="signature">Signature or photo of the handover</Label>
+        <Label htmlFor="signature">{tx("Signature or photo of the handover")}</Label>
         <Input
           id="signature"
           name="signature"
@@ -170,7 +171,7 @@ export function ReleaseForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="rel-notes">Notes</Label>
+        <Label htmlFor="rel-notes">{tx("Notes")}</Label>
         <Textarea id="rel-notes" name="notes" />
       </div>
 
@@ -178,10 +179,10 @@ export function ReleaseForm({
       <div className="flex gap-2">
         <SubmitButton>
           <DoorOpen />
-          Release
+          {tx("Release")}
         </SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>

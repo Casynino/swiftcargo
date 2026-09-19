@@ -27,6 +27,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Approvals" };
 
 const ICONS: Record<QueueKey, LucideIcon> = {
@@ -76,6 +77,7 @@ export default async function ManagerApprovals({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("record.review");
   const { view } = await searchParams;
   const tab: View = view === "approved" || view === "rejected" ? view : "waiting";

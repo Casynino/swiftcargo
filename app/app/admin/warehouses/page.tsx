@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Warehouses" };
 
 export default async function WarehousesPage() {
+  await primeLocale();
   await requirePermission("warehouse.manage");
 
   const warehouses = await prisma.warehouse.findMany({
@@ -19,8 +21,8 @@ export default async function WarehousesPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
-        title="Warehouses"
-        description="Where cargo is received at each end. The Guangzhou address is what customers forward to their supplier."
+        title={T("Warehouses")}
+        description={T("Where cargo is received at each end. The Guangzhou address is what customers forward to their supplier.")}
       />
       <SectionTabs />
 

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 type Customer = {
   id: string;
   fullName: string;
@@ -30,6 +31,7 @@ type Customer = {
 };
 
 export function CustomerForm({ customer }: { customer?: Customer }) {
+  const tx = useT();
   const router = useRouter();
   const [state, action] = useActionState<ActionState, FormData>(
     customer ? updateCustomer : createCustomer,
@@ -52,7 +54,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Full name</Label>
+            <Label htmlFor="fullName">{tx("Full name")}</Label>
             <Input
               id="fullName"
               name="fullName"
@@ -61,7 +63,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="businessName">Business name</Label>
+            <Label htmlFor="businessName">{tx("Business name")}</Label>
             <Input
               id="businessName"
               name="businessName"
@@ -69,7 +71,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">{tx("Phone")}</Label>
             <Input
               id="phone"
               name="phone"
@@ -79,7 +81,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="altPhone">Second phone</Label>
+            <Label htmlFor="altPhone">{tx("Second phone")}</Label>
             <Input
               id="altPhone"
               name="altPhone"
@@ -87,7 +89,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{tx("Email")}</Label>
             <Input
               id="email"
               name="email"
@@ -100,7 +102,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             <Input id="taxId" name="taxId" defaultValue={customer?.taxId ?? ""} />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">{tx("Address")}</Label>
             <Input
               id="address"
               name="address"
@@ -108,7 +110,7 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="city">{tx("City")}</Label>
             <Input
               id="city"
               name="city"
@@ -118,14 +120,13 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes">{tx("Notes")}</Label>
           <Textarea id="notes" name="notes" defaultValue={customer?.notes ?? ""} />
         </div>
 
         {!customer ? (
           <p className="rounded-md bg-secondary px-3 py-2 text-sm text-muted-foreground">
-            A shipping mark is generated automatically. It is what the customer
-            gives their supplier, and it never changes afterwards.
+            {tx("A shipping mark is generated automatically. It is what the customer gives their supplier, and it never changes afterwards.")}
           </p>
         ) : null}
 

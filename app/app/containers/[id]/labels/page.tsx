@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { canAny } from "@/lib/rbac";
 import { requireStaff } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Box labels" };
 
 /**
@@ -24,6 +25,7 @@ export default async function ContainerLabelsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requireStaff();
   if (!canAny(user.role, ["receiving.china", "receiving.dar"])) redirect("/app/no-access");
   const { id } = await params;

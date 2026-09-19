@@ -18,6 +18,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Customers" };
 
 /*
@@ -68,6 +69,7 @@ export default async function CustomersPage({
 }: {
   searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("customer.view");
   const locale = await localeOf(user.id);
   const showMoney = can(user.role, "finance.view");

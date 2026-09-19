@@ -22,6 +22,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 export type ClaimRow = {
   id: string;
   customer: string;
@@ -100,6 +101,7 @@ export function ClaimList({
   mode: "verify" | "sentback" | "waiting";
   mayVerify: boolean;
 }) {
+  const tx = useT();
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [bulkVerifyState, bulkVerify] = useActionState<ClaimState, FormData>(
     verifyClaims,
@@ -152,7 +154,7 @@ export function ClaimList({
               setPicked(all ? new Set() : new Set(rows.map((r) => r.id)))
             }
           />
-          Pick all
+          {tx("Pick all")}
         </label>
 
         {picked.size > 0 ? (
@@ -231,6 +233,7 @@ function ClaimRowItem({
   picked: boolean;
   onPick: () => void;
 }) {
+  const tx = useT();
   const [open, setOpen] = useState<null | "edit" | "back" | "cancel">(null);
   const [billDialog, setBillDialog] = useState<null | "discount" | "price" | "fx">(null);
   const [currency, setCurrency] = useState(row.currency);
@@ -342,7 +345,7 @@ function ClaimRowItem({
                   className="bg-success text-white hover:bg-success/90"
                 >
                   <CheckCircle2 className="mr-1 size-3.5" />
-                  Verify
+                  {tx("Verify")}
                 </SubmitButton>
               </form>
               <Button
@@ -351,7 +354,7 @@ function ClaimRowItem({
                 onClick={() => setOpen("back")}
               >
                 <Undo2 className="mr-1 size-3.5" />
-                Send it back
+                {tx("Send it back")}
               </Button>
             </>
           ) : null}
@@ -392,16 +395,16 @@ function ClaimRowItem({
               {[row.cargo, row.container, row.invoice, `owed ${row.owedLabel}`].filter(Boolean).join(" · ")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Submitted by <span className="text-brand">{row.submittedBy}</span> · {row.submittedAt}
+              {tx("Submitted by")} <span className="text-brand">{row.submittedBy}</span> · {row.submittedAt}
             </p>
           </div>
           <form action={edit} className="space-y-4">
             <input type="hidden" name="paymentId" value={row.id} />
             <div className="grid grid-cols-2 gap-4">
-              <Field label="How much came in">
+              <Field label={tx("How much came in")}>
                 <Input name="amount" type="number" step="0.01" min="0.01" defaultValue={row.amount} required />
               </Field>
-              <Field label="Paid in">
+              <Field label={tx("Paid in")}>
                 <NativeSelect name="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                   <option value="TZS">TZS</option>
                   <option value="USD">USD</option>
@@ -415,24 +418,24 @@ function ClaimRowItem({
                 {tools.canChangeBill ? (
                   <button type="button" onClick={() => setBillDialog("discount")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
                     <Tag className="size-3.5" />
-                    Give a discount
+                    {tx("Give a discount")}
                   </button>
                 ) : null}
                 {tools.canChangeBill && row.bill.perCbm ? (
                   <button type="button" onClick={() => setBillDialog("price")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
                     <Scale className="size-3.5" />
-                    Edit price — category, CBM or rate
+                    {tx("Edit price — category, CBM or rate")}
                   </button>
                 ) : null}
                 {tools.canChangeRate ? (
                   <button type="button" onClick={() => setBillDialog("fx")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
                     <ArrowLeftRight className="size-3.5" />
-                    Change the rate
+                    {tx("Change the rate")}
                   </button>
                 ) : null}
               </div>
             ) : null}
-            <Field label="Where the customer's money landed">
+            <Field label={tx("Where the customer's money landed")}>
               <NativeSelect
                 key={currency}
                 name="accountId"
@@ -450,7 +453,7 @@ function ClaimRowItem({
             </Field>
             <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-signal/50 bg-signal/[0.06] px-3 py-2.5 text-sm">
               <Upload className="size-4 shrink-0 text-signal" />
-              <span className="font-medium">Proof</span>
+              <span className="font-medium">{tx("Proof")}</span>
               <input
                 name="proof"
                 type="file"
@@ -461,18 +464,18 @@ function ClaimRowItem({
             {row.proofUrl ? (
               <a href={row.proofUrl} target="_blank" rel="noreferrer" className="-mt-2 inline-flex items-center gap-1 text-xs text-brand hover:underline">
                 <Paperclip className="size-3" />
-                View the proof on file
+                {tx("View the proof on file")}
               </a>
             ) : null}
-            <Field label="What was wrong with it? (optional)">
-              <Textarea name="wrong" rows={3} placeholder="Reference typed wrong" className="resize-none" />
+            <Field label={tx("What was wrong with it? (optional)")}>
+              <Textarea name="wrong" rows={3} placeholder={tx("Reference typed wrong")} className="resize-none" />
             </Field>
             <button
               type="button"
               onClick={() => setOpen("cancel")}
               className="text-xs text-muted-foreground hover:text-destructive hover:underline"
             >
-              Delete this submission instead
+              {tx("Delete this submission instead")}
             </button>
             <FormMessage error={editState.error} />
             <div className="flex flex-wrap gap-2">
@@ -480,7 +483,7 @@ function ClaimRowItem({
                 {mode === "sentback" ? "Fix and send again" : "Save the correction"}
               </SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={close}>
-                Leave it
+                {tx("Leave it")}
               </Button>
             </div>
           </form>
@@ -488,20 +491,20 @@ function ClaimRowItem({
       ) : null}
 
       {open === "back" ? (
-        <Modal title="Send this payment back" onClose={close}>
+        <Modal title={tx("Send this payment back")} onClose={close}>
           <p className="tnum text-sm text-muted-foreground">
             {row.customer} · {row.reference} · {row.amountLabel}
           </p>
           <form action={sendBack} className="space-y-4">
             <input type="hidden" name="paymentId" value={row.id} />
-            <Field label="Why it does not check out">
-              <Textarea name="reason" rows={3} required placeholder="The customer and the person who recorded it are told this" />
+            <Field label={tx("Why it does not check out")}>
+              <Textarea name="reason" rows={3} required placeholder={tx("The customer and the person who recorded it are told this")} />
             </Field>
             <FormMessage error={backState.error} />
             <div className="flex flex-wrap gap-2">
-              <SubmitButton size="sm">Send it back</SubmitButton>
+              <SubmitButton size="sm">{tx("Send it back")}</SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={close}>
-                Leave it
+                {tx("Leave it")}
               </Button>
             </div>
           </form>
@@ -522,7 +525,7 @@ function ClaimRowItem({
                 {mode === "verify" ? "Cancel it" : "Delete"}
               </SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={close}>
-                Keep it
+                {tx("Keep it")}
               </Button>
             </div>
           </form>

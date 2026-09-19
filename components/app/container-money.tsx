@@ -39,6 +39,7 @@ import { localeOf } from "@/lib/viewer-locale";
 import { cn } from "@/lib/utils";
 import { storageStart } from "@/lib/storage-clock";
 
+import { primeLocale, T } from "@/lib/server-t";
 /**
  * ONE CONTAINER, AS FINANCE READS IT.
  *
@@ -537,10 +538,9 @@ export async function ContainerMoney({
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
         <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
-          <h2 className="font-semibold">Financial overview</h2>
+          <h2 className="font-semibold">{T("Financial overview")}</h2>
           <p className="max-w-xl text-sm text-muted-foreground sm:text-right">
-            Collected and Expenses are money that has actually moved. The rest is
-            what this container is expected to be worth once everyone pays.
+            {T("Collected and Expenses are money that has actually moved. The rest is what this container is expected to be worth once everyone pays.")}
           </p>
         </header>
 
@@ -681,7 +681,7 @@ export async function ContainerMoney({
             href="/app/finance/collections"
             className="text-sm text-brand hover:underline"
           >
-            Chase them
+            {T("Chase them")}
           </Link>
         </div>
       ) : null}

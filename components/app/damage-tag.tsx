@@ -11,6 +11,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { reportDamageAtDar, type ActionState } from "@/lib/actions/dar";
 
+import { useT } from "@/components/app/locale-provider";
 const DAMAGE = [
   ["MINOR_DAMAGE", "Minor damage"],
   ["DAMAGED", "Damaged"],
@@ -40,6 +41,7 @@ export function DamageTag({
   /** What the receiving row says now, so re-opening starts where it stands. */
   condition?: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     reportDamageAtDar,
     {}
@@ -52,7 +54,7 @@ export function DamageTag({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor={`condition-${cargoId}`}>How bad is it?</Label>
+          <Label htmlFor={`condition-${cargoId}`}>{tx("How bad is it?")}</Label>
           <NativeSelect
             id={`condition-${cargoId}`}
             name="condition"
@@ -66,7 +68,7 @@ export function DamageTag({
           </NativeSelect>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`damage-photos-${cargoId}`}>Photographs</Label>
+          <Label htmlFor={`damage-photos-${cargoId}`}>{tx("Photographs")}</Label>
           <Input
             id={`damage-photos-${cargoId}`}
             name="photos"
@@ -79,14 +81,14 @@ export function DamageTag({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`damage-note-${cargoId}`}>What did you find?</Label>
+        <Label htmlFor={`damage-note-${cargoId}`}>{tx("What did you find?")}</Label>
         <Textarea
           id={`damage-note-${cargoId}`}
           name="note"
           rows={2}
           required
           minLength={3}
-          placeholder="Two bales soaked on the door side, seal intact…"
+          placeholder={tx("Two bales soaked on the door side, seal intact…")}
         />
       </div>
 
@@ -97,8 +99,7 @@ export function DamageTag({
         {tagged ? `Update the damage on ${reference}` : `Tag ${reference} damaged`}
       </SubmitButton>
       <p className="text-xs text-muted-foreground">
-        It stays on the floor and is still billed. The tag and its case follow it
-        to whoever prices it and whoever releases it.
+        {tx("It stays on the floor and is still billed. The tag and its case follow it to whoever prices it and whoever releases it.")}
       </p>
     </form>
   );

@@ -34,6 +34,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Issues & Claims" };
 
 /**
@@ -200,6 +201,7 @@ export default async function ExceptionsPage({
 }: {
   searchParams: Promise<{ set?: string; group?: string; cargo?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("exception.view");
   const locale = await localeOf(user.id);
   const params = await searchParams;

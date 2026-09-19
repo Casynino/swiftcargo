@@ -12,6 +12,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "My profile" };
 
 /**
@@ -24,6 +25,7 @@ export const metadata: Metadata = { title: "My profile" };
  * them who to ask.
  */
 export default async function ProfilePage() {
+  await primeLocale();
   const session = await requireUser();
 
   const me = await prisma.user.findUnique({
@@ -52,15 +54,15 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My profile"
-        description="Your details and your password. Anything about your job is set by the office."
+        title={T("My profile")}
+        description={T("Your details and your password. Anything about your job is set by the office.")}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">About you</CardTitle>
+              <CardTitle className="text-base">{T("About you")}</CardTitle>
             </CardHeader>
             <CardContent>
               <PersonalDetailsForm
@@ -75,7 +77,7 @@ export default async function ProfilePage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Lock className="size-4" />
-                Password
+                {T("Password")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -101,21 +103,21 @@ export default async function ProfilePage() {
           <CardContent className="space-y-3">
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5" />
-              Set by the office. Ask a manager if any of it is wrong.
+              {T("Set by the office. Ask a manager if any of it is wrong.")}
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
-              <Field label="Desk" value={ROLE_LABELS[me.role]} />
+              <Field label={T("Desk")} value={ROLE_LABELS[me.role]} />
               <Field
-                label="Department"
+                label={T("Department")}
                 value={
                   me.department ? DEPARTMENT_LABELS[me.department] : "—"
                 }
               />
-              <Field label="Warehouse" value={me.warehouse?.name ?? "—"} />
-              <Field label="Sign-in email" value={me.email} mono />
-              <Field label="Joined" value={formatDate(me.createdAt)} />
+              <Field label={T("Warehouse")} value={me.warehouse?.name ?? "—"} />
+              <Field label={T("Sign-in email")} value={me.email} mono />
+              <Field label={T("Joined")} value={formatDate(me.createdAt)} />
               <Field
-                label="Last signed in"
+                label={T("Last signed in")}
                 value={
                   me.lastLoginAt ? formatDateTime(me.lastLoginAt) : "First time"
                 }

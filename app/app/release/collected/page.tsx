@@ -21,6 +21,7 @@ import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Collected cargo" };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -42,6 +43,7 @@ export default async function CollectedCargoPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   await requirePermission("release.execute");
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
@@ -94,29 +96,29 @@ export default async function CollectedCargoPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Collected cargo"
-        description="Everything that has left the Dar warehouse, newest first — who took it and who handed it over."
+        title={T("Collected cargo")}
+        description={T("Everything that has left the Dar warehouse, newest first — who took it and who handed it over.")}
       />
       <SectionTabs />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <KpiCard
           index={0}
-          label="Released, all time"
+          label={T("Released, all time")}
           numeric={total}
           icon={History}
           tone="brand"
         />
         <KpiCard
           index={1}
-          label="Released this month"
+          label={T("Released this month")}
           numeric={thisMonth}
           icon={Users}
           tone="success"
         />
         <KpiCard
           index={2}
-          label="Packages on this page"
+          label={T("Packages on this page")}
           numeric={packages}
           icon={Package}
           tone="marine"
@@ -127,9 +129,9 @@ export default async function CollectedCargoPage({
         <Input
           name="q"
           defaultValue={query}
-          placeholder="Tracking number, customer, or who collected…"
+          placeholder={T("Tracking number, customer, or who collected…")}
           className="max-w-lg"
-          aria-label="Search collected cargo"
+          aria-label={T("Search collected cargo")}
         />
       </form>
 
@@ -137,24 +139,24 @@ export default async function CollectedCargoPage({
         {releases.length === 0 ? (
           <EmptyState
             icon="DoorOpen"
-            title={query ? "Nothing matches" : "Nothing has been released yet"}
+            title={query ? T("Nothing matches") : T("Nothing has been released yet")}
             description={
               query
-                ? "Try the tracking number, or the name of the person who collected."
-                : "Cargo shows up here the moment it is handed over."
+                ? T("Try the tracking number, or the name of the person who collected.")
+                : T("Cargo shows up here the moment it is handed over.")
             }
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Tracking no.</TableHead>
-                <TableHead className="hidden lg:table-cell">Goods</TableHead>
-                <TableHead>Collected by</TableHead>
-                <TableHead className="text-right">Pkgs</TableHead>
-                <TableHead>How</TableHead>
-                <TableHead>Released</TableHead>
+                <TableHead>{T("Customer")}</TableHead>
+                <TableHead>{T("Tracking no.")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Goods")}</TableHead>
+                <TableHead>{T("Collected by")}</TableHead>
+                <TableHead className="text-right">{T("Pkgs")}</TableHead>
+                <TableHead>{T("How")}</TableHead>
+                <TableHead>{T("Released")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

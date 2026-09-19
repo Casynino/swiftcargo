@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Pickup list" };
 
 /**
@@ -41,6 +42,7 @@ export default async function ReleasePage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   await requirePermission("release.execute");
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
@@ -101,8 +103,8 @@ export default async function ReleasePage({
         is what clears it.
       */}
       <PageHeader
-        title="Pickup list"
-        description="Customers who have paid and whose cargo is cleared to collect. Open a row to hand it over."
+        title={T("Pickup list")}
+        description={T("Customers who have paid and whose cargo is cleared to collect. Open a row to hand it over.")}
       />
       <SectionTabs />
 
@@ -110,8 +112,8 @@ export default async function ReleasePage({
         <Input
           name="q"
           defaultValue={query}
-          placeholder="Reference, mark, customer or phone…"
-          aria-label="Find cargo"
+          placeholder={T("Reference, mark, customer or phone…")}
+          aria-label={T("Find cargo")}
         />
       </form>
 
@@ -123,8 +125,8 @@ export default async function ReleasePage({
           <Card>
             <EmptyState
               icon="DoorOpen"
-              title="Nobody is waiting to collect"
-              description="Cargo joins this list the moment it is verified, invoiced and paid in full."
+              title={T("Nobody is waiting to collect")}
+              description={T("Cargo joins this list the moment it is verified, invoiced and paid in full.")}
             />
           </Card>
         ) : (

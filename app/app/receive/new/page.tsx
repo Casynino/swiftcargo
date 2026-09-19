@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { cargoTypeOptions } from "@/lib/valuation";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Receive cargo" };
 
 /**
@@ -17,6 +18,7 @@ export const metadata: Metadata = { title: "Receive cargo" };
  * and nothing downstream would notice.
  */
 export default async function ReceiveNewPage() {
+  await primeLocale();
   const user = await requirePermission("receiving.china");
 
   /* The warehouse is not asked for and so is not fetched — the action files the
@@ -55,8 +57,8 @@ export default async function ReceiveNewPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
-        title="Receive cargo"
-        description="A driver is at the door. Everything below happens in one go — the reference, the delivery note and the customer's notification."
+        title={T("Receive cargo")}
+        description={T("A driver is at the door. Everything below happens in one go — the reference, the delivery note and the customer's notification.")}
         back={{ href: "/app/inventory", label: "Warehouse floor" }}
       />
       <SectionTabs />

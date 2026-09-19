@@ -8,6 +8,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 const STATUSES = [
   ["REQUESTED", "Requested"],
   ["CONFIRMED", "Confirmed"],
@@ -33,6 +34,7 @@ export function DeliveryControls({
   driverPhone: string | null;
   failedReason: string | null;
 }) {
+  const tx = useT();
   const [chosen, setChosen] = useState(status);
   const [state, action] = useActionState<ActionState, FormData>(
     updateDelivery,
@@ -47,7 +49,7 @@ export function DeliveryControls({
         value={chosen}
         onChange={(e) => setChosen(e.target.value)}
         className="h-9 w-44"
-        aria-label="Delivery status"
+        aria-label={tx("Delivery status")}
       >
         {STATUSES.map(([value, label]) => (
           <option key={value} value={value}>
@@ -57,44 +59,44 @@ export function DeliveryControls({
       </NativeSelect>
       <Input
         name="driverName"
-        placeholder="Driver"
+        placeholder={tx("Driver")}
         defaultValue={driverName ?? ""}
         className="h-9 w-32"
-        aria-label="Driver"
+        aria-label={tx("Driver")}
       />
       {/* The customer rings the driver, not the office, once the van has left. */}
       <Input
         name="driverPhone"
-        placeholder="Driver phone"
+        placeholder={tx("Driver phone")}
         inputMode="tel"
         defaultValue={driverPhone ?? ""}
         className="h-9 w-36"
-        aria-label="Driver phone"
+        aria-label={tx("Driver phone")}
       />
       <Input
         name="charge"
         type="number"
         step="0.01"
         min={0}
-        placeholder="Charge"
+        placeholder={tx("Charge")}
         defaultValue={charge ?? ""}
         className="h-9 w-28"
-        aria-label="Delivery charge"
+        aria-label={tx("Delivery charge")}
       />
       {/* A failed delivery is re-arranged from its reason. Without one the next
           person to call the customer starts the conversation from nothing. */}
       {chosen === "FAILED" ? (
         <Input
           name="failedReason"
-          placeholder="Why it failed"
+          placeholder={tx("Why it failed")}
           required
           defaultValue={failedReason ?? ""}
           className="h-9 w-56"
-          aria-label="Why the delivery failed"
+          aria-label={tx("Why the delivery failed")}
         />
       ) : null}
       <SubmitButton size="sm" variant="outline">
-        Save
+        {tx("Save")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

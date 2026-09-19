@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 export type PayableBill = {
   invoiceId: string;
   number: string;
@@ -86,6 +87,7 @@ export function openRecordPayment(invoiceId?: string) {
 }
 
 export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   const [bills, setBills] = useState<PayableBill[]>([]);
   const [accounts, setAccounts] = useState<PayAccount[]>([]);
@@ -269,25 +271,25 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/70 p-4 backdrop-blur-sm sm:p-8">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={tx("Close")}
         onClick={close}
         className="absolute inset-0 cursor-default"
       />
       <section
         role="dialog"
         aria-modal="true"
-        aria-label="Record Payment"
+        aria-label={tx("Record Payment")}
         className="relative w-full max-w-4xl overflow-hidden rounded-xl border border-success/30 bg-card text-left shadow-lg"
       >
         <div className="flex items-center justify-between border-b border-success/20 bg-success/[0.06] px-5 py-2.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-success">
-            Record Payment
+            {tx("Record Payment")}
           </p>
           <button
             type="button"
             onClick={close}
             className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-            aria-label="Close"
+            aria-label={tx("Close")}
           >
             <X className="size-4" />
           </button>
@@ -308,9 +310,9 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Customer name, tracking number, invoice or phone…"
+                placeholder={tx("Customer name, tracking number, invoice or phone…")}
                 className="h-11 pl-9"
-                aria-label="Find the bill"
+                aria-label={tx("Find the bill")}
               />
             </label>
 
@@ -319,7 +321,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
             {term.length < 2 && containers.length > 0 ? (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <button type="button" onClick={() => setContainerId("")} className={chip(containerId === "")}>
-                  Everyone who owes
+                  {tx("Everyone who owes")}
                 </button>
                 {containers.map((c) => (
                   <button key={c.id} type="button" onClick={() => setContainerId(c.id)} className={chip(containerId === c.id)}>
@@ -369,7 +371,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                           ) : null}
                         </span>
                         <span className="order-4 hidden shrink-0 rounded-full border px-2.5 py-1 text-xs group-hover:bg-card sm:inline">
-                          Record payment
+                          {tx("Record payment")}
                         </span>
                       </button>
                     </li>
@@ -441,7 +443,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="whitespace-nowrap text-[11px] text-muted-foreground">Transport they added</span>
+                <span className="whitespace-nowrap text-[11px] text-muted-foreground">{tx("Transport they added")}</span>
                 <Input
                   name="transport"
                   inputMode="decimal"
@@ -452,7 +454,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="whitespace-nowrap text-[11px] text-muted-foreground">Transport settled from</span>
+                <span className="whitespace-nowrap text-[11px] text-muted-foreground">{tx("Transport settled from")}</span>
                 <NativeSelect
                   name="transportAccountId"
                   required={fare > 0}
@@ -462,7 +464,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                   className="w-52 disabled:opacity-50"
                 >
                   <option value="" disabled>
-                    Cash or the Lipa number
+                    {tx("Cash or the Lipa number")}
                   </option>
                   {here
                     .filter((a) => a.kind === "CASH" || a.kind === "MOBILE_MONEY")
@@ -474,7 +476,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                 </NativeSelect>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-muted-foreground">Paid in</span>
+                <span className="text-[11px] text-muted-foreground">{tx("Paid in")}</span>
                 <NativeSelect
                   value={tendered}
                   onChange={(e) => {
@@ -491,7 +493,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                 </NativeSelect>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="whitespace-nowrap text-[11px] text-muted-foreground">Into which account</span>
+                <span className="whitespace-nowrap text-[11px] text-muted-foreground">{tx("Into which account")}</span>
                 <NativeSelect
                   name="accountId"
                   required
@@ -500,7 +502,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                   className="w-52"
                 >
                   <option value="" disabled>
-                    Choose the account
+                    {tx("Choose the account")}
                   </option>
                   {here.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -511,7 +513,7 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
               </label>
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-warning/40 bg-warning/[0.06] px-3 py-2 text-xs">
                 <Paperclip className="size-3.5 text-warning" />
-                <span className="font-medium text-warning">Proof</span>
+                <span className="font-medium text-warning">{tx("Proof")}</span>
                 <input
                   type="file"
                   name="proof"
@@ -522,13 +524,13 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
 
               <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 pt-1 text-xs">
                 <button type="button" onClick={() => setEditing("discount")} className="text-brand hover:underline">
-                  Give a discount
+                  {tx("Give a discount")}
                 </button>
                 <button type="button" onClick={() => setEditing("rate")} className="text-brand hover:underline">
-                  Change the rate
+                  {tx("Change the rate")}
                 </button>
                 <a href={`/app/finance/invoices/${picked.invoiceId}`} className="text-brand hover:underline">
-                  Open the bill
+                  {tx("Open the bill")}
                 </a>
               </div>
             </div>
@@ -580,10 +582,10 @@ export function RecordPaymentDialog({ canClear = false }: { canClear?: boolean }
                     onChange={(e) => setAcceptOver(e.target.checked)}
                     className="size-4"
                   />
-                  Accept overpayment — the extra stays on the bill as a credit
+                  {tx("Accept overpayment — the extra stays on the bill as a credit")}
                 </label>
                 {acceptOver ? (
-                  <Input name="overpaymentReason" required minLength={3} placeholder="Why the extra is being accepted" />
+                  <Input name="overpaymentReason" required minLength={3} placeholder={tx("Why the extra is being accepted")} />
                 ) : null}
               </div>
             ) : null}

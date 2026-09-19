@@ -7,14 +7,16 @@ import { verifyCargo, verifyContainer, type ActionState } from "@/lib/actions/da
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 
+import { useT } from "@/components/app/locale-provider";
 export function VerifyCargoButton({ cargoId }: { cargoId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(verifyCargo, {});
   return (
     <form action={action}>
       <input type="hidden" name="cargoId" value={cargoId} />
       <SubmitButton size="sm" variant="outline">
         <ClipboardCheck />
-        Verify
+        {tx("Verify")}
       </SubmitButton>
       {state.error ? (
         <span className="mt-1 block text-xs text-destructive">{state.error}</span>

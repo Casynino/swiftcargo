@@ -27,6 +27,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Finance" };
 
 /**
@@ -43,6 +44,7 @@ export const metadata: Metadata = { title: "Finance" };
  * because a set kept alongside the work is a set that drifts from it.
  */
 export default async function FinanceHubPage() {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   const locale = await localeOf(user.id);
   const L = (english: string) => t(locale, english);

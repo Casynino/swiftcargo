@@ -10,6 +10,7 @@ import { buildReport, REPORTS } from "@/lib/report-tables";
 import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale } from "@/lib/server-t";
 export async function generateMetadata({
   searchParams,
 }: {
@@ -25,6 +26,7 @@ export default async function PrintReportPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await primeLocale();
   await requirePermission("accounting.view");
   const sp = await searchParams;
   const p = readReportParams(sp);

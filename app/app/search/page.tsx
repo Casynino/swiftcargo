@@ -13,6 +13,7 @@ import { parseScan } from "@/lib/qr";
 import { globalSearch, type SearchHit } from "@/lib/search";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Search cargo" };
 
 const TONES = {
@@ -67,6 +68,7 @@ export default async function SearchPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("search.global");
   const me = await prisma.user.findUnique({
     where: { id: user.id },

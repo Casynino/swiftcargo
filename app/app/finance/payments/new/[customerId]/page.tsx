@@ -23,6 +23,7 @@ import { storagePosition } from "@/lib/storage-fee";
 import { SmartBack } from "@/components/app/smart-back";
 import { storageStart } from "@/lib/storage-clock";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Merge Payment" };
 
 /**
@@ -38,6 +39,7 @@ export default async function MergePaymentForCustomer({
 }: {
   params: Promise<{ customerId: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("payment.submit");
   const { customerId } = await params;
 
@@ -160,17 +162,17 @@ export default async function MergePaymentForCustomer({
 
   return (
     <div className="space-y-5">
-      <SmartBack fallbackHref="/app/finance/payments/new" fallbackLabel="Another customer" />
+      <SmartBack fallbackHref="/app/finance/payments/new" fallbackLabel={T("Another customer")} />
 
       <PageHeader
         title={name}
-        description="One payment, against as many of their bills as it covers. The account moves once."
+        description={T("One payment, against as many of their bills as it covers. The account moves once.")}
         actions={
           customer.phone ? (
             <WhatsAppButton
               phone={whatsappNumber(customer.phone)}
               kind="payment.reminder"
-              label="Notify on WhatsApp"
+              label={T("Notify on WhatsApp")}
               message={`Habari ${name}, una bili ${open.length} zinazodaiwa Swift Cargo, jumla ${owedLine}.`}
             />
           ) : null
@@ -179,9 +181,9 @@ export default async function MergePaymentForCustomer({
 
       {open.length === 0 ? (
         <div className="rounded-xl border bg-card px-5 py-12 text-center">
-          <p className="font-medium">Every bill is settled</p>
+          <p className="font-medium">{T("Every bill is settled")}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nothing on this customer is waiting to be paid.
+            {T("Nothing on this customer is waiting to be paid.")}
           </p>
         </div>
       ) : (

@@ -57,6 +57,7 @@ import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { viewerLocale } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Dashboard" };
 
 function Glyph({ name, className }: { name: string; className?: string }) {
@@ -143,6 +144,7 @@ function TodayBox({
 }
 
 export default async function DashboardPage() {
+  await primeLocale();
   const user = await requireStaff();
 
   /* Support has a home of its own too: who is waiting on an answer and who owes

@@ -14,6 +14,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { bookCategories } from "@/lib/rate-categories";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Verify payments" };
 
 /**
@@ -27,6 +28,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   /* The job belongs to the desk that can do it. Support reads the same rows,
      without the buttons, as what is sitting with Finance. */
@@ -68,13 +70,13 @@ export default async function Page({
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Customer, reference, invoice or tracking number…"
+            placeholder={T("Customer, reference, invoice or tracking number…")}
             className="pl-9"
-            aria-label="Search"
+            aria-label={T("Search")}
           />
         </div>
         <Button type="submit" variant="outline">
-          Search
+          {T("Search")}
         </Button>
       </form>
 

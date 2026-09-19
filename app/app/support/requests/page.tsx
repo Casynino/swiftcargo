@@ -22,6 +22,7 @@ import { formatCbm, formatDate, formatRelative } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Website requests" };
 
 const TONE: Record<string, "neutral" | "progress" | "good" | "warn" | "bad"> = {
@@ -67,6 +68,7 @@ function Facts({ items }: { items: [string, string | null | undefined][] }) {
  * have one.
  */
 export default async function RequestsPage() {
+  await primeLocale();
   const viewer = await requirePermission("request.view");
   const china = viewer.role === "CHINA_WAREHOUSE";
 
@@ -113,18 +115,18 @@ export default async function RequestsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Website requests"
-        description="Collections, service enquiries and quotes. Nothing here is confirmed until somebody here confirms it, and nothing here is cargo until a counter takes the goods in."
+        title={T("Website requests")}
+        description={T("Collections, service enquiries and quotes. Nothing here is confirmed until somebody here confirms it, and nothing here is cargo until a counter takes the goods in.")}
       />
       <SectionTabs />
 
       <section>
         <SectionLabel count={pickups.filter((p) => p.status === "SUBMITTED").length}>
-          China pickup requests
+          {T("China pickup requests")}
         </SectionLabel>
         {pickups.length === 0 ? (
           <Card>
-            <EmptyState icon="Truck" title="No pickup requests" />
+            <EmptyState icon="Truck" title={T("No pickup requests")} />
           </Card>
         ) : (
           <ul className="space-y-3">
@@ -222,11 +224,11 @@ export default async function RequestsPage() {
 
       <section>
         <SectionLabel count={bookings.filter((b) => b.status === "SUBMITTED").length}>
-          Service requests
+          {T("Service requests")}
         </SectionLabel>
         {bookings.length === 0 ? (
           <Card>
-            <EmptyState icon="Container" title="No service requests" />
+            <EmptyState icon="Container" title={T("No service requests")} />
           </Card>
         ) : (
           <ul className="space-y-3">
@@ -365,11 +367,11 @@ export default async function RequestsPage() {
 
       <section>
         <SectionLabel count={quotes.filter((q) => q.status === "SUBMITTED").length}>
-          Quote requests
+          {T("Quote requests")}
         </SectionLabel>
         {quotes.length === 0 ? (
           <Card>
-            <EmptyState icon="FileQuestion" title="No quote requests" />
+            <EmptyState icon="FileQuestion" title={T("No quote requests")} />
           </Card>
         ) : (
           <ul className="space-y-3">

@@ -13,6 +13,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { bookCategories } from "@/lib/rate-categories";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Sent back" };
 
 /**
@@ -26,6 +27,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
@@ -62,13 +64,13 @@ export default async function Page({
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Customer, reference, invoice or tracking number…"
+            placeholder={T("Customer, reference, invoice or tracking number…")}
             className="pl-9"
-            aria-label="Search"
+            aria-label={T("Search")}
           />
         </div>
         <Button type="submit" variant="outline">
-          Search
+          {T("Search")}
         </Button>
       </form>
 

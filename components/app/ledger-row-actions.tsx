@@ -12,6 +12,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { useT } from "@/components/app/locale-provider";
 export type LedgerKind = "payment" | "expense" | "transfer";
 
 const CANCEL = {
@@ -66,6 +67,7 @@ export function LedgerRowActions({
       the list the row is on opens nothing. */
   editSlot?: ReactNode;
 }) {
+  const tx = useT();
   const spec = CANCEL[kind];
   const [state, action] = useActionState<ActionState, FormData>(
     spec.action,
@@ -78,7 +80,7 @@ export function LedgerRowActions({
       <form action={action} className="min-w-[15rem] space-y-2">
         <input type="hidden" name={spec.field} value={id} />
         <p className="text-xs text-muted-foreground">{spec.ask}</p>
-        <Input name="reason" required minLength={3} placeholder="The reason" />
+        <Input name="reason" required minLength={3} placeholder={tx("The reason")} />
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
           <SubmitButton size="sm" variant="destructive">
@@ -90,7 +92,7 @@ export function LedgerRowActions({
             variant="ghost"
             onClick={() => setAsking(false)}
           >
-            Keep it
+            {tx("Keep it")}
           </Button>
         </div>
       </form>
@@ -103,7 +105,7 @@ export function LedgerRowActions({
         <Button asChild size="sm" variant="ghost" className="h-7 px-2">
           <Link href={proofHref} target="_blank" rel="noreferrer">
             <Paperclip className="mr-1 size-3" />
-            View
+            {tx("View")}
           </Link>
         </Button>
       ) : (
@@ -117,7 +119,7 @@ export function LedgerRowActions({
             <Button asChild size="sm" variant="outline" className="h-7 px-2">
               <Link href={editHref}>
                 <Pencil className="mr-1 size-3" />
-                Edit
+                {tx("Edit")}
               </Link>
             </Button>
           )}

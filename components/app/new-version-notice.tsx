@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * "New update is up."
  *
@@ -23,6 +24,7 @@ import { RefreshCw } from "lucide-react";
 const EVERY = 5 * 60 * 1000;
 
 export function NewVersionNotice({ build }: { build: string }) {
+  const tx = useT();
   const [stale, setStale] = useState(false);
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function NewVersionNotice({ build }: { build: string }) {
         onClick={() => window.location.reload()}
         className="update-pill pointer-events-auto inline-flex items-center gap-2.5 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-xl transition-colors hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        New update is up
+        {tx("New update is up")}
         <RefreshCw className="size-4 shrink-0" />
       </button>
     </div>

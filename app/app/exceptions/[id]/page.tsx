@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -35,6 +36,7 @@ export default async function ExceptionPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("exception.view");
   const { id } = await params;
 
@@ -104,7 +106,7 @@ export default async function ExceptionPage({
         <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">What happened</CardTitle>
+              <CardTitle className="text-base">{T("What happened")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="whitespace-pre-wrap text-sm">{item.description}</p>
@@ -118,7 +120,7 @@ export default async function ExceptionPage({
                         rel="noreferrer"
                         className="text-sm text-primary underline-offset-4 hover:underline"
                       >
-                        Evidence
+                        {T("Evidence")}
                       </a>
                     </li>
                   ))}
@@ -127,7 +129,7 @@ export default async function ExceptionPage({
               {item.resolution ? (
                 <div className="rounded-md bg-emerald-50 p-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-                    Resolution
+                    {T("Resolution")}
                   </p>
                   <p className="mt-1 text-sm text-emerald-900">{item.resolution}</p>
                 </div>
@@ -137,7 +139,7 @@ export default async function ExceptionPage({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">History</CardTitle>
+              <CardTitle className="text-base">{T("History")}</CardTitle>
             </CardHeader>
             <CardContent>
               <ol className="space-y-4">
@@ -160,7 +162,7 @@ export default async function ExceptionPage({
           {can(user.role, "exception.raise") ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Update this case</CardTitle>
+                <CardTitle className="text-base">{T("Update this case")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CaseActions
@@ -179,24 +181,24 @@ export default async function ExceptionPage({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Case</CardTitle>
+              <CardTitle className="text-base">{T("Case")}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4">
                 <Field
-                  label="Type"
+                  label={T("Type")}
                   value={item.type.replace(/_/g, " ").toLowerCase()}
                 />
                 <Field
-                  label="Department"
+                  label={T("Department")}
                   value={
                     item.department ? DEPARTMENT_LABELS[item.department] : null
                   }
                 />
-                <Field label="Assigned to" value={item.assignedTo?.name} />
-                <Field label="Raised by" value={item.raisedBy?.name} />
-                <Field label="Opened" value={formatDateTime(item.createdAt)} />
-                <Field label="Resolved" value={formatDateTime(item.resolvedAt)} />
+                <Field label={T("Assigned to")} value={item.assignedTo?.name} />
+                <Field label={T("Raised by")} value={item.raisedBy?.name} />
+                <Field label={T("Opened")} value={formatDateTime(item.createdAt)} />
+                <Field label={T("Resolved")} value={formatDateTime(item.resolvedAt)} />
               </dl>
             </CardContent>
           </Card>
@@ -204,12 +206,12 @@ export default async function ExceptionPage({
           {item.cargo ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Cargo</CardTitle>
+                <CardTitle className="text-base">{T("Cargo")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <dl className="grid gap-4">
                   <Field
-                    label="Reference"
+                    label={T("Reference")}
                     value={
                       <Link
                         href={`/app/cargo/${item.cargo.id}`}
@@ -219,15 +221,15 @@ export default async function ExceptionPage({
                       </Link>
                     }
                   />
-                  <Field label="Customer" value={item.cargo.sender.fullName} />
-                  <Field label="Phone" value={item.cargo.sender.phone} mono />
+                  <Field label={T("Customer")} value={item.cargo.sender.fullName} />
+                  <Field label={T("Phone")} value={item.cargo.sender.phone} mono />
                   <Field
-                    label="China counted"
+                    label={T("China counted")}
                     value={item.cargo.chinaReceiving?.packagesCount}
                     mono
                   />
                   <Field
-                    label="Dar counted"
+                    label={T("Dar counted")}
                     value={item.cargo.darReceiving?.packagesCount}
                     mono
                   />

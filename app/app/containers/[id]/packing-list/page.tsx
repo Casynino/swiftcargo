@@ -7,6 +7,7 @@ import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 /* The saved file is named after the page, so the container's own number goes in
    the title — a downloads folder full of "packing-list.pdf" tells nobody which
    sailing they are holding. */
@@ -43,6 +44,7 @@ export default async function PackingListPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("packingList.view");
   const { id } = await params;
 

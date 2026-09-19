@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 import { Button } from "@/components/ui/button";
 
+import { primeLocale } from "@/lib/server-t";
 /*
   THE FILENAME IS THE PAGE TITLE.
 
@@ -40,6 +41,7 @@ export default async function InvoiceDocumentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("finance.view");
   const { id } = await params;
 

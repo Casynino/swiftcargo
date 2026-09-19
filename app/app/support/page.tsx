@@ -30,6 +30,7 @@ import {
 } from "@/lib/support-desk";
 import { cn } from "@/lib/utils";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Support desk" };
 
 const PRIORITY_TONE: Record<string, string> = {
@@ -72,6 +73,7 @@ function owedLines(tzs: Prisma.Decimal | null, usd: Prisma.Decimal | null) {
  * link — this page is a launchpad, not a report.
  */
 export default async function SupportHome() {
+  await primeLocale();
   const user = await requirePermission("conversation.view");
   /* The dictionary is English-only at launch; the locale is threaded through so
      a Swahili desk is one dictionary away rather than every string on the page. */

@@ -33,6 +33,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Cargo" };
 
 const STATUSES = Object.keys(CARGO_STATUS_META) as CargoStatus[];
@@ -107,6 +108,7 @@ export default async function CargoPage({
 }: {
   searchParams: Promise<{ q?: string; status?: string; stage?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("cargo.viewAll");
   /* Finance works money by container and by who owes, not down a list of every
      consignment — the list is off its sidebar, and a stray link lands on the
@@ -161,8 +163,8 @@ export default async function CargoPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Cargo"
-        description="Every consignment, wherever it is on the journey."
+        title={T("Cargo")}
+        description={T("Every consignment, wherever it is on the journey.")}
         actions={
           /* THERE IS ONE WAY A CONSIGNMENT COMES INTO EXISTENCE, and it is the
              receiving counter. A second form that booked cargo in advance meant
@@ -172,7 +174,7 @@ export default async function CargoPage({
             <Button asChild>
               <Link href="/app/receive/new">
                 <Plus />
-                Receive cargo
+                {T("Receive cargo")}
               </Link>
             </Button>
           ) : null
@@ -187,17 +189,17 @@ export default async function CargoPage({
         <Input
           name="q"
           defaultValue={query}
-          placeholder="Reference, mark, customer, supplier ref…"
+          placeholder={T("Reference, mark, customer, supplier ref…")}
           className="max-w-sm"
-          aria-label="Search cargo"
+          aria-label={T("Search cargo")}
         />
         <NativeSelect
           name="status"
           defaultValue={statusFilter ?? ""}
           className="w-56"
-          aria-label="Filter by status"
+          aria-label={T("Filter by status")}
         >
-          <option value="">Any status</option>
+          <option value="">{T("Any status")}</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {CARGO_STATUS_META[s].label}
@@ -205,7 +207,7 @@ export default async function CargoPage({
           ))}
         </NativeSelect>
         <Button type="submit" variant="outline">
-          Filter
+          {T("Filter")}
         </Button>
       </form>
 
@@ -215,27 +217,27 @@ export default async function CargoPage({
             icon="Package"
             title={
               query || statusFilter || stageFilter
-                ? "Nothing matches"
-                : "No cargo yet"
+                ? T("Nothing matches")
+                : T("No cargo yet")
             }
             description={
               query || statusFilter || stageFilter
-                ? "Try a different reference or clear the filter."
-                : "Register the first consignment to get started."
+                ? T("Try a different reference or clear the filter.")
+                : T("Register the first consignment to get started.")
             }
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Reference</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden lg:table-cell">Description</TableHead>
-                <TableHead className="hidden md:table-cell">Container</TableHead>
-                <TableHead className="text-right">Pkgs</TableHead>
+                <TableHead>{T("Reference")}</TableHead>
+                <TableHead>{T("Customer")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Description")}</TableHead>
+                <TableHead className="hidden md:table-cell">{T("Container")}</TableHead>
+                <TableHead className="text-right">{T("Pkgs")}</TableHead>
                 <TableHead className="text-right">CBM</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="hidden xl:table-cell">Booked</TableHead>
+                <TableHead>{T("Status")}</TableHead>
+                <TableHead className="hidden xl:table-cell">{T("Booked")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -23,6 +23,7 @@ import {
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Employee" };
 
 /**
@@ -40,6 +41,7 @@ export default async function EmployeeProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const actor = await requirePermission("user.manage");
   const locale = await localeOf(actor.id);
   const { id } = await params;

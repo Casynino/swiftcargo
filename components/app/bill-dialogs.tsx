@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 type State = { error?: string; ok?: string };
 
 const SQUARE =
@@ -111,6 +112,7 @@ export function RateDialog({
   onClose: () => void;
   onSaved?: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<State, FormData>(repriceInvoice, {});
   const [typed, setTyped] = useState(appliedRate !== null ? appliedRate.toFixed(2) : "");
   const [picked, setPicked] = useState(category ?? "");
@@ -135,26 +137,26 @@ export function RateDialog({
         <input type="hidden" name="invoiceId" value={invoiceId} />
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <Scale className="size-4 text-brand" />
-          Edit price
+          {tx("Edit price")}
         </p>
         <dl className="space-y-1 rounded-lg border bg-secondary/40 px-3 py-2 text-xs">
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Standard rate</dt>
+            <dt className="text-muted-foreground">{tx("Standard rate")}</dt>
             <dd className="tnum font-medium">{standardRate !== null ? `${usd(standardRate)} per CBM` : "not recorded"}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Current rate</dt>
+            <dt className="text-muted-foreground">{tx("Current rate")}</dt>
             <dd className="tnum font-medium">{appliedRate !== null ? `${usd(appliedRate)} per CBM` : "not recorded"}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Special rate</dt>
+            <dt className="text-muted-foreground">{tx("Special rate")}</dt>
             <dd className={special ? "font-semibold text-brand" : "text-muted-foreground"}>{special ? "Yes" : "No"}</dd>
           </div>
         </dl>
         {editable ? (
           <div className="grid grid-cols-2 gap-2">
             <label className="block space-y-1">
-              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</span>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{tx("Category")}</span>
               <NativeSelect
                 name="category"
                 value={picked}
@@ -179,7 +181,7 @@ export function RateDialog({
               </NativeSelect>
             </label>
             <label className="block space-y-1">
-              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Total CBM</span>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{tx("Total CBM")}</span>
               <Input
                 name="cbm"
                 type="number"
@@ -193,7 +195,7 @@ export function RateDialog({
           </div>
         ) : null}
         <label className="block space-y-1">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Rate per CBM</span>
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{tx("Rate per CBM")}</span>
           <span className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">USD</span>
             <Input
@@ -224,9 +226,9 @@ export function RateDialog({
         ) : null}
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
-          <SubmitButton size="sm" pendingLabel="Saving…">Save price</SubmitButton>
+          <SubmitButton size="sm" pendingLabel="Saving…">{tx("Save price")}</SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </form>
@@ -250,6 +252,7 @@ export function DiscountDialog({
   onClose: () => void;
   onSaved?: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<State, FormData>(discountInvoice, {});
   const [currency, setCurrency] = useState<"TZS" | "USD">(rate ? "TZS" : "USD");
   const [typed, setTyped] = useState("");
@@ -263,7 +266,7 @@ export function DiscountDialog({
         <input type="hidden" name="currency" value={currency} />
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <Tag className="size-4 text-brand" />
-          Give a discount
+          {tx("Give a discount")}
         </p>
         <div className="flex items-center gap-2">
           <div className="inline-flex shrink-0 rounded-md border p-0.5 text-xs">
@@ -300,12 +303,12 @@ export function DiscountDialog({
             {" · "}the bill is {usd(total)}
           </p>
         ) : null}
-        <Input name="reason" required minLength={3} placeholder="Why — agreed with the customer, damaged goods…" className="h-9" />
+        <Input name="reason" required minLength={3} placeholder={tx("Why — agreed with the customer, damaged goods…")} className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
-          <SubmitButton size="sm" pendingLabel="Saving…">Apply</SubmitButton>
+          <SubmitButton size="sm" pendingLabel="Saving…">{tx("Apply")}</SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </form>
@@ -332,6 +335,7 @@ export function ExchangeRateDialog({
   onClose: () => void;
   onSaved?: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<State, FormData>(changeInvoiceRate, {});
   const [typed, setTyped] = useState(current ? String(current) : "");
   useCloseOnOk(state, onClose, onSaved);
@@ -342,10 +346,10 @@ export function ExchangeRateDialog({
         <input type="hidden" name="invoiceId" value={invoiceId} />
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <ArrowLeftRight className="size-4 text-brand" />
-          Change the rate
+          {tx("Change the rate")}
         </p>
         <p className="text-xs text-muted-foreground">
-          This bill only. The dollar total does not move — only what it comes to in shillings.
+          {tx("This bill only. The dollar total does not move — only what it comes to in shillings.")}
         </p>
         <label className="flex items-center gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">USD 1 =</span>
@@ -364,12 +368,12 @@ export function ExchangeRateDialog({
             {usd(total)} = TZS {Math.round((Math.round(total * 100) * rate) / 100).toLocaleString("en-US")}
           </p>
         ) : null}
-        <Input name="note" placeholder="Note (optional) — agreed at the counter, bank rate on the day…" className="h-9" />
+        <Input name="note" placeholder={tx("Note (optional) — agreed at the counter, bank rate on the day…")} className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
-          <SubmitButton size="sm" pendingLabel="Saving…">Save</SubmitButton>
+          <SubmitButton size="sm" pendingLabel="Saving…">{tx("Save")}</SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </form>
@@ -387,6 +391,7 @@ export function RateIcon(props: {
   category?: string | null;
   categories?: { name: string; rate: number }[];
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   const special =
     props.standardRate !== null &&
@@ -396,7 +401,7 @@ export function RateIcon(props: {
     <>
       <button
         type="button"
-        title="Edit price — category, CBM or rate"
+        title={tx("Edit price — category, CBM or rate")}
         onClick={() => setOpen(true)}
         className={cn(
           SQUARE,
@@ -406,7 +411,7 @@ export function RateIcon(props: {
         )}
       >
         <Scale className="size-4" />
-        <span className="sr-only">Edit the rate</span>
+        <span className="sr-only">{tx("Edit the rate")}</span>
       </button>
       {open ? <RateDialog {...props} onClose={() => setOpen(false)} /> : null}
     </>
@@ -415,10 +420,11 @@ export function RateIcon(props: {
 
 /** Opens Record Payment on this very bill — the form comes to the row. */
 export function PaymentIcon({ invoiceId }: { invoiceId: string }) {
+  const tx = useT();
   return (
     <button
       type="button"
-      title="Record a payment"
+      title={tx("Record a payment")}
       /* The same event the dialog listens for; imported by name it would make
          the dialog and these dialogs import each other. */
       onClick={() =>
@@ -427,7 +433,7 @@ export function PaymentIcon({ invoiceId }: { invoiceId: string }) {
       className={cn(SQUARE, "border-brand/40 text-brand hover:bg-brand/10")}
     >
       <Banknote className="size-4" />
-      <span className="sr-only">Record a payment</span>
+      <span className="sr-only">{tx("Record a payment")}</span>
     </button>
   );
 }
@@ -461,6 +467,7 @@ export function CreditDialog({
   defaultReason?: string;
   onClose: () => void;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<State, FormData>(issuePickupNote, {});
   useCloseOnOk(state, onClose);
   return (
@@ -476,7 +483,7 @@ export function CreditDialog({
         <p className="text-sm font-semibold">Release on credit · {amountLabel}</p>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="size-4" />
-          Terms
+          {tx("Terms")}
           <NativeSelect name="creditDays" defaultValue={String(defaultDays)} className="h-9 w-40">
             {TERMS.map((d) => (
               <option key={d} value={d}>
@@ -485,19 +492,18 @@ export function CreditDialog({
             ))}
           </NativeSelect>
         </label>
-        <Input name="creditReason" required minLength={3} autoFocus defaultValue={defaultReason} placeholder="Why are they asking? Finance reads this." className="h-9" />
+        <Input name="creditReason" required minLength={3} autoFocus defaultValue={defaultReason} placeholder={tx("Why are they asking? Finance reads this.")} className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-3">
           <SubmitButton size="sm" pendingLabel="Releasing…" className="bg-warning text-white hover:bg-warning/90">
-            Release it on credit
+            {tx("Release it on credit")}
           </SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
-            Never mind
+            {tx("Never mind")}
           </button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Granted the moment you press it, in your name, with the due date counted from today. The pickup
-          note is written and the bill stays owed until the customer pays — it is a sale, not a payment.
+          {tx("Granted the moment you press it, in your name, with the due date counted from today. The pickup note is written and the bill stays owed until the customer pays — it is a sale, not a payment.")}
         </p>
       </form>
     </Shell>
@@ -515,16 +521,17 @@ type CreditProps = {
 };
 
 export function CreditIcon(props: CreditProps) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   if (props.onCredit) {
     return (
       <a
         href="/app/finance/credit"
-        title="On credit — see the terms"
+        title={tx("On credit — see the terms")}
         className={cn(SQUARE, "border-warning bg-warning/15 text-warning hover:bg-warning/25")}
       >
         <CalendarClock className="size-4" />
-        <span className="sr-only">See the credit terms</span>
+        <span className="sr-only">{tx("See the credit terms")}</span>
       </a>
     );
   }
@@ -532,12 +539,12 @@ export function CreditIcon(props: CreditProps) {
     <>
       <button
         type="button"
-        title="Release on credit"
+        title={tx("Release on credit")}
         onClick={() => setOpen(true)}
         className={cn(SQUARE, "border-warning/40 text-warning hover:bg-warning/10")}
       >
         <CalendarClock className="size-4" />
-        <span className="sr-only">Release on credit</span>
+        <span className="sr-only">{tx("Release on credit")}</span>
       </button>
       {open ? <CreditDialog {...props} onClose={() => setOpen(false)} /> : null}
     </>
@@ -546,6 +553,7 @@ export function CreditIcon(props: CreditProps) {
 
 /** The same act as a worded button, beside Confirm payment. */
 export function CreditButton(props: CreditProps) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   if (props.onCredit) return null;
   return (
@@ -556,7 +564,7 @@ export function CreditButton(props: CreditProps) {
         className="inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm font-medium transition-colors hover:bg-secondary"
       >
         <CalendarClock className="size-4" />
-        Release on credit
+        {tx("Release on credit")}
       </button>
       {open ? <CreditDialog {...props} onClose={() => setOpen(false)} /> : null}
     </>
@@ -565,6 +573,7 @@ export function CreditButton(props: CreditProps) {
 
 /** Straight to the PDF file, named after the customer and the consignment. */
 export function DownloadIcon({ invoiceId, number }: { invoiceId: string; number: string }) {
+  const tx = useT();
   return (
     <a
       href={`/app/finance/invoices/${invoiceId}/pdf`}
@@ -573,7 +582,7 @@ export function DownloadIcon({ invoiceId, number }: { invoiceId: string; number:
       className={cn(SQUARE, "border-signal/40 text-signal hover:bg-signal/10")}
     >
       <Download className="size-4" />
-      <span className="sr-only">Download the invoice</span>
+      <span className="sr-only">{tx("Download the invoice")}</span>
     </a>
   );
 }
@@ -587,6 +596,7 @@ export function ChangePriceButton(props: {
   category?: string | null;
   categories?: { name: string; rate: number }[];
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -596,7 +606,7 @@ export function ChangePriceButton(props: {
         className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand/10"
       >
         <Scale className="size-4" />
-        Edit price
+        {tx("Edit price")}
       </button>
       {open ? <RateDialog {...props} onClose={() => setOpen(false)} /> : null}
     </>

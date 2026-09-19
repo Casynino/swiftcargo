@@ -25,6 +25,7 @@ import { requirePermission } from "@/lib/session";
 import { BoxScanner } from "@/components/app/box-scanner";
 import { cargoTypeOptions } from "@/lib/valuation";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Check in cargo" };
 
 /**
@@ -45,6 +46,7 @@ export default async function CheckInContainerPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ cargo?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("receiving.dar");
   const { id } = await params;
   const { cargo: cargoId } = await searchParams;
@@ -231,13 +233,13 @@ export default async function CheckInContainerPage({
             <Button asChild variant="outline">
               <Link href={`/app/containers/${container.id}/packing-list`}>
                 <ClipboardList />
-                Packing list
+                {T("Packing list")}
               </Link>
             </Button>
             <Button asChild variant="outline">
               <Link href={`/app/containers/${container.id}/labels`}>
                 <ScanLine />
-                Box labels
+                {T("Box labels")}
               </Link>
             </Button>
           </>
@@ -250,7 +252,7 @@ export default async function CheckInContainerPage({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <ScanLine className="size-4" />
-            Scan boxes off the container
+            {T("Scan boxes off the container")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             Scan the sticker on every box as it comes off. Each box is marked as arrived with your name and the time;

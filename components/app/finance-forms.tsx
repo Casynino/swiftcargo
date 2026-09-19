@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 // --- Rates -----------------------------------------------------------------
 
 export function RateForm({
@@ -44,6 +45,7 @@ export function RateForm({
   /** Names already in use, offered so a rate lands on the name cargo uses. */
   cargoTypes?: string[];
 } = {}) {
+  const tx = useT();
   const [state, action] = useActionState<ConfigState, FormData>(createRate, {});
   const [open, setOpen] = useState(inline);
 
@@ -51,7 +53,7 @@ export function RateForm({
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Publish a rate
+        {tx("Publish a rate")}
       </Button>
     );
   }
@@ -62,19 +64,19 @@ export function RateForm({
       <form action={action} className="space-y-4">
         <div className={inline ? "grid gap-4 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-3"}>
           <div className="space-y-2">
-            <Label htmlFor="service">Service</Label>
+            <Label htmlFor="service">{tx("Service")}</Label>
             <NativeSelect id="service" name="service" defaultValue="LCL">
-              <option value="LCL">Loose cargo (LCL)</option>
-              <option value="FCL">Full container (FCL)</option>
+              <option value="LCL">{tx("Loose cargo (LCL)")}</option>
+              <option value="FCL">{tx("Full container (FCL)")}</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoType">Commodity band</Label>
+            <Label htmlFor="cargoType">{tx("Commodity band")}</Label>
             <Input
               id="cargoType"
               name="cargoType"
               list="rate-cargo-types"
-              placeholder="Blank = the general rate"
+              placeholder={tx("Blank = the general rate")}
             />
             <datalist id="rate-cargo-types">
               {cargoTypes.map((t) => (
@@ -83,43 +85,42 @@ export function RateForm({
             </datalist>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="basis">Charged by</Label>
+            <Label htmlFor="basis">{tx("Charged by")}</Label>
             <NativeSelect id="basis" name="basis" defaultValue="PER_CBM">
-              <option value="PER_CBM">Cubic metre</option>
-              <option value="PER_KG">Kilogram</option>
-              <option value="FLAT">Flat</option>
+              <option value="PER_CBM">{tx("Cubic metre")}</option>
+              <option value="PER_KG">{tx("Kilogram")}</option>
+              <option value="FLAT">{tx("Flat")}</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rate">Rate (USD)</Label>
+            <Label htmlFor="rate">{tx("Rate (USD)")}</Label>
             <Input id="rate" name="rate" type="number" step="0.01" min={0} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="minimumCbm">Minimum CBM</Label>
+            <Label htmlFor="minimumCbm">{tx("Minimum CBM")}</Label>
             <Input id="minimumCbm" name="minimumCbm" type="number" step="0.001" min={0} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="minimumKg">Minimum kg</Label>
+            <Label htmlFor="minimumKg">{tx("Minimum kg")}</Label>
             <Input id="minimumKg" name="minimumKg" type="number" step="0.01" min={0} />
           </div>
         </div>
 
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="published" defaultChecked />
-          Show this on the public rates page
+          {tx("Show this on the public rates page")}
         </label>
 
         <p className="rounded-md bg-secondary px-3 py-2 text-xs text-muted-foreground">
-          Publishing supersedes the current rate rather than editing it. Invoices
-          already raised keep the rate they were raised at.
+          {tx("Publishing supersedes the current rate rather than editing it. Invoices already raised keep the rate they were raised at.")}
         </p>
 
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Publish</SubmitButton>
+          <SubmitButton>{tx("Publish")}</SubmitButton>
           {inline ? null : (
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
           )}
         </div>
@@ -137,6 +138,7 @@ export function CustomerRateForm({
   inline?: boolean;
   cargoTypes?: string[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ConfigState, FormData>(
     createCustomerRate,
     {}
@@ -146,7 +148,7 @@ export function CustomerRateForm({
   if (!open) {
     return (
       <Button variant="outline" onClick={() => setOpen(true)}>
-        Agree a customer rate
+        {tx("Agree a customer rate")}
       </Button>
     );
   }
@@ -157,10 +159,10 @@ export function CustomerRateForm({
       <form action={action} className="space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="customerId">Customer</Label>
+            <Label htmlFor="customerId">{tx("Customer")}</Label>
             <NativeSelect id="customerId" name="customerId" required defaultValue="">
               <option value="" disabled>
-                Choose…
+                {tx("Choose…")}
               </option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -170,18 +172,18 @@ export function CustomerRateForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cr-service">Service</Label>
+            <Label htmlFor="cr-service">{tx("Service")}</Label>
             <NativeSelect id="cr-service" name="service" defaultValue="LCL">
-              <option value="LCL">Loose cargo (LCL)</option>
-              <option value="FCL">Full container (FCL)</option>
+              <option value="LCL">{tx("Loose cargo (LCL)")}</option>
+              <option value="FCL">{tx("Full container (FCL)")}</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cr-cargoType">Cargo type</Label>
+            <Label htmlFor="cr-cargoType">{tx("Cargo type")}</Label>
             {/* An agreement is for one kind of goods: a customer who ships
                 shoes cheaply is not thereby shipping machinery cheaply. */}
             <NativeSelect id="cr-cargoType" name="cargoType" defaultValue="">
-              <option value="">Every cargo type</option>
+              <option value="">{tx("Every cargo type")}</option>
               {cargoTypes.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -190,32 +192,31 @@ export function CustomerRateForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cr-basis">Charged by</Label>
+            <Label htmlFor="cr-basis">{tx("Charged by")}</Label>
             <NativeSelect id="cr-basis" name="basis" defaultValue="PER_CBM">
-              <option value="PER_CBM">Cubic metre</option>
-              <option value="PER_KG">Kilogram</option>
-              <option value="FLAT">Flat</option>
+              <option value="PER_CBM">{tx("Cubic metre")}</option>
+              <option value="PER_KG">{tx("Kilogram")}</option>
+              <option value="FLAT">{tx("Flat")}</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cr-rate">Agreed rate (USD)</Label>
+            <Label htmlFor="cr-rate">{tx("Agreed rate (USD)")}</Label>
             <Input id="cr-rate" name="rate" type="number" step="0.01" min={0} required />
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cr-reason">Why?</Label>
-          <Input id="cr-reason" name="reason" required placeholder="Volume customer since 2024" />
+          <Label htmlFor="cr-reason">{tx("Why?")}</Label>
+          <Input id="cr-reason" name="reason" required placeholder={tx("Volume customer since 2024")} />
         </div>
         <p className="text-xs text-muted-foreground">
-          The standard rate stays where it is — it is what this discount is
-          measured against, and every invoice will show both.
+          {tx("The standard rate stays where it is — it is what this discount is measured against, and every invoice will show both.")}
         </p>
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Record</SubmitButton>
+          <SubmitButton>{tx("Record")}</SubmitButton>
           {inline ? null : (
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
           )}
         </div>
@@ -225,6 +226,7 @@ export function CustomerRateForm({
 }
 
 export function ExchangeRateForm({ current }: { current: string | null }) {
+  const tx = useT();
   const [state, action] = useActionState<ConfigState, FormData>(
     setExchangeRate,
     {}
@@ -233,7 +235,7 @@ export function ExchangeRateForm({ current }: { current: string | null }) {
     <form action={action} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="rate">TZS per 1 USD</Label>
+          <Label htmlFor="rate">{tx("TZS per 1 USD")}</Label>
           <Input
             id="rate"
             name="rate"
@@ -246,8 +248,8 @@ export function ExchangeRateForm({ current }: { current: string | null }) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="notes">Reason</Label>
-          <Input id="notes" name="notes" required minLength={3} placeholder="CRDB bank rate, 17 Sept" />
+          <Label htmlFor="notes">{tx("Reason")}</Label>
+          <Input id="notes" name="notes" required minLength={3} placeholder={tx("CRDB bank rate, 17 Sept")} />
         </div>
       </div>
       <label className="flex items-start gap-2 text-sm">
@@ -258,7 +260,7 @@ export function ExchangeRateForm({ current }: { current: string | null }) {
         </span>
       </label>
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>Publish rate</SubmitButton>
+      <SubmitButton>{tx("Publish rate")}</SubmitButton>
     </form>
   );
 }
@@ -266,6 +268,7 @@ export function ExchangeRateForm({ current }: { current: string | null }) {
 // --- Invoices ---------------------------------------------------------------
 
 export function GenerateInvoiceButton({ cargoId }: { cargoId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<InvoiceState, FormData>(
     generateInvoice,
     {}
@@ -273,7 +276,7 @@ export function GenerateInvoiceButton({ cargoId }: { cargoId: string }) {
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="cargoId" value={cargoId} />
-      <SubmitButton size="sm">Raise invoice</SubmitButton>
+      <SubmitButton size="sm">{tx("Raise invoice")}</SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>
   );
@@ -284,6 +287,7 @@ export function GenerateContainerInvoicesButton({
 }: {
   containerId: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<InvoiceState, FormData>(
     generateContainerInvoices,
     {}
@@ -291,13 +295,14 @@ export function GenerateContainerInvoicesButton({
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="containerId" value={containerId} />
-      <SubmitButton variant="outline">Raise invoices for this container</SubmitButton>
+      <SubmitButton variant="outline">{tx("Raise invoices for this container")}</SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>
   );
 }
 
 export function IssueInvoiceForm({ invoiceId }: { invoiceId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<InvoiceState, FormData>(
     issueInvoice,
     {}
@@ -306,16 +311,16 @@ export function IssueInvoiceForm({ invoiceId }: { invoiceId: string }) {
     <form action={action} className="flex flex-wrap items-end gap-3">
       <input type="hidden" name="invoiceId" value={invoiceId} />
       <div className="space-y-2">
-        <Label htmlFor="dueDays">Payable within</Label>
+        <Label htmlFor="dueDays">{tx("Payable within")}</Label>
         <NativeSelect id="dueDays" name="dueDays" defaultValue="7" className="w-40">
-          <option value="0">On receipt</option>
+          <option value="0">{tx("On receipt")}</option>
           <option value="3">3 days</option>
           <option value="7">7 days</option>
           <option value="14">14 days</option>
           <option value="30">30 days</option>
         </NativeSelect>
       </div>
-      <SubmitButton>Issue to customer</SubmitButton>
+      <SubmitButton>{tx("Issue to customer")}</SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>
   );
@@ -328,6 +333,7 @@ export function AdjustInvoiceForm({
   invoiceId: string;
   appliedRate: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<InvoiceState, FormData>(
     adjustInvoice,
     {}
@@ -337,7 +343,7 @@ export function AdjustInvoiceForm({
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        Adjust
+        {tx("Adjust")}
       </Button>
     );
   }
@@ -347,7 +353,7 @@ export function AdjustInvoiceForm({
       <input type="hidden" name="invoiceId" value={invoiceId} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="appliedRate">Rate</Label>
+          <Label htmlFor="appliedRate">{tx("Rate")}</Label>
           <Input
             id="appliedRate"
             name="appliedRate"
@@ -358,7 +364,7 @@ export function AdjustInvoiceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="additionalCharge">Extra charge</Label>
+          <Label htmlFor="additionalCharge">{tx("Extra charge")}</Label>
           <Input
             id="additionalCharge"
             name="additionalCharge"
@@ -367,23 +373,23 @@ export function AdjustInvoiceForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="chargeDescription">What for?</Label>
+          <Label htmlFor="chargeDescription">{tx("What for?")}</Label>
           <Input
             id="chargeDescription"
             name="chargeDescription"
-            placeholder="Transport, storage…"
+            placeholder={tx("Transport, storage…")}
           />
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="adj-reason">Reason</Label>
+        <Label htmlFor="adj-reason">{tx("Reason")}</Label>
         <Input id="adj-reason" name="reason" required />
       </div>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
-        <SubmitButton>Save adjustment</SubmitButton>
+        <SubmitButton>{tx("Save adjustment")}</SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>
@@ -391,6 +397,7 @@ export function AdjustInvoiceForm({
 }
 
 export function CancelInvoiceForm({ invoiceId }: { invoiceId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<InvoiceState, FormData>(
     cancelInvoice,
     {}
@@ -401,7 +408,7 @@ export function CancelInvoiceForm({ invoiceId }: { invoiceId: string }) {
     return (
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <Ban />
-        Cancel this bill
+        {tx("Cancel this bill")}
       </Button>
     );
   }
@@ -410,16 +417,16 @@ export function CancelInvoiceForm({ invoiceId }: { invoiceId: string }) {
     <form action={action} className="space-y-3 rounded-lg border border-destructive/30 p-4">
       <input type="hidden" name="invoiceId" value={invoiceId} />
       <div className="space-y-2">
-        <Label htmlFor="cancel-reason">Why?</Label>
+        <Label htmlFor="cancel-reason">{tx("Why?")}</Label>
         <Input id="cancel-reason" name="reason" required />
       </div>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
         <SubmitButton variant="destructive" size="sm">
-          Cancel it
+          {tx("Cancel it")}
         </SubmitButton>
         <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-          Keep it
+          {tx("Keep it")}
         </Button>
       </div>
     </form>
@@ -445,6 +452,7 @@ export function RecordPaymentForm({
   /** The rate pinned on this bill, so the panel can show what the money settles. */
   fxRate?: number | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<PaymentState, FormData>(
     recordPayment,
     {}
@@ -508,7 +516,7 @@ export function RecordPaymentForm({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="currency" className="text-xs">
-            Paid in
+            {tx("Paid in")}
           </Label>
           <NativeSelect
             id="currency"
@@ -546,10 +554,10 @@ export function RecordPaymentForm({
               onChange={(e) => setAcceptOver(e.target.checked)}
               className="size-4"
             />
-            Accept overpayment — the extra stays on the bill as a credit
+            {tx("Accept overpayment — the extra stays on the bill as a credit")}
           </label>
           {acceptOver ? (
-            <Input name="overpaymentReason" required minLength={3} placeholder="Why the extra is being accepted" className="h-9" />
+            <Input name="overpaymentReason" required minLength={3} placeholder={tx("Why the extra is being accepted")} className="h-9" />
           ) : null}
         </div>
       ) : null}
@@ -557,24 +565,24 @@ export function RecordPaymentForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="method" className="text-xs">
-            Paid by
+            {tx("Paid by")}
           </Label>
           <NativeSelect id="method" name="method" defaultValue="MOBILE_MONEY" className="h-9">
-            <option value="MOBILE_MONEY">Mobile money</option>
-            <option value="BANK_TRANSFER">Bank transfer</option>
-            <option value="CASH">Cash</option>
-            <option value="CHEQUE">Cheque</option>
-            <option value="OTHER">Other</option>
+            <option value="MOBILE_MONEY">{tx("Mobile money")}</option>
+            <option value="BANK_TRANSFER">{tx("Bank transfer")}</option>
+            <option value="CASH">{tx("Cash")}</option>
+            <option value="CHEQUE">{tx("Cheque")}</option>
+            <option value="OTHER">{tx("Other")}</option>
           </NativeSelect>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="transactionRef" className="text-xs">
-            Their reference
+            {tx("Their reference")}
           </Label>
           <Input
             id="transactionRef"
             name="transactionRef"
-            placeholder="M-Pesa code…"
+            placeholder={tx("M-Pesa code…")}
             className="tnum h-9"
           />
         </div>
@@ -592,7 +600,7 @@ export function RecordPaymentForm({
 
       <div className="space-y-1.5">
         <Label htmlFor="proof" className="text-xs">
-          Proof
+          {tx("Proof")}
         </Label>
         <Input
           id="proof"
@@ -607,7 +615,7 @@ export function RecordPaymentForm({
       {dated ? (
         <div className="space-y-1.5">
           <Label htmlFor="paidAt" className="text-xs">
-            Date paid
+            {tx("Date paid")}
           </Label>
           <Input
             id="paidAt"
@@ -624,7 +632,7 @@ export function RecordPaymentForm({
           onClick={() => setDated(true)}
           className="text-xs font-medium text-primary hover:underline"
         >
-          Click here if you wish to change the date
+          {tx("Click here if you wish to change the date")}
         </button>
       )}
 
@@ -644,6 +652,7 @@ export function RecordPaymentForm({
 }
 
 export function VerifyPaymentButtons({ paymentId }: { paymentId: string }) {
+  const tx = useT();
   const [verifyState, verifyAction] = useActionState<PaymentState, FormData>(
     verifyPayment,
     {}
@@ -658,13 +667,13 @@ export function VerifyPaymentButtons({ paymentId }: { paymentId: string }) {
     return (
       <form action={rejectAction} className="space-y-2">
         <input type="hidden" name="paymentId" value={paymentId} />
-        <Input name="reason" required placeholder="Not on the statement…" className="h-9" />
+        <Input name="reason" required placeholder={tx("Not on the statement…")} className="h-9" />
         <div className="flex gap-1">
           <SubmitButton variant="destructive" size="sm">
-            Reject
+            {tx("Reject")}
           </SubmitButton>
           <Button type="button" variant="ghost" size="sm" onClick={() => setRejecting(false)}>
-            Back
+            {tx("Back")}
           </Button>
         </div>
         <FormMessage error={rejectState.error} />
@@ -679,7 +688,7 @@ export function VerifyPaymentButtons({ paymentId }: { paymentId: string }) {
           <input type="hidden" name="paymentId" value={paymentId} />
           <SubmitButton size="sm">
             <ShieldCheck />
-            Verify
+            {tx("Verify")}
           </SubmitButton>
         </form>
         <Button variant="ghost" size="sm" onClick={() => setRejecting(true)}>
@@ -692,6 +701,7 @@ export function VerifyPaymentButtons({ paymentId }: { paymentId: string }) {
 }
 
 export function ReversePaymentForm({ paymentId }: { paymentId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<PaymentState, FormData>(
     reversePayment,
     {}
@@ -702,7 +712,7 @@ export function ReversePaymentForm({ paymentId }: { paymentId: string }) {
     return (
       <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
         <RotateCcw />
-        Reverse
+        {tx("Reverse")}
       </Button>
     );
   }
@@ -710,17 +720,16 @@ export function ReversePaymentForm({ paymentId }: { paymentId: string }) {
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="paymentId" value={paymentId} />
-      <Input name="reason" required placeholder="Why is it being reversed?" className="h-9" />
+      <Input name="reason" required placeholder={tx("Why is it being reversed?")} className="h-9" />
       <p className="text-xs text-muted-foreground">
-        The payment stays on the record as reversed. The receipt already issued
-        would otherwise point at nothing.
+        {tx("The payment stays on the record as reversed. The receipt already issued would otherwise point at nothing.")}
       </p>
       <div className="flex gap-1">
         <SubmitButton variant="destructive" size="sm">
-          Reverse
+          {tx("Reverse")}
         </SubmitButton>
         <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
       <FormMessage error={state.error} ok={state.ok} />

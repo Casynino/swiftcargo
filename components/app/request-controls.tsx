@@ -8,6 +8,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 const STATUSES = [
   ["SUBMITTED", "Submitted"],
   ["UNDER_REVIEW", "Under review"],
@@ -29,6 +30,7 @@ export function RequestControls({
   status: string;
   notes: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     updateRequestStatus,
     {}
@@ -42,7 +44,7 @@ export function RequestControls({
         name="status"
         defaultValue={status}
         className="h-9 w-40"
-        aria-label="Request status"
+        aria-label={tx("Request status")}
       >
         {STATUSES.map(([value, label]) => (
           <option key={value} value={value}>
@@ -52,13 +54,13 @@ export function RequestControls({
       </NativeSelect>
       <Input
         name="staffNotes"
-        placeholder="Note"
+        placeholder={tx("Note")}
         defaultValue={notes ?? ""}
         className="h-9 min-w-[12rem] flex-1"
-        aria-label="Staff note"
+        aria-label={tx("Staff note")}
       />
       <SubmitButton size="sm" variant="outline">
-        Save
+        {tx("Save")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

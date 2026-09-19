@@ -25,6 +25,7 @@ import { buildReport, REPORTS } from "@/lib/report-tables";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Profit & loss" };
 
 /**
@@ -42,6 +43,7 @@ export default async function ProfitAndLossPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  await primeLocale();
   await requirePermission("profit.view");
   const sp = await searchParams;
   const p = readReportParams(sp);
@@ -121,8 +123,8 @@ export default async function ProfitAndLossPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Profit & loss"
-        description="Revenue against costs, for a period and for a sailing. Every figure is derived from the operational record — there is no separate set of books."
+        title={T("Profit & loss")}
+        description={T("Revenue against costs, for a period and for a sailing. Every figure is derived from the operational record — there is no separate set of books.")}
       />
       <FinanceTabs />
 
@@ -171,7 +173,7 @@ export default async function ProfitAndLossPage({
         ].map((c, i) =>
           c === null ? (
             <div key={i} className={cell}>
-              <p className={label}>Profit margin</p>
+              <p className={label}>{T("Profit margin")}</p>
               <p className="tnum mt-1 text-xl font-semibold">{pct(now.margin)}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {before.margin === null ? "no margin to compare" : `${pct(before.margin)} in ${p.previous.label}`}
@@ -272,9 +274,9 @@ export default async function ProfitAndLossPage({
       {/* WHERE IT WENT, AND WHAT EACH SAILING MADE */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="overflow-hidden rounded-xl border bg-card">
-          <h2 className="border-b px-5 py-4 font-semibold">Where the money went</h2>
+          <h2 className="border-b px-5 py-4 font-semibold">{T("Where the money went")}</h2>
           {cats.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-muted-foreground">No costs incurred in this period.</p>
+            <p className="px-5 py-8 text-sm text-muted-foreground">{T("No costs incurred in this period.")}</p>
           ) : (
             <ul className="divide-y">
               {cats.map((c) => (
@@ -294,8 +296,8 @@ export default async function ProfitAndLossPage({
 
         <section className="overflow-hidden rounded-xl border bg-card">
           <header className="border-b px-5 py-4">
-            <h2 className="flex items-center gap-2 font-semibold"><Ship className="size-4" />Profit per container</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Only costs tied to a container count here. Rent and salaries belong to the business, not to one sailing.</p>
+            <h2 className="flex items-center gap-2 font-semibold"><Ship className="size-4" />{T("Profit per container")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{T("Only costs tied to a container count here. Rent and salaries belong to the business, not to one sailing.")}</p>
           </header>
           <ul className="divide-y">
             {sailings.slice(0, 6).map((c) => (
@@ -361,7 +363,7 @@ export default async function ProfitAndLossPage({
       <section className="space-y-2">
         <div className="flex items-end justify-between">
           <div>
-            <h2 className={label}>Container performance</h2>
+            <h2 className={label}>{T("Container performance")}</h2>
             <p className="text-xs text-muted-foreground">In {cur === "TZS" ? "shillings, each bill at its own rate" : "dollars"}. Switch at the top of the page.</p>
           </div>
           <Link href="/app/finance/containers" className="text-sm text-brand hover:underline">All containers →</Link>
@@ -397,7 +399,7 @@ export default async function ProfitAndLossPage({
 
       {/* BUSINESS VOLUME */}
       <section className="space-y-2">
-        <h2 className={label}>Business volume</h2>
+        <h2 className={label}>{T("Business volume")}</h2>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-4 xl:grid-cols-7">
           {[
             ["CBM received", now.cbmReceived.toFixed(3)],
@@ -419,8 +421,8 @@ export default async function ProfitAndLossPage({
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <section className="overflow-hidden rounded-xl border bg-card">
           <header className="border-b px-5 py-4">
-            <h2 className="font-semibold">Where revenue comes from</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">Freight billed in this period. There is no other kind of income in the system — every invoice belongs to a consignment.</p>
+            <h2 className="font-semibold">{T("Where revenue comes from")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{T("Freight billed in this period. There is no other kind of income in the system — every invoice belongs to a consignment.")}</p>
           </header>
           <div className="grid grid-cols-1 gap-px border-b bg-border sm:grid-cols-3">
             {[["Expected", now.revenue, ""], ["Collected", now.revenue.usd ? { usd: now.revenue.usd - now.outstanding.usd, tzs: now.revenue.tzs - now.outstanding.tzs } : now.collected, "text-success"], ["Outstanding", now.outstanding, "text-destructive"]].map(([l, m, tone]) => (
@@ -432,7 +434,7 @@ export default async function ProfitAndLossPage({
           </div>
           <ul className="divide-y">
             <li className="flex justify-between px-5 py-3 text-sm font-medium">
-              <span>Guangzhou → Dar es Salaam</span>
+              <span>{T("Guangzhou → Dar es Salaam")}</span>
               <span className="tnum">{lead(now.revenue)}</span>
             </li>
             {customers.slice(0, 6).map((c) => (
@@ -449,8 +451,8 @@ export default async function ProfitAndLossPage({
 
         <section className="overflow-hidden rounded-xl border bg-card">
           <header className="border-b px-5 py-4">
-            <h2 className="font-semibold">Where money is spent</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">A cost against a container is a container cost. One with no container is the business's own — office, special or executive.</p>
+            <h2 className="font-semibold">{T("Where money is spent")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{T("A cost against a container is a container cost. One with no container is the business's own — office, special or executive.")}</p>
           </header>
           <div className="grid grid-cols-3 gap-px border-b bg-border">
             {[
@@ -483,7 +485,7 @@ export default async function ProfitAndLossPage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="overflow-hidden rounded-xl border bg-card">
           <header className="border-b px-5 py-4">
-            <h2 className="font-semibold">Financial position</h2>
+            <h2 className="font-semibold">{T("Financial position")}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">Where the money is right now, derived from the ledger. Not a period figure — it is today&rsquo;s answer whatever stretch is chosen above.</p>
           </header>
           <ul className="divide-y">
@@ -497,7 +499,7 @@ export default async function ProfitAndLossPage({
               </li>
             ))}
             <li className="flex justify-between px-5 py-3 text-sm font-semibold">
-              <span>Across every account</span>
+              <span>{T("Across every account")}</span>
               <span className="tnum">{fmt(books.positions.reduce((s, a) => s + inCur(a.balance, a.currency), 0))}</span>
             </li>
           </ul>
@@ -505,12 +507,12 @@ export default async function ProfitAndLossPage({
 
         <section className="overflow-hidden rounded-xl border bg-card">
           <header className="border-b px-5 py-4">
-            <h2 className="font-semibold">Collection performance</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">What was billed in this period against what has come in for it.</p>
+            <h2 className="font-semibold">{T("Collection performance")}</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">{T("What was billed in this period against what has come in for it.")}</p>
           </header>
           <div className="px-5 py-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm text-muted-foreground">Collection rate</span>
+              <span className="text-sm text-muted-foreground">{T("Collection rate")}</span>
               <span className="tnum text-3xl font-semibold">{pct(now.collectionRate)}</span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
@@ -530,7 +532,7 @@ export default async function ProfitAndLossPage({
 
       {/* FINANCIAL HEALTH */}
       <section className="space-y-2">
-        <h2 className={label}>Financial health</h2>
+        <h2 className={label}>{T("Financial health")}</h2>
         <div className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border bg-border md:grid-cols-3">
           {[
             ["Collection rate", pct(now.collectionRate), now.collectionRate === null ? "Nothing was billed in this period." : `${pct(now.collectionRate)} of what was billed in this period has actually been paid.`, (now.collectionRate ?? 100) < 50 ? "text-destructive" : "text-success"],
@@ -551,10 +553,10 @@ export default async function ProfitAndLossPage({
 
       {/* TWELVE MONTHS */}
       <section className="space-y-2">
-        <h2 className={label}>Twelve months</h2>
+        <h2 className={label}>{T("Twelve months")}</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-xl border bg-card p-5">
-            <h3 className="font-semibold">Money in against money out</h3>
+            <h3 className="font-semibold">{T("Money in against money out")}</h3>
             <div className="mt-4 flex h-40 items-end gap-1.5">
               {months.map((m) => (
                 <div key={m.label} className="flex flex-1 flex-col items-center gap-1">
@@ -567,13 +569,13 @@ export default async function ProfitAndLossPage({
               ))}
             </div>
             <p className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />Money in</span>
-              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />Money out</span>
-              <span className="ml-auto">One scale</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-success" />{T("Money in")}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-destructive" />{T("Money out")}</span>
+              <span className="ml-auto">{T("One scale")}</span>
             </p>
           </div>
           <div className="rounded-xl border bg-card p-5">
-            <h3 className="font-semibold">Cargo landed in Dar, by month</h3>
+            <h3 className="font-semibold">{T("Cargo landed in Dar, by month")}</h3>
             <div className="mt-4 flex h-40 items-end gap-1.5">
               {months.map((m) => (
                 <div key={m.label} className="flex flex-1 flex-col items-center gap-1">
@@ -584,17 +586,17 @@ export default async function ProfitAndLossPage({
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Cubic metres counted off containers at the Dar floor.</p>
+            <p className="mt-3 text-xs text-muted-foreground">{T("Cubic metres counted off containers at the Dar floor.")}</p>
           </div>
         </div>
       </section>
 
       {/* THE STATEMENT */}
       <section className="space-y-2">
-        <h2 className={label}>Financial statement</h2>
+        <h2 className={label}>{T("Financial statement")}</h2>
         <form action="/app/finance/reports/statement" className="flex flex-wrap items-end justify-between gap-4 rounded-xl border bg-card p-5">
           <div className="max-w-xl">
-            <h3 className="font-semibold">The whole set of books, as one document</h3>
+            <h3 className="font-semibold">{T("The whole set of books, as one document")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Profit and loss, cash, where revenue came from, where money was spent, every container, the position today, collections and volume — for the month you pick, with a line for Finance and a line for approval. Written in {cur === "TZS" ? "shillings" : "dollars"}, to match the switch at the top of this page.
             </p>
@@ -602,7 +604,7 @@ export default async function ProfitAndLossPage({
           <input type="hidden" name="cur" value={cur} />
           <div className="flex flex-wrap items-end gap-2">
             <label className="space-y-1 text-xs text-muted-foreground">
-              Period
+              {T("Period")}
               <NativeSelect name="month" defaultValue={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`} className="w-48 max-w-full">
                 {Array.from({ length: 12 }, (_, i) => {
                   const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
@@ -611,15 +613,15 @@ export default async function ProfitAndLossPage({
                 })}
               </NativeSelect>
             </label>
-            <Button type="submit"><FileText />Open the statement</Button>
+            <Button type="submit"><FileText />{T("Open the statement")}</Button>
           </div>
         </form>
       </section>
 
       {/* REPORTS TO DOWNLOAD */}
       <section id="downloads" className="space-y-2">
-        <h2 className={label}>Reports to download</h2>
-        <p className="text-xs text-muted-foreground">One table each, over the period chosen at the top — the working papers behind the statement. Spreadsheet to work in, PDF to hand over.</p>
+        <h2 className={label}>{T("Reports to download")}</h2>
+        <p className="text-xs text-muted-foreground">{T("One table each, over the period chosen at the top — the working papers behind the statement. Spreadsheet to work in, PDF to hand over.")}</p>
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="flex flex-wrap gap-2 border-b p-4">
             {(Object.keys(REPORTS) as (keyof typeof REPORTS)[]).map((key) => (
@@ -636,16 +638,16 @@ export default async function ProfitAndLossPage({
             {Object.entries({ period: p.period, cur, report: p.report }).map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v} />
             ))}
-            <label className="space-y-1 text-xs text-muted-foreground">From<Input type="date" name="from" defaultValue={p.from} className="w-40" /></label>
+            <label className="space-y-1 text-xs text-muted-foreground">{T("From")}<Input type="date" name="from" defaultValue={p.from} className="w-40" /></label>
             <label className="space-y-1 text-xs text-muted-foreground">To<Input type="date" name="to" defaultValue={p.to} className="w-40" /></label>
             <label className="space-y-1 text-xs text-muted-foreground">
-              Container
+              {T("Container")}
               <NativeSelect name="container" defaultValue={p.container ?? ""} className="w-48">
-                <option value="">Every container</option>
+                <option value="">{T("Every container")}</option>
                 {sailings.map((c) => <option key={c.id} value={c.id}>{c.reference}</option>)}
               </NativeSelect>
             </label>
-            <Button type="submit" variant="outline">Apply</Button>
+            <Button type="submit" variant="outline">{T("Apply")}</Button>
           </form>
           <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
             <div className="max-w-2xl">
@@ -657,7 +659,7 @@ export default async function ProfitAndLossPage({
             </div>
             <div className="inline-flex overflow-hidden rounded-md border">
               <a href={`/app/finance/reports/export?${exportQuery}`} className="inline-flex items-center gap-1.5 border-r px-3 py-1.5 text-sm hover:bg-secondary">
-                <Download className="size-4" />Spreadsheet
+                <Download className="size-4" />{T("Spreadsheet")}
               </a>
               <Link href={`/app/finance/reports/print?${exportQuery}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm hover:bg-secondary">
                 <FileText className="size-4" />PDF

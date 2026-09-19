@@ -2,6 +2,7 @@ import { Tag } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export type PriceChange = {
   category: { from: string | null; to: string | null } | null;
   cbm: { from: number; to: number } | null;
@@ -37,7 +38,7 @@ export function PriceChanged({ change, className }: { change: PriceChange; class
   return (
     <span className={cn("flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 tabular-nums", className)}>
       <Tag className="size-3 shrink-0 text-brand" aria-hidden />
-      <span className="font-medium text-brand">Price changed:</span>
+      <span className="font-medium text-brand">{T("Price changed:")}</span>
       {parts.map((p, i) => (
         <span key={i} className="inline-flex items-center gap-1 whitespace-nowrap">
           {i > 0 ? <span className="text-muted-foreground">·</span> : null}

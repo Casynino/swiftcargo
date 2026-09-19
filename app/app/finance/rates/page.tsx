@@ -28,6 +28,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Rate book" };
 
 const PER = { PER_CBM: "CBM", PER_KG: "kg", FLAT: "flat" } as const;
@@ -49,6 +50,7 @@ const tzs = (n: number) =>
  * every figure the money pages then report, and it is opened on purpose.
  */
 export default async function RateBookPage() {
+  await primeLocale();
   const user = await requirePermission("rate.view");
   const mayPublish = can(user.role, "rate.manage");
   const mayAgree = can(user.role, "customerRate.manage");
@@ -137,8 +139,8 @@ export default async function RateBookPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rate book"
-        description="Every figure Swift Cargo quotes comes from this page — the rate for each kind of goods, customers' agreed rates and today's exchange rate. Change it here and the next bill follows; a bill already raised keeps what it was priced at."
+        title={T("Rate book")}
+        description={T("Every figure Swift Cargo quotes comes from this page — the rate for each kind of goods, customers' agreed rates and today's exchange rate. Change it here and the next bill follows; a bill already raised keeps what it was priced at.")}
       />
 
       {!mayPublish ? (
@@ -204,7 +206,7 @@ export default async function RateBookPage() {
               {unpriced.length} kind{unpriced.length === 1 ? "" : "s"} of goods cannot be priced
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              The floor has received cargo of these types and there is no live rate for them and no general rate to fall back on. They reach Finance with no price until one is published.
+              {T("The floor has received cargo of these types and there is no live rate for them and no general rate to fall back on. They reach Finance with no price until one is published.")}
             </p>
             <p className="mt-2 flex flex-wrap gap-1.5">
               {unpriced.map((name) => (
@@ -220,7 +222,7 @@ export default async function RateBookPage() {
           <section className="overflow-hidden rounded-xl border bg-card">
             <header className="flex items-end justify-between border-b px-5 py-4">
               <div>
-                <h2 className="font-semibold">Rates by kind of goods</h2>
+                <h2 className="font-semibold">{T("Rates by kind of goods")}</h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Dearest first. Each line of a bill is charged at the rate for its own goods; the shilling figure is at today&rsquo;s rate.
                 </p>
@@ -228,7 +230,7 @@ export default async function RateBookPage() {
               <span className="tnum text-xs text-muted-foreground">{live.length} live</span>
             </header>
             {live.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-muted-foreground">No rate is live. Publish one to start pricing cargo.</p>
+              <p className="px-5 py-10 text-center text-sm text-muted-foreground">{T("No rate is live. Publish one to start pricing cargo.")}</p>
             ) : (
               <ul className="grid grid-cols-1 gap-px bg-border sm:grid-cols-2">
                 {live.map((r) => {
@@ -288,13 +290,13 @@ export default async function RateBookPage() {
 
           <section className="overflow-hidden rounded-xl border bg-card">
             <header className="border-b px-5 py-4">
-              <h2 className="font-semibold">Agreed customer rates</h2>
+              <h2 className="font-semibold">{T("Agreed customer rates")}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                A customer who pays less than the book. The book rate stays — it is what the discount is measured against, and every bill shows both.
+                {T("A customer who pays less than the book. The book rate stays — it is what the discount is measured against, and every bill shows both.")}
               </p>
             </header>
             {customerRates.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-muted-foreground">Nobody has an agreed rate. Everyone pays the book.</p>
+              <p className="px-5 py-8 text-sm text-muted-foreground">{T("Nobody has an agreed rate. Everyone pays the book.")}</p>
             ) : (
               <ul className="divide-y">
                 {customerRates.map((c) => {
@@ -337,7 +339,7 @@ export default async function RateBookPage() {
           {superseded.length > 0 ? (
             <details className="overflow-hidden rounded-xl border bg-card">
               <summary className="cursor-pointer px-5 py-4 text-sm font-medium">
-                Superseded rates <span className="tnum text-muted-foreground">· {superseded.length}</span>
+                {T("Superseded rates")} <span className="tnum text-muted-foreground">· {superseded.length}</span>
               </summary>
               <ul className="divide-y border-t">
                 {superseded.map((r) => (
@@ -357,9 +359,9 @@ export default async function RateBookPage() {
         <div className="space-y-6">
           <section id="exchange-rate" className="rounded-xl border bg-card">
             <div className="border-b px-5 py-4">
-              <h2 className="font-semibold">Exchange rate</h2>
+              <h2 className="font-semibold">{T("Exchange rate")}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Applied to every bill raised from now on. Bills already issued keep the rate they were raised at.
+                {T("Applied to every bill raised from now on. Bills already issued keep the rate they were raised at.")}
               </p>
             </div>
             <div className="p-5">
@@ -378,7 +380,7 @@ export default async function RateBookPage() {
             </div>
             {fxHistory.length > 1 ? (
               <div className="border-t">
-                <p className="px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous rates</p>
+                <p className="px-5 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{T("Previous rates")}</p>
                 <ul className="divide-y px-5 pb-4 pt-2">
                   {fxHistory.slice(1).map((r) => (
                     <li key={r.id} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
@@ -394,9 +396,9 @@ export default async function RateBookPage() {
           {mayPublish ? (
             <section className="rounded-xl border bg-card">
               <div className="border-b px-5 py-4">
-                <h2 className="font-semibold">Publish a rate</h2>
+                <h2 className="font-semibold">{T("Publish a rate")}</h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Supersedes the live rate for the same goods rather than editing it. Leave the kind of goods blank for the general rate.
+                  {T("Supersedes the live rate for the same goods rather than editing it. Leave the kind of goods blank for the general rate.")}
                 </p>
               </div>
               <div className="p-5">
@@ -408,7 +410,7 @@ export default async function RateBookPage() {
           {mayAgree ? (
             <section className="rounded-xl border bg-card">
               <div className="border-b px-5 py-4">
-                <h2 className="font-semibold">Agree a customer rate</h2>
+                <h2 className="font-semibold">{T("Agree a customer rate")}</h2>
               </div>
               <div className="p-5">
                 <CustomerRateForm
@@ -423,10 +425,10 @@ export default async function RateBookPage() {
           <section className="rounded-xl border bg-card">
             <h2 className="flex items-center gap-2 border-b px-5 py-4 font-semibold">
               <History className="size-4 text-muted-foreground" />
-              Change history
+              {T("Change history")}
             </h2>
             {history.length === 0 ? (
-              <p className="p-5 text-sm text-muted-foreground">Nothing has been changed yet.</p>
+              <p className="p-5 text-sm text-muted-foreground">{T("Nothing has been changed yet.")}</p>
             ) : (
               <ul className="divide-y">
                 {history.map((h) => (

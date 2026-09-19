@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 export function ExpenseForm({
   containers,
   types,
@@ -23,6 +24,7 @@ export function ExpenseForm({
   types: { id: string; name: string }[];
   accounts?: { id: string; label: string }[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     recordExpense,
     {}
@@ -37,7 +39,7 @@ export function ExpenseForm({
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus />
-        Record a cost
+        {tx("Record a cost")}
       </Button>
     );
   }
@@ -46,9 +48,9 @@ export function ExpenseForm({
     /* Over the page, like Record Payment — the header it is opened from has no
        room for a form, and the list underneath is what the desk goes back to. */
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-background/70 p-4 text-left backdrop-blur-sm sm:p-8">
-      <button type="button" aria-label="Close" onClick={() => setOpen(false)} className="absolute inset-0 cursor-default" />
-    <Card role="dialog" aria-modal="true" aria-label="Record a cost" className="relative w-full max-w-2xl p-6">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-destructive">Record a cost</p>
+      <button type="button" aria-label={tx("Close")} onClick={() => setOpen(false)} className="absolute inset-0 cursor-default" />
+    <Card role="dialog" aria-modal="true" aria-label={tx("Record a cost")} className="relative w-full max-w-2xl p-6">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-destructive">{tx("Record a cost")}</p>
       <form action={action} className="space-y-4">
         <input type="hidden" name="scope" value={scope} />
         <div className="flex flex-wrap gap-2">
@@ -75,10 +77,10 @@ export function ExpenseForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {scope === "CONTAINER" ? (
           <div className="space-y-2">
-            <Label htmlFor="containerId">Container</Label>
+            <Label htmlFor="containerId">{tx("Container")}</Label>
             <NativeSelect id="containerId" name="containerId" required defaultValue="">
               <option value="" disabled>
-                Choose…
+                {tx("Choose…")}
               </option>
               {containers.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -89,9 +91,9 @@ export function ExpenseForm({
           </div>
           ) : null}
           <div className="space-y-2">
-            <Label htmlFor="expenseTypeId">What kind of cost?</Label>
+            <Label htmlFor="expenseTypeId">{tx("What kind of cost?")}</Label>
             <NativeSelect id="expenseTypeId" name="expenseTypeId" defaultValue="">
-              <option value="">Uncategorised</option>
+              <option value="">{tx("Uncategorised")}</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -100,26 +102,26 @@ export function ExpenseForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="amount">{tx("Amount")}</Label>
             <Input id="amount" name="amount" type="number" step="0.01" min={0} required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
+            <Label htmlFor="currency">{tx("Currency")}</Label>
             <NativeSelect id="currency" name="currency" defaultValue="USD">
               <option value="USD">USD</option>
               <option value="TZS">TZS</option>
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="vendorName">Paid to</Label>
-            <Input id="vendorName" name="vendorName" placeholder="Shipping line, clearing agent…" />
+            <Label htmlFor="vendorName">{tx("Paid to")}</Label>
+            <Input id="vendorName" name="vendorName" placeholder={tx("Shipping line, clearing agent…")} />
           </div>
           {/* WHICH ACCOUNT THE MONEY LEFT. Without it the cost is real and the
               balances cannot account for it, so the tin reads richer than it is. */}
           <div className="space-y-2">
-            <Label htmlFor="accountId">Paid from</Label>
+            <Label htmlFor="accountId">{tx("Paid from")}</Label>
             <NativeSelect id="accountId" name="accountId" defaultValue="">
-              <option value="">Nobody said yet</option>
+              <option value="">{tx("Nobody said yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
@@ -128,25 +130,25 @@ export function ExpenseForm({
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="expenseDate">Date</Label>
+            <Label htmlFor="expenseDate">{tx("Date")}</Label>
             <Input id="expenseDate" name="expenseDate" type="date" min="2000-01-01" max="2099-12-31" />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="referenceNumber">Their reference</Label>
+            <Label htmlFor="referenceNumber">{tx("Their reference")}</Label>
             <Input id="referenceNumber" name="referenceNumber" />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">What was it for</Label>
+          <Label htmlFor="description">{tx("What was it for")}</Label>
           <Textarea id="description" name="description" rows={2} />
         </div>
 
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
-          <SubmitButton>Record</SubmitButton>
+          <SubmitButton>{tx("Record")}</SubmitButton>
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tx("Cancel")}
           </Button>
         </div>
       </form>
@@ -184,6 +186,7 @@ export function RecordCostPanel({
   defaultAccountId?: string;
   defaultCurrency?: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     recordExpense,
     {}
@@ -218,7 +221,7 @@ export function RecordCostPanel({
         <div className="border-b bg-muted/30 px-5 py-3">
           <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             <Zap className="size-3.5" />
-            The usual
+            {tx("The usual")}
           </p>
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
             {usual.map((item) => (
@@ -248,21 +251,21 @@ export function RecordCostPanel({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-description" className="text-xs">
-              What was it for
+              {tx("What was it for")}
             </Label>
             <Input
               id="cost-description"
               name="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Fuel, a repair, printer ink…"
+              placeholder={tx("Fuel, a repair, printer ink…")}
               required
             />
           </div>
 
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-type" className="text-xs">
-              Category
+              {tx("Category")}
             </Label>
             <NativeSelect
               id="cost-type"
@@ -270,7 +273,7 @@ export function RecordCostPanel({
               value={typeId}
               onChange={(e) => setTypeId(e.target.value)}
             >
-              <option value="">Uncategorised</option>
+              <option value="">{tx("Uncategorised")}</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -281,7 +284,7 @@ export function RecordCostPanel({
 
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-amount" className="text-xs">
-              Amount
+              {tx("Amount")}
             </Label>
             <div className="flex gap-2">
               <Input
@@ -296,7 +299,7 @@ export function RecordCostPanel({
               />
               <NativeSelect
                 name="currency"
-                aria-label="Currency"
+                aria-label={tx("Currency")}
                 defaultValue={defaultCurrency}
                 className="w-[5.5rem] shrink-0"
               >
@@ -308,14 +311,14 @@ export function RecordCostPanel({
 
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-account" className="text-xs">
-              Paid from
+              {tx("Paid from")}
             </Label>
             <NativeSelect
               id="cost-account"
               name="accountId"
               defaultValue={defaultAccountId ?? ""}
             >
-              <option value="">Not paid yet</option>
+              <option value="">{tx("Not paid yet")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.label}
@@ -326,19 +329,19 @@ export function RecordCostPanel({
 
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-vendor" className="text-xs">
-              Paid to
+              {tx("Paid to")}
             </Label>
             <Input
               id="cost-vendor"
               name="vendorName"
-              placeholder="Who received it — a person, a company, a till"
+              placeholder={tx("Who received it — a person, a company, a till")}
             />
           </div>
 
           <div className="min-w-0 space-y-1.5">
             <Label htmlFor="cost-receipt" className="flex items-center gap-1.5 text-xs">
               <Paperclip className="size-3.5" />
-              Receipt or photo
+              {tx("Receipt or photo")}
             </Label>
             <Input
               id="cost-receipt"
@@ -366,7 +369,7 @@ export function RecordCostPanel({
               still the container the cost is for. */}
           <div className={more ? "min-w-0 space-y-1.5" : "hidden"}>
             <Label htmlFor="cost-container" className="text-xs">
-              Against a container
+              {tx("Against a container")}
             </Label>
             <NativeSelect
               id="cost-container"
@@ -374,7 +377,7 @@ export function RecordCostPanel({
               value={containerId}
               onChange={(e) => setContainerId(e.target.value)}
             >
-              <option value="">Not one container</option>
+              <option value="">{tx("Not one container")}</option>
               {containers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
@@ -384,7 +387,7 @@ export function RecordCostPanel({
           </div>
           <div className={more ? "min-w-0 space-y-1.5" : "hidden"}>
             <Label htmlFor="cost-date" className="text-xs">
-              Date
+              {tx("Date")}
             </Label>
             <Input
               id="cost-date"
@@ -394,8 +397,7 @@ export function RecordCostPanel({
               max="2099-12-31"
             />
             <p className="text-[11px] text-muted-foreground">
-              Leave it blank and it is dated today. Only set it for a receipt
-              found later.
+              {tx("Leave it blank and it is dated today. Only set it for a receipt found later.")}
             </p>
           </div>
         </div>
@@ -406,10 +408,10 @@ export function RecordCostPanel({
 
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-4">
           <SubmitButton size="sm" pendingLabel="Recording…">
-            Record cost
+            {tx("Record cost")}
           </SubmitButton>
           <p className="text-xs text-muted-foreground">
-            Leave the account blank and it is recorded as still to pay.
+            {tx("Leave the account blank and it is recorded as still to pay.")}
           </p>
         </div>
       </form>

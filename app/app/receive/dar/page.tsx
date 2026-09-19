@@ -35,6 +35,7 @@ import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Receiving dock" };
 
 /**
@@ -105,26 +106,26 @@ function Queue({
   return rows.length === 0 ? (
           <EmptyState
             icon="Ship"
-            title={query ? "Nothing matches" : emptyTitle}
+            title={query ? T("Nothing matches") : emptyTitle}
             description={
-              query ? "Try the vessel, or our own container number." : emptyDescription
+              query ? T("Try the vessel, or our own container number.") : emptyDescription
             }
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Container</TableHead>
-                <TableHead>Where</TableHead>
-                <TableHead className="hidden lg:table-cell">Vessel / voyage</TableHead>
-                <TableHead className="hidden md:table-cell">Departed / landed</TableHead>
-                <TableHead className="text-right">Cargo</TableHead>
-                <TableHead className="min-w-[8rem]">Checked in</TableHead>
+                <TableHead>{T("Container")}</TableHead>
+                <TableHead>{T("Where")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Vessel / voyage")}</TableHead>
+                <TableHead className="hidden md:table-cell">{T("Departed / landed")}</TableHead>
+                <TableHead className="text-right">{T("Cargo")}</TableHead>
+                <TableHead className="min-w-[8rem]">{T("Checked in")}</TableHead>
                 <TableHead className="hidden text-right lg:table-cell">
-                  Packages present
+                  {T("Packages present")}
                 </TableHead>
-                <TableHead className="hidden xl:table-cell">Checked by</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">Waiting</TableHead>
+                <TableHead className="hidden xl:table-cell">{T("Checked by")}</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">{T("Waiting")}</TableHead>
                 <TableHead className="text-right" />
                 <TableHead className="w-10" />
               </TableRow>
@@ -270,7 +271,7 @@ function Queue({
                     </TableCell>
                     <TableCell className="tnum text-sm">
                       {!here && !sailing ? (
-                        <span className="text-muted-foreground">Not sailed</span>
+                        <span className="text-muted-foreground">{T("Not sailed")}</span>
                       ) : here ? (
                         <div className="min-w-[7rem]">
                           <div className="flex items-center justify-between gap-2 text-xs">
@@ -308,7 +309,7 @@ function Queue({
                           ) : null}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">Not landed</span>
+                        <span className="text-muted-foreground">{T("Not landed")}</span>
                       )}
                     </TableCell>
                     {/* Consignments signed off is not the same question as
@@ -357,7 +358,7 @@ function Queue({
                           href={`/app/containers/${container.id}`}
                           className="text-sm text-muted-foreground hover:underline"
                         >
-                          See what is in it
+                          {T("See what is in it")}
                         </Link>
                       )}
                     </TableCell>
@@ -385,6 +386,7 @@ export default async function DarReceivePage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   await requirePermission("receiving.dar");
   const { q } = await searchParams;
   const query = q?.trim().toLowerCase() ?? "";
@@ -500,8 +502,8 @@ export default async function DarReceivePage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Receiving dock"
-        description="Everything inbound — on the water, landed, and being checked off. Oldest first; a container on the floor comes before one still at sea."
+        title={T("Receiving dock")}
+        description={T("Everything inbound — on the water, landed, and being checked off. Oldest first; a container on the floor comes before one still at sea.")}
         actions={
           next ? (
             <Button asChild>
@@ -534,7 +536,7 @@ export default async function DarReceivePage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
-          label="Cargo to check in"
+          label={T("Cargo to check in")}
           numeric={toCheck}
           icon={ClipboardCheck}
           tone={toCheck > 0 ? "signal" : "success"}
@@ -543,15 +545,15 @@ export default async function DarReceivePage({
         />
         <KpiCard
           index={1}
-          label="Containers on the floor"
+          label={T("Containers on the floor")}
           numeric={open.length}
           icon={Warehouse}
           tone="brand"
-          hint="Landed, not yet closed off"
+          hint={T("Landed, not yet closed off")}
         />
         <KpiCard
           index={2}
-          label="Containers at sea"
+          label={T("Containers at sea")}
           numeric={atSea.length}
           icon={Ship}
           tone="marine"
@@ -559,12 +561,12 @@ export default async function DarReceivePage({
         />
         <KpiCard
           index={3}
-          label="Longest on the floor"
+          label={T("Longest on the floor")}
           numeric={waitingDays ?? 0}
           suffix={waitingDays === null ? "" : " days"}
           icon={Clock}
           tone={waitingDays !== null && waitingDays > 2 ? "danger" : "success"}
-          hint="Chase anything past two days"
+          hint={T("Chase anything past two days")}
         />
       </div>
 
@@ -588,7 +590,7 @@ export default async function DarReceivePage({
             </div>
           </div>
           <Button asChild variant="destructive" size="sm">
-            <Link href={`/app/receive/dar/${next.id}`}>Open now</Link>
+            <Link href={`/app/receive/dar/${next.id}`}>{T("Open now")}</Link>
           </Button>
         </div>
       ) : null}
@@ -607,9 +609,9 @@ export default async function DarReceivePage({
             <Input
               name="q"
               defaultValue={q ?? ""}
-              placeholder="Container, vessel, voyage or seal…"
+              placeholder={T("Container, vessel, voyage or seal…")}
               className="max-w-lg"
-              aria-label="Search inbound containers"
+              aria-label={T("Search inbound containers")}
             />
           </form>
         </div>
@@ -642,9 +644,9 @@ export default async function DarReceivePage({
       {closed.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Landed and checked in</CardTitle>
+            <CardTitle className="text-base">{T("Landed and checked in")}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              Open one to add a consignment that turned up after it was closed.
+              {T("Open one to add a consignment that turned up after it was closed.")}
             </p>
           </CardHeader>
           <CardContent className="space-y-2">

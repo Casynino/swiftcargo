@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Edit customer" };
 
 export default async function EditCustomerPage({
@@ -13,6 +14,7 @@ export default async function EditCustomerPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("customer.manage");
   const { id } = await params;
 

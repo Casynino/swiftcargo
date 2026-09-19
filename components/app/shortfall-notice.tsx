@@ -4,6 +4,7 @@ import { Check, Scale, TriangleAlert, Undo2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /* A rounding is not worth a second look; this much might be a typed digit. */
 const LARGE_TZS = 50_000;
 
@@ -34,6 +35,7 @@ export function ShortfallNotice({
   onArmedChange: (armed: boolean) => void;
   billNumber?: string;
 }) {
+  const tx = useT();
   if (!(gapTzs > 0)) return null;
   const large = gapTzs >= LARGE_TZS;
   const figures = `TZS ${Math.round(gapTzs).toLocaleString("en-US")}${gapUsd !== null ? ` · USD ${gapUsd.toFixed(2)}` : ""}`;
@@ -66,7 +68,7 @@ export function ShortfallNotice({
               className="inline-flex items-center gap-1 text-xs font-semibold underline underline-offset-2"
             >
               <Undo2 className="size-3.5" />
-              Undo
+              {tx("Undo")}
             </button>
           ) : (
             <button
@@ -75,7 +77,7 @@ export function ShortfallNotice({
               className="inline-flex items-center gap-1.5 rounded-md bg-warning px-2.5 py-1 text-xs font-semibold text-white hover:bg-warning/90"
             >
               <Scale className="size-3.5" />
-              Clear it
+              {tx("Clear it")}
             </button>
           )
         ) : null}
@@ -87,7 +89,7 @@ export function ShortfallNotice({
       ) : null}
       {large ? (
         <p className="mt-1 text-xs font-medium">
-          That is a large difference — check the figure before clearing it.
+          {tx("That is a large difference — check the figure before clearing it.")}
         </p>
       ) : null}
     </div>

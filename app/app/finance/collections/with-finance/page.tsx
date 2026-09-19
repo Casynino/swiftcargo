@@ -14,6 +14,7 @@ import { requirePermission } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { bookCategories } from "@/lib/rate-categories";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "With Finance" };
 
 /**
@@ -28,6 +29,7 @@ export default async function Page({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   /* A verifier asking for the pending list wants the copy with the buttons —
      this one is a dead end dressed as a queue for them. */
@@ -66,13 +68,13 @@ export default async function Page({
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Customer, reference, invoice or tracking number…"
+            placeholder={T("Customer, reference, invoice or tracking number…")}
             className="pl-9"
-            aria-label="Search"
+            aria-label={T("Search")}
           />
         </div>
         <Button type="submit" variant="outline">
-          Search
+          {T("Search")}
         </Button>
       </form>
 

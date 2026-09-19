@@ -28,6 +28,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "General ledger" };
 
 const PAGE_SIZE = 50;
@@ -87,6 +88,7 @@ export default async function LedgerPage({
     page?: string;
   }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("accounting.view");
   const locale = await localeOf(user.id);
   const params = await searchParams;

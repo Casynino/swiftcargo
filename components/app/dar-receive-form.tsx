@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 const CONDITIONS = [
   ["GOOD", "Good"],
   ["MINOR_DAMAGE", "Minor damage"],
@@ -54,6 +55,7 @@ export function DarReceiveForm({
     warehouseId: string;
   } | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     receiveInDar,
     {}
@@ -73,7 +75,7 @@ export function DarReceiveForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="warehouseId">Warehouse</Label>
+          <Label htmlFor="warehouseId">{tx("Warehouse")}</Label>
           <NativeSelect
             id="warehouseId"
             name="warehouseId"
@@ -81,7 +83,7 @@ export function DarReceiveForm({
             defaultValue={existing?.warehouseId ?? defaultWarehouseId ?? ""}
           >
             <option value="" disabled>
-              Choose…
+              {tx("Choose…")}
             </option>
             {warehouses.map((w) => (
               <option key={w.id} value={w.id}>
@@ -92,7 +94,7 @@ export function DarReceiveForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="condition">Condition</Label>
+          <Label htmlFor="condition">{tx("Condition")}</Label>
           <NativeSelect
             id="condition"
             name="condition"
@@ -188,7 +190,7 @@ export function DarReceiveForm({
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="location">Shelf / location</Label>
+          <Label htmlFor="location">{tx("Shelf / location")}</Label>
           <Input
             id="location"
             name="location"
@@ -206,20 +208,19 @@ export function DarReceiveForm({
               : "This cargo is not in good condition"}
           </p>
           <p className="text-xs text-amber-900/80">
-            Saving this opens a case automatically and holds the cargo from
-            release until somebody resolves it.
+            {tx("Saving this opens a case automatically and holds the cargo from release until somebody resolves it.")}
           </p>
           <div className="space-y-2">
-            <Label htmlFor="discrepancyNotes">What did you find?</Label>
+            <Label htmlFor="discrepancyNotes">{tx("What did you find?")}</Label>
             <Textarea
               id="discrepancyNotes"
               name="discrepancyNotes"
               defaultValue={existing?.discrepancyNotes ?? ""}
-              placeholder="Two cartons missing from the pallet, seal intact…"
+              placeholder={tx("Two cartons missing from the pallet, seal intact…")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`dar-photos-${cargoId}`}>Photos</Label>
+            <Label htmlFor={`dar-photos-${cargoId}`}>{tx("Photos")}</Label>
             <Input
               id={`dar-photos-${cargoId}`}
               name="photos"
@@ -236,7 +237,7 @@ export function DarReceiveForm({
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">{tx("Notes")}</Label>
         <Textarea id="notes" name="notes" defaultValue={existing?.notes ?? ""} />
       </div>
 

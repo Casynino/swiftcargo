@@ -24,6 +24,7 @@ import {
 } from "@/lib/sailing-schedule";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Website content" };
 
 /* A quarter of weeks to override, which is as far ahead as the public page
@@ -33,6 +34,7 @@ const WEEKS_OFFERED = 12;
 const iso = (date: Date) => date.toISOString().slice(0, 10);
 
 export default async function ContentPage() {
+  await primeLocale();
   await requirePermission("content.manage");
 
   const [sailings, published, preview] = await Promise.all([
@@ -59,15 +61,15 @@ export default async function ContentPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Website content"
-        description="The public schedule runs itself: cargo in by Friday, packed that Friday, sails Monday, thirty days at sea. Publish a row here only for the week that is different."
+        title={T("Website content")}
+        description={T("The public schedule runs itself: cargo in by Friday, packed that Friday, sails Monday, thirty days at sea. Publish a row here only for the week that is different.")}
       />
       <SectionTabs />
 
       <ScheduleForm weeks={weeks} defaultTransitDays={DEFAULT_TRANSIT_DAYS} />
 
       <Card className="p-5">
-        <p className="text-sm font-medium">What the website is showing</p>
+        <p className="text-sm font-medium">{T("What the website is showing")}</p>
         <ul className="tnum mt-3 space-y-1 text-sm text-muted-foreground">
           {preview.slice(0, 6).map((sailing) => (
             <li key={sailing.key}>
@@ -85,20 +87,20 @@ export default async function ContentPage() {
         {sailings.length === 0 ? (
           <EmptyState
             icon="Ship"
-            title="No sailings overridden"
-            description="The public schedule is running on the weekly rule, which is usually what you want."
+            title={T("No sailings overridden")}
+            description={T("The public schedule is running on the weekly rule, which is usually what you want.")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Week</TableHead>
-                <TableHead>Vessel</TableHead>
-                <TableHead>Cargo deadline</TableHead>
-                <TableHead>Departs</TableHead>
-                <TableHead>Arrives</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Public</TableHead>
+                <TableHead>{T("Week")}</TableHead>
+                <TableHead>{T("Vessel")}</TableHead>
+                <TableHead>{T("Cargo deadline")}</TableHead>
+                <TableHead>{T("Departs")}</TableHead>
+                <TableHead>{T("Arrives")}</TableHead>
+                <TableHead>{T("Status")}</TableHead>
+                <TableHead>{T("Public")}</TableHead>
                 <TableHead className="text-right" />
               </TableRow>
             </TableHeader>

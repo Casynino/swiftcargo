@@ -20,6 +20,7 @@ import { JOURNEY_INCLUDE, journeyOf } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Ticket" };
 
 const PRIORITY_TONE: Record<TicketPriority, BadgeProps["tone"]> = {
@@ -55,6 +56,7 @@ export default async function ConversationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("conversation.view");
   const { id } = await params;
 
@@ -217,7 +219,7 @@ export default async function ConversationPage({
           {can(user.role, "conversation.reply") ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Reply</CardTitle>
+                <CardTitle className="text-base">{T("Reply")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ConversationReply
@@ -233,7 +235,7 @@ export default async function ConversationPage({
           {can(user.role, "conversation.reply") ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Move it forward</CardTitle>
+                <CardTitle className="text-base">{T("Move it forward")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <TicketWorkflow
@@ -265,12 +267,12 @@ export default async function ConversationPage({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Customer</CardTitle>
+              <CardTitle className="text-base">{T("Customer")}</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="grid gap-4">
                 <Field
-                  label="Name"
+                  label={T("Name")}
                   value={
                     <Link
                       href={`/app/customers/${conversation.customerId}`}
@@ -280,21 +282,21 @@ export default async function ConversationPage({
                     </Link>
                   }
                 />
-                <Field label="Phone" value={conversation.customer.phone} mono />
-                <Field label="Code" value={conversation.customer.code} mono />
+                <Field label={T("Phone")} value={conversation.customer.phone} mono />
+                <Field label={T("Code")} value={conversation.customer.code} mono />
                 {distinctMark(
                   conversation.customer.fullName,
                   conversation.customer.shippingMark
                 ) ? (
                   <Field
-                    label="Trades as"
+                    label={T("Trades as")}
                     value={conversation.customer.shippingMark}
                     mono
                   />
                 ) : null}
                 {owed ? (
                   <Field
-                    label="Outstanding"
+                    label={T("Outstanding")}
                     value={
                       <>
                         <span className={owed.owes ? "font-semibold" : ""}>
@@ -317,12 +319,12 @@ export default async function ConversationPage({
           {conversation.cargo ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">This cargo</CardTitle>
+                <CardTitle className="text-base">{T("This cargo")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <dl className="grid gap-4">
                   <Field
-                    label="Reference"
+                    label={T("Reference")}
                     value={
                       <Link
                         href={`/app/cargo/${conversation.cargo.id}`}
@@ -333,7 +335,7 @@ export default async function ConversationPage({
                     }
                   />
                   <Field
-                    label="Where it is"
+                    label={T("Where it is")}
                     value={
                       <CargoStatusBadge status={conversation.cargo.status} />
                     }
@@ -345,7 +347,7 @@ export default async function ConversationPage({
                       question becomes a complaint. */}
                   {journey ? (
                     <Field
-                      label="Their tracking says"
+                      label={T("Their tracking says")}
                       value={
                         <>
                           <Badge
@@ -373,11 +375,11 @@ export default async function ConversationPage({
                     />
                   ) : null}
                   <Field
-                    label="Container"
+                    label={T("Container")}
                     value={container?.containerNumber ?? container?.reference}
                     mono
                   />
-                  <Field label="Vessel" value={container?.shipment?.vessel} />
+                  <Field label={T("Vessel")} value={container?.shipment?.vessel} />
                   <Field
                     label="ETA"
                     value={
@@ -389,7 +391,7 @@ export default async function ConversationPage({
                   {money ? (
                     <>
                       <Field
-                        label="Invoice"
+                        label={T("Invoice")}
                         value={
                           cargoInvoice ? (
                             <Link
@@ -403,7 +405,7 @@ export default async function ConversationPage({
                         mono
                       />
                       <Field
-                        label="Billed"
+                        label={T("Billed")}
                         value={
                           bill
                             ? formatMoney(bill.total, cargoInvoice!.currency)
@@ -412,7 +414,7 @@ export default async function ConversationPage({
                         mono
                       />
                       <Field
-                        label="Owing on it"
+                        label={T("Owing on it")}
                         value={
                           bill ? (
                             <>
@@ -443,7 +445,7 @@ export default async function ConversationPage({
                           after the board moves, and quoting today's figure down
                           the phone is quoting a different bill. */}
                       <Field
-                        label="Rate on the bill"
+                        label={T("Rate on the bill")}
                         value={
                           bill?.rate
                             ? `1 USD = ${bill.rate.toString()} TZS`
@@ -458,7 +460,7 @@ export default async function ConversationPage({
                 {money && payments.length > 0 ? (
                   <div className="mt-5 border-t pt-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Payments
+                      {T("Payments")}
                     </p>
                     <ul className="mt-2 space-y-2">
                       {payments.slice(0, 6).map((payment) => (
@@ -481,7 +483,7 @@ export default async function ConversationPage({
                     {/* The rule the whole system turns on, said where a clerk
                         is about to repeat a figure to a customer. */}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Only verified payments count against the balance.
+                      {T("Only verified payments count against the balance.")}
                     </p>
                   </div>
                 ) : null}

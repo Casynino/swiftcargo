@@ -23,6 +23,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -62,6 +63,7 @@ export default async function ContainerFinancePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("finance.view");
   const { id } = await params;
 
@@ -199,7 +201,7 @@ export default async function ContainerFinancePage({
       <PageHeader
         title={container.reference}
         description={[
-          container.shipment?.originPort ?? "Guangzhou",
+          container.shipment?.originPort ?? T("Guangzhou"),
           `${container.cargoLines.length} consignments`,
           container.shipment?.vessel,
           container.shipment?.departureDate
@@ -215,7 +217,7 @@ export default async function ContainerFinancePage({
               {CONTAINER_STATUS_LABELS[container.status]}
             </Badge>
             <Button asChild size="sm" variant="outline">
-              <Link href={`/app/containers/${container.id}`}>Open container</Link>
+              <Link href={`/app/containers/${container.id}`}>{T("Open container")}</Link>
             </Button>
           </>
         }
@@ -257,13 +259,13 @@ export default async function ContainerFinancePage({
       </div>
 
       <section className="space-y-3">
-        <SectionLabel count={moneyIn.length}>Money in</SectionLabel>
+        <SectionLabel count={moneyIn.length}>{T("Money in")}</SectionLabel>
         {moneyIn.length === 0 ? (
           <div className="rounded-xl border bg-card">
             <EmptyState
               icon="Banknote"
-              title="Nothing collected on this container yet"
-              description="Payments appear here the moment they are verified against any consignment on it."
+              title={T("Nothing collected on this container yet")}
+              description={T("Payments appear here the moment they are verified against any consignment on it.")}
             />
           </div>
         ) : (
@@ -271,12 +273,12 @@ export default async function ContainerFinancePage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>How</TableHead>
-                  <TableHead>Landed in</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{T("When")}</TableHead>
+                  <TableHead>{T("Customer")}</TableHead>
+                  <TableHead>{T("Cargo")}</TableHead>
+                  <TableHead>{T("How")}</TableHead>
+                  <TableHead>{T("Landed in")}</TableHead>
+                  <TableHead className="text-right">{T("Amount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -339,13 +341,13 @@ export default async function ContainerFinancePage({
       </section>
 
       <section className="space-y-3">
-        <SectionLabel count={container.expenses.length}>Money out</SectionLabel>
+        <SectionLabel count={container.expenses.length}>{T("Money out")}</SectionLabel>
         {container.expenses.length === 0 ? (
           <div className="rounded-xl border bg-card">
             <EmptyState
               icon="Receipt"
-              title="No costs booked to this container"
-              description="Ocean freight, clearing, port charges and transport appear here once Finance records them against it."
+              title={T("No costs booked to this container")}
+              description={T("Ocean freight, clearing, port charges and transport appear here once Finance records them against it.")}
             />
           </div>
         ) : (
@@ -353,11 +355,11 @@ export default async function ContainerFinancePage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>When</TableHead>
-                  <TableHead>What</TableHead>
-                  <TableHead>Paid from</TableHead>
-                  <TableHead>Recorded by</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{T("When")}</TableHead>
+                  <TableHead>{T("What")}</TableHead>
+                  <TableHead>{T("Paid from")}</TableHead>
+                  <TableHead>{T("Recorded by")}</TableHead>
+                  <TableHead className="text-right">{T("Amount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -394,14 +396,14 @@ export default async function ContainerFinancePage({
 
       <section className="space-y-3">
         <SectionLabel count={stillOwed.length}>
-          Still owed on this container
+          {T("Still owed on this container")}
         </SectionLabel>
         {stillOwed.length === 0 ? (
           <div className="rounded-xl border bg-card">
             <EmptyState
               icon="CheckCircle2"
-              title="Every bill on this container is settled"
-              description="Nothing on it is waiting for a customer to pay."
+              title={T("Every bill on this container is settled")}
+              description={T("Nothing on it is waiting for a customer to pay.")}
             />
           </div>
         ) : (
@@ -409,10 +411,10 @@ export default async function ContainerFinancePage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Bill</TableHead>
-                  <TableHead className="text-right">Outstanding</TableHead>
+                  <TableHead>{T("Cargo")}</TableHead>
+                  <TableHead>{T("Customer")}</TableHead>
+                  <TableHead>{T("Bill")}</TableHead>
+                  <TableHead className="text-right">{T("Outstanding")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -58,6 +58,7 @@ import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
 import { storageStart } from "@/lib/storage-clock";
 
+import { primeLocale } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -86,6 +87,7 @@ export default async function CargoDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ box?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("cargo.view");
   const { id } = await params;
   const { box: scannedBox } = await searchParams;

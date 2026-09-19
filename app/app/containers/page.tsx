@@ -32,6 +32,7 @@ import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Shipments" };
 
 const STATUSES = Object.keys(CONTAINER_STATUS_LABELS) as ContainerStatus[];
@@ -90,6 +91,7 @@ export default async function ContainersPage({
 }: {
   searchParams: Promise<{ status?: string; view?: string; q?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("container.view");
   const { status, view, q } = await searchParams;
   const query = q?.trim() ?? "";
@@ -179,14 +181,14 @@ export default async function ContainersPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Shipments"
-        description="One box, one sailing, many customers. Open it, load it, seal it, send it — a sailing that has gone is the warehouse's history of it."
+        title={T("Shipments")}
+        description={T("One box, one sailing, many customers. Open it, load it, seal it, send it — a sailing that has gone is the warehouse's history of it.")}
         actions={
           can(user.role, "container.create") ? (
             <Button asChild>
               <Link href="/app/containers/new">
                 <Plus />
-                Open a container
+                {T("Open a container")}
               </Link>
             </Button>
           ) : null
@@ -196,25 +198,25 @@ export default async function ContainersPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         <KpiCard
           index={0}
-          label="Taking cargo"
+          label={T("Taking cargo")}
           numeric={accepting}
           icon={Warehouse}
           tone="brand"
-          hint="Open for loading in Guangzhou"
+          hint={T("Open for loading in Guangzhou")}
           href="/app/containers?status=LOADING"
         />
         <KpiCard
           index={1}
-          label="Sealed"
+          label={T("Sealed")}
           numeric={sealed}
           icon={ContainerIcon}
           tone={sealed > 0 ? "warning" : "success"}
-          hint="Shut and waiting for the vessel"
+          hint={T("Shut and waiting for the vessel")}
           href="/app/containers?status=SEALED"
         />
         <KpiCard
           index={2}
-          label="At sea"
+          label={T("At sea")}
           numeric={atSea}
           icon={Ship}
           tone="marine"
@@ -223,7 +225,7 @@ export default async function ContainersPage({
         />
         <KpiCard
           index={3}
-          label="Volume at sea"
+          label={T("Volume at sea")}
           numeric={Number(sailingVolume._sum.cbm ?? 0)}
           decimals={2}
           suffix="CBM"
@@ -232,11 +234,11 @@ export default async function ContainersPage({
         />
         <KpiCard
           index={4}
-          label="Landed"
+          label={T("Landed")}
           numeric={landed}
           icon={ContainerIcon}
           tone="success"
-          hint="Arrived, being booked in at Dar"
+          hint={T("Arrived, being booked in at Dar")}
           href="/app/containers?status=ARRIVED"
         />
       </div>
@@ -253,9 +255,9 @@ export default async function ContainersPage({
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Container, seal, vessel or voyage…"
+            placeholder={T("Container, seal, vessel or voyage…")}
             className="max-w-lg"
-            aria-label="Search sailings"
+            aria-label={T("Search sailings")}
           />
         </form>
 
@@ -311,11 +313,11 @@ export default async function ContainersPage({
         {containers.length === 0 ? (
           <EmptyState
             icon="Container"
-            title={query || chosen ? "Nothing matches" : "Nothing sailing"}
+            title={query || chosen ? T("Nothing matches") : T("Nothing sailing")}
             description={
               query || chosen
-                ? "Try another word, or pick Everything above."
-                : "Open a container to start loading cargo for a sailing."
+                ? T("Try another word, or pick Everything above.")
+                : T("Open a container to start loading cargo for a sailing.")
             }
           />
         ) : (
@@ -323,17 +325,17 @@ export default async function ContainersPage({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-1 p-0" />
-                <TableHead>Container</TableHead>
-                <TableHead className="hidden 2xl:table-cell">Packing list</TableHead>
-                <TableHead className="hidden xl:table-cell">Vessel / voyage</TableHead>
-                <TableHead className="text-right">Cargo</TableHead>
-                <TableHead className="text-right">Customers</TableHead>
-                <TableHead className="hidden text-right md:table-cell">Packages</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">Weight</TableHead>
+                <TableHead>{T("Container")}</TableHead>
+                <TableHead className="hidden 2xl:table-cell">{T("Packing list")}</TableHead>
+                <TableHead className="hidden xl:table-cell">{T("Vessel / voyage")}</TableHead>
+                <TableHead className="text-right">{T("Cargo")}</TableHead>
+                <TableHead className="text-right">{T("Customers")}</TableHead>
+                <TableHead className="hidden text-right md:table-cell">{T("Packages")}</TableHead>
+                <TableHead className="hidden text-right lg:table-cell">{T("Weight")}</TableHead>
                 <TableHead className="text-right">CBM</TableHead>
-                <TableHead className="hidden lg:table-cell">Departed</TableHead>
+                <TableHead className="hidden lg:table-cell">{T("Departed")}</TableHead>
                 <TableHead className="hidden lg:table-cell">ETA</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{T("Status")}</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>

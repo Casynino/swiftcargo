@@ -38,6 +38,7 @@ import { storagePosition } from "@/lib/storage-fee";
 import { cn } from "@/lib/utils";
 import { storageStart } from "@/lib/storage-clock";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Payment follow-up" };
 
 /** One square in the row. Same size as every other, coloured by what it does. */
@@ -108,6 +109,7 @@ export default async function CollectionsPage({
 }: {
   searchParams: Promise<{ q?: string; view?: string; sort?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("finance.view");
   const mayReprice = can(user.role, "invoice.discount");
   const mayRecord = can(user.role, "payment.submit");
@@ -395,13 +397,13 @@ export default async function CollectionsPage({
             <Input
               name="q"
               defaultValue={query}
-              placeholder="Customer, tracking number, invoice or phone…"
+              placeholder={T("Customer, tracking number, invoice or phone…")}
               className="pl-9"
-              aria-label="Search the call list"
+              aria-label={T("Search the call list")}
             />
           </div>
           <Button type="submit" variant="outline">
-            Search
+            {T("Search")}
           </Button>
         </form>
 
@@ -525,7 +527,7 @@ export default async function CollectionsPage({
               )}
             </span>
           </span>
-          <span>Storage is not yet on the bill until Finance adds it.</span>
+          <span>{T("Storage is not yet on the bill until Finance adds it.")}</span>
         </p>
       </div>
 
@@ -533,23 +535,23 @@ export default async function CollectionsPage({
         {shown.length === 0 ? (
           <EmptyState
             icon="Banknote"
-            title={query ? "Nothing matches" : "Nobody owes anything"}
+            title={query ? T("Nothing matches") : T("Nobody owes anything")}
             description={
               query
-                ? "Try a phone number, or the tracking number."
-                : "Every confirmed bill has been settled in full."
+                ? T("Try a phone number, or the tracking number.")
+                : T("Every confirmed bill has been settled in full.")
             }
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead className="text-right">Waiting</TableHead>
-                <TableHead className="text-right">Owed</TableHead>
-                <TableHead>Next action</TableHead>
-                <TableHead className="text-right">Reach them</TableHead>
+                <TableHead>{T("Customer")}</TableHead>
+                <TableHead>{T("Cargo")}</TableHead>
+                <TableHead className="text-right">{T("Waiting")}</TableHead>
+                <TableHead className="text-right">{T("Owed")}</TableHead>
+                <TableHead>{T("Next action")}</TableHead>
+                <TableHead className="text-right">{T("Reach them")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -731,7 +733,7 @@ export default async function CollectionsPage({
                       <IconLink
                         href={`/app/finance/invoices/${row.invoice.id}`}
                         icon={FileText}
-                        label="Open the bill"
+                        label={T("Open the bill")}
                         tone="text-warning border-warning/40 hover:bg-warning/10"
                       />
                     </div>

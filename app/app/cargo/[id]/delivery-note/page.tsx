@@ -10,6 +10,7 @@ import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 import { distinctMark } from "@/lib/customer-name";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Delivery note" };
 
 type Snapshot = {
@@ -55,6 +56,7 @@ export default async function DeliveryNotePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await primeLocale();
   await requirePermission("deliveryNote.view");
   const { id } = await params;
 

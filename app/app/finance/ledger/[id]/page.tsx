@@ -15,6 +15,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Ledger entry" };
 
 type Fact = { label: string; value: React.ReactNode };
@@ -37,6 +38,7 @@ const link = (href: string, text: string, mono = false) => (
  * question the line could not answer.
  */
 export default async function LedgerEntryPage({ params }: { params: Promise<{ id: string }> }) {
+  await primeLocale();
   const user = await requirePermission("accounting.view");
   const locale = await localeOf(user.id);
   const { id } = await params;

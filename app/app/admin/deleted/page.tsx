@@ -13,6 +13,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { localeOf } from "@/lib/viewer-locale";
 
+import { primeLocale } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Deleted records" };
 
 type Who = { name: string; at: Date; summary: string; metadata: unknown };
@@ -78,6 +79,7 @@ const PAYMENT_LABEL = {
  * anything — there is no purge, by design.
  */
 export default async function DeletedRecordsPage() {
+  await primeLocale();
   const user = await requirePermission("records.viewDeleted");
   const locale = await localeOf(user.id);
 
