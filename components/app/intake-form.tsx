@@ -455,29 +455,8 @@ export function IntakeForm({
                 className="rounded-lg border bg-surface-2/50 p-4"
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm font-medium">{t("Package")} {index + 1}</p>
-                    <div className="flex items-center gap-2">
-                      <Label
-                        htmlFor={`n-${line.key}`}
-                        className="text-xs text-muted-foreground"
-                      >
-                        {t("Receipt book no.")}
-                      </Label>
-                      <Input
-                        id={`n-${line.key}`}
-                        name="itemReceiptNo"
-                        inputMode="numeric"
-                        placeholder="0002989"
-                        className="tnum h-8 w-28"
-                        value={line.receiptNo}
-                        onChange={(e) =>
-                          update(line.key, "receiptNo", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
+                  <p className="text-sm font-semibold">{t("Package")} {index + 1}</p>
+                  <div className="flex items-center gap-2">
                     {cbm !== null ? (
                       <span className="tnum text-sm font-semibold text-marine">
                         {cbm.toFixed(3)} CBM
@@ -511,6 +490,24 @@ export function IntakeForm({
                   comes back as a field.
                 */}
                 <input type="hidden" name="itemPackageType" value="CARTON" />
+
+                {/* The receipt book number is how a box on the floor is matched to
+                    its page in the book — never optional. */}
+                <div className="mb-3 space-y-1.5">
+                  <Label htmlFor={`n-${line.key}`}>
+                    {t("Receipt book no.")} <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id={`n-${line.key}`}
+                    name="itemReceiptNo"
+                    inputMode="numeric"
+                    required
+                    placeholder="0002989"
+                    className="tnum"
+                    value={line.receiptNo}
+                    onChange={(e) => update(line.key, "receiptNo", e.target.value)}
+                  />
+                </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor={`d-${line.key}`}>{t("Item description")}</Label>
@@ -659,30 +656,24 @@ export function IntakeForm({
       */}
       {/* One slim bar: the running totals on a single line and the button
           beside them — small enough never to cover the form it saves. */}
-      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-full border border-marine/30 bg-card/95 py-1.5 pl-4 pr-1.5 shadow-raised backdrop-blur">
-        <p className="tnum min-w-0 flex-1 truncate text-xs text-muted-foreground sm:text-sm">
-          <span className="font-semibold text-foreground">{totals.packages}</span> {t("pkg")}
-          {totals.pieces > 0 ? (
-            <>
-              {" · "}
-              <span className="font-semibold text-foreground">{totals.pieces}</span> {t("pcs")}
-            </>
-          ) : null}
-          {" · "}
-          <span className="font-semibold text-marine">{totals.cbm.toFixed(3)}</span> CBM
-          {totals.kg > 0 ? (
-            <>
-              {" · "}
-              <span className="font-semibold text-foreground">
-                {totals.kg.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-              </span>{" "}
-              kg
-            </>
-          ) : null}
-        </p>
-        <SubmitButton size="sm" className="shrink-0 rounded-full" pendingLabel={t("Receiving…")}>
+      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl border-2 border-brand/40 bg-card px-3 py-2 shadow-raised">
+        <dl className="tnum grid min-w-0 flex-1 grid-cols-4 gap-2 text-center">
+          {[
+            [t("pkg"), String(totals.packages)],
+            [t("pcs"), totals.pieces > 0 ? String(totals.pieces) : "—"],
+            ["CBM", totals.cbm.toFixed(3)],
+            ["kg", totals.kg > 0 ? totals.kg.toLocaleString("en-US", { maximumFractionDigits: 1 }) : "—"],
+          ].map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dd className={cn("truncate text-sm font-bold", label === "CBM" && "text-marine")}>{value}</dd>
+              <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+            </div>
+          ))}
+        </dl>
+        <SubmitButton size="sm" className="h-10 shrink-0" pendingLabel={t("Receiving…")}>
           <Check />
-          {t("Confirm receiving")}
+          <span className="hidden sm:inline">{t("Confirm receiving")}</span>
+          <span className="sm:hidden">{t("Confirm")}</span>
         </SubmitButton>
       </div>
 
