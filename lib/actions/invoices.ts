@@ -17,6 +17,7 @@ import {
   applyVat,
   companySettings,
   currentExchangeRate,
+  resolveRate,
 } from "@/lib/pricing";
 import { darConfirmationGap } from "@/lib/price-confirmation";
 import { can } from "@/lib/rbac";
@@ -791,13 +792,22 @@ export async function repriceInvoice(
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const rate = Number(formData.get("rate") ?? 0);
   const reason = String(formData.get("reason") ?? "").trim();
+  /* Optional: the category and the volume, the two things our prices move on
+     besides the rate itself. Absent means unchanged. */
+  const rawCategory = formData.get("category");
+  const category = rawCategory === null ? undefined : String(rawCategory).trim() || null;
+  const rawCbm = String(formData.get("cbm") ?? "").trim();
+  const cbmIn = rawCbm ? Number(rawCbm) : undefined;
 
   if (!Number.isFinite(rate) || rate <= 0) return { error: "Give a rate." };
-  if (reason.length < 3) return { error: "Say why the rate is changing." };
+  if (cbmIn !== undefined && (!Number.isFinite(cbmIn) || cbmIn <= 0 || cbmIn > 5000)) {
+    return { error: "Check the volume." };
+  }
+  if (reason.length < 3) return { error: "Say why the price is changing." };
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    include: { items: true },
+    include: { items: true, cargo: { select: { service: true } } },
   });
   if (!invoice) return { error: "That invoice no longer exists." };
   if (invoice.status === "CANCELLED") {
@@ -812,34 +822,85 @@ export async function repriceInvoice(
     return { error: "Nothing on this bill is priced per cubic metre." };
   }
 
+  /* One freight line: its category and volume can be changed here. A bill
+     with several is changed line by line on the bill itself. */
+  const single = cbmLines.length === 1 ? cbmLines[0] : null;
+  const oldCategory = single?.category ?? null;
+  const newCategory = category !== undefined && category !== oldCategory ? category : undefined;
+  const newCbm =
+    cbmIn !== undefined && single && !single.quantity.equals(new Prisma.Decimal(cbmIn))
+      ? new Prisma.Decimal(cbmIn).toDecimalPlaces(4)
+      : undefined;
+  if (!single) {
+    const moved = cbmLines.some(
+      (l) =>
+        (category !== undefined && l.category !== category) ||
+        (cbmIn !== undefined && !l.quantity.equals(new Prisma.Decimal(cbmIn)))
+    );
+    if (moved) {
+      return { error: "This bill has several freight lines — change the category or volume on the bill itself." };
+    }
+  }
+
+  /* The book's rate for the new category, so the bill still says what the
+     standard was beside what is charged. */
+  let newStandard: Prisma.Decimal | null | undefined;
+  if (newCategory !== undefined) {
+    const { standard } = await resolveRate(prisma, {
+      service: invoice.cargo?.service ?? "LCL",
+      cargoType: newCategory,
+    });
+    newStandard = standard && standard.basis === "PER_CBM" ? standard.rate : null;
+  }
+
+  const quantityOf = (item: (typeof invoice.items)[number]) =>
+    item === single && newCbm !== undefined ? newCbm : item.quantity;
+
   let subtotal = new Prisma.Decimal(0);
   for (const item of invoice.items) {
     subtotal = subtotal.add(
-      item.unit === "CBM" ? item.quantity.mul(next) : item.amount
+      item.unit === "CBM" ? quantityOf(item).mul(next) : item.amount
     );
   }
   const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
 
   await prisma.$transaction(async (tx) => {
-    await recordFieldChange(
-      {
-        actor,
-        entity: "Invoice",
-        entityId: invoice.id,
-        field: "appliedRate",
-        oldValue: invoice.appliedRate?.toString() ?? "mixed",
-        newValue: next.toString(),
-        reason,
-      },
-      tx
-    );
+    if (!invoice.appliedRate || !invoice.appliedRate.equals(next)) {
+      await recordFieldChange(
+        {
+          actor,
+          entity: "Invoice",
+          entityId: invoice.id,
+          field: "appliedRate",
+          oldValue: invoice.appliedRate?.toString() ?? "mixed",
+          newValue: next.toString(),
+          reason,
+        },
+        tx
+      );
+    }
+    if (newCategory !== undefined) {
+      await recordFieldChange(
+        { actor, entity: "Invoice", entityId: invoice.id, field: "category", oldValue: oldCategory, newValue: newCategory, reason },
+        tx
+      );
+    }
+    if (newCbm !== undefined) {
+      await recordFieldChange(
+        { actor, entity: "Invoice", entityId: invoice.id, field: "billableCbm", oldValue: single!.quantity.toString(), newValue: newCbm.toString(), reason },
+        tx
+      );
+    }
 
     for (const item of cbmLines) {
+      const quantity = quantityOf(item);
       await tx.invoiceItem.update({
         where: { id: item.id },
         data: {
           unitPrice: next,
-          amount: item.quantity.mul(next).toDecimalPlaces(2),
+          quantity,
+          ...(item === single && newCategory !== undefined ? { category: newCategory } : {}),
+          amount: quantity.mul(next).toDecimalPlaces(2),
         },
       });
     }
@@ -847,6 +908,8 @@ export async function repriceInvoice(
     await tx.invoice.update({
       where: { id: invoice.id },
       data: {
+        ...(newCbm !== undefined ? { billableCbm: newCbm } : {}),
+        ...(newStandard !== undefined ? { standardRate: newStandard } : {}),
         appliedRate: next,
         subtotal,
         vatAmount,
@@ -863,7 +926,7 @@ export async function repriceInvoice(
     action: "invoice.reprice",
     entity: "Invoice",
     entityId: invoice.id,
-    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM: ${reason}`,
+    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${single!.quantity} → ${newCbm} CBM` : ""}: ${reason}`,
   });
 
   await refreshInvoiceStatus(invoice.id);

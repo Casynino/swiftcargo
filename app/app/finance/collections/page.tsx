@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import { PriceChanged, type PriceChange } from "@/components/app/price-changed";
 import type { Metadata } from "next";
 import {
   FileText,
@@ -149,6 +151,7 @@ export default async function CollectionsPage({
     include: {
       customer: { select: { id: true, fullName: true, phone: true } },
       payments: true,
+      items: { select: { unit: true, category: true, quantity: true } },
       cargo: {
         select: {
           id: true,
@@ -156,6 +159,8 @@ export default async function CollectionsPage({
           description: true,
           status: true,
           clearedAt: true,
+          chinaReceiving: { select: { cbm: true } },
+          packages: { select: { id: true } },
           pickupNote: { select: { status: true, onCredit: true } },
           darReceiving: { select: { receivedAt: true } },
           contacts: {
@@ -172,6 +177,69 @@ export default async function CollectionsPage({
       },
     },
   });
+
+  /*
+    WHAT MOVED EACH PRICE.
+
+    The category a bill was first priced at is the oldest recorded category —
+    changed on the cargo before the bill went out, or on the bill after. The
+    volume against China's measurement, and the agreed rate against the book.
+  */
+  const categoryChanges = await prisma.fieldChange.findMany({
+    where: {
+      OR: [
+        { entity: "Invoice", field: "category", entityId: { in: invoices.map((i) => i.id) } },
+        {
+          entity: "CargoPackage",
+          field: "cargoType",
+          entityId: { in: invoices.flatMap((i) => i.cargo.packages.map((p) => p.id)) },
+        },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    select: { entity: true, entityId: true, oldValue: true },
+  });
+  const firstCategory = new Map<string, string | null>();
+  for (const invoice of invoices) {
+    const ids = new Set([invoice.id, ...invoice.cargo.packages.map((p) => p.id)]);
+    const first = categoryChanges.find((c) => ids.has(c.entityId));
+    if (first) firstCategory.set(invoice.id, first.oldValue);
+  }
+  const changeOf = (invoice: (typeof invoices)[number]): PriceChange => {
+    const freight = invoice.items.filter((i) => i.unit === "CBM");
+    const now = freight.length === 1 ? freight[0].category : null;
+    const was = firstCategory.get(invoice.id);
+    const china = invoice.cargo.chinaReceiving?.cbm ? Number(invoice.cargo.chinaReceiving.cbm) : null;
+    const billed = invoice.billableCbm ? Number(invoice.billableCbm) : null;
+    const std = invoice.standardRate ? Number(invoice.standardRate) : null;
+    const applied = invoice.appliedRate ? Number(invoice.appliedRate) : null;
+    return {
+      category: was !== undefined && was !== now ? { from: was, to: now } : null,
+      cbm: china !== null && billed !== null && Math.abs(china - billed) > 0.0005 ? { from: china, to: billed } : null,
+      rate: std !== null && applied !== null && Math.abs(std - applied) > 0.005 ? { from: std, to: applied } : null,
+      currency: invoice.currency,
+    };
+  };
+
+  /* The rate book's categories, for the price dialog. */
+  const bookRates = await prisma.shippingRate.findMany({
+    where: {
+      active: true,
+      service: "LCL",
+      basis: "PER_CBM",
+      cargoType: { not: null },
+      effectiveFrom: { lte: new Date() },
+      OR: [{ effectiveTo: null }, { effectiveTo: { gte: new Date() } }],
+    },
+    orderBy: [{ cargoType: "asc" }, { effectiveFrom: "desc" }],
+    select: { cargoType: true, rate: true },
+  });
+  const categories: { name: string; rate: number }[] = [];
+  for (const r of bookRates) {
+    if (!categories.some((c) => c.name === r.cargoType)) {
+      categories.push({ name: r.cargoType!, rate: Number(r.rate) });
+    }
+  }
 
   const now = Date.now();
   const today = await prisma.exchangeRate.findFirst({
@@ -489,26 +557,20 @@ export default async function CollectionsPage({
                     </span>
                   </TableCell>
                   <TableCell>
+                    {/* The tracking number and its container, nothing else: the
+                        goods and the rest are one press away on the cargo. */}
                     <Link
                       href={`/app/cargo/${row.invoice.cargo.id}`}
-                      className="tnum text-sm hover:underline"
+                      className="tnum font-mono text-sm hover:underline"
                     >
                       {row.invoice.cargo.reference}
+                      {row.invoice.cargo.containerLines[0] ? (
+                        <span className="text-muted-foreground">
+                          {" "}({row.invoice.cargo.containerLines[0].container.reference})
+                        </span>
+                      ) : null}
                     </Link>
-                    <span className="block max-w-[11rem] truncate text-xs text-muted-foreground">
-                      {row.invoice.cargo.description}
-                    </span>
-                    {row.invoice.cargo.containerLines[0] ? (
-                      <span className="tnum mt-1 inline-block rounded bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                        {row.invoice.cargo.containerLines[0].container.reference}
-                      </span>
-                    ) : null}
-                    <AgreedRate
-                      className="mt-2 max-w-xs"
-                      standard={row.invoice.standardRate ? Number(row.invoice.standardRate) : null}
-                      agreed={row.invoice.appliedRate ? Number(row.invoice.appliedRate) : null}
-                      currency={row.invoice.currency}
-                    />
+                    <PriceChanged className="mt-1" change={changeOf(row.invoice)} />
                   </TableCell>
                   <TableCell className="tnum text-right text-sm">
                     {row.daysSince}d
@@ -645,6 +707,12 @@ export default async function CollectionsPage({
                           standardRate={row.invoice.standardRate ? Number(row.invoice.standardRate) : null}
                           appliedRate={row.invoice.appliedRate ? Number(row.invoice.appliedRate) : null}
                           cbm={row.invoice.billableCbm ? Number(row.invoice.billableCbm) : null}
+                          category={
+                            row.invoice.items.filter((i) => i.unit === "CBM").length === 1
+                              ? row.invoice.items.find((i) => i.unit === "CBM")!.category
+                              : undefined
+                          }
+                          categories={categories}
                         />
                       ) : null}
                       {mayRecord && !row.pending ? <PaymentIcon invoiceId={row.invoice.id} /> : null}

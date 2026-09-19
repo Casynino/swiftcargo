@@ -65,12 +65,14 @@ type Note = typeof import("@/lib/pickup-note");
 type Rbac = typeof import("@/lib/rbac");
 type PriceActions = typeof import("@/lib/actions/price-list");
 type PaymentActions = typeof import("@/lib/actions/payments");
+type InvoiceActions = typeof import("@/lib/actions/invoices");
 let confirmLib: Confirm;
 let listLib: List;
 let balanceLib: Balance;
 let noteLib: Note;
 let rbac: Rbac;
 let priceActions: PriceActions;
+let invoiceActions: InvoiceActions;
 let paymentActions: PaymentActions;
 
 before(async () => {
@@ -106,6 +108,7 @@ before(async () => {
   noteLib = await import("@/lib/pickup-note");
   priceActions = await import("@/lib/actions/price-list");
   paymentActions = await import("@/lib/actions/payments");
+  invoiceActions = await import("@/lib/actions/invoices");
 });
 
 async function authorizeAs(permission: string) {
@@ -1083,6 +1086,64 @@ describe("who may touch the money", () => {
       "CUSTOMER",
     ] as const) {
       assert.ok(!rbac.can(role, "payment.verify"), role);
+    }
+  });
+});
+
+
+describe("a price changed from the collection list", () => {
+  test("category, volume and rate move the bill together, each written down", async () => {
+    const me = await actor(prisma);
+    const { cargo, customer } = await landed(prisma, "RPC", { confirmed: true });
+    try {
+      const ctx = await confirmLib.confirmContext(7);
+      assert.ok(ctx);
+      await prisma.$transaction((tx) => confirmLib.confirmCargoPrice(tx, me, cargo.id, ctx), {
+        timeout: 30_000,
+      });
+      const invoice = await prisma.invoice.findFirstOrThrow({
+        where: { cargoId: cargo.id, status: { not: "DRAFT" } },
+        include: { items: true },
+      });
+      const freight = invoice.items.filter((i) => i.unit === "CBM");
+      assert.equal(freight.length, 1, "one freight line");
+      const other = await prisma.shippingRate.findFirst({
+        where: { active: true, service: "LCL", basis: "PER_CBM", cargoType: { not: null } },
+        select: { cargoType: true, rate: true },
+      });
+      assert.ok(other, "needs a categorised rate");
+
+      signedIn = { id: me.id, name: me.name ?? "Support", role: "CUSTOMER_SUPPORT" };
+      const done = await invoiceActions.repriceInvoice(
+        {},
+        form({
+          invoiceId: invoice.id,
+          rate: "500",
+          category: other.cargoType!,
+          cbm: "1.5",
+          reason: "Measured again with the customer",
+        })
+      );
+      assert.ok(done.ok, done.error);
+
+      const after = await prisma.invoice.findUniqueOrThrow({
+        where: { id: invoice.id },
+        include: { items: true },
+      });
+      const line = after.items.find((i) => i.unit === "CBM")!;
+      assert.equal(line.quantity.toString(), "1.5");
+      assert.equal(line.category, other.cargoType);
+      assert.equal(line.amount.toString(), "750");
+      assert.equal(after.billableCbm?.toString(), "1.5");
+      assert.equal(after.appliedRate?.toString(), "500");
+      assert.equal(after.standardRate?.toString(), other.rate.toString(), "the book rate of the new category");
+
+      const trail = await prisma.fieldChange.findMany({ where: { entityId: invoice.id } });
+      assert.ok(trail.some((c) => c.field === "category" && c.newValue === other.cargoType));
+      assert.ok(trail.some((c) => c.field === "billableCbm" && c.newValue === "1.5"));
+    } finally {
+      signedIn = null;
+      await unseed(cargo.id, customer.id);
     }
   });
 });

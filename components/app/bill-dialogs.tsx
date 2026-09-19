@@ -94,6 +94,8 @@ export function RateDialog({
   standardRate,
   appliedRate,
   cbm,
+  category,
+  categories,
   onClose,
   onSaved,
 }: {
@@ -101,18 +103,31 @@ export function RateDialog({
   standardRate: number | null;
   appliedRate: number | null;
   cbm: number | null;
+  /** The bill's category, when it has one freight line — then category and
+      volume can be changed here too. */
+  category?: string | null;
+  /** The rate book's categories and their rate per CBM. */
+  categories?: { name: string; rate: number }[];
   onClose: () => void;
   onSaved?: () => void;
 }) {
   const [state, action] = useActionState<State, FormData>(repriceInvoice, {});
   const [typed, setTyped] = useState(appliedRate !== null ? appliedRate.toFixed(2) : "");
+  const [picked, setPicked] = useState(category ?? "");
+  const [volume, setVolume] = useState(cbm !== null ? cbm.toFixed(3) : "");
   useCloseOnOk(state, onClose, onSaved);
 
+  const editable = category !== undefined && (categories?.length ?? 0) > 0;
+  /* The book's rate for whatever category is picked now. */
+  const book = editable
+    ? (categories!.find((c) => c.name === picked)?.rate ?? standardRate)
+    : standardRate;
   const special =
     standardRate !== null && appliedRate !== null && Math.abs(standardRate - appliedRate) > 0.005;
   const rate = Number(typed);
-  const freight = cbm !== null && rate > 0 ? Math.round(rate * cbm * 100) / 100 : null;
-  const off = standardRate !== null && rate > 0 ? Math.round((standardRate - rate) * 100) / 100 : null;
+  const qty = editable ? Number(volume) : cbm;
+  const freight = qty && rate > 0 ? Math.round(rate * qty * 100) / 100 : null;
+  const off = book !== null && rate > 0 ? Math.round((book - rate) * 100) / 100 : null;
 
   return (
     <Shell onClose={onClose}>
@@ -120,7 +135,7 @@ export function RateDialog({
         <input type="hidden" name="invoiceId" value={invoiceId} />
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <Scale className="size-4 text-brand" />
-          The rate for this cargo
+          {editable ? "Change the price" : "The rate for this cargo"}
         </p>
         <dl className="space-y-1 rounded-lg border bg-secondary/40 px-3 py-2 text-xs">
           <div className="flex justify-between gap-3">
@@ -136,6 +151,47 @@ export function RateDialog({
             <dd className={special ? "font-semibold text-brand" : "text-muted-foreground"}>{special ? "Yes" : "No"}</dd>
           </div>
         </dl>
+        {editable ? (
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block space-y-1">
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</span>
+              <NativeSelect
+                name="category"
+                value={picked}
+                onChange={(e) => {
+                  setPicked(e.target.value);
+                  /* A new category brings its own book rate; the desk can
+                     still type an agreed one over it. */
+                  const next = categories!.find((c) => c.name === e.target.value);
+                  if (next) setTyped(next.rate.toFixed(2));
+                }}
+                className="h-9"
+              >
+                {!picked ? <option value="">— none —</option> : null}
+                {categories!.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name} · {usd(c.rate)}
+                  </option>
+                ))}
+                {picked && !categories!.some((c) => c.name === picked) ? (
+                  <option value={picked}>{picked}</option>
+                ) : null}
+              </NativeSelect>
+            </label>
+            <label className="block space-y-1">
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">CBM</span>
+              <Input
+                name="cbm"
+                type="number"
+                step="0.001"
+                min={0.001}
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+                className="tnum h-9"
+              />
+            </label>
+          </div>
+        ) : null}
         <label className="block space-y-1">
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Rate per CBM</span>
           <span className="flex items-center gap-2">
@@ -155,7 +211,7 @@ export function RateDialog({
         </label>
         {freight !== null ? (
           <p className="tnum text-xs text-muted-foreground">
-            {rate.toFixed(2)} × {cbm!.toFixed(3)} CBM ={" "}
+            {rate.toFixed(2)} × {Number(qty).toFixed(3)} CBM ={" "}
             <span className="font-semibold text-foreground">{usd(freight)}</span>
             {off !== null && Math.abs(off) > 0.005 ? (
               <span className={off > 0 ? "text-success" : "text-warning"}>
@@ -329,6 +385,8 @@ export function RateIcon(props: {
   standardRate: number | null;
   appliedRate: number | null;
   cbm: number | null;
+  category?: string | null;
+  categories?: { name: string; rate: number }[];
 }) {
   const [open, setOpen] = useState(false);
   const special =
@@ -339,7 +397,7 @@ export function RateIcon(props: {
     <>
       <button
         type="button"
-        title={special ? "Change the agreed rate" : "Set a special rate for this cargo"}
+        title="Change the price — category, CBM or rate"
         onClick={() => setOpen(true)}
         className={cn(
           SQUARE,
