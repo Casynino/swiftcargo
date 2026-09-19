@@ -127,13 +127,12 @@ export default async function CombinedBillPage({
                 </p>
                 <p className="mt-1 max-w-sm text-[10px] leading-snug text-white/75">
                   {company?.darAddress ?? "Dar es Salaam"}
-                  {company?.phone ? ` · ${company.phone}` : ""}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#9fd8f5]">Combined bill</p>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">Ankara ya jumla</p>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">Bill ya pamoja</p>
               <p className="tnum mt-1 text-2xl font-extrabold tracking-tight">{lines.length} consignments</p>
               <p className="text-[10px] text-white/70">{formatDate(new Date())}</p>
             </div>
@@ -230,19 +229,24 @@ export default async function CombinedBillPage({
               </p>
             </div>
             <div className="rounded-2xl bg-[#fff2ea] p-4">
-              <p className="font-extrabold uppercase tracking-wide text-[#b3440f]">Malipo moja, ankara zote</p>
+              <p className="font-extrabold uppercase tracking-wide text-[#b3440f]">Malipo moja, bili zote</p>
               <p className="mt-1 text-neutral-700">
-                Kila ankara iko kwenye exchange rate iliyowekwa ilipotolewa. Tuma jumla kwa muamala mmoja na
-                utume uthibitisho; kila mzigo unabaki na ankara na pickup note yake.
+                Kila bili iko kwenye exchange rate iliyowekwa ilipotolewa. Tuma jumla kwa muamala mmoja na
+                utume uthibitisho; kila mzigo unabaki na bili na pickup note yake.
               </p>
             </div>
           </section>
 
-          <footer className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-[#d6e2ee] pt-3 text-[9px] text-neutral-500">
-            <span>
-              {company?.email ?? ""}
-              {company?.altPhone ? ` · ${company.altPhone}` : ""}
-            </span>
+          {/* How to reach us, set out at the foot where a customer looks for it. */}
+          <footer className="mt-6 grid grid-cols-[1fr_auto] items-end gap-4 border-t border-[#d6e2ee] pt-3 text-[9.5px] leading-relaxed text-neutral-600">
+            <div>
+              <p className="font-bold uppercase tracking-[0.16em] text-[#0b2742]">Contact us · Wasiliana nasi</p>
+              {company?.darAddress ? <p>{company.darAddress}</p> : null}
+              <p className="tnum">
+                {[company?.phone, company?.altPhone].filter(Boolean).join("  ·  ")}
+                {company?.email ? `  ·  ${company.email}` : ""}
+              </p>
+            </div>
             <span className="font-bold uppercase tracking-[0.2em] text-[#0b2742]">{company?.name ?? "Swift Cargo"}</span>
           </footer>
         </div>
