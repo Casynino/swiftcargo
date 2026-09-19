@@ -306,7 +306,7 @@ export function composeMessage(
       const days = context.freeStorageDays ?? 7;
       const fee =
         context.storagePerDay && Number(context.storagePerDay) > 0
-          ? ` Baada ya hapo, storage fee ya ${context.storageCurrency ?? "USD"} ${context.storagePerDay}/siku itatozwa hadi mzigo utakapochukuliwa.`
+          ? ` Baada ya siku ${days}, storage fee ya ${context.storageCurrency ?? "USD"} ${context.storagePerDay}/siku itatozwa hadi mzigo utakapochukuliwa.`
           : "";
       return letter(
         `Mzigo wako umefika salama ${ROUTE.destinationCity} na kwa sasa uko kwenye ` +
@@ -315,9 +315,11 @@ export function composeMessage(
             ? `Unaweza kulipa sasa ili uwe tayari kuchukuliwa mara clearance itakapokamilika.`
             : `Tutakujulisha mara tu utakapokuwa tayari kuchukuliwa.`),
         {
+          /* The clock starts when the goods leave clearance for our warehouse,
+             so that is what the customer is told. */
           storageText:
-            `\n\n*STORAGE:* Siku ${days} bure kuanzia mzigo unapothibitishwa kufika ` +
-            `${ROUTE.destinationCity}.${fee}`,
+            `\n\n*STORAGE:* Baada ya mzigo wako kutoka kwenye clearance, utapata siku ` +
+            `${days} bure za kuhifadhiwa kwenye warehouse yetu ${ROUTE.destinationCity}.${fee}`,
           linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Fuatilia mzigo wako:",
           detailsContext: { ...context, invoiceNumber: null, statusLine: "Clearance in Progress" },
         }
