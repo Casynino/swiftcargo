@@ -67,7 +67,7 @@ function phoneNeedles(input: string): string[] {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; incomplete?: string }>;
 }) {
   await primeLocale();
   const user = await requirePermission("customer.view");
@@ -80,8 +80,13 @@ export default async function CustomersPage({
   const params = await searchParams;
   const search = (params.q ?? "").trim();
 
+  /* Records carried over without an email are flagged, never filled in with
+     an invented one: the office asks the customer and types what they say. */
+  const incomplete = params.incomplete === "1";
+
   const where: Prisma.CustomerWhereInput = {
     deletedAt: null,
+    ...(incomplete ? { AND: [{ OR: [{ email: null }, { email: "" }] }] } : {}),
     ...(search
       ? {
           OR: [
@@ -92,6 +97,11 @@ export default async function CustomersPage({
             { city: { contains: search, mode: "insensitive" } },
             { phone: { contains: search } },
             { altPhone: { contains: search } },
+            { email: { contains: search, mode: "insensitive" } },
+            /* A caller reads the number off their receipt more often than they
+               spell their name the way it was typed. */
+            { cargoSent: { some: { reference: { contains: search, mode: "insensitive" } } } },
+            { cargoReceived: { some: { reference: { contains: search, mode: "insensitive" } } } },
             ...phoneNeedles(search).flatMap((needle) => [
               { phone: { contains: needle } },
               { altPhone: { contains: needle } },
@@ -261,7 +271,7 @@ export default async function CustomersPage({
           <SearchBox
             locale={locale}
             defaultValue={search}
-            placeholder={t(locale, "Name, customer ID, phone or city")}
+            placeholder={t(locale, "Name, customer ID, phone, email, city or cargo reference")}
             suggestions={customers.flatMap((customer) => [
               {
                 value: customer.fullName,
@@ -277,7 +287,13 @@ export default async function CustomersPage({
           />
           <p className="mt-2 text-[11px] text-muted-foreground">
             {t(locale, "Searches every customer on file, however long ago they registered.")}{" "}
-            {t(locale, "The suggestions are the customers on this page.")}
+            {t(locale, "The suggestions are the customers on this page.")}{" "}
+            <Link
+              href={incomplete ? "/app/customers" : "/app/customers?incomplete=1"}
+              className="font-semibold text-brand hover:underline"
+            >
+              {incomplete ? t(locale, "Show everyone") : t(locale, "Show records with no email")}
+            </Link>
           </p>
         </div>
 

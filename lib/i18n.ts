@@ -6066,6 +6066,10 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "Name, customer ID, phone, email, city or cargo reference": "姓名、客户编号、电话、邮箱、城市或货物编号",
+  "Show everyone": "显示全部",
+  "Show records with no email": "显示没有邮箱的记录",
+  "Bookings": "预订",
   "Revenue (excl. VAT)": "收入（不含增值税）",
   "VAT billed — owed to TRA": "已开增值税——应缴坦桑尼亚税务局",
   "Revenue is what the company earned: the bills less the VAT on them, which is collected for TRA and never the company's money. Credit revenue is inside Revenue above, because the sale happened. It is not in Collected, and none of it is in the bank. Written off is discounts given on the period's bills.": "收入是公司实际赚取的：账单金额减去增值税，增值税是代坦桑尼亚税务局收取的，从来不是公司的钱。赊账收入包含在上面的收入中，因为销售已经发生。它不在已收款中，也不在银行里。核销是本期账单上给予的折扣。",

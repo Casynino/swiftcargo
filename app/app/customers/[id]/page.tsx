@@ -92,6 +92,37 @@ export default async function CustomerPage({
 
   const forSupplier = await supplierAddress(customer.shippingMark ?? customer.fullName.toUpperCase());
 
+  /* The whole relationship in one line, counted rather than listed: the page
+     below shows the latest twenty-five, and "how much of everything" is the
+     first question on the phone. */
+  const mineWhere = { deletedAt: null, OR: [{ senderId: customer.id }, { receiverId: customer.id }] };
+  const [cargoCount, movingCount, invoiceCount, bookingCount, pickupCount] = await Promise.all([
+    prisma.cargo.count({ where: mineWhere }),
+    prisma.cargo.count({
+      where: {
+        ...mineWhere,
+        status: { in: ["ASSIGNED_TO_CONTAINER", "CONTAINER_LOADED", "DEPARTED_CHINA", "IN_TRANSIT", "ARRIVED_TANZANIA"] },
+      },
+    }),
+    showMoney
+      ? prisma.invoice.count({ where: { customerId: customer.id, status: { notIn: ["DRAFT", "CANCELLED"] } } })
+      : Promise.resolve(0),
+    prisma.containerBooking.count({ where: { customerId: customer.id } }),
+    prisma.pickupRequest.count({ where: { customerId: customer.id } }),
+  ]);
+  const strip: [string, string][] = [
+    ["Cargo", String(cargoCount)],
+    ["Active shipments", String(movingCount)],
+    ...(showMoney
+      ? ([
+          ["Invoices", String(invoiceCount)],
+          ["Outstanding", formatMoney(balance, "USD")],
+        ] as [string, string][])
+      : []),
+    ["Bookings", String(bookingCount)],
+    ["Pickup requests", String(pickupCount)],
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -116,6 +147,15 @@ export default async function CustomerPage({
           </>
         }
       />
+
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 lg:grid-cols-6">
+        {strip.map(([label, value]) => (
+          <div key={label} className="bg-card px-4 py-3">
+            <dt className="text-xs text-muted-foreground">{T(label)}</dt>
+            <dd className="tnum mt-0.5 text-lg font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
