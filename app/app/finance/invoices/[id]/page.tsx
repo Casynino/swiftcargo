@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/table";
 import { INVOICE_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/constants";
 import { formatCbm, formatDate, formatDateTime, formatMoney } from "@/lib/format";
+import { ChangePriceButton } from "@/components/app/bill-dialogs";
+import { bookCategories, categoryOfCargo } from "@/lib/rate-categories";
 import { CONTACT_KIND_LABELS, composeMessage, messageStage, whatsappNumber, type ContactKind } from "@/lib/messages";
 import { formatCurrency, formatRate, tzsToUsd } from "@/lib/currency";
 import { balanceOf, paymentTzs } from "@/lib/invoice-balance";
@@ -117,6 +119,11 @@ export default async function InvoicePage({
   const isDraft = invoice.status === "DRAFT";
   const live = !isDraft && invoice.status !== "CANCELLED";
   const hasVerified = invoice.payments.some((p) => p.status === "VERIFIED");
+
+  const cargoLines = await prisma.cargoPackage.findMany({
+    where: { cargoId: invoice.cargoId, deletedAt: null },
+    select: { cargoType: true },
+  });
 
   /* Where the goods are, so a reminder never calls boxes at sea "ready". */
   const stage = messageStage({
@@ -213,6 +220,25 @@ export default async function InvoicePage({
             />
           </div>
         )
+      ) : null}
+
+      {invoice.status !== "CANCELLED" &&
+      can(user.role, "invoice.discount") &&
+      invoice.items.some((i) => i.unit === "CBM") ? (
+        <div className="print:hidden">
+          <ChangePriceButton
+            invoiceId={invoice.id}
+            appliedRate={invoice.appliedRate ? Number(invoice.appliedRate) : null}
+            standardRate={invoice.standardRate ? Number(invoice.standardRate) : null}
+            cbm={invoice.billableCbm ? Number(invoice.billableCbm) : null}
+            category={
+              invoice.items.filter((i) => i.unit === "CBM").length === 1
+                ? categoryOfCargo({ commodity: invoice.cargo.commodity, packages: cargoLines })
+                : undefined
+            }
+            categories={await bookCategories()}
+          />
+        </div>
       ) : null}
 
       {invoice.status !== "CANCELLED" && can(user.role, "invoice.discount") ? (

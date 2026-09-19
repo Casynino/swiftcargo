@@ -15,6 +15,7 @@ import { MeasurementCompare } from "@/components/app/measurement-compare";
 import { PackageEditor } from "@/components/app/package-editor";
 import { BoxesCard } from "@/components/app/boxes-card";
 import { PageHeader } from "@/components/app/page-header";
+import { bookCategories, categoryOfCargo } from "@/lib/rate-categories";
 import { ClearanceButton } from "@/components/app/clearance-button";
 import { PhotoPanel } from "@/components/app/photo-upload";
 import { CargoStatusBadge } from "@/components/app/status-badge";
@@ -213,6 +214,13 @@ export default async function CargoDetailPage({
     payableHere ??
     [...cargo.invoices].reverse().find((i) => i.status !== "CANCELLED") ??
     null;
+
+  /* The price dialog changes category and volume only on a bill with one
+     freight line; one with several is changed line by line on the bill. */
+  const freightLines = billHere
+    ? await prisma.invoiceItem.count({ where: { invoiceId: billHere.id, unit: "CBM" } })
+    : 0;
+  const categories = can(user.role, "invoice.discount") ? await bookCategories() : [];
 
   const pickupNote = can(user.role, "finance.view")
     ? await prisma.pickupNote.findUnique({
@@ -925,6 +933,10 @@ export default async function CargoDetailPage({
                       standardRate: billHere.standardRate ? Number(billHere.standardRate) : null,
                       appliedRate: billHere.appliedRate ? Number(billHere.appliedRate) : null,
                       cbm: billHere.billableCbm ? Number(billHere.billableCbm) : null,
+                      category:
+                        freightLines === 1
+                          ? categoryOfCargo({ commodity: cargo.commodity, packages: cargo.packages })
+                          : undefined,
                       pending: billHere.payments.some((p) => p.status === "PENDING"),
                       pendingPaymentId: billHere.payments.find((p) => p.status === "PENDING")?.id ?? null,
                     }
@@ -947,6 +959,7 @@ export default async function CargoDetailPage({
               canDecide={can(user.role, "payment.verify")}
               canChangeBill={can(user.role, "invoice.discount")}
               canChangeRate={can(user.role, "invoice.edit")}
+              categories={categories}
               canOpenBill={can(user.role, "finance.view")}
               atDar={Boolean(dar) && ["RECEIVED_DAR", "READY_FOR_RELEASE"].includes(cargo.status)}
               raiseBill={

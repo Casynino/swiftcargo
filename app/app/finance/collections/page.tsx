@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PriceChanged, type PriceChange } from "@/components/app/price-changed";
+import { bookCategories } from "@/lib/rate-categories";
 import type { Metadata } from "next";
 import {
   FileText,
@@ -243,24 +244,7 @@ export default async function CollectionsPage({
   };
 
   /* The rate book's categories, for the price dialog. */
-  const bookRates = await prisma.shippingRate.findMany({
-    where: {
-      active: true,
-      service: "LCL",
-      basis: "PER_CBM",
-      cargoType: { not: null },
-      effectiveFrom: { lte: new Date() },
-      OR: [{ effectiveTo: null }, { effectiveTo: { gte: new Date() } }],
-    },
-    orderBy: [{ cargoType: "asc" }, { effectiveFrom: "desc" }],
-    select: { cargoType: true, rate: true },
-  });
-  const categories: { name: string; rate: number }[] = [];
-  for (const r of bookRates) {
-    if (!categories.some((c) => c.name === r.cargoType)) {
-      categories.push({ name: r.cargoType!, rate: Number(r.rate) });
-    }
-  }
+  const categories = await bookCategories();
 
   const now = Date.now();
   const today = await prisma.exchangeRate.findFirst({

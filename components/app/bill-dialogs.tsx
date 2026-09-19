@@ -578,3 +578,28 @@ export function DownloadIcon({ invoiceId, number }: { invoiceId: string; number:
     </a>
   );
 }
+
+/** The same price dialog, as a text button for a page with room for words. */
+export function ChangePriceButton(props: {
+  invoiceId: string;
+  standardRate: number | null;
+  appliedRate: number | null;
+  cbm: number | null;
+  category?: string | null;
+  categories?: { name: string; rate: number }[];
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand/10"
+      >
+        <Scale className="size-4" />
+        Change the price — category, CBM or rate
+      </button>
+      {open ? <RateDialog {...props} onClose={() => setOpen(false)} /> : null}
+    </>
+  );
+}

@@ -48,6 +48,9 @@ export type CargoBill = {
   standardRate: number | null;
   appliedRate: number | null;
   cbm: number | null;
+  /** The cargo's category when the bill has one freight line; undefined when
+      the bill has several and is changed line by line on the bill. */
+  category?: string | null;
   /** A payment already waiting on Finance for this bill. */
   pending: boolean;
   /** Which one, so Finance can confirm it where it stands. */
@@ -79,6 +82,8 @@ type Props = {
   /** The rate pinned on a bill belongs to the desk that owns the bill, not to
       every desk that quotes it: moving it moves what is owed in shillings. */
   canChangeRate: boolean;
+  /** The rate book's categories, for the price dialog. */
+  categories?: { name: string; rate: number }[];
   canOpenBill: boolean;
   atDar: boolean;
   /**
@@ -185,7 +190,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
       {bill.cbm ? (
         <button type="button" onClick={() => setDialog("rate")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
           <Scale className="size-3.5" />
-          Edit the rate per CBM
+          Change the price — category, CBM or rate
         </button>
       ) : null}
     </>
@@ -202,6 +207,8 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
           standardRate={bill.standardRate}
           appliedRate={bill.appliedRate}
           cbm={bill.cbm}
+          category={bill.category}
+          categories={props.categories}
           onClose={() => setDialog(null)}
           onSaved={() => setTyped(null)}
         />
