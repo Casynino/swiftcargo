@@ -9,9 +9,11 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { repriceInvoice } from "@/lib/actions/invoices";
 import {
   queryCountWithDar,
   savePriceListPrice,
+  setPriceListCargoType,
   type PriceListState,
 } from "@/lib/actions/price-list";
 import { t, type Locale } from "@/lib/i18n";
@@ -48,7 +50,17 @@ export function RowPriceEditor({
   discount,
   vatPercent,
   locale,
+  invoiceId = null,
+  category = null,
+  categories = [],
 }: {
+  /** The issued bill, when there is one: its category and volume are changed
+      on it, the same way the Edit price dialog does everywhere else. */
+  invoiceId?: string | null;
+  /** The cargo's category now. */
+  category?: string | null;
+  /** The rate book's categories and their rate per CBM. */
+  categories?: { name: string; rate: number }[];
   cargoId: string;
   reference: string;
   currency: string;
@@ -74,8 +86,39 @@ export function RowPriceEditor({
   locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState(category ?? "");
+  const [volume, setVolume] = useState(cbm !== null ? cbm.toFixed(3) : "");
+  /*
+    CATEGORY AND VOLUME FIRST, THEN THE FIGURES.
+
+    A new category or volume is applied to the bill before the rate, extra and
+    discount are saved, so what is saved is priced on what the cargo now is —
+    and the total the dialog showed is the total that lands.
+  */
   const [state, action] = useActionState<PriceListState, FormData>(
-    savePriceListPrice,
+    async (prev, fd) => {
+      const categoryMoved = picked !== "" && picked !== (category ?? "");
+      const volumeMoved =
+        invoiceId !== null && !byWeight && volume.trim() !== "" && Math.abs(Number(volume) - (cbm ?? 0)) > 0.0005;
+      if (categoryMoved || volumeMoved) {
+        if (invoiceId) {
+          const f = new FormData();
+          f.set("invoiceId", invoiceId);
+          f.set("rate", String(n(rate) || agreedRate || standardRate || 0));
+          if (categoryMoved) f.set("category", picked);
+          if (volumeMoved) f.set("cbm", volume);
+          const done = await repriceInvoice({}, f);
+          if (done.error) return { error: done.error };
+        } else if (categoryMoved) {
+          const f = new FormData();
+          f.set("cargoId", cargoId);
+          f.set("cargoType", picked);
+          const done = await setPriceListCargoType({}, f);
+          if (done.error) return { error: done.error };
+        }
+      }
+      return savePriceListPrice(prev, fd);
+    },
     {}
   );
 
@@ -98,7 +141,8 @@ export function RowPriceEditor({
   const switched = byWeight !== bookByWeight;
   /* Both quantities are real, so the choice is honest to offer. */
   const canSwitch = (cbm ?? 0) > 0 && (weightKg ?? 0) > 0;
-  const pricedOn = (byWeight ? weightKg : cbm) ?? 0;
+  const pricedOn =
+    (byWeight ? weightKg : invoiceId && volume.trim() !== "" ? Number(volume) || 0 : cbm) ?? 0;
 
   /*
     EVERY OPENING STARTS FROM THE BILL.
@@ -113,6 +157,8 @@ export function RowPriceEditor({
     setTyped("");
     setMore(extra ? String(extra) : "");
     setOff(discount ? String(discount) : "");
+    setPicked(category ?? "");
+    setVolume(cbm !== null ? cbm.toFixed(3) : "");
     setOpen(true);
   };
 
@@ -235,6 +281,58 @@ export function RowPriceEditor({
             </a>{" "}
             {t(locale, "— that price applies to every cargo, not just this one.")}
           </p>
+
+          {/* WHAT IT IS AND HOW MUCH OF IT: the two things our prices move
+              on besides the rate. A category brings its own book rate. */}
+          {categories.length > 0 || invoiceId ? (
+            <div className="grid grid-cols-2 gap-2">
+              {categories.length > 0 ? (
+                <label className="block space-y-0.5">
+                  <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {t(locale, "Category")}
+                  </span>
+                  <NativeSelect
+                    value={picked}
+                    onChange={(e) => {
+                      setPicked(e.target.value);
+                      const next = categories.find((c) => c.name === e.target.value);
+                      if (next && !byWeight) {
+                        setRate(next.rate.toFixed(2));
+                        setTyped("");
+                      }
+                    }}
+                    className="h-9"
+                  >
+                    {!picked ? <option value="">— none —</option> : null}
+                    {categories.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} · USD {c.rate.toFixed(2)}
+                      </option>
+                    ))}
+                    {picked && !categories.some((c) => c.name === picked) ? (
+                      <option value={picked}>{picked}</option>
+                    ) : null}
+                  </NativeSelect>
+                </label>
+              ) : null}
+              {invoiceId && !byWeight ? (
+                <label className="block space-y-0.5">
+                  <span className="block text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {t(locale, "Total CBM")}
+                  </span>
+                  <Input
+                    type="number"
+                    step="0.001"
+                    min={0.001}
+                    inputMode="decimal"
+                    value={volume}
+                    onChange={(e) => setVolume(e.target.value)}
+                    className="tnum h-9"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* PER CUBIC METRE OR PER KILO, FOR THIS CONSIGNMENT ONLY. The
               quantities are printed on the buttons so the desk sees what the

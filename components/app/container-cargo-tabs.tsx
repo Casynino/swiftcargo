@@ -135,6 +135,7 @@ export function ContainerCargoTabs({
   documents,
   timeline,
   cargoTypes,
+  priceCategories = [],
   otherContainers,
   canConfirm,
   canAmend,
@@ -147,6 +148,8 @@ export function ContainerCargoTabs({
   timeline: TimelineRow[];
   /** The rate book's own categories, for the type picked on a row. */
   cargoTypes: string[];
+  /** The same, with each one's rate per CBM, for the price dialog. */
+  priceCategories?: { name: string; rate: number }[];
   /** Other landed containers, for a consignment that came off the wrong one. */
   otherContainers: { id: string; reference: string }[];
   canConfirm: boolean;
@@ -297,6 +300,7 @@ export function ContainerCargoTabs({
                   containerId={containerId}
                   row={row}
                   cargoTypes={cargoTypes}
+                  priceCategories={priceCategories}
                   otherContainers={otherContainers}
                   canConfirm={canConfirm}
                   canAmend={canAmend}
@@ -384,6 +388,7 @@ function CargoTableRow({
   containerId,
   row,
   cargoTypes,
+  priceCategories,
   otherContainers,
   canConfirm,
   canAmend,
@@ -393,6 +398,7 @@ function CargoTableRow({
   containerId: string;
   row: CargoRow;
   cargoTypes: string[];
+  priceCategories: { name: string; rate: number }[];
   otherContainers: { id: string; reference: string }[];
   canConfirm: boolean;
   canAmend: boolean;
@@ -502,6 +508,9 @@ function CargoTableRow({
                 freight={row.edit.freight}
                 extra={row.edit.extra}
                 discount={row.edit.discount}
+                invoiceId={row.invoiceId}
+                category={row.cargoType}
+                categories={priceCategories}
                 vatPercent={vatPercent}
                 locale={locale}
               />

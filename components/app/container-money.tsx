@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
+import { bookCategories } from "@/lib/rate-categories";
 import { billLetter, composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
@@ -733,6 +734,7 @@ export async function ContainerMoney({
         documents={documentRows}
         timeline={timelineRows}
         cargoTypes={cargoTypes}
+        priceCategories={await bookCategories()}
         otherContainers={otherContainers}
         canConfirm={mayConfirm}
         canAmend={mayAmend}
