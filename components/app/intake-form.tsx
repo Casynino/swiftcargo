@@ -447,43 +447,6 @@ export function IntakeForm({
                 : ""}
             </p>
           </div>
-          <div className="w-36 space-y-1.5">
-            <Label htmlFor="unit-select" className="text-xs">
-              Measured in
-            </Label>
-            <NativeSelect
-              id="unit-select"
-              value={unit}
-              onChange={(e) => {
-                const next = e.target.value as "CM" | "M";
-                setUnit(next);
-                /* A volume worked out from three sides was worked out in the
-                   old unit. Left alone it would stay on screen, be sent as if
-                   typed, and the line would be stored as hand-entered at a
-                   figure a million times off. Typed volumes are the clerk's
-                   and stay as they are. */
-                setLines((rows) =>
-                  rows.map((row) => {
-                    if (row.cbmByHand) return row;
-                    const l = Number(row.length);
-                    const w = Number(row.width);
-                    const h = Number(row.height);
-                    const q = Number(row.quantity) || 0;
-                    if (!(l && w && h && q)) return row;
-                    const raw = l * w * h * q;
-                    return {
-                      ...row,
-                      cbm: (next === "CM" ? raw / 1_000_000 : raw).toFixed(4),
-                    };
-                  }),
-                );
-              }}
-              className="h-9"
-            >
-              <option value="CM">Centimetres</option>
-              <option value="M">Metres</option>
-            </NativeSelect>
-          </div>
         </CardHeader>
 
         <CardContent className="space-y-3">
@@ -541,33 +504,26 @@ export function IntakeForm({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`d-${line.key}`}>
-                      Description (English)
-                    </Label>
-                    <Input
-                      id={`d-${line.key}`}
-                      name="itemDescription"
-                      value={line.description}
-                      onChange={(e) =>
-                        update(line.key, "description", e.target.value)
-                      }
-                      placeholder="Cigarette paper"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`z-${line.key}`}>描述 (中文)</Label>
-                    <Input
-                      id={`z-${line.key}`}
-                      name="itemDescriptionZh"
-                      value={line.descriptionZh}
-                      onChange={(e) =>
-                        update(line.key, "descriptionZh", e.target.value)
-                      }
-                      placeholder="卷烟纸"
-                    />
-                  </div>
+                {/*
+                  THE SEVEN THINGS THE COUNTER WRITES DOWN.
+
+                  Receipt number (above), description, category, packages,
+                  pieces, total volume and total weight — nothing else. Every
+                  package is a carton for now; the type is sent as one so the
+                  record still says so, and the day bales or pallets arrive it
+                  comes back as a field.
+                */}
+                <input type="hidden" name="itemPackageType" value="CARTON" />
+
+                <div className="space-y-1.5">
+                  <Label htmlFor={`d-${line.key}`}>Item description 货物描述</Label>
+                  <Input
+                    id={`d-${line.key}`}
+                    name="itemDescription"
+                    value={line.description}
+                    onChange={(e) => update(line.key, "description", e.target.value)}
+                    placeholder="Cigarette paper"
+                  />
                 </div>
 
                 <div className="mt-3 space-y-1.5">
@@ -577,9 +533,7 @@ export function IntakeForm({
                     name="itemCargoType"
                     required
                     value={line.cargoType}
-                    onChange={(e) =>
-                      update(line.key, "cargoType", e.target.value)
-                    }
+                    onChange={(e) => update(line.key, "cargoType", e.target.value)}
                   >
                     <option value="" disabled>
                       Choose the category…
@@ -590,32 +544,11 @@ export function IntakeForm({
                       </option>
                     ))}
                   </NativeSelect>
-                  <p className="text-xs text-muted-foreground">
-                    Pick what the goods actually are. It decides how the office
-                    charges for this line, so a wrong category is a wrong bill.
-                  </p>
                 </div>
 
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`t-${line.key}`}>Package type</Label>
-                    <NativeSelect
-                      id={`t-${line.key}`}
-                      name="itemPackageType"
-                      value={line.packageType}
-                      onChange={(e) =>
-                        update(line.key, "packageType", e.target.value)
-                      }
-                    >
-                      {PACKAGE_TYPES.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`q-${line.key}`}>Packages 包裹</Label>
+                    <Label htmlFor={`q-${line.key}`}>Packages 箱数</Label>
                     <Input
                       id={`q-${line.key}`}
                       name="itemQuantity"
@@ -623,9 +556,7 @@ export function IntakeForm({
                       min={1}
                       inputMode="numeric"
                       value={line.quantity}
-                      onChange={(e) =>
-                        update(line.key, "quantity", e.target.value)
-                      }
+                      onChange={(e) => update(line.key, "quantity", e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -637,70 +568,11 @@ export function IntakeForm({
                       min={0}
                       inputMode="numeric"
                       value={line.pieces}
-                      onChange={(e) =>
-                        update(line.key, "pieces", e.target.value)
-                      }
+                      onChange={(e) => update(line.key, "pieces", e.target.value)}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`w-${line.key}`}>
-                      Gross weight kg 毛重{" "}
-                      <span className="font-normal text-muted-foreground">
-                        optional
-                      </span>
-                    </Label>
-                    <Input
-                      id={`w-${line.key}`}
-                      name="itemWeightKg"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      inputMode="decimal"
-                      value={line.weightKg}
-                      onChange={(e) =>
-                        update(line.key, "weightKg", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* The customs columns of the packing list. All optional. No
-                    price here: the category decides what a line is charged,
-                    and the floor is never asked for money. */}
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`mo-${line.key}`}>
-                      Model no. 型号{" "}
-                      <span className="font-normal text-muted-foreground">optional</span>
-                    </Label>
-                    <Input
-                      id={`mo-${line.key}`}
-                      name="itemModelNo"
-                      value={line.modelNo}
-                      onChange={(e) => update(line.key, "modelNo", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`nw-${line.key}`}>
-                      Net weight kg 净重{" "}
-                      <span className="font-normal text-muted-foreground">optional</span>
-                    </Label>
-                    <Input
-                      id={`nw-${line.key}`}
-                      name="itemNetWeightKg"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      inputMode="decimal"
-                      value={line.netWeightKg}
-                      onChange={(e) => update(line.key, "netWeightKg", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor={`cbm-${line.key}`}>Volume CBM 体积</Label>
+                    <Label htmlFor={`cbm-${line.key}`}>CBM 体积</Label>
                     <Input
                       id={`cbm-${line.key}`}
                       name="itemCbm"
@@ -715,81 +587,20 @@ export function IntakeForm({
                       placeholder="0.150"
                     />
                   </div>
-                  {(["length", "width", "height"] as const).map((dim) => (
-                    <div key={dim} className="space-y-1.5">
-                      <Label
-                        htmlFor={`${dim}-${line.key}`}
-                        className="text-muted-foreground"
-                      >
-                        <span className="capitalize">{dim}</span> (
-                        {unit === "CM" ? "cm" : "m"})
-                      </Label>
-                      <Input
-                        id={`${dim}-${line.key}`}
-                        name={`item${dim[0].toUpperCase()}${dim.slice(1)}`}
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        inputMode="decimal"
-                        value={line[dim]}
-                        onChange={(e) => update(line.key, dim, e.target.value)}
-                      />
-                    </div>
-                  ))}
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`w-${line.key}`}>Weight kg 重量</Label>
+                    <Input
+                      id={`w-${line.key}`}
+                      name="itemWeightKg"
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      inputMode="decimal"
+                      value={line.weightKg}
+                      onChange={(e) => update(line.key, "weightKg", e.target.value)}
+                    />
+                  </div>
                 </div>
-                {/*
-                  THE ARITHMETIC, BOTH WAYS.
-
-                  A clerk who types 1 CBM over twelve cartons is told what one
-                  carton of that size measures — and can put those three numbers
-                  in the boxes with one press. It is a cube, and says so: real
-                  cartons are not cubes, and the figure is offered as a sanity
-                  check on a volume somebody wrote on a note, not as a
-                  measurement anybody took.
-                */}
-                {line.cbmByHand && cubeSide(line) ? (
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {line.cbm} CBM over {line.quantity || 1} package
-                    {Number(line.quantity) === 1 ? "" : "s"} is about{" "}
-                    <span className="tnum font-medium text-foreground">
-                      {cubeSide(line)} × {cubeSide(line)} × {cubeSide(line)}{" "}
-                      {unit === "CM" ? "cm" : "m"}
-                    </span>{" "}
-                    each.{" "}
-                    <button
-                      type="button"
-                      className="font-medium text-primary hover:underline"
-                      onClick={() => {
-                        const side = cubeSide(line);
-                        if (!side) return;
-                        setLines((rows) =>
-                          rows.map((row) =>
-                            row.key === line.key
-                              ? {
-                                  ...row,
-                                  length: side,
-                                  width: side,
-                                  height: side,
-                                }
-                              : row,
-                          ),
-                        );
-                      }}
-                    >
-                      Put that in the boxes
-                    </button>
-                  </p>
-                ) : (
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {line.cbmByHand
-                      ? "Volume typed in. Clear the box to have it worked out from the three sides again."
-                      : Number(line.length) &&
-                          Number(line.width) &&
-                          Number(line.height)
-                        ? `Worked out from ${line.length} × ${line.width} × ${line.height} ${unit === "CM" ? "cm" : "m"} × ${line.quantity || 0}.`
-                        : "Write the volume straight in, as on the note — or measure the three sides and it works it out for you."}
-                  </p>
-                )}
               </div>
             );
           })}
