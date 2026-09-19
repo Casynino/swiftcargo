@@ -156,6 +156,7 @@ export default async function CargoDetailPage({
     freeStorageDays: money?.freeStorageDays ?? 7,
     storagePerDay: money?.storagePerDay?.toString() ?? null,
     storageCurrency: money?.storageCurrency ?? "USD",
+    storageFrom: storageStart(cargo.darReceiving?.receivedAt, cargo.clearedAt),
     stage: messageStage({
       status: cargo.status,
       hasDarReceiving: Boolean(cargo.darReceiving),

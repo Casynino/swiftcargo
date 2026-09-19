@@ -36,6 +36,7 @@ import { cargoTypeOptions } from "@/lib/valuation";
 import { can } from "@/lib/rbac";
 import { localeOf } from "@/lib/viewer-locale";
 import { cn } from "@/lib/utils";
+import { storageStart } from "@/lib/storage-clock";
 
 /**
  * ONE CONTAINER, AS FINANCE READS IT.
@@ -399,6 +400,7 @@ export async function ContainerMoney({
                 ? Number(settings.storagePerDay).toString()
                 : null,
             storageCurrency: settings?.storageCurrency ?? "USD",
+            storageFrom: storageStart(c.darReceiving?.receivedAt, c.clearedAt),
           }),
         };
       })(),

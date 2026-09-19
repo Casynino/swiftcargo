@@ -153,6 +153,13 @@ export default async function InvoicePage({
                 amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,
                 fxRate: balance.rate ? balance.rate.toNumber().toLocaleString("en-US") : null,
                 stage,
+                cbm: invoice.billableCbm ? Number(invoice.billableCbm).toFixed(3) : null,
+                ratePerCbm: invoice.appliedRate ? Number(invoice.appliedRate).toFixed(2) : null,
+                description: invoice.cargo.description,
+                freeStorageDays: settings?.freeStorageDays ?? null,
+                storagePerDay: settings && Number(settings.storagePerDay) > 0 ? Number(settings.storagePerDay).toString() : null,
+                storageCurrency: settings?.storageCurrency ?? "USD",
+                storageFrom: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
               })}
             />
           ) : null}
@@ -266,6 +273,8 @@ export default async function InvoicePage({
                 storagePerDay: settings && Number(settings.storagePerDay) > 0 ? Number(settings.storagePerDay).toString() : null,
                 storageCurrency: settings?.storageCurrency ?? "USD",
                 stage,
+                description: invoice.cargo.description,
+                storageFrom: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
               }),
             })
           )}

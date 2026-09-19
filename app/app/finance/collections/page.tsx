@@ -633,6 +633,10 @@ export default async function CollectionsPage({
                               ? Number(settings.storagePerDay).toString()
                               : null,
                           storageCurrency: settings?.storageCurrency ?? "USD",
+                          storageFrom: storageStart(
+                            row.invoice.cargo.darReceiving?.receivedAt,
+                            row.invoice.cargo.clearedAt
+                          ),
                         })}
                       />
                       {mayReprice ? (

@@ -54,6 +54,14 @@ export const CONTACT_CHANNELS = [
   ["IN_PERSON", "In person"],
 ] as const;
 
+/**
+ * Where customers collect, and from when, in the owner's words. On the letter
+ * rather than on the warehouse record because it is wording they chose — the
+ * godown's everyday name, not its postal address.
+ */
+const PICKUP_PLACE = "warehouse (godown) yetu Sinza Mapambano";
+const PICKUP_FROM = "kuanzia kesho saa 9:30 asubuhi";
+
 export type MessageContext = {
   customerName: string;
   reference?: string | null;
@@ -88,6 +96,8 @@ export type MessageContext = {
   statusLine?: string | null;
   /** The last free day on the Dar floor, once the clock has started. */
   lastFreeDay?: Date | null;
+  /** The day the storage clock started (cleared into our warehouse). */
+  storageFrom?: Date | null;
   trackUrl?: string;
 };
 
@@ -262,6 +272,43 @@ export function composeMessage(
     );
   };
 
+  /*
+    CLEARED AND IN OUR GODOWN: COME AND COLLECT.
+
+    The owner's letter for goods out of clearance and on our floor. It says
+    where and from when, that payment must be complete before coming, what is
+    owed (nothing, once paid), and that the free storage runs from the day the
+    goods came in — "leo" only when that is today.
+  */
+  const warehouseLetter = () => {
+    const days = context.freeStorageDays ?? 7;
+    const from = context.storageFrom;
+    const today = new Date();
+    const sameDay =
+      from &&
+      from.toLocaleDateString("en-GB", { timeZone: "Africa/Dar_es_Salaam" }) ===
+        today.toLocaleDateString("en-GB", { timeZone: "Africa/Dar_es_Salaam" });
+    const start = !from || sameDay ? "kuanzia leo" : `kuanzia ${day(from)}`;
+    const fee =
+      context.storagePerDay && Number(context.storagePerDay) > 0
+        ? ` Baada ya hapo, storage fee ya ${context.storageCurrency ?? "USD"} ${context.storagePerDay} kwa siku itatozwa hadi mzigo utakapochukuliwa.`
+        : "";
+    const billed = Boolean(context.amountTzs || context.amount);
+    return letter(
+      `Tunakukaribisha kuja kuchukua mzigo wako kwenye ${PICKUP_PLACE}, ${PICKUP_FROM}. ` +
+        `Tafadhali hakikisha malipo yamekamilika kabla ya kuja.`,
+      {
+        storageText: `\n\n*STORAGE:* Siku ${days} bure ${start}.${fee}`,
+        linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Angalia taarifa za mzigo wako:",
+        detailsContext: {
+          ...context,
+          invoiceNumber: null,
+          statusLine: "Cleared — Ready for Pickup",
+        },
+      }
+    );
+  };
+
   switch (kind) {
     case "cargo.received_china":
       return letter(
@@ -327,40 +374,17 @@ export function composeMessage(
     }
 
     case "cargo.received_dar":
-      return letter(
-        `Mzigo wako umekamilisha clearance na sasa umefika ghala letu ` +
-          `${ROUTE.destinationCity}. Malipo yakithibitishwa utakuwa tayari ` +
-          `kuchukuliwa — tutakujulisha.`,
-        { linkLabel: "Angalia taarifa za mzigo wako:" }
-      );
+      return warehouseLetter();
 
     case "cargo.cleared_unpaid":
-      return letter(
-        `Mzigo wako umekamilisha clearance ${ROUTE.destinationCity}. Malipo bado ` +
-          `yanahitajika kabla ya kuuchukua — ukishalipa na malipo kuthibitishwa, ` +
-          `mzigo utakuwa tayari kuchukuliwa.`,
-        { linkLabel: "Angalia invoice yako kamili na njia za malipo:" }
-      );
+      return warehouseLetter();
 
     case "invoice.issued":
     case "payment.reminder":
       /* The bill can go out while the ship is at sea; the sentence says where
          the goods actually are, and only says ready when they are. */
       if (context.stage === "ready" || context.stage === "cleared") {
-        /* The same shape as the clearance letter: no invoice number (the link
-           opens it), and a status line saying where the goods stand. */
-        return letter(
-          `Mzigo wako umefika salama ${ROUTE.destinationCity}, umekamilisha ` +
-            `clearance na sasa uko tayari kuchukuliwa baada ya malipo kuthibitishwa.`,
-          {
-            linkLabel: "Angalia invoice yako kamili na njia za malipo:",
-            detailsContext: {
-              ...context,
-              invoiceNumber: null,
-              statusLine: "Cleared — ready after payment",
-            },
-          }
-        );
+        return warehouseLetter();
       }
       if (context.stage === "clearance") {
         return letter(
@@ -378,25 +402,18 @@ export function composeMessage(
       );
 
     case "cargo.ready":
+      if (!context.stage || context.stage === "ready" || context.stage === "cleared") {
+        return warehouseLetter();
+      }
       /* Paid is not ready. A pickup note can be written while the ship is at
          sea; the letter says so rather than sending somebody to the gate. */
-      if (context.stage && context.stage !== "ready") {
-        return letter(
-          `Malipo yako yamethibitishwa, asante. ` +
-            (context.stage === "clearance"
-              ? `Mzigo wako umefika ${ROUTE.destinationCity} na bado uko kwenye customs clearance.`
-              : context.stage === "cleared"
-                ? `Mzigo wako umekamilisha clearance; tunaandaa pickup note yako.`
-                : `Mzigo wako bado uko njiani kuelekea ${ROUTE.destinationCity}.`) +
-            ` Tutakujulisha mara tu utakapokuwa tayari kuchukuliwa.`,
-          { storage: context.stage === "clearance" || context.stage === "cleared" }
-        );
-      }
       return letter(
-        `Mzigo wako umefika salama ${ROUTE.destinationCity}, umekamilisha clearance ` +
-          `na malipo yamethibitishwa. Sasa uko tayari kuchukuliwa katika ghala letu — ` +
-          `tafadhali njoo na pickup note yako na kitambulisho.`,
-        { linkLabel: "Angalia pickup note na taarifa za mzigo wako:" }
+        `Malipo yako yamethibitishwa, asante. ` +
+          (context.stage === "clearance"
+            ? `Mzigo wako umefika ${ROUTE.destinationCity} na bado uko kwenye customs clearance.`
+            : `Mzigo wako bado uko njiani kuelekea ${ROUTE.destinationCity}.`) +
+          ` Tutakujulisha mara tu utakapokuwa tayari kuchukuliwa.`,
+        { storage: false }
       );
 
     case "storage.expired":
