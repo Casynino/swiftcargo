@@ -182,12 +182,14 @@ export function IntakeForm({
     let cbm = 0;
     let packages = 0;
     let pieces = 0;
+    let kg = 0;
     for (const line of lines) {
       packages += Number(line.quantity) || 0;
       pieces += Number(line.pieces) || 0;
       cbm += Number(line.cbm) || 0;
+      kg += Number(line.weightKg) || 0;
     }
-    return { cbm, packages, pieces };
+    return { cbm, packages, pieces, kg };
   }, [lines]);
 
   /**
@@ -664,7 +666,6 @@ export function IntakeForm({
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
           <div className="flex flex-wrap gap-8">
             {[
-              ["For", picked?.fullName ?? (newCustomer ? newName || "—" : "—")],
               [
                 /* Every row on the form counts from the moment it is added,
                    so the footer never reads 0 over a row the clerk can see. */
@@ -674,6 +675,7 @@ export function IntakeForm({
               ["Packages", String(totals.packages)],
               ["Pieces", totals.pieces > 0 ? String(totals.pieces) : "—"],
               ["Total CBM", `${totals.cbm.toFixed(3)} CBM`],
+              ["Total weight", totals.kg > 0 ? `${totals.kg.toLocaleString("en-US", { maximumFractionDigits: 2 })} kg` : "—"],
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -682,7 +684,7 @@ export function IntakeForm({
                 <p
                   className={cn(
                     "mt-1 text-xl font-semibold",
-                    label === "For" ? "max-w-[12rem] truncate" : "tnum",
+                    "tnum",
                     label === "Total CBM" && "text-marine",
                   )}
                 >
