@@ -4,6 +4,7 @@ import type { ClaimRow } from "@/components/app/claim-list";
 import { formatCurrency, formatRate, tzsToUsd } from "@/lib/currency";
 import { formatDateTime } from "@/lib/format";
 import { balanceOf, paymentTzs } from "@/lib/invoice-balance";
+import { categoryOfCargo } from "@/lib/rate-categories";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -54,9 +55,12 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
         invoice: {
           include: {
             payments: true,
+            items: { select: { unit: true } },
             cargo: {
               select: {
                 reference: true,
+                commodity: true,
+                packages: { where: { deletedAt: null }, select: { cargoType: true } },
                 containerLines: {
                   take: 1,
                   orderBy: { createdAt: "desc" },
@@ -118,6 +122,16 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
       notes: p.notes,
       proofUrl: p.proofs[0]?.url ?? null,
       reason: p.rejectedReason,
+      bill: {
+        invoiceId: p.invoiceId,
+        total: Number(p.invoice.total),
+        fxRate: p.invoice.fxRate ? Number(p.invoice.fxRate) : null,
+        standardRate: p.invoice.standardRate ? Number(p.invoice.standardRate) : null,
+        appliedRate: p.invoice.appliedRate ? Number(p.invoice.appliedRate) : null,
+        cbm: p.invoice.billableCbm ? Number(p.invoice.billableCbm) : null,
+        category: categoryOfCargo(p.invoice.cargo),
+        perCbm: p.invoice.items.some((i) => i.unit === "CBM"),
+      },
     };
   });
 

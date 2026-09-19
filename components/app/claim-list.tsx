@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, Clock, Paperclip, Pencil, Undo2, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeftRight, Ban, CheckCircle2, Clock, Paperclip, Pencil, Scale, Tag, Undo2, Upload } from "lucide-react";
 
 import {
   cancelClaims,
@@ -12,6 +13,7 @@ import {
 import { rejectPayment } from "@/lib/actions/payments";
 import { FormMessage } from "@/components/app/form-message";
 import { Modal } from "@/components/app/modal";
+import { DiscountDialog, ExchangeRateDialog, RateDialog } from "@/components/app/bill-dialogs";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,23 @@ export type ClaimRow = {
   notes: string | null;
   proofUrl: string | null;
   reason: string | null;
+  /** The bill behind the claim, so its price can be put right from here. */
+  bill?: {
+    invoiceId: string;
+    total: number;
+    fxRate: number | null;
+    standardRate: number | null;
+    appliedRate: number | null;
+    cbm: number | null;
+    category: string | null;
+    perCbm: boolean;
+  };
+};
+
+type BillTools = {
+  canChangeBill: boolean;
+  canChangeRate: boolean;
+  categories: { name: string; rate: number }[];
 };
 
 export type ClaimAccount = { id: string; label: string; currency: string };
@@ -65,13 +84,17 @@ export function ClaimList({
   mode,
   mayVerify,
   accounts = [],
+  tools = { canChangeBill: false, canChangeRate: false, categories: [] },
 }: {
   rows: ClaimRow[];
+  /** Discount, price and exchange rate, from inside the edit dialog. */
+  tools?: BillTools;
   /** The collection accounts a payment can be moved to while it is waiting. */
   accounts?: ClaimAccount[];
   /**
-   * "waiting" is Support's copy of the verify queue: the same rows, read-only.
-   * Nothing on it is theirs to act on until Finance answers.
+   * "waiting" is Support's copy of the verify queue. Until Finance decides,
+   * the desk that submitted a claim may still correct it — or the bill behind
+   * it — or withdraw it; only verifying is Finance's.
    */
   mode: "verify" | "sentback" | "waiting";
   mayVerify: boolean;
@@ -112,31 +135,6 @@ export function ClaimList({
             ? "Every claim Finance looked at was accepted."
             : "Every payment somebody submitted has been checked."}
         </p>
-      </div>
-    );
-  }
-
-  if (mode === "waiting") {
-    return (
-      <div className="overflow-hidden rounded-xl border bg-card">
-        <p className="border-b px-5 py-3 text-xs text-muted-foreground">
-          {rows.length} waiting on Finance. They check each one against the bank and
-          verify it or send it back — anything sent back lands in Sent back for this
-          desk to fix.
-        </p>
-        <ul className="divide-y">
-          {rows.map((row) => (
-            <ClaimRowItem
-              key={row.id}
-              row={row}
-              mode={mode}
-              mayVerify={false}
-              picked={false}
-              accounts={accounts}
-              onPick={() => {}}
-            />
-          ))}
-        </ul>
       </div>
     );
   }
@@ -206,6 +204,7 @@ export function ClaimList({
             mayVerify={mayVerify}
             picked={picked.has(row.id)}
             accounts={accounts}
+            tools={tools}
             onPick={() => toggle(row.id)}
           />
         ))}
@@ -215,6 +214,7 @@ export function ClaimList({
 }
 
 function ClaimRowItem({
+  tools,
   row,
   mode,
   mayVerify,
@@ -223,6 +223,7 @@ function ClaimRowItem({
   accounts,
 }: {
   accounts: ClaimAccount[];
+  tools: BillTools;
   row: ClaimRow;
   mode: "verify" | "sentback" | "waiting";
   mayVerify: boolean;
@@ -230,6 +231,8 @@ function ClaimRowItem({
   onPick: () => void;
 }) {
   const [open, setOpen] = useState<null | "edit" | "back" | "cancel">(null);
+  const [billDialog, setBillDialog] = useState<null | "discount" | "price" | "fx">(null);
+  const router = useRouter();
   const [verifyState, verify] = useActionState<ClaimState, FormData>(
     verifyClaims,
     {}
@@ -254,7 +257,7 @@ function ClaimRowItem({
   return (
     <li className={cn("px-5 py-3", picked && "bg-brand/[0.04]")}>
       <div className="flex flex-wrap items-center gap-4">
-        {mode === "waiting" ? null : (
+        {(
           <input
             type="checkbox"
             className="size-5 shrink-0 rounded accent-[hsl(var(--brand))]"
@@ -318,12 +321,7 @@ function ClaimRowItem({
           ) : null}
         </div>
 
-        {mode === "waiting" ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">
-            <Clock className="size-3.5" />
-            Waiting on Finance
-          </span>
-        ) : (
+        {(
         <div className="flex flex-wrap items-center gap-1.5">
           <Button
             size="sm"
@@ -331,7 +329,7 @@ function ClaimRowItem({
             onClick={() => setOpen("edit")}
           >
             <Pencil className="mr-1 size-3.5" />
-            {mode === "verify" ? "Edit" : "Fix and send again"}
+            {mode === "sentback" ? "Fix and send again" : "Edit"}
           </Button>
           {mode === "verify" && mayVerify ? (
             <>
@@ -371,7 +369,13 @@ function ClaimRowItem({
         /* The whole record, as saved, ready to put right before it counts —
            nothing here has been verified or printed on a receipt yet. */
         <Modal
-          title={mode === "verify" ? "Correct this payment" : "Fix and send again"}
+          title={
+            mode === "verify"
+              ? "Correct this payment"
+              : mode === "waiting"
+                ? "Correct this submission"
+                : "Fix and send again"
+          }
           onClose={close}
           className="max-w-lg"
         >
@@ -448,10 +452,34 @@ function ClaimRowItem({
                 </a>
               ) : null}
             </div>
+            {/* The bill behind the claim, put right without leaving: Target's
+                three doors, in the same order. */}
+            {row.bill && (tools.canChangeBill || tools.canChangeRate) ? (
+              <div className="flex flex-col items-start gap-1.5">
+                {tools.canChangeBill ? (
+                  <button type="button" onClick={() => setBillDialog("discount")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
+                    <Tag className="size-3.5" />
+                    Give a discount
+                  </button>
+                ) : null}
+                {tools.canChangeBill && row.bill.perCbm ? (
+                  <button type="button" onClick={() => setBillDialog("price")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
+                    <Scale className="size-3.5" />
+                    Edit price — category, CBM or rate
+                  </button>
+                ) : null}
+                {tools.canChangeRate ? (
+                  <button type="button" onClick={() => setBillDialog("fx")} className="inline-flex items-center gap-1.5 text-xs text-brand hover:underline">
+                    <ArrowLeftRight className="size-3.5" />
+                    Change the rate
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
             <FormMessage error={editState.error} />
             <div className="flex flex-wrap gap-2">
               <SubmitButton size="sm">
-                {mode === "verify" ? "Save the correction" : "Fix and send again"}
+                {mode === "sentback" ? "Fix and send again" : "Save the correction"}
               </SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={close}>
                 Leave it
@@ -507,6 +535,24 @@ function ClaimRowItem({
         <div className="ml-9 mt-2">
           <FormMessage error={message} ok={done} />
         </div>
+      ) : null}
+      {row.bill && billDialog === "discount" ? (
+        <DiscountDialog invoiceId={row.bill.invoiceId} total={row.bill.total} rate={row.bill.fxRate} onClose={() => setBillDialog(null)} onSaved={() => router.refresh()} />
+      ) : null}
+      {row.bill && billDialog === "price" ? (
+        <RateDialog
+          invoiceId={row.bill.invoiceId}
+          standardRate={row.bill.standardRate}
+          appliedRate={row.bill.appliedRate}
+          cbm={row.bill.cbm}
+          category={row.bill.category}
+          categories={tools.categories}
+          onClose={() => setBillDialog(null)}
+          onSaved={() => router.refresh()}
+        />
+      ) : null}
+      {row.bill && billDialog === "fx" ? (
+        <ExchangeRateDialog invoiceId={row.bill.invoiceId} total={row.bill.total} current={row.bill.fxRate} onClose={() => setBillDialog(null)} onSaved={() => router.refresh()} />
       ) : null}
     </li>
   );

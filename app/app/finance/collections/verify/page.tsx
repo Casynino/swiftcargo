@@ -12,6 +12,7 @@ import { claimsAt } from "@/lib/claims";
 import { formatMoney } from "@/lib/format";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { bookCategories } from "@/lib/rate-categories";
 
 export const metadata: Metadata = { title: "Verify payments" };
 
@@ -79,6 +80,11 @@ export default async function Page({
 
       <ClaimList
         rows={rows}
+        tools={{
+          canChangeBill: can(user.role, "invoice.discount"),
+          canChangeRate: can(user.role, "invoice.edit"),
+          categories: can(user.role, "invoice.discount") ? await bookCategories() : [],
+        }}
         accounts={(
           await prisma.bankAccount.findMany({
             where: { active: true },

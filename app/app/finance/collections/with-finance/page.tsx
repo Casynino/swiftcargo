@@ -11,6 +11,8 @@ import { claimsAt } from "@/lib/claims";
 import { formatMoney } from "@/lib/format";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { bookCategories } from "@/lib/rate-categories";
 
 export const metadata: Metadata = { title: "With Finance" };
 
@@ -74,7 +76,23 @@ export default async function Page({
         </Button>
       </form>
 
-      <ClaimList rows={rows} mode="waiting" mayVerify={false} />
+      <ClaimList
+        rows={rows}
+        mode="waiting"
+        mayVerify={false}
+        accounts={(
+          await prisma.bankAccount.findMany({
+            where: { active: true },
+            orderBy: [{ sortOrder: "asc" }, { bankName: "asc" }],
+            select: { id: true, bankName: true, currency: true },
+          })
+        ).map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})`, currency: a.currency }))}
+        tools={{
+          canChangeBill: can(user.role, "invoice.discount"),
+          canChangeRate: can(user.role, "invoice.edit"),
+          categories: can(user.role, "invoice.discount") ? await bookCategories() : [],
+        }}
+      />
     </div>
   );
 }
