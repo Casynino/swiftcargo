@@ -1,5 +1,6 @@
 "use server";
 
+import { bilingual } from "@/lib/translate";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { Prisma, type MeasurementUnit, type PackageType } from "@prisma/client";
@@ -279,6 +280,20 @@ export async function upsertPackage(
   }
   const data = parsed.data;
 
+  /* An editor without a Chinese box still gets one filled when the glossary
+     knows the goods; one it does not know leaves the saved Chinese alone. */
+  let description = data.description ?? null;
+  let zhPatch: { descriptionZh?: string | null } = formData.has("descriptionZh")
+    ? { descriptionZh: data.descriptionZh ?? null }
+    : {};
+  if (description && !formData.has("descriptionZh")) {
+    const both = await bilingual(description).catch(() => null);
+    if (both?.en && both.zh) {
+      description = both.en;
+      zhPatch = { descriptionZh: both.zh };
+    }
+  }
+
   try {
     const result = await prisma.$transaction((tx) =>
       applyPackageLine(tx, actor, {
@@ -286,7 +301,7 @@ export async function upsertPackage(
         packageId: data.packageId ?? null,
         packageType: data.packageType as PackageType,
         cargoType: data.cargoType ?? null,
-        description: data.description ?? null,
+        description,
         quantity: data.quantity,
         unit: data.unit as MeasurementUnit,
         length: data.length ?? null,
@@ -299,7 +314,7 @@ export async function upsertPackage(
         ...(formData.has("declaredUnitValue")
           ? { declaredUnitValue: data.declaredUnitValue ?? null }
           : {}),
-        ...(formData.has("descriptionZh") ? { descriptionZh: data.descriptionZh ?? null } : {}),
+        ...zhPatch,
         ...(formData.has("pieces") ? { pieces: data.pieces ?? null } : {}),
         cbm: data.cbm ?? null,
         balerNumber: data.balerNumber ?? null,
@@ -925,6 +940,22 @@ export async function receiveNewCargo(
     height stay available for the cases where a clerk would rather have the
     system multiply, and are used only when no volume was typed.
   */
+  /*
+    BOTH LANGUAGES, FROM WHAT WAS TYPED.
+
+    Guangzhou types the goods in Chinese; Dar reads them in English. The
+    glossary fills whichever is missing when it knows the term, and a line the
+    clerk described twice teaches it. Never fatal — a description saved in one
+    language is still a box somebody can identify.
+  */
+  for (const line of lines) {
+    const both = await bilingual(line.description, line.descriptionZh).catch(() => null);
+    if (both) {
+      line.description = both.en ?? both.zh ?? line.description;
+      line.descriptionZh = both.zh;
+    }
+  }
+
   const measured = lines.map((line) => {
     const typed =
       line.cbm !== null && line.cbm > 0 ? new Prisma.Decimal(line.cbm) : null;
@@ -1081,6 +1112,11 @@ export async function receiveNewCargo(
         lines.length === 1
           ? lines[0].description
           : `${lines[0].description} and ${lines.length - 1} more`;
+      const summaryZh = lines[0].descriptionZh
+        ? lines.length === 1
+          ? lines[0].descriptionZh
+          : `${lines[0].descriptionZh} 等${lines.length}项`
+        : null;
 
       const cargo = await tx.cargo.create({
         data: {
@@ -1094,6 +1130,7 @@ export async function receiveNewCargo(
           supplierRef: data.supplierRef || null,
           service: "LCL",
           description: summary,
+          descriptionZh: summaryZh,
           declaredPackages: totalPackages,
           declaredCbm: totalCbm,
           notes: data.notes || null,

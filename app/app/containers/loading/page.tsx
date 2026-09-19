@@ -24,7 +24,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-import { primeLocale, T } from "@/lib/server-t";
+import { P, primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Loading containers" };
 
 const TYPE_LABEL: Record<ContainerType, string> = {
@@ -120,6 +120,7 @@ export default async function LoadingContainersPage({
                 id: true,
                 reference: true,
                 description: true,
+                descriptionZh: true,
                 receiver: { select: { fullName: true, phone: true } },
                 packages: {
                   where: { deletedAt: null },
@@ -193,7 +194,7 @@ export default async function LoadingContainersPage({
         reference: l.cargo.reference,
         customer: l.cargo.receiver.fullName,
         phone: l.cargo.receiver.phone,
-        goods: types.length > 0 ? types.join(", ") : (l.cargo.description ?? "—"),
+        goods: types.length > 0 ? types.map((type) => T(type)).join(", ") : (P(l.cargo.description, l.cargo.descriptionZh) || "—"),
         packages: l.packagesCount,
         /* Pieces are not carried on the container line — they are the count
            inside the packages, and the receiving row is the only place that

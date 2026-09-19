@@ -452,6 +452,10 @@ model Cargo {
 
   service     ServiceType @default(LCL)
   description String
+  /// The same summary in Chinese, for the Guangzhou desk. Filled from the
+  /// glossary when the goods are known in both languages; blank otherwise,
+  /// and a Chinese reader then sees the description as it was typed.
+  descriptionZh String?
   /// Commodity, for the rate book and for customs. It does NOT decide a route —
   /// there is one sea lane.
   commodity   String?
@@ -2887,4 +2891,40 @@ model ScanEvent {
   @@index([boxId, createdAt])
   @@index([cargoId, createdAt])
   @@index([createdAt])
+}
+
+
+/**
+ * THE BUSINESS'S OWN VOCABULARY, IN BOTH LANGUAGES.
+ *
+ * The goods this company ships repeat: cigarette paper, ladies' shoes,
+ * motorcycle spares. A term in this book is rendered the same way every time,
+ * instantly and for nothing — which a translation service cannot promise, and
+ * a warehouse cannot reconcile a vocabulary that drifts under it. Learned from
+ * lines the clerks describe in both languages; a person's pairing is never
+ * replaced by a guess.
+ */
+model CargoTerm {
+  id String @id @default(cuid())
+
+  /// The Chinese term, normalised — the key both directions use.
+  zh String @unique
+  en String
+
+  source    TermSource @default(SEEDED)
+  timesUsed Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([en])
+}
+
+enum TermSource {
+  /// Taken from cargo already described in both languages.
+  SEEDED
+  /// Typed by a member of staff.
+  STAFF
+  /// Returned by a translation service.
+  MACHINE
 }

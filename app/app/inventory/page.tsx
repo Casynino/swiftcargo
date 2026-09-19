@@ -34,7 +34,7 @@ import { can } from "@/lib/rbac";
 import { cargoTypeOptions } from "@/lib/valuation";
 import { requirePermission } from "@/lib/session";
 
-import { primeLocale, T } from "@/lib/server-t";
+import { P, primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Warehouse floor" };
 
 /*
@@ -162,6 +162,7 @@ export default async function InventoryPage({
                   { shippingMark: { contains: query, mode: "insensitive" as const } },
                   { paperReceiptNo: { contains: query } },
                   { description: { contains: query, mode: "insensitive" as const } },
+                  { descriptionZh: { contains: query } },
                   {
                     sender: {
                       OR: [
@@ -475,7 +476,7 @@ export default async function InventoryPage({
                         ) : null}
                       </TableCell>
                       <TableCell className="hidden max-w-xs truncate text-sm text-muted-foreground lg:table-cell">
-                        {item.description}
+                        {P(item.description, item.descriptionZh)}
                       </TableCell>
                       <TableCell className="tnum text-right text-sm">
                         {receiving?.packagesCount ?? "—"}

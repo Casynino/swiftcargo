@@ -58,7 +58,7 @@ import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
 import { storageStart } from "@/lib/storage-clock";
 
-import { primeLocale } from "@/lib/server-t";
+import { P, primeLocale } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -563,7 +563,7 @@ export default async function CargoDetailPage({
             </dl>
             <div className="px-6 py-4">
               <p className="text-sm text-muted-foreground">Description</p>
-              <p className="mt-1">{cargo.description}</p>
+              <p className="mt-1">{P(cargo.description, cargo.descriptionZh)}</p>
               {cargo.receiverId !== cargo.senderId ? (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Sent by{" "}

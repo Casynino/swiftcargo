@@ -29,3 +29,13 @@ export async function primeLocale(): Promise<Locale> {
 export function T(text: string): string {
   return t(current().locale, text);
 }
+
+/**
+ * Goods in the reader's language: the Chinese to a Chinese reader, the English
+ * to everyone else, and whichever exists when only one does. Never blank while
+ * either was typed.
+ */
+export function P(en: string | null | undefined, zh: string | null | undefined): string {
+  const first = current().locale === "zh" ? zh : en;
+  return (first?.trim() || en?.trim() || zh?.trim() || "");
+}

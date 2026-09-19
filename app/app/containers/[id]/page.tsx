@@ -58,7 +58,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-import { primeLocale, T } from "@/lib/server-t";
+import { P, primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -161,6 +161,7 @@ export default async function ContainerPage({
             { shippingMark: { contains: floorQuery, mode: "insensitive" as const } },
             { paperReceiptNo: { contains: floorQuery } },
             { description: { contains: floorQuery, mode: "insensitive" as const } },
+            { descriptionZh: { contains: floorQuery } },
             {
               sender: {
                 fullName: { contains: floorQuery, mode: "insensitive" as const },
@@ -321,7 +322,7 @@ export default async function ContainerPage({
               reference: w.reference,
               customer: w.sender.fullName,
               shippingMark: w.shippingMark,
-              description: w.description,
+              description: P(w.description, w.descriptionZh),
               category:
                 [
                   ...new Set(

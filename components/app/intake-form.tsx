@@ -534,7 +534,9 @@ export function IntakeForm({
                     </option>
                     {cargoTypes.map((type) => (
                       <option key={type} value={type}>
-                        {type}
+                        {/* The rate book's own word stays beside the
+                            translation: it is the name Finance prices by. */}
+                        {t(type) !== type ? `${t(type)} · ${type}` : type}
                       </option>
                     ))}
                   </NativeSelect>
