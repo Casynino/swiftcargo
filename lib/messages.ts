@@ -245,15 +245,17 @@ export function composeMessage(
       linkLabel?: string;
       /** Replaces the usual storage terms. */
       storageText?: string;
+      /** The details block from a different view of the context. */
+      detailsContext?: MessageContext;
       closing?: string;
     } = {}
   ) => {
-    const { details = true, storage = true, linkLabel, storageText, closing } = options;
+    const { details = true, storage = true, linkLabel, storageText, closing, detailsContext } = options;
     return (
       `*${COMPANY.name.toUpperCase()}*\n\n` +
       `Habari ${name} !\n\n` +
       `${sentence}` +
-      (details ? `\n\n${cargoBlock(context)}` : "") +
+      (details ? `\n\n${cargoBlock(detailsContext ?? context)}` : "") +
       (storageText ?? (storage ? storageBlock(context) : "")) +
       `\n\n*${linkLabel ?? "Fuatilia mzigo wako:"}*\n${link}` +
       (closing ? `\n\n${closing}` : "")
@@ -297,29 +299,27 @@ export function composeMessage(
       warehouse for goods still in customs has been lied to by us.
     */
     case "cargo.arrived": {
-      /* With the bill in it when there is one: the customer can pay while
-         customs has the goods, and be ready the day clearance finishes. */
+      /* Short, in the owner's words. With a bill out, the amount is in it and
+         the customer is told they can pay now; the invoice number itself is
+         left to the page the link opens. */
       const billed = Boolean(context.amountTzs || context.amount);
+      const days = context.freeStorageDays ?? 7;
+      const fee =
+        context.storagePerDay && Number(context.storagePerDay) > 0
+          ? ` Baada ya hapo, storage fee ya ${context.storageCurrency ?? "USD"} ${context.storagePerDay}/siku itatozwa hadi mzigo utakapochukuliwa.`
+          : "";
       return letter(
         `Mzigo wako umefika salama ${ROUTE.destinationCity} na kwa sasa uko kwenye ` +
-          `hatua ya customs clearance. Tunaendelea na taratibu za kuutoa kwenye ` +
-          `clearance, na mara tu utakapokuwa umekamilika utapokea notification ` +
-          `nyingine ya kukujulisha kuwa mzigo wako uko tayari kuchukuliwa.` +
+          `customs clearance. ` +
           (billed
-            ? `\n\nInvoice yako iko tayari — unaweza kulipa sasa ili mzigo uwe ` +
-              `tayari kuchukuliwa mara clearance itakapokamilika.`
-            : ""),
+            ? `Unaweza kulipa sasa ili uwe tayari kuchukuliwa mara clearance itakapokamilika.`
+            : `Tutakujulisha mara tu utakapokuwa tayari kuchukuliwa.`),
         {
-          storageText: arrivalStorageBlock({
-            ...context,
-            statusLine: context.statusLine ?? "Clearance in Progress",
-          }),
-          linkLabel: billed
-            ? "Angalia invoice yako kamili na njia za malipo:"
-            : "Angalia taarifa za mzigo wako:",
-          closing:
-            "Tutakujulisha mara tu mzigo wako utakapokuwa umekamilisha clearance " +
-            "na kuwa tayari kuchukuliwa.",
+          storageText:
+            `\n\n*STORAGE:* Siku ${days} bure kuanzia mzigo unapothibitishwa kufika ` +
+            `${ROUTE.destinationCity}.${fee}`,
+          linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Fuatilia mzigo wako:",
+          detailsContext: { ...context, invoiceNumber: null, statusLine: "Clearance in Progress" },
         }
       );
     }
