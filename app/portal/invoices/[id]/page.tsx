@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { ChevronLeft, Download } from "lucide-react";
 
 import { PayForm } from "@/components/portal/pay-form";
+import { PrintButton } from "@/components/app/print-button";
+import { ShareLink } from "@/components/portal/share-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,6 +76,17 @@ export default async function PortalInvoicePage({
         <Badge tone={settled ? "good" : invoice.status === "OVERDUE" ? "bad" : "warn"}>
           {INVOICE_STATUS_LABELS[invoice.status]}
         </Badge>
+      </div>
+
+      <div className="flex flex-wrap gap-2 print:hidden">
+        <Button asChild size="sm">
+          <a href={`/portal/invoices/${invoice.id}/pdf`}>
+            <Download />
+            Download PDF
+          </a>
+        </Button>
+        <PrintButton label="Print" />
+        <ShareLink title={`Invoice ${invoice.number}`} />
       </div>
 
       <Card>

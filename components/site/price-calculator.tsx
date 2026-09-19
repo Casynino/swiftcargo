@@ -33,9 +33,12 @@ export function PriceCalculator({
   cargoTypes,
   containers = [],
   start = "cbm",
+  bookPath = "/book",
 }: {
   cargoTypes: string[];
   containers?: FullContainerPrice[];
+  /** Where "Book" goes: the public form, or the portal's own for a signed-in customer. */
+  bookPath?: string;
   /** Which way of giving the volume the card opens on. */
   start?: "cbm" | "boxes";
 }) {
@@ -93,7 +96,7 @@ export function PriceCalculator({
     setCbmTyped((v) => String(Math.max(0, Math.round(((Number(v) || 0) + delta) * 10) / 10)));
 
   return (
-    <div className="grid overflow-clip rounded-[2rem] border bg-card shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] lg:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid grid-cols-1 overflow-clip rounded-[2rem] border bg-card [&>*]:min-w-0 shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] lg:grid-cols-[1.15fr_0.85fr]">
       {/* ---------------------------------------------------- The question */}
       <div className="flex flex-col p-5 sm:p-8">
         {containers.length > 0 ? (
@@ -408,7 +411,7 @@ export function PriceCalculator({
             </p>
             <p className="mt-2 text-sm text-white/60">{t(locale, "The whole container, Guangzhou to Dar es Salaam.")}</p>
             <Link
-              href="/book?service=FULL_CONTAINER"
+              href={`${bookPath}?service=FULL_CONTAINER`}
               className="track-go mt-8 inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold"
             >
               {t(locale, "Book this container")}
@@ -480,7 +483,7 @@ export function PriceCalculator({
             {priced ? (
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  href={`/book?service=SHARED_CARGO&commodity=${encodeURIComponent(cargoType)}&cbm=${encodeURIComponent(priced.measuredCbm)}`}
+                  href={`${bookPath}?service=SHARED_CARGO&commodity=${encodeURIComponent(cargoType)}&cbm=${encodeURIComponent(priced.measuredCbm)}`}
                   className="track-go inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold"
                 >
                   {t(locale, "Book this shipment")}

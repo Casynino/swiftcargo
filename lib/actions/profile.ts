@@ -6,7 +6,8 @@ import { z } from "zod";
 
 import { recordAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { requireCustomer, requireUser } from "@/lib/session";
+import { normaliseAnyPhone } from "@/lib/phone";
 
 export type ProfileState = { error?: string; ok?: string };
 
@@ -147,5 +148,77 @@ export async function setLanguage(locale: string): Promise<ProfileState> {
   /* Every server-rendered screen says something different now, so the whole
      shell is stale — not just the page the switch was pressed on. */
   revalidatePath("/app", "layout");
+  return { ok: "Saved." };
+}
+
+/*
+  A CUSTOMER'S BUSINESS DETAILS, ON THEIR OWN ROW.
+
+  The customer row is found from the session, never from the form. The phone
+  number and the email are not on this form: the phone is how the warehouse
+  and Support find the account, and changing it goes through a person who can
+  make sure it is still the same customer.
+*/
+const customerDetailsSchema = z.object({
+  businessName: z.string().trim().max(120).optional(),
+  address: z.string().trim().max(240).optional(),
+  city: z.string().trim().max(80).optional(),
+  altPhone: z.string().trim().max(30).optional(),
+  taxId: z.string().trim().max(40).optional(),
+});
+
+export async function updateMyCustomerDetails(
+  _prev: ProfileState | undefined,
+  formData: FormData
+): Promise<ProfileState> {
+  const user = await requireCustomer();
+
+  const parsed = customerDetailsSchema.safeParse({
+    businessName: formData.get("businessName")?.toString() ?? "",
+    address: formData.get("address")?.toString() ?? "",
+    city: formData.get("city")?.toString() ?? "",
+    altPhone: formData.get("altPhone")?.toString() ?? "",
+    taxId: formData.get("taxId")?.toString() ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the details." };
+  }
+
+  const altPhone = parsed.data.altPhone ? normaliseAnyPhone(parsed.data.altPhone) : null;
+  if (parsed.data.altPhone && !altPhone) {
+    return { error: "That second phone number does not look right." };
+  }
+
+  const before = await prisma.customer.findUnique({
+    where: { id: user.customerId },
+    select: { businessName: true, address: true, city: true, altPhone: true, taxId: true },
+  });
+  if (!before) return { error: "Your account could not be found." };
+
+  const next = {
+    businessName: parsed.data.businessName || null,
+    address: parsed.data.address || null,
+    city: parsed.data.city || null,
+    altPhone,
+    taxId: parsed.data.taxId || null,
+  };
+  const changed = (Object.keys(next) as (keyof typeof next)[]).filter((k) => before[k] !== next[k]);
+  if (changed.length === 0) return { ok: "Nothing to change." };
+
+  await prisma.customer.update({ where: { id: user.customerId }, data: next });
+
+  await recordAudit({
+    actor: user,
+    action: "customer.selfUpdate",
+    entity: "Customer",
+    entityId: user.customerId,
+    summary: `${user.name} updated their own ${changed.join(", ")}`,
+    metadata: {
+      before: Object.fromEntries(changed.map((k) => [k, before[k]])),
+      after: Object.fromEntries(changed.map((k) => [k, next[k]])),
+    },
+  });
+
+  revalidatePath("/portal/profile");
   return { ok: "Saved." };
 }

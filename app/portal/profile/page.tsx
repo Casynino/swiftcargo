@@ -4,6 +4,8 @@ import { CopyField } from "@/components/app/copy-field";
 import { SupplierAddressCard } from "@/components/app/supplier-address-card";
 import { supplierAddress } from "@/lib/supplier-address";
 import { Field } from "@/components/app/field";
+import { BusinessDetailsForm, PasswordForm } from "@/components/portal/profile-forms";
+import { formatTzPhone } from "@/lib/phone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -24,9 +26,9 @@ export default async function PortalProfilePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">My details</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">My profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ring us if any of this needs changing.
+          Your phone number is how we find your account — ring us to change it.
         </p>
       </header>
 
@@ -67,17 +69,37 @@ export default async function PortalProfilePage() {
         <CardContent>
           <dl className="grid gap-5 sm:grid-cols-2">
             <Field label="Name" value={customer?.fullName} />
-            <Field label="Business" value={customer?.businessName} />
-            <Field label="Customer code" value={customer?.code} mono />
-            <Field label="Phone" value={customer?.phone} mono />
+            <Field label="Phone (your account ID)" value={customer?.phone ? formatTzPhone(customer.phone) : null} mono />
             <Field label="Email" value={customer?.email} />
-            <Field label="City" value={customer?.city} />
-            <Field label="TIN / VRN" value={customer?.taxId} mono />
-            <Field
-              label="Member since"
-              value={formatDate(customer?.createdAt)}
-            />
+            <Field label="Customer code" value={customer?.code} mono />
+            <Field label="Member since" value={formatDate(customer?.createdAt)} />
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Business details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BusinessDetailsForm
+            defaults={{
+              businessName: customer?.businessName ?? "",
+              address: customer?.address ?? "",
+              city: customer?.city ?? "",
+              altPhone: customer?.altPhone ?? "",
+              taxId: customer?.taxId ?? "",
+            }}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Security</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PasswordForm />
         </CardContent>
       </Card>
     </div>

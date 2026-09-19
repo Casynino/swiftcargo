@@ -16,12 +16,13 @@ export default async function PortalLayout({
 }) {
   const user = await requireCustomer();
 
-  const unread = await prisma.notification.count({
-    where: { customerId: user.customerId, readAt: null },
-  });
+  const [unread, customer] = await Promise.all([
+    prisma.notification.count({ where: { customerId: user.customerId, readAt: null } }),
+    prisma.customer.findUnique({ where: { id: user.customerId }, select: { code: true } }),
+  ]);
 
   return (
-    <PortalShell name={user.name} unread={unread}>
+    <PortalShell name={user.name} code={customer?.code ?? null} unread={unread}>
       {children}
     </PortalShell>
   );

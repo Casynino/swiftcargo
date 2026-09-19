@@ -6,7 +6,7 @@ import type { ExceptionStatus } from "@prisma/client";
 
 import { recordAudit } from "@/lib/audit";
 import { nextExceptionReference } from "@/lib/ids";
-import { notifyStaff, staffInDepartment } from "@/lib/notify";
+import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import type { Permission } from "@/lib/rbac";
 import { authorize, type SessionUser } from "@/lib/session";
@@ -80,6 +80,7 @@ export async function raiseException(
         select: {
           id: true,
           senderId: true,
+          receiverId: true,
           reference: true,
           containerLines: { select: { containerId: true } },
         },
@@ -141,6 +142,30 @@ export async function raiseException(
       },
       tx
     );
+
+    /* The owner of the goods hears that something is wrong, in plain words
+       and nothing more. The case's own description is the desk's working and
+       can name other people's cargo; it never leaves the building. */
+    const TELL: Partial<Record<string, string>> = {
+      MISSING_CARGO: "We are tracing part of your cargo",
+      DAMAGED_CARGO: "Some of your cargo arrived damaged",
+      CUSTOMS_HOLD: "Your cargo is held at customs",
+      SHIPMENT_DELAY: "Your shipment is delayed",
+      PACKAGE_MISMATCH: "We need to check your package count with you",
+    };
+    const told = TELL[data.type];
+    if (cargo && told) {
+      await notifyCustomer(
+        [cargo.receiverId, cargo.senderId].filter((id): id is string => Boolean(id)),
+        {
+          kind: `exception.${data.type.toLowerCase()}`,
+          title: `${cargo.reference}: ${told}`,
+          body: "Our team is on it and will contact you. Reply in Support if you have questions.",
+          href: `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
+        },
+        tx
+      );
+    }
 
     return item;
   });

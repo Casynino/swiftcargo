@@ -54,8 +54,26 @@ export async function notifyCustomer(
   if (recipients.length === 0) return;
 
   const client = tx ?? prisma;
+
+  /* ONE EVENT, ONE NOTICE. A container moved back to loading and forward
+     again, or a button pressed twice, told the customer the same sentence
+     four times — which reads as a system that does not know what it said.
+     The same words about the same thing inside a day are said once. */
+  const already = await client.notification.findMany({
+    where: {
+      customerId: { in: recipients },
+      kind: payload.kind,
+      title: payload.title,
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    },
+    select: { customerId: true },
+  });
+  const told = new Set(already.map((n) => n.customerId));
+  const fresh = recipients.filter((id) => !told.has(id));
+  if (fresh.length === 0) return;
+
   await client.notification.createMany({
-    data: recipients.map((customerId) => ({ customerId, ...payload })),
+    data: fresh.map((customerId) => ({ customerId, ...payload })),
   });
 }
 

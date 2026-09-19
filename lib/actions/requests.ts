@@ -9,7 +9,7 @@ import {
   nextQuoteReference,
 } from "@/lib/ids";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
-import { notifyStaff, staffInDepartment } from "@/lib/notify";
+import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { normaliseAnyPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { SERVICE_LABEL } from "@/lib/constants";
@@ -610,15 +610,15 @@ export async function updateRequestStatus(
 
   const data = { status: status as never, staffNotes: notes };
 
-  let before: { reference: string; status: string } | null;
+  let before: { reference: string; status: string; customerId: string | null } | null;
   if (kind === "pickup") {
-    before = await prisma.pickupRequest.findUnique({ where: { id }, select: { reference: true, status: true } });
+    before = await prisma.pickupRequest.findUnique({ where: { id }, select: { reference: true, status: true, customerId: true } });
     if (before) await prisma.pickupRequest.update({ where: { id }, data });
   } else if (kind === "booking") {
-    before = await prisma.containerBooking.findUnique({ where: { id }, select: { reference: true, status: true } });
+    before = await prisma.containerBooking.findUnique({ where: { id }, select: { reference: true, status: true, customerId: true } });
     if (before) await prisma.containerBooking.update({ where: { id }, data });
   } else if (kind === "quote") {
-    before = await prisma.quoteRequest.findUnique({ where: { id }, select: { reference: true, status: true } });
+    before = await prisma.quoteRequest.findUnique({ where: { id }, select: { reference: true, status: true, customerId: true } });
     /* A quote keeps its note as the response to the customer's enquiry; it has
        no staffNotes column, and writing one fails the whole save. */
     if (before) {
@@ -639,6 +639,23 @@ export async function updateRequestStatus(
     entityId: id,
     summary: `${before.reference}: ${before.status} → ${status}${notes ? ` — ${notes}` : ""}`,
   });
+
+  /* The customer hears that it moved, never the desk's note about why. */
+  const words: Record<string, string> = {
+    UNDER_REVIEW: "is being reviewed",
+    APPROVED: "is confirmed",
+    SCHEDULED: "is in progress",
+    COMPLETED: "is completed",
+    CANCELLED: "was cancelled",
+    REJECTED: "could not be accepted — we will be in touch",
+  };
+  if (before.customerId && before.status !== status && words[status]) {
+    await notifyCustomer([before.customerId], {
+      kind: "request.status",
+      title: `Your request ${before.reference} ${words[status]}`,
+      href: kind === "pickup" ? "/portal/book?service=pickup" : "/portal/book",
+    });
+  }
 
   revalidatePath("/app/support/requests");
   return { ok: "Updated." };

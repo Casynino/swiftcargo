@@ -7,7 +7,7 @@ import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { SERVICE_LABEL } from "@/lib/constants";
 import { formDate } from "@/lib/dates";
 import { nextCustomerCode, shippingMarkFor } from "@/lib/ids";
-import { notifyStaff, staffInDepartment } from "@/lib/notify";
+import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { formMessage } from "@/lib/safe-error";
 import { authorize, type SessionUser } from "@/lib/session";
@@ -161,7 +161,7 @@ export async function schedulePickup(
 
   const before = await prisma.pickupRequest.findUnique({
     where: { id },
-    select: { reference: true, scheduledDate: true, status: true },
+    select: { reference: true, scheduledDate: true, status: true, customerId: true },
   });
   if (!before) return { error: "That request no longer exists." };
 
@@ -193,6 +193,16 @@ export async function schedulePickup(
     entityId: id,
     summary: `${before.reference} collection ${scheduledDate ? `set for ${scheduledDate.toISOString().slice(0, 10)}` : "cleared"}`,
   });
+
+  /* The customer asked for the van; the day it is coming is theirs to know. */
+  if (scheduledDate && before.customerId) {
+    await notifyCustomer([before.customerId], {
+      kind: "request.pickupScheduled",
+      title: `Pickup ${before.reference} scheduled`,
+      body: `We will collect from your supplier on ${scheduledDate.toISOString().slice(0, 10)}.`,
+      href: "/portal/book?service=pickup",
+    });
+  }
 
   paths();
   return { ok: "Saved." };
@@ -232,7 +242,7 @@ export async function quoteServiceRequest(
 
   const before = await prisma.containerBooking.findUnique({
     where: { id },
-    select: { reference: true, quotedAmount: true, status: true },
+    select: { reference: true, quotedAmount: true, status: true, customerId: true },
   });
   if (!before) return { error: "That request no longer exists." };
 
@@ -262,6 +272,16 @@ export async function quoteServiceRequest(
     entityId: id,
     summary: `${before.reference} quoted ${parsed.data.currency} ${parsed.data.amount}`,
   });
+
+  /* The figure only — the note beside it is the desk's own working. */
+  if (before.customerId) {
+    await notifyCustomer([before.customerId], {
+      kind: "request.quoted",
+      title: `Your quote for ${before.reference} is ready`,
+      body: `${parsed.data.currency} ${parsed.data.amount.toLocaleString("en-US")}. Reply to confirm or ask us anything.`,
+      href: "/portal/book",
+    });
+  }
 
   paths();
   return { ok: "Quotation recorded." };

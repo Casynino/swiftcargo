@@ -216,20 +216,27 @@ export function QuoteForm() {
  * rather than a closed list: the floor would rather be told "engine parts" than
  * be given "General" because nothing else fitted.
  */
-export function PickupForm({ cargoTypes = [] }: { cargoTypes?: string[] }) {
+export function PickupForm({
+  cargoTypes = [],
+  contact = {},
+}: {
+  cargoTypes?: string[];
+  contact?: ContactDefaults;
+}) {
   return (
     <PublicForm action={submitPickupRequest} submitLabel={t(locale, "Request a pickup")}>
       <Section title={t(locale, "Who we are collecting for")}>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="p-contactName">{t(locale, "Your name")}</Label>
-            <Input id="p-contactName" name="contactName" required maxLength={120} autoComplete="name" />
+            <Input id="p-contactName" name="contactName" required maxLength={120} autoComplete="name" defaultValue={contact.name} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="p-contactPhone">{t(locale, "Phone")}</Label>
             <Input
               id="p-contactPhone"
               name="contactPhone"
+              defaultValue={contact.phone}
               type="tel"
               inputMode="tel"
               required
@@ -247,7 +254,7 @@ export function PickupForm({ cargoTypes = [] }: { cargoTypes?: string[] }) {
             <Label htmlFor="p-contactEmail">
               {t(locale, "Email")} <Optional />
             </Label>
-            <Input id="p-contactEmail" name="contactEmail" type="email" maxLength={200} autoComplete="email" />
+            <Input id="p-contactEmail" name="contactEmail" type="email" maxLength={200} autoComplete="email" defaultValue={contact.email} />
           </div>
         </div>
       </Section>
@@ -367,6 +374,9 @@ export type SailingOption = {
   label: string;
 };
 
+/** A signed-in customer's own details, so the portal does not ask for them again. */
+export type ContactDefaults = { name?: string; phone?: string; email?: string };
+
 export type BookingDefaults = {
   service?: string;
   sailing?: string;
@@ -399,10 +409,12 @@ export function BookingForm({
   sailings = [],
   cargoTypes = [],
   defaults = {},
+  contact = {},
 }: {
   sailings?: SailingOption[];
   cargoTypes?: string[];
   defaults?: BookingDefaults;
+  contact?: ContactDefaults;
 }) {
   const initial = SERVICES.some(([value]) => value === defaults.service)
     ? (defaults.service as Service)
@@ -435,17 +447,17 @@ export function BookingForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="b-contactName">{t(locale, "Your name")}</Label>
-            <Input id="b-contactName" name="contactName" required maxLength={120} autoComplete="name" />
+            <Input id="b-contactName" name="contactName" required maxLength={120} autoComplete="name" defaultValue={contact.name} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="b-contactPhone">{t(locale, "Phone")}</Label>
-            <Input id="b-contactPhone" name="contactPhone" type="tel" inputMode="tel" required maxLength={40} autoComplete="tel" />
+            <Input id="b-contactPhone" name="contactPhone" type="tel" inputMode="tel" required maxLength={40} autoComplete="tel" defaultValue={contact.phone} />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="b-contactEmail">
               {t(locale, "Email")} <Optional />
             </Label>
-            <Input id="b-contactEmail" name="contactEmail" type="email" maxLength={200} autoComplete="email" />
+            <Input id="b-contactEmail" name="contactEmail" type="email" maxLength={200} autoComplete="email" defaultValue={contact.email} />
           </div>
         </div>
       </Section>
