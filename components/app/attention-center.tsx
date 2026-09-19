@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, TriangleAlert } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, TriangleAlert } from "lucide-react";
 
 import { useT } from "@/components/app/locale-provider";
 import { cn } from "@/lib/utils";
@@ -20,16 +20,18 @@ export type AttentionItem = {
   metaSub?: string;
 };
 
-const BORDER = {
-  warn: "border-l-warning",
-  bad: "border-l-destructive",
-  neutral: "border-l-muted-foreground/40",
+/* As on the air side: red for what is wrong, amber for what is slipping,
+   blue for the desk's everyday queue. */
+const BAR = {
+  warn: "bg-warning",
+  bad: "bg-destructive",
+  neutral: "bg-info",
 } as const;
 
 const ICON = {
   warn: "text-warning",
   bad: "text-destructive",
-  neutral: "text-muted-foreground",
+  neutral: "text-info",
 } as const;
 
 /**
@@ -94,24 +96,26 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
         })}
       </div>
 
-      <ul className="max-h-[12.5rem] divide-y overflow-y-auto">
+      {/* Three rows show; the rest scroll inside the panel, which is the same
+          height whether the desk has three things or thirty. */}
+      <ul className="max-h-[10.5rem] divide-y overflow-y-auto">
         {shown.map((item) => (
           <li key={item.id}>
             <Link
               href={item.href}
-              className={cn(
-                "flex items-center gap-2.5 border-l-2 px-4 py-2.5 transition-colors hover:bg-secondary/50",
-                BORDER[item.tone]
-              )}
+              className="flex items-center gap-2.5 px-4 py-2 transition-colors hover:bg-secondary/50"
             >
-              <TriangleAlert
-                className={cn("mt-0.5 size-3.5 shrink-0", ICON[item.tone])}
-              />
+              <span aria-hidden className={cn("h-7 w-0.5 shrink-0 rounded-full", BAR[item.tone])} />
+              {item.tone === "neutral" ? (
+                <Info className={cn("size-3.5 shrink-0", ICON[item.tone])} />
+              ) : (
+                <TriangleAlert className={cn("size-3.5 shrink-0", ICON[item.tone])} />
+              )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold">
+                <span className="block truncate text-[13px] font-semibold leading-tight">
                   {item.title}
                 </span>
-                <span className="block truncate text-xs text-muted-foreground">
+                <span className="mt-0.5 block truncate text-xs leading-tight text-muted-foreground">
                   {t(item.detail)}
                 </span>
               </span>
