@@ -510,7 +510,7 @@ export function IntakeForm({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor={`d-${line.key}`}>{t("Item description")}</Label>
+                  <Label htmlFor={`d-${line.key}`}>{t("Package description")}</Label>
                   <Input
                     id={`d-${line.key}`}
                     name="itemDescription"

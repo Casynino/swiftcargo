@@ -6066,6 +6066,7 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "Package description": "包裹描述",
   "Cargo reference, shipping mark, customer, phone, container or invoice": "运单号、唛头、客户、电话、集装箱或账单",
   "Tracking number, customer name, phone, container or invoice": "运单号、客户姓名、电话、集装箱或账单",
   "What is arriving, what is measured, and what is waiting for a container.": "正在到货的、已测量的，以及等待装柜的货物。",
