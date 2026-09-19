@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/app/locale-provider";
+
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Search, X } from "lucide-react";
 
@@ -45,6 +47,7 @@ export function CustomerPicker({
   /** So the form around it can fill in what this customer already has. */
   onPick?: (customer: Match | null) => void;
 }) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [matches, setMatches] = useState<Match[]>([]);
   const [chosen, setChosen] = useState<Match | null>(initial ?? null);
@@ -93,7 +96,7 @@ export function CustomerPicker({
           </div>
           <button
             type="button"
-            aria-label="Choose somebody else"
+            aria-label={t("Choose somebody else")}
             className="text-muted-foreground hover:text-foreground"
             onClick={() => {
               setChosen(null);
@@ -118,7 +121,7 @@ export function CustomerPicker({
           value={query}
           autoComplete="off"
           className="pl-9"
-          placeholder="Name, phone, code or shipping mark…"
+          placeholder={t("Name, phone, code or shipping mark…")}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => matches.length > 0 && setOpen(true)}
         />
@@ -168,7 +171,7 @@ export function CustomerPicker({
         ) : null}
       </div>
       <p className={cn("text-xs text-muted-foreground", pending && "opacity-60")}>
-        {pending ? "Searching…" : (hint ?? "Type at least two characters.")}
+        {pending ? t("Searching…") : (hint ?? t("Type at least two characters."))}
       </p>
     </div>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/app/locale-provider";
+
 import { useEffect, useRef, useState } from "react";
 import { Camera, ImagePlus, X } from "lucide-react";
 
@@ -18,6 +20,7 @@ import { Camera, ImagePlus, X } from "lucide-react";
  * the one input the form posts whenever that input loses them.
  */
 export function PhotoCapture({ name = "photos" }: { name?: string }) {
+  const t = useT();
   const posted = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
@@ -71,7 +74,7 @@ export function PhotoCapture({ name = "photos" }: { name?: string }) {
             className={`${tile} w-full border-brand/50 bg-brand/[0.08] text-brand hover:bg-brand/[0.14]`}
           >
             <Camera className="size-7" />
-            {shots.length > 0 ? "Another" : "Camera"}
+            {shots.length > 0 ? t("Another") : t("Camera")}
           </button>
         </li>
         <li>
@@ -81,7 +84,7 @@ export function PhotoCapture({ name = "photos" }: { name?: string }) {
             className={`${tile} w-full text-muted-foreground hover:border-foreground/30 hover:text-foreground`}
           >
             <ImagePlus className="size-7" />
-            Gallery
+            {t("Gallery")}
           </button>
         </li>
         {shots.map((shot, index) => (
@@ -95,7 +98,7 @@ export function PhotoCapture({ name = "photos" }: { name?: string }) {
             <button
               type="button"
               onClick={() => drop(shot.id)}
-              aria-label={`Remove photo ${index + 1}`}
+              aria-label={`${t("Remove")} ${index + 1}`}
               className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-black/65 text-white backdrop-blur hover:bg-black/80"
             >
               <X className="size-4" />
@@ -106,8 +109,8 @@ export function PhotoCapture({ name = "photos" }: { name?: string }) {
 
       <p className="mt-2 text-xs text-muted-foreground">
         {shots.length === 0
-          ? "No photo yet — at least one is needed."
-          : `${shots.length} photo${shots.length === 1 ? "" : "s"} ready.`}
+          ? t("No photo yet — at least one is needed.")
+          : `${shots.length} ${t("photos ready")}`}
       </p>
 
       <input

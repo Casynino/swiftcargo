@@ -13,6 +13,7 @@ import { CustomerPicker } from "@/components/app/customer-picker";
 import { PhotoCapture } from "@/components/app/photo-capture";
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
+import { useT } from "@/components/app/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -108,6 +109,7 @@ export function IntakeForm({
    */
   cargoTypes: string[];
 }) {
+  const t = useT();
   const router = useRouter();
   const [state, action] = useActionState<ActionState, FormData>(
     receiveNewCargo,
@@ -258,14 +260,14 @@ export function IntakeForm({
       {/* ---------------------------------------------------------- Customer */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Who is it for?</CardTitle>
+          <CardTitle className="text-base">{t("Who is it for?")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {newCustomer ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="newCustomerPhone">Phone 电话</Label>
+                  <Label htmlFor="newCustomerPhone">{t("Phone")}</Label>
                   <Input
                     id="newCustomerPhone"
                     name="newCustomerPhone"
@@ -276,19 +278,18 @@ export function IntakeForm({
                     onChange={(e) => setPhone(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    The number is the customer. Names get written down
-                    differently every time; a number does not.
+                    {t("The number is the customer. Names get written down differently every time; a number does not.")}
                   </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="newCustomerName">
-                    Name / shipping mark 客户名称 · 唛头
+                    {t("Name / shipping mark")}
                   </Label>
                   <Input
                     id="newCustomerName"
                     name="newCustomerName"
                     required
-                    placeholder="As written on the boxes"
+                    placeholder={t("As written on the boxes")}
                     value={newName}
                     onChange={(e) => {
                       setNewName(e.target.value);
@@ -343,17 +344,16 @@ export function IntakeForm({
                           _count: { cargoSent: 0 },
                         });
                         setMark(result.customer.shippingMark ?? "");
-                        setSaved(result.ok ?? "Saved.");
+                        setSaved(result.ok ?? t("Saved."));
                         setNewCustomer(false);
                       }
                     }}
                   >
                     <UserPlus />
-                    {saving ? "Saving…" : "Save this customer"}
+                    {saving ? t("Saving…") : t("Save this customer")}
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    Adds them to the book now. You can carry on and receive
-                    their cargo, or come back to it later.
+                    {t("Adds them to the book now. You can carry on and receive their cargo, or come back to it later.")}
                   </span>
                 </div>
               ) : null}
@@ -366,15 +366,14 @@ export function IntakeForm({
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-marine/40 bg-marine/[0.07] p-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
-                      This number is already {known.fullName}
+                      {t("This number is already")} {known.fullName}
                       {known.businessName ? ` · ${known.businessName}` : ""}
                     </p>
                     <p className="tnum text-xs text-muted-foreground">
                       {known.code}
                       {distinctMark(known.fullName, known.shippingMark)
                         ? ` · ${known.shippingMark}`
-                        : ""} · {known._count.cargoSent} consignment
-                      {known._count.cargoSent === 1 ? "" : "s"} with us
+                        : ""} · {known._count.cargoSent} {t("consignments with us")}
                     </p>
                   </div>
                   <Button
@@ -387,7 +386,7 @@ export function IntakeForm({
                     }}
                   >
                     <Check />
-                    Use {known.fullName.split(" ")[0]}
+                    {t("Use")} {known.fullName.split(" ")[0]}
                   </Button>
                 </div>
               ) : null}
@@ -396,13 +395,13 @@ export function IntakeForm({
             <>
               {saved ? (
                 <p className="rounded-md border border-success/30 bg-success/[0.08] px-3 py-2 text-sm">
-                  {saved} Their cargo goes on this consignment.
+                  {saved} {t("Their cargo goes on this consignment.")}
                 </p>
               ) : null}
               <CustomerPicker
                 name="customerId"
-                label="Customer 客户名称"
-                hint="Search by name, phone, code or shipping mark."
+                label={t("Customer")}
+                hint={t("Search by name, phone, code or shipping mark.")}
                 initial={picked ?? undefined}
                 onPick={(customer) => {
                   setMark(customer?.shippingMark ?? "");
@@ -430,7 +429,7 @@ export function IntakeForm({
             onClick={() => setNewCustomer((v) => !v)}
           >
             <UserPlus />
-            {newCustomer ? "Pick an existing customer" : "New customer"}
+            {newCustomer ? t("Pick an existing customer") : t("New customer")}
           </Button>
 
         </CardContent>
@@ -440,13 +439,9 @@ export function IntakeForm({
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-3 space-y-0">
           <div>
-            <CardTitle className="text-base">What did they bring?</CardTitle>
+            <CardTitle className="text-base">{t("What did they bring?")}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              One row per kind of goods, as on the packing list — each with the
-              number of the page it was written on.
-              {nextReceiptNo
-                ? " The numbers run on from the last one recorded; change the first to the pad in your hand and the rest follow."
-                : ""}
+              {t("One row per kind of goods, as on the packing list.")}
             </p>
           </div>
         </CardHeader>
@@ -461,13 +456,13 @@ export function IntakeForm({
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-medium">Package {index + 1}</p>
+                    <p className="text-sm font-medium">{t("Package")} {index + 1}</p>
                     <div className="flex items-center gap-2">
                       <Label
                         htmlFor={`n-${line.key}`}
                         className="text-xs text-muted-foreground"
                       >
-                        Receipt book no.
+                        {t("Receipt book no.")}
                       </Label>
                       <Input
                         id={`n-${line.key}`}
@@ -493,7 +488,7 @@ export function IntakeForm({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={`Remove item ${index + 1}`}
+                        aria-label={`${t("Remove")} ${index + 1}`}
                         onClick={() =>
                           setLines((rows) =>
                             rows.filter((r) => r.key !== line.key),
@@ -518,18 +513,18 @@ export function IntakeForm({
                 <input type="hidden" name="itemPackageType" value="CARTON" />
 
                 <div className="space-y-1.5">
-                  <Label htmlFor={`d-${line.key}`}>Item description 货物描述</Label>
+                  <Label htmlFor={`d-${line.key}`}>{t("Item description")}</Label>
                   <Input
                     id={`d-${line.key}`}
                     name="itemDescription"
                     value={line.description}
                     onChange={(e) => update(line.key, "description", e.target.value)}
-                    placeholder="What the goods are — e.g. Shoes, Phone cases"
+                    placeholder={t("What the goods are — e.g. Shoes, Phone cases")}
                   />
                 </div>
 
                 <div className="mt-3 space-y-1.5">
-                  <Label htmlFor={`c-${line.key}`}>Cargo type 货物类别</Label>
+                  <Label htmlFor={`c-${line.key}`}>{t("Cargo type")}</Label>
                   <NativeSelect
                     id={`c-${line.key}`}
                     name="itemCargoType"
@@ -538,7 +533,7 @@ export function IntakeForm({
                     onChange={(e) => update(line.key, "cargoType", e.target.value)}
                   >
                     <option value="" disabled>
-                      Choose the category…
+                      {t("Choose the category…")}
                     </option>
                     {cargoTypes.map((type) => (
                       <option key={type} value={type}>
@@ -550,7 +545,7 @@ export function IntakeForm({
 
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`q-${line.key}`}>Packages 箱数</Label>
+                    <Label htmlFor={`q-${line.key}`}>{t("Packages")}</Label>
                     <Input
                       id={`q-${line.key}`}
                       name="itemQuantity"
@@ -562,7 +557,7 @@ export function IntakeForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`p-${line.key}`}>Pieces 件数</Label>
+                    <Label htmlFor={`p-${line.key}`}>{t("Pieces")}</Label>
                     <Input
                       id={`p-${line.key}`}
                       name="itemPieces"
@@ -574,7 +569,7 @@ export function IntakeForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`cbm-${line.key}`}>CBM 体积</Label>
+                    <Label htmlFor={`cbm-${line.key}`}>{t("CBM")}</Label>
                     <Input
                       id={`cbm-${line.key}`}
                       name="itemCbm"
@@ -590,7 +585,7 @@ export function IntakeForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`w-${line.key}`}>Weight kg 重量</Label>
+                    <Label htmlFor={`w-${line.key}`}>{t("Weight kg")}</Label>
                     <Input
                       id={`w-${line.key}`}
                       name="itemWeightKg"
@@ -616,7 +611,7 @@ export function IntakeForm({
             }}
           >
             <Plus />
-            Add package
+            {t("Add package")}
           </Button>
         </CardContent>
       </Card>
@@ -625,10 +620,10 @@ export function IntakeForm({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Photos <span className="text-destructive">*</span>
+            {t("Photos")} <span className="text-destructive">*</span>
           </CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            The shipping mark, and anything damaged. The customer sees these.
+            {t("The shipping mark, and anything damaged. The customer sees these.")}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -636,15 +631,15 @@ export function IntakeForm({
 
           <div className="space-y-2">
             <Label htmlFor="notes">
-              Note 备注{" "}
-              <span className="font-normal text-muted-foreground">optional</span>
+              {t("Note")}{" "}
+              <span className="font-normal text-muted-foreground">{t("optional")}</span>
             </Label>
             <Textarea
               id="notes"
               name="notes"
               rows={3}
               maxLength={1000}
-              placeholder="Anything worth knowing — a torn carton, a box that came wet…"
+              placeholder={t("Anything worth knowing — a torn carton, a box that came wet…")}
               className="resize-none"
             />
           </div>
@@ -662,45 +657,39 @@ export function IntakeForm({
         answer to "where do I save this" is never further than the bottom of the
         screen.
       */}
-      <Card className="sticky bottom-4 z-20 border-marine/30 bg-marine/[0.05] shadow-raised backdrop-blur">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <div className="flex flex-wrap gap-8">
-            {[
-              ["Packages", String(totals.packages)],
-              ["Pieces", totals.pieces > 0 ? String(totals.pieces) : "—"],
-              ["Total CBM", `${totals.cbm.toFixed(3)} CBM`],
-              ["Total weight", totals.kg > 0 ? `${totals.kg.toLocaleString("en-US", { maximumFractionDigits: 2 })} kg` : "—"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {label}
-                </p>
-                <p
-                  className={cn(
-                    "mt-1 text-xl font-semibold",
-                    "tnum",
-                    label === "Total CBM" && "text-marine",
-                  )}
-                >
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <SubmitButton size="lg" pendingLabel="Receiving…">
-            <Check />
-            Confirm receiving
-          </SubmitButton>
-        </CardContent>
-      </Card>
+      {/* One slim bar: the running totals on a single line and the button
+          beside them — small enough never to cover the form it saves. */}
+      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-full border border-marine/30 bg-card/95 py-1.5 pl-4 pr-1.5 shadow-raised backdrop-blur">
+        <p className="tnum min-w-0 flex-1 truncate text-xs text-muted-foreground sm:text-sm">
+          <span className="font-semibold text-foreground">{totals.packages}</span> {t("pkg")}
+          {totals.pieces > 0 ? (
+            <>
+              {" · "}
+              <span className="font-semibold text-foreground">{totals.pieces}</span> {t("pcs")}
+            </>
+          ) : null}
+          {" · "}
+          <span className="font-semibold text-marine">{totals.cbm.toFixed(3)}</span> CBM
+          {totals.kg > 0 ? (
+            <>
+              {" · "}
+              <span className="font-semibold text-foreground">
+                {totals.kg.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+              </span>{" "}
+              kg
+            </>
+          ) : null}
+        </p>
+        <SubmitButton size="sm" className="shrink-0 rounded-full" pendingLabel={t("Receiving…")}>
+          <Check />
+          {t("Confirm receiving")}
+        </SubmitButton>
+      </div>
 
       <FormMessage error={state.error} ok={state.ok} />
 
       <p className="text-xs text-muted-foreground">
-        Confirming generates the cargo reference and the delivery note, and
-        tells the customer their goods have arrived in Guangzhou. It does not
-        tell them anything has shipped.
+        {t("Confirming creates the tracking number and the delivery note, and tells the customer their goods have arrived in Guangzhou.")}
       </p>
     </form>
   );

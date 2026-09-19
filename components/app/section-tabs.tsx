@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/app/locale-provider";
+
 import { createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +33,7 @@ export function NavProvider({
  * Only real addresses: an item that opens a dialog is a button, not a place.
  */
 export function SectionTabs() {
+  const t = useT();
   const sections = useContext(NavContext);
   const pathname = usePathname();
 
@@ -63,7 +66,7 @@ export function SectionTabs() {
               : "bg-card text-foreground hover:bg-secondary"
           )}
         >
-          {item.label}
+          {t(item.label)}
         </Link>
       ))}
     </div>
