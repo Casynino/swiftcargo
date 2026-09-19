@@ -495,7 +495,7 @@ export function IntakeForm({
                     its page in the book — never optional. */}
                 <div className="mb-3 space-y-1.5">
                   <Label htmlFor={`n-${line.key}`}>
-                    {t("Receipt book no.")} <span className="text-destructive">*</span>
+                    {t("Receipt number")} <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id={`n-${line.key}`}

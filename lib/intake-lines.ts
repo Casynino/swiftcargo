@@ -149,7 +149,7 @@ export function readIntakeLines(formData: FormData): {
     /* The page in the receipt book is how a box is matched to its paper;
        a line without it cannot be found again. */
     if (!receiptNos[i]?.trim()) {
-      refusal ??= `Item ${row}: the receipt book number is needed.`;
+      refusal ??= `Item ${row}: the receipt number is needed.`;
     }
     const typedQuantity = num(quantities[i], row, "packages");
     /* Blank means one package, which is what the counter means by leaving it
