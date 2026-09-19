@@ -93,7 +93,7 @@ export function PriceCalculator({
     setCbmTyped((v) => String(Math.max(0, Math.round(((Number(v) || 0) + delta) * 10) / 10)));
 
   return (
-    <div className="grid overflow-hidden rounded-[2rem] border bg-card shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] lg:grid-cols-[1.15fr_0.85fr]">
+    <div className="grid overflow-clip rounded-[2rem] border bg-card shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] lg:grid-cols-[1.15fr_0.85fr]">
       {/* ---------------------------------------------------- The question */}
       <div className="flex flex-col p-5 sm:p-8">
         {containers.length > 0 ? (
@@ -196,41 +196,99 @@ export function PriceCalculator({
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  <div className="grid grid-cols-[1fr_1fr_1fr_0.8fr_auto] gap-2 px-1 text-xs font-medium text-muted-foreground">
-                    <span>{t(locale, "Length cm")}</span>
-                    <span>{t(locale, "Width cm")}</span>
-                    <span>{t(locale, "Height cm")}</span>
-                    <span>{t(locale, "Boxes")}</span>
-                    <span className="w-8" />
-                  </div>
-                  {lines.map((line) => (
-                    <div key={line.id} className="grid grid-cols-[1fr_1fr_1fr_0.8fr_auto] items-center gap-2">
-                      {(["length", "width", "height", "boxes"] as const).map((field) => (
-                        <input
-                          key={field}
-                          type="number"
-                          inputMode="decimal"
-                          min="0"
-                          value={line[field]}
-                          placeholder={field === "boxes" ? "1" : "0"}
-                          aria-label={field}
-                          onChange={(e) =>
-                            setLines((rows) =>
-                              rows.map((row) => (row.id === line.id ? { ...row, [field]: e.target.value } : row))
-                            )
-                          }
-                          className="tnum h-12 min-w-0 rounded-xl border bg-background px-3 text-base outline-none focus:border-brand"
-                        />
-                      ))}
-                      <button
-                        type="button"
-                        disabled={lines.length === 1}
-                        onClick={() => setLines((rows) => rows.filter((row) => row.id !== line.id))}
-                        aria-label={t(locale, "Remove")}
-                        className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-secondary disabled:opacity-30"
-                      >
-                        <X className="size-4" />
-                      </button>
+                  {/* One card per box size. On a phone the three sides sit in a
+                      row with their own labels and the count gets a stepper
+                      under them — five boxes across a 360px screen left every
+                      field too narrow to read what was typed in it. */}
+                  {lines.map((line, index) => (
+                    <div key={line.id} className="rounded-2xl border bg-background/60 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {lines.length > 1 ? `${t(locale, "Box size")} ${index + 1}` : t(locale, "Box size")}
+                        </span>
+                        {lines.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => setLines((rows) => rows.filter((row) => row.id !== line.id))}
+                            aria-label={t(locale, "Remove")}
+                            className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-secondary"
+                          >
+                            <X className="size-4" />
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-[1fr_1fr_1fr_1.2fr]">
+                        {(["length", "width", "height"] as const).map((field) => (
+                          <label key={field} className="min-w-0">
+                            <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                              {t(locale, field === "length" ? "Length cm" : field === "width" ? "Width cm" : "Height cm")}
+                            </span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              value={line[field]}
+                              placeholder="0"
+                              onChange={(e) =>
+                                setLines((rows) =>
+                                  rows.map((row) => (row.id === line.id ? { ...row, [field]: e.target.value } : row))
+                                )
+                              }
+                              className="tnum h-12 w-full min-w-0 rounded-xl border bg-background px-3 text-center text-base font-semibold outline-none focus:border-brand"
+                            />
+                          </label>
+                        ))}
+                        <div className="col-span-3 flex items-center justify-between gap-3 pt-1 sm:col-span-1 sm:block sm:pt-0">
+                          <span className="block text-[11px] font-medium text-muted-foreground sm:mb-1">
+                            {t(locale, "Boxes")}
+                          </span>
+                          <div className="flex h-12 items-center rounded-xl border bg-background">
+                            <button
+                              type="button"
+                              aria-label={t(locale, "Less")}
+                              onClick={() =>
+                                setLines((rows) =>
+                                  rows.map((row) =>
+                                    row.id === line.id
+                                      ? { ...row, boxes: String(Math.max(1, (Number(row.boxes) || 1) - 1)) }
+                                      : row
+                                  )
+                                )
+                              }
+                              className="grid h-full w-11 place-items-center text-muted-foreground"
+                            >
+                              <Minus className="size-4" />
+                            </button>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min="1"
+                              value={line.boxes}
+                              aria-label={t(locale, "Boxes")}
+                              onChange={(e) =>
+                                setLines((rows) =>
+                                  rows.map((row) => (row.id === line.id ? { ...row, boxes: e.target.value } : row))
+                                )
+                              }
+                              className="tnum h-full w-14 min-w-0 bg-transparent text-center text-base font-semibold outline-none sm:w-full"
+                            />
+                            <button
+                              type="button"
+                              aria-label={t(locale, "More")}
+                              onClick={() =>
+                                setLines((rows) =>
+                                  rows.map((row) =>
+                                    row.id === line.id ? { ...row, boxes: String((Number(row.boxes) || 0) + 1) } : row
+                                  )
+                                )
+                              }
+                              className="grid h-full w-11 place-items-center text-muted-foreground"
+                            >
+                              <Plus className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                   <div className="flex items-center justify-between pt-1">
@@ -282,7 +340,7 @@ export function PriceCalculator({
         )}
 
         {/* How to measure, where the column would otherwise run out. */}
-        <div className="mt-8 flex items-center gap-4 rounded-2xl bg-surface-2 p-4 lg:mt-auto">
+        <div className="mt-8 hidden items-center gap-4 rounded-2xl bg-surface-2 p-4 sm:flex lg:mt-auto">
           <svg aria-hidden viewBox="0 0 64 52" className="h-12 w-14 shrink-0 text-brand">
             <path d="M8 18 32 8l24 10v22L32 50 8 40Z" fill="currentColor" opacity=".12" />
             <path d="M8 18 32 28l24-10M32 28v22M8 18 32 8l24 10v22L32 50 8 40Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
@@ -294,10 +352,49 @@ export function PriceCalculator({
               : t(locale, "Measure one box — length, width and height in centimetres — then count how many boxes are that size.")}
           </p>
         </div>
+        {/* ------------------------------------------------ The answer, pinned
+            On a phone the answer panel is a long scroll below the questions, so
+            the price was out of sight while the figures that move it were being
+            typed. This keeps it under the thumb until the full answer is on
+            screen; --bottom-bar lifts it over a portal's tab bar. */}
+        {service === "LCL" ? (
+          <div className="sticky bottom-[calc(var(--bottom-bar,0px)+0.75rem)] z-10 mt-5 lg:hidden">
+            <a
+              href="#calc-answer"
+              className="flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-raised ring-1 ring-white/10"
+            >
+              <span className="min-w-0">
+                <span className="block text-[11px] text-white/60">
+                  {cbm > 0 ? `${cbm.toFixed(2)} CBM` : t(locale, "Estimated price")}
+                  {cargoType ? ` · ${cargoType}` : ""}
+                </span>
+                <span className="tnum block truncate font-display text-xl font-extrabold">
+                  {!cargoType
+                    ? t(locale, "Choose your goods")
+                    : cbm <= 0
+                      ? t(locale, "Enter how much you have")
+                      : priced
+                        ? priced.totalTzs ?? priced.total
+                        : pending
+                          ? "…"
+                          : "—"}
+                </span>
+              </span>
+              {priced ? (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-orange-300">
+                  {t(locale, "Details")}
+                  <ArrowRight className="size-3.5" />
+                </span>
+              ) : pending ? (
+                <Loader2 className="size-4 shrink-0 animate-spin text-white/60" />
+              ) : null}
+            </a>
+          </div>
+        ) : null}
       </div>
 
       {/* ------------------------------------------------------ The answer */}
-      <div aria-live="polite" className="relative isolate flex flex-col overflow-hidden bg-ink p-6 text-white sm:p-8">
+      <div id="calc-answer" aria-live="polite" className="relative isolate flex scroll-mt-20 flex-col overflow-hidden bg-ink p-5 text-white sm:p-8">
         <div
           aria-hidden
           className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_90%_0%,hsl(var(--marine)/0.3),transparent_60%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.22),transparent_55%)]"
@@ -359,7 +456,7 @@ export function PriceCalculator({
                     {t(locale, "Estimated price")}
                     {pending ? <Loader2 className="size-3.5 animate-spin" /> : null}
                   </p>
-                  <p className="tnum mt-1 font-display text-5xl font-extrabold tracking-tight">
+                  <p className="tnum mt-1 break-words font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
                     {priced ? priced.totalTzs ?? priced.total : "…"}
                   </p>
                   {priced?.totalTzs ? <p className="tnum mt-1 text-lg text-white/70">{priced.total}</p> : null}

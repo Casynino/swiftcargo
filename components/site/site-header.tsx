@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, UserRound, X } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -112,19 +112,32 @@ export function SiteHeader() {
           >
             <Link href="/track">{t(locale, "Track cargo")}</Link>
           </Button>
-          <Button asChild size="sm" className="track-go rounded-full border-0 px-4 text-white">
+          {/* Short on a phone: at full length "Back to my desk" pushed the
+              menu button off the edge of the screen, and the menu is the only
+              way to the rest of the site. */}
+          <Button asChild size="sm" className="track-go h-9 shrink-0 gap-1.5 rounded-full border-0 px-3 text-white sm:px-4">
             <Link href={signedIn ? home : "/login"}>
-              {signedIn === "staff"
-                ? t(locale, "Back to my desk")
-                : signedIn
-                  ? t(locale, "My account")
-                  : t(locale, "Sign in")}
+              {signedIn === "staff" ? (
+                <>
+                  <LayoutDashboard className="size-4" />
+                  <span className="sm:hidden">{t(locale, "My desk")}</span>
+                  <span className="hidden sm:inline">{t(locale, "Back to my desk")}</span>
+                </>
+              ) : signedIn ? (
+                <>
+                  <UserRound className="size-4" />
+                  <span className="sm:hidden">{t(locale, "Account")}</span>
+                  <span className="hidden sm:inline">{t(locale, "My account")}</span>
+                </>
+              ) : (
+                t(locale, "Sign in")
+              )}
             </Link>
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className={cn("lg:hidden", !solid && "text-white hover:bg-white/15 hover:text-white")}
+            className={cn("shrink-0 lg:hidden", !solid && "text-white hover:bg-white/15 hover:text-white")}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t(locale, "Close menu") : t(locale, "Open menu")}
             aria-expanded={open}
