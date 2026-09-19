@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { pillsFor } from "@/lib/desk";
 import { formatDate } from "@/lib/format";
-import { DEFAULT_LOCALE, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { viewerLocale } from "@/lib/viewer-locale";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import {
@@ -74,7 +75,7 @@ export default async function SupportHome() {
   const user = await requirePermission("conversation.view");
   /* The dictionary is English-only at launch; the locale is threaded through so
      a Swahili desk is one dictionary away rather than every string on the page. */
-  const locale = DEFAULT_LOCALE;
+  const locale = await viewerLocale();
 
   // Read the name from the record rather than the session token, which carries
   // whatever it was at sign-in.

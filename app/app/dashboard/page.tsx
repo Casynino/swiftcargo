@@ -240,17 +240,17 @@ export default async function DashboardPage() {
           the first thing that teaches people to scroll past the top of a
           dashboard. */}
 
-      {attention.length > 0 ? (
-        <section>
-          <SectionLabel
-            count={attention.filter((a) => a.tone === "bad").length}
-            action={{ href: "/app/exceptions", label: "All issues" }}
-          >
-            Needs your attention
-          </SectionLabel>
-          <AttentionCenter items={attention} />
-        </section>
-      ) : null}
+      {/* Always on the page, as on the air side: an empty panel is the good
+          news, said where the desk looks first. */}
+      <section>
+        <SectionLabel
+          count={attention.length}
+          action={{ href: "/app/exceptions", label: "All issues" }}
+        >
+          Needs your attention
+        </SectionLabel>
+        <AttentionCenter items={attention} />
+      </section>
 
       {cards.length > 0 ? (
         <section>

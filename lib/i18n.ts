@@ -6066,6 +6066,15 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "Nothing needs you": "暂无需要处理的事项",
+  "No missing cargo, no overdue bills, nothing held.": "没有丢失的货物、没有逾期账单、没有被扣留的货物。",
+  "All issues": "全部问题",
+  "On the shelf in Guangzhou, not yet loaded.": "在广州仓库货架上，尚未装柜。",
+  "Still open for cargo — seal when full.": "仍在装货——装满后封柜。",
+  "Landed at the port. Mark them cleared when customs is done.": "已到港。清关完成后标记为已清关。",
+  "Cleared and paid — waiting for the customer to collect.": "已清关并付款——等待客户提货。",
+  "Finance could not verify these. Ring the customer before handing it up again.": "财务无法核实这些付款。请先联系客户再重新提交。",
+  "Payments handed up, waiting to be checked. Nothing to do but watch.": "已提交的付款，等待财务核对。只需关注即可。",
   "Receipt number": "收据号",
   "Package description": "包裹描述",
   "Cargo reference, shipping mark, customer, phone, container or invoice": "运单号、唛头、客户、电话、集装箱或账单",

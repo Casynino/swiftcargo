@@ -764,6 +764,16 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
     );
   }
 
+  /*
+    THE DESK'S OWN WORK, BESIDE WHAT IS WRONG.
+
+    As on the air side: the panel is also where a desk sees the everyday queue
+    it owns — what is waiting on it and what it is waiting on — so it opens a
+    shift on the list rather than on a wall of cards. Counted per desk, and
+    only for the desk that acts on it.
+  */
+  if (role) rows.push(...(await deskRows(role)));
+
   /* A zero is not a worry. Worst first, then biggest — the list is read from
      the top and the top should be the thing that hurts. */
   const RANK = { bad: 0, warn: 1, neutral: 2 } as const;
@@ -1218,4 +1228,110 @@ export async function financeDesk() {
     fxRate: fx ? Number(fx.rate) : null,
     currency: "TZS",
   };
+}
+
+
+async function deskRows(role: Role): Promise<AttentionRow[]> {
+  const rows: AttentionRow[] = [];
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+  if (can(role, "receiving.china")) {
+    const [waiting, loading] = await Promise.all([
+      prisma.cargo.count({ where: { deletedAt: null, status: "RECEIVED_CHINA" } }),
+      prisma.container.count({ where: { deletedAt: null, status: { in: ["OPEN", "LOADING"] } } }),
+    ]);
+    rows.push(
+      {
+        id: "desk-waiting",
+        group: "Guangzhou",
+        count: waiting,
+        title: `${waiting} ${plural(waiting, "consignment", "consignments")} waiting for a container`,
+        detail: "On the shelf in Guangzhou, not yet loaded.",
+        href: "/app/inventory",
+        tone: "neutral",
+      },
+      {
+        id: "desk-loading",
+        group: "Guangzhou",
+        count: loading,
+        title: `${loading} ${plural(loading, "container", "containers")} being loaded`,
+        detail: "Still open for cargo — seal when full.",
+        href: "/app/containers/loading",
+        tone: "neutral",
+      }
+    );
+  }
+
+  if (can(role, "receiving.dar")) {
+    const [clearing, ready] = await Promise.all([
+      prisma.cargo.count({
+        where: {
+          deletedAt: null,
+          clearedAt: null,
+          status: { in: ["ARRIVED_TANZANIA", "RECEIVED_DAR"] },
+        },
+      }),
+      prisma.cargo.count({ where: { deletedAt: null, status: "READY_FOR_RELEASE" } }),
+    ]);
+    rows.push(
+      {
+        id: "desk-clearance",
+        group: "Dar floor",
+        count: clearing,
+        title: `${clearing} ${plural(clearing, "consignment", "consignments")} in customs clearance`,
+        detail: "Landed at the port. Mark them cleared when customs is done.",
+        href: "/app/receive/dar",
+        tone: "neutral",
+      },
+      {
+        id: "desk-ready",
+        group: "Dar floor",
+        count: ready,
+        title: `${ready} ready for pickup`,
+        detail: "Cleared and paid — waiting for the customer to collect.",
+        href: "/app/release",
+        tone: "neutral",
+      }
+    );
+  }
+
+  /* The desk that hands payments up and chases customers, not the one that
+     verifies them — Finance has its own rows above. */
+  if (can(role, "payment.submit") && !can(role, "payment.verify")) {
+    const [sentBack, withFinance, toChase] = await Promise.all([
+      prisma.payment.count({ where: { status: "REJECTED" } }),
+      prisma.payment.count({ where: { status: "PENDING" } }),
+      prisma.invoice.count({ where: { status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } } }),
+    ]);
+    rows.push(
+      {
+        id: "desk-sent-back",
+        group: "Collections",
+        count: sentBack,
+        title: `${sentBack} ${plural(sentBack, "payment", "payments")} sent back by Finance`,
+        detail: "Finance could not verify these. Ring the customer before handing it up again.",
+        href: "/app/finance/collections/sent-back",
+        tone: "bad",
+      },
+      {
+        id: "desk-to-chase",
+        group: "Collections",
+        count: toChase,
+        title: `${toChase} ${plural(toChase, "bill", "bills")} to chase`,
+        detail: "Billed, and the money has not arrived.",
+        href: "/app/finance/collections",
+        tone: "neutral",
+      },
+      {
+        id: "desk-with-finance",
+        group: "Collections",
+        count: withFinance,
+        title: `${withFinance} with Finance`,
+        detail: "Payments handed up, waiting to be checked. Nothing to do but watch.",
+        href: "/app/finance/collections/with-finance",
+        tone: "neutral",
+      }
+    );
+  }
+  return rows;
 }

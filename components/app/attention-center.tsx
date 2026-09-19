@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, TriangleAlert } from "lucide-react";
 
+import { useT } from "@/components/app/locale-provider";
 import { cn } from "@/lib/utils";
 
 export type AttentionItem = {
@@ -49,6 +50,7 @@ const ICON = {
  * is a way of hiding the fourth worry.
  */
 export function AttentionCenter({ items }: { items: AttentionItem[] }) {
+  const t = useT();
   const groups = [...new Set(items.map((i) => i.group))];
   const [active, setActive] = useState<string>("All");
 
@@ -57,9 +59,9 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
   if (items.length === 0) {
     return (
       <div className="rounded-xl border bg-card p-8 text-center shadow-soft">
-        <p className="text-sm font-medium">Nothing needs you</p>
+        <p className="text-sm font-medium">{t("Nothing needs you")}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          No missing cargo, no overdue bills, nothing held.
+          {t("No missing cargo, no overdue bills, nothing held.")}
         </p>
       </div>
     );
@@ -85,7 +87,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
-              {group}
+              {t(group)}
               <span className="tnum opacity-70">{count}</span>
             </button>
           );
@@ -110,7 +112,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
                   {item.title}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">
-                  {item.detail}
+                  {t(item.detail)}
                 </span>
               </span>
               {item.meta ? (
@@ -130,7 +132,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
       {shown.length > 3 ? (
         <p className="flex items-center justify-center gap-1.5 border-t py-1.5 text-center text-xs text-muted-foreground">
           <ChevronDown className="size-3.5" />
-          scroll for {shown.length - 3} more
+          {t("scroll for")} {shown.length - 3} {t("more")}
         </p>
       ) : null}
     </div>
