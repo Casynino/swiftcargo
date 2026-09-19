@@ -231,49 +231,63 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
     return false;
   }
 
-  // --------------------------------------------------------------- masthead
-  // One compact band: the mark and the company beside it, the verification
-  // code, and INVOICE with its number and stamp — so an ordinary bill, with
-  // its terms and storage policy, fits one A4 sheet.
-  const logoH = 46;
-  let logoW = 0;
+  // ------------------------------------------------------------- letterhead
+  // The house letterhead the pickup note, delivery note and combined bill
+  // wear: a navy band across the top, the mark on a white tile, the company in
+  // white, INVOICE with its number and stamp on the right, and the orange-to-
+  // cyan rule under it. Phones and email are at the foot, under "Contact us".
+  const bandH = 104;
+  fill(NAVY);
+  doc.rect(0, 0, PAGE_W, bandH, "F");
+
+  const tile = 46;
+  fill(WHITE);
+  doc.roundedRect(MARGIN, 24, tile, tile, 9, 9, "F");
   if (input.logo) {
     const props = doc.getImageProperties(input.logo);
-    logoW = (logoH * props.width) / props.height;
-    doc.addImage(input.logo, "PNG", MARGIN, 24, logoW, logoH, "logo", "FAST");
+    const inner = tile - 6;
+    const w = props.width >= props.height ? inner : (inner * props.width) / props.height;
+    const h = props.width >= props.height ? (inner * props.height) / props.width : inner;
+    doc.addImage(input.logo, "PNG", MARGIN + (tile - w) / 2, 24 + (tile - h) / 2, w, h, "logo", "FAST");
   }
-  const textX = MARGIN + logoW + 10;
-  put(input.company.name.toUpperCase(), textX, 38, { size: 12, style: "bold", colour: NAVY, spacing: 1 });
-  const companyInfo = [
-    input.company.addressLines.join(", "),
-    [input.company.taxLine, input.company.contact, input.company.email].filter(Boolean).join(" · "),
-  ].flatMap((line) => wrap(line, 250, 7));
-  lines(companyInfo, textX, 50, 9, 7, BODY);
+  const textX = MARGIN + tile + 12;
+  put(input.company.name.toUpperCase(), textX, 38, { size: 13, style: "bold", colour: WHITE, spacing: 1.2 });
+  put(input.company.tagline.toUpperCase(), textX, 48, { size: 6, style: "bold", colour: [255, 178, 125], spacing: 1.4 });
+  const companyInfo = [input.company.addressLines.join(", "), input.company.taxLine ?? ""]
+    .filter(Boolean)
+    .flatMap((line) => wrap(line, 230, 6.8));
+  lines(companyInfo, textX, 60, 8.5, 6.8, [200, 214, 228]);
 
-  put("INVOICE", RIGHT, 48, { size: 26, style: "bold", align: "right", colour: NAVY });
-  put(input.reference, RIGHT, 61, { size: 8.5, style: "bold", align: "right", colour: BODY });
+  put("INVOICE", RIGHT, 34, { size: 7.5, style: "bold", align: "right", colour: [159, 216, 245] });
+  put("BILI", RIGHT, 43, { size: 6, align: "right", colour: [170, 186, 204] });
+  put(input.reference, RIGHT, 62, { size: 17, style: "bold", align: "right", colour: WHITE });
   const tone = TONES[input.stamp.tone];
   const stampText = input.stamp.label.toUpperCase();
   font(6.8, "bold");
   const stampW = doc.getTextWidth(stampText) + stampText.length * 1.3 + 14;
   fill(tone.fill);
   stroke(tone.line, 1.1);
-  doc.roundedRect(RIGHT - stampW, 66, stampW, 14, 3, 3, "FD");
-  put(stampText, RIGHT - stampW + 7, 75.5, { size: 6.8, style: "bold", colour: tone.ink, spacing: 1.3 });
+  doc.roundedRect(RIGHT - stampW, 68, stampW, 14, 3, 3, "FD");
+  put(stampText, RIGHT - stampW + 7, 77.5, { size: 6.8, style: "bold", colour: tone.ink, spacing: 1.3 });
 
   if (input.qr) {
     const size = 50;
-    const x = RIGHT - 118 - size;
-    doc.addImage(input.qr, "PNG", x, 22, size, size, "verify", "FAST");
-    put("SCAN TO VERIFY", x + size / 2, 22 + size + 6, { size: 5, style: "bold", align: "center" });
+    const x = RIGHT - 158 - size;
+    fill(WHITE);
+    doc.roundedRect(x - 4, 20, size + 8, size + 8, 5, 5, "F");
+    doc.addImage(input.qr, "PNG", x, 24, size, size, "verify", "FAST");
+    put("SCAN TO VERIFY", x + size / 2, 24 + size + 12, { size: 5, style: "bold", align: "center", colour: [159, 216, 245] });
   }
 
-  y = 88;
-  fill(NAVY);
-  doc.rect(MARGIN, y, CONTENT * 0.75, 3.5, "F");
-  fill([244, 97, 31]);
-  doc.rect(MARGIN + CONTENT * 0.75, y, CONTENT * 0.25, 3.5, "F");
-  y += 3.5 + 12;
+  // The rule: orange to peach to cyan, in three even steps.
+  const ruleY = bandH - 12;
+  const third = CONTENT / 3;
+  ([[244, 97, 31], [255, 178, 125], [79, 201, 240]] as RGB[]).forEach((c, i) => {
+    fill(c);
+    doc.rect(MARGIN + i * third, ruleY, third + 0.5, 3, "F");
+  });
+
+  y = bandH + 16;
   input.details = [["Issued", input.issuedOn], ["Due", input.dueOn], ...input.details.filter(([k]) => k !== "Issued" && k !== "Due")];
 
   // ------------------------------------------- who, and which sailing
@@ -588,15 +602,26 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
     y += boxH + 8;
   }
 
-  need(30);
+  // How to reach us, at the foot where a customer looks for it.
+  need(52);
   stroke(HAIR, 0.8);
   doc.line(MARGIN, y, RIGHT, y);
-  y += 16;
-  put(input.company.name, MARGIN, y, { size: 9, style: "bold", colour: NAVY });
-  y += 11;
-  put(input.company.tagline.toUpperCase(), MARGIN, y, { size: 7, style: "bold", colour: ORANGE, spacing: 1.1 });
+  y += 14;
+  label("Contact us · Wasiliana nasi", MARGIN, y, NAVY, 6.8);
+  put(input.company.name.toUpperCase(), RIGHT, y, { size: 7.5, style: "bold", align: "right", colour: NAVY });
+  y += 10;
+  if (input.company.addressLines.length) {
+    put(input.company.addressLines.join(", "), MARGIN, y, { size: 7.2, colour: BODY });
+  }
+  put(input.company.tagline.toUpperCase(), RIGHT, y, { size: 6, style: "bold", align: "right", colour: ORANGE });
+  y += 10;
+  const reach = [input.company.contact, input.company.email].filter(Boolean).join("  ·  ");
+  if (reach) {
+    put(reach, MARGIN, y, { size: 7.2, colour: BODY });
+    y += 10;
+  }
   if (input.issuedLine) {
-    put(input.issuedLine, RIGHT, y, { size: 7.5, align: "right", colour: MUTED });
+    put(input.issuedLine, MARGIN, y, { size: 6.8, colour: MUTED });
   }
 
   // Page numbers once the page count is known. A one-page bill is not told it

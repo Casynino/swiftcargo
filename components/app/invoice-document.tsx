@@ -89,7 +89,6 @@ export async function InvoiceDocument({ id }: { id: string }) {
 
   const banks = accounts.filter((a) => a.kind === "BANK");
   const mobile = accounts.filter((a) => a.kind === "MOBILE_MONEY");
-  const contact = [company?.phone, company?.altPhone].filter(Boolean).join("  |  ");
   /* The building on one line, the box and the city on the next — the way the
      printed form sets it — so a narrow column never breaks "Dar es Salaam". */
   const addressLines = (company?.darAddress ?? "")
@@ -133,51 +132,49 @@ export async function InvoiceDocument({ id }: { id: string }) {
         }
       `}</style>
 
-      {/* ------------------------------------------------------------ masthead */}
-      <header className="px-6 pt-6 sm:px-10 print:px-[10mm] print:pt-[9mm]">
-        <div className="flex items-start justify-between gap-4">
+      {/* ---------------------------------------------------------- letterhead
+          The house letterhead the pickup note, delivery note and combined
+          bill all wear, so a customer holding any two sees one company. */}
+      <header className="relative overflow-hidden bg-[#0b2742] px-6 py-6 text-white sm:px-10 print:px-[10mm] print:py-[7mm]">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_90%_-20%,rgba(79,201,240,0.35),transparent_60%),radial-gradient(ellipse_at_0%_130%,rgba(244,97,31,0.35),transparent_55%)]"
+        />
+        <div className="relative flex items-center justify-between gap-6">
           <div className="flex min-w-0 items-center gap-3">
-            <Image
-              src="/brand/swift-cargo.png"
-              alt={company?.name ?? "Swift Cargo"}
-              width={72}
-              height={72}
-              className="size-14 shrink-0 object-contain sm:size-16"
-              priority
-            />
+            <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white p-1">
+              <Image src="/brand/swift-cargo.png" alt={company?.name ?? "Swift Cargo"} width={52} height={52} className="object-contain" priority />
+            </span>
             <address className="min-w-0 not-italic">
-              <p className="text-base font-extrabold uppercase tracking-[0.1em] text-[#0b2742] sm:text-lg">
-                {company?.name ?? "Swift Cargo"}
+              <p className="text-xl font-extrabold uppercase tracking-[0.12em]">{company?.name ?? "Swift Cargo"}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#ffb27d]">
+                {company?.tagline ?? "On time, every time"}
               </p>
-              <div className="text-[10.5px] leading-snug text-neutral-600">
-                <p>{addressLines.join(", ")}</p>
-                <p className="tnum">
-                  {[company?.tin ? `TIN ${company.tin}` : null, company?.vrn ? `VRN ${company.vrn}` : null, contact, company?.email]
-                    .filter(Boolean)
-                    .join(" · ")}
+              <p className="mt-1 max-w-sm text-[10px] leading-snug text-white/75">{addressLines.join(", ")}</p>
+              {company?.tin || company?.vrn ? (
+                <p className="tnum text-[10px] text-white/60">
+                  {[company?.tin ? `TIN ${company.tin}` : null, company?.vrn ? `VRN ${company.vrn}` : null].filter(Boolean).join(" · ")}
                 </p>
-              </div>
+              ) : null}
             </address>
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-3xl font-black uppercase leading-none tracking-tight text-[#0b2742] sm:text-4xl">Invoice</p>
-            <p className="tnum mt-1 text-sm font-bold text-neutral-700">{invoice.number}</p>
-            <p className={`mt-1.5 inline-flex rounded border-2 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#9fd8f5]">Invoice</p>
+            <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">Bili</p>
+            <p className="tnum mt-1 text-2xl font-extrabold tracking-tight">{invoice.number}</p>
+            <p className={`mt-1.5 inline-flex rounded border-2 bg-white px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
               {stamp.label}
             </p>
           </div>
         </div>
-        <div className="mt-4 flex h-1.5 overflow-hidden rounded-full">
-          <span className="flex-[3] bg-[#0b2742]" />
-          <span className="flex-1 bg-[#f4611f]" />
-        </div>
+        <div className="relative mt-5 h-1 rounded-full bg-gradient-to-r from-[#f4611f] via-[#ffb27d] to-[#4fc9f0]" />
       </header>
 
       {/* ------------------------------------------ who, and which sailing */}
-      <section className="inv-keep grid grid-cols-1 gap-3 px-6 pt-4 sm:grid-cols-2 sm:px-10 print:grid-cols-2 print:px-[10mm]">
-        <div className="rounded-xl border border-[#d6e2ee] bg-[#f5f9fc] p-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#f4611f]">Invoice to</p>
-          <p className="mt-1 text-lg font-bold">{invoice.customer.businessName || invoice.customer.fullName}</p>
+      <section className="inv-keep grid grid-cols-1 gap-3 px-6 pt-5 sm:grid-cols-2 sm:px-10 print:grid-cols-2 print:px-[10mm]">
+        <div className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-4">
+          <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-neutral-500">Invoice to · Mteja</p>
+          <p className="mt-1 text-xl font-extrabold uppercase leading-tight">{invoice.customer.businessName || invoice.customer.fullName}</p>
           {invoice.customer.businessName ? (
             <p className="text-sm text-neutral-700">{invoice.customer.fullName}</p>
           ) : null}
@@ -196,7 +193,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
             </div>
           </dl>
         </div>
-        <dl className="rounded-xl border border-[#d6e2ee] bg-[#f5f9fc] px-4 py-3 text-[13px]">
+        <dl className="rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] px-4 py-3 text-[13px]">
           {details.map(([label, value]) => (
             <div
               key={label}
@@ -213,14 +210,14 @@ export async function InvoiceDocument({ id }: { id: string }) {
 
       {/* ---------------------------------------------------------- charges */}
       <section className="px-6 pt-4 sm:px-10 print:px-[10mm]">
-        <div className="relative overflow-x-auto rounded-lg border border-neutral-200">
+        <div className="relative overflow-x-auto rounded-2xl border border-[#d6e2ee]">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr className="bg-[#0b2742] text-left text-white">
                 {["Cargo · receipt", "Description", "Pkgs", "Pcs", "Chargeable", "Rate", "Amount"].map((head, i) => (
                   <th
                     key={head}
-                    className={`px-3 py-2 text-[11px] font-semibold uppercase tracking-wide ${i >= 2 ? "text-right" : ""}`}
+                    className={`px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] ${i >= 2 ? "text-right" : ""}`}
                   >
                     {head}
                   </th>
@@ -297,33 +294,23 @@ export async function InvoiceDocument({ id }: { id: string }) {
       {/* --------------------------------------------- how to pay, and totals */}
       <section className="inv-keep grid grid-cols-1 gap-4 px-6 py-5 sm:grid-cols-[1fr_minmax(0,290px)] sm:px-10 print:grid-cols-[1fr_270px] print:px-[10mm] print:py-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-neutral-500">Payment info</p>
-          <div className="mt-2 space-y-3 rounded-lg bg-neutral-50 p-4">
-            {banks.length > 0 ? (
-              <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
-                {banks.map((bank) => (
-                  <div key={`${bank.bankName}-${bank.accountNumber}`} className="text-[12px] leading-relaxed">
-                    <p className="tnum text-sm font-bold">{bank.accountNumber}</p>
-                    <p className="uppercase text-neutral-700">{bank.accountName}</p>
-                    <p className="font-semibold uppercase text-navy-700">
-                      {bank.bankName} ({bank.currency})
-                    </p>
-                    {bank.branch ? <p className="uppercase text-neutral-500">Branch: {bank.branch}</p> : null}
-                  </div>
-                ))}
+          <p className="text-sm font-extrabold uppercase tracking-wide">Pay into · Lipa kupitia</p>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 print:grid-cols-2">
+            {[...banks, ...mobile].map((acc) => (
+              <div key={`${acc.bankName}-${acc.accountNumber}`} className="rounded-xl border border-[#d6e2ee] px-3.5 py-2">
+                <p className="flex items-center justify-between gap-2 text-[10.5px] font-extrabold uppercase">
+                  <span>{acc.bankName}</span>
+                  {acc.currency ? (
+                    <span className="rounded-full bg-[#0b2742] px-2 py-0.5 text-[8px] tracking-[0.14em] text-white">{acc.currency}</span>
+                  ) : null}
+                </p>
+                <p className="text-[9.5px] uppercase text-neutral-500">
+                  {acc.accountName}
+                  {acc.branch ? ` · ${acc.branch}` : ""}
+                </p>
+                <p className="tnum text-[15px] font-bold tracking-wide">{acc.accountNumber}</p>
               </div>
-            ) : null}
-            {mobile.length > 0 ? (
-              <div className="grid grid-cols-1 gap-x-6 gap-y-3 border-t border-neutral-200 pt-4 sm:grid-cols-2">
-                {mobile.map((line) => (
-                  <div key={`${line.bankName}-${line.accountNumber}`} className="text-[12px] leading-relaxed">
-                    <p className="font-semibold uppercase text-navy-700">{line.bankName}</p>
-                    <p className="tnum text-sm font-bold">{line.accountNumber}</p>
-                    <p className="uppercase text-neutral-700">{line.accountName}</p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            ))}
           </div>
         </div>
 
@@ -433,16 +420,25 @@ export async function InvoiceDocument({ id }: { id: string }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-end justify-between gap-3 border-t border-neutral-200 pt-3 text-[11px]">
+        {/* How to reach us, at the foot where a customer looks for it. */}
+        <div className="grid grid-cols-[1fr_auto] items-end gap-4 border-t border-neutral-200 pt-3 text-[10px] leading-relaxed text-neutral-600">
           <div>
-            <p className="font-bold text-navy-700">{company?.name ?? "Swift Cargo"}</p>
-            <p className="font-semibold uppercase tracking-widest text-orange-600">{company?.tagline ?? "On time, Every time"}</p>
-          </div>
-          {invoice.issuedAt ? (
-            <p className="w-full text-neutral-500">
-              Issued by {invoice.issuedBy?.name ?? "Swift Cargo"} · {formatDateTime(invoice.issuedAt)}
+            <p className="font-bold uppercase tracking-[0.16em] text-[#0b2742]">Contact us · Wasiliana nasi</p>
+            {addressLines.length > 0 ? <p>{addressLines.join(", ")}</p> : null}
+            <p className="tnum">
+              {[company?.phone, company?.altPhone].filter(Boolean).join("  ·  ")}
+              {company?.email ? `  ·  ${company.email}` : ""}
             </p>
-          ) : null}
+            {invoice.issuedAt ? (
+              <p className="mt-1 text-neutral-400">
+                Issued by {invoice.issuedBy?.name ?? "Swift Cargo"} · {formatDateTime(invoice.issuedAt)}
+              </p>
+            ) : null}
+          </div>
+          <div className="text-right">
+            <p className="font-bold uppercase tracking-[0.2em] text-[#0b2742]">{company?.name ?? "Swift Cargo"}</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#f4611f]">{company?.tagline ?? "On time, every time"}</p>
+          </div>
         </div>
       </footer>
     </article>
