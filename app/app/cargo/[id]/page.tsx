@@ -52,6 +52,7 @@ import {
   whatsappNumber,
   type ContactKind,
   messageStage,
+  billLetter,
 } from "@/lib/messages";
 import { cargoTypeOptions, valueLines } from "@/lib/valuation";
 import { distinctMark } from "@/lib/customer-name";
@@ -319,6 +320,10 @@ export default async function CargoDetailPage({
     (i) => i.status !== "DRAFT" && i.status !== "CANCELLED"
   );
   const owing = liveBills.reduce((sum, i) => sum + Number(outstandingOf(i)), 0);
+  const notifyKind: ContactKind =
+    messageContext.stage === "ready" && owing <= 0
+      ? "cargo.ready"
+      : billLetter(messageContext.stage, owing > 0);
   /* The shilling balance, summed in shillings. One rate is named only when
      every bill shares it. */
   const owingTzs = liveBills.reduce(
@@ -896,9 +901,14 @@ export default async function CargoDetailPage({
                     cargoId={cargo.id}
                     invoiceId={billHere.id}
                     phone={whatsappNumber(cargo.receiver.phone)}
-                    kind={owing > 0 ? "payment.reminder" : "cargo.ready"}
+                    /* The same letter as every other Notify button: the
+                       clearance one at the port, the come-and-collect one in
+                       our warehouse, the bill's own before the ship is in. */
+                    kind={notifyKind}
                     label="Notify on WhatsApp"
-                    message={composeMessage(owing > 0 ? "payment.reminder" : "cargo.ready", {
+                    message={composeMessage(notifyKind, {
+                      stage: messageContext.stage,
+                      storageFrom: messageContext.storageFrom,
                       customerName: cargo.receiver.fullName,
                       reference: cargo.reference,
                       description: cargo.description,
