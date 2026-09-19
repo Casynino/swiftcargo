@@ -135,7 +135,7 @@ export function RateDialog({
         <input type="hidden" name="invoiceId" value={invoiceId} />
         <p className="flex items-center gap-1.5 text-sm font-semibold">
           <Scale className="size-4 text-brand" />
-          {editable ? "Change the price" : "The rate for this cargo"}
+          Edit price
         </p>
         <dl className="space-y-1 rounded-lg border bg-secondary/40 px-3 py-2 text-xs">
           <div className="flex justify-between gap-3">
@@ -179,7 +179,7 @@ export function RateDialog({
               </NativeSelect>
             </label>
             <label className="block space-y-1">
-              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">CBM</span>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Total CBM</span>
               <Input
                 name="cbm"
                 type="number"
@@ -225,7 +225,7 @@ export function RateDialog({
         <Input name="reason" required minLength={3} placeholder="Why — agreed with the customer, large cargo…" className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
-          <SubmitButton size="sm" pendingLabel="Saving…">Save the rate</SubmitButton>
+          <SubmitButton size="sm" pendingLabel="Saving…">Save price</SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
             Cancel
           </button>
@@ -397,7 +397,7 @@ export function RateIcon(props: {
     <>
       <button
         type="button"
-        title="Change the price — category, CBM or rate"
+        title="Edit price — category, CBM or rate"
         onClick={() => setOpen(true)}
         className={cn(
           SQUARE,
@@ -597,7 +597,7 @@ export function ChangePriceButton(props: {
         className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 px-3 py-1.5 text-sm font-medium text-brand hover:bg-brand/10"
       >
         <Scale className="size-4" />
-        Change the price — category, CBM or rate
+        Edit price
       </button>
       {open ? <RateDialog {...props} onClose={() => setOpen(false)} /> : null}
     </>

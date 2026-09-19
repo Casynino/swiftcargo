@@ -712,11 +712,7 @@ export default async function CollectionsPage({
                           standardRate={row.invoice.standardRate ? Number(row.invoice.standardRate) : null}
                           appliedRate={row.invoice.appliedRate ? Number(row.invoice.appliedRate) : null}
                           cbm={row.invoice.billableCbm ? Number(row.invoice.billableCbm) : null}
-                          category={
-                            row.invoice.items.filter((i) => i.unit === "CBM").length === 1
-                              ? categoryOf(row.invoice)
-                              : undefined
-                          }
+                          category={categoryOf(row.invoice)}
                           categories={categories}
                         />
                       ) : null}

@@ -934,7 +934,7 @@ export default async function CargoDetailPage({
                       appliedRate: billHere.appliedRate ? Number(billHere.appliedRate) : null,
                       cbm: billHere.billableCbm ? Number(billHere.billableCbm) : null,
                       category:
-                        freightLines === 1
+                        freightLines > 0
                           ? categoryOfCargo({ commodity: cargo.commodity, packages: cargo.packages })
                           : undefined,
                       pending: billHere.payments.some((p) => p.status === "PENDING"),

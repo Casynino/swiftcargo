@@ -231,11 +231,7 @@ export default async function InvoicePage({
             appliedRate={invoice.appliedRate ? Number(invoice.appliedRate) : null}
             standardRate={invoice.standardRate ? Number(invoice.standardRate) : null}
             cbm={invoice.billableCbm ? Number(invoice.billableCbm) : null}
-            category={
-              invoice.items.filter((i) => i.unit === "CBM").length === 1
-                ? categoryOfCargo({ commodity: invoice.cargo.commodity, packages: cargoLines })
-                : undefined
-            }
+            category={categoryOfCargo({ commodity: invoice.cargo.commodity, packages: cargoLines })}
             categories={await bookCategories()}
           />
         </div>

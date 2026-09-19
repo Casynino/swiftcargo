@@ -10,7 +10,7 @@ import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { nextInvoiceNumber, reserveInvoiceNumbers } from "@/lib/ids";
 import { impliedStatus, outstandingOf } from "@/lib/invoice-balance";
 import { billingMeasurement, priceConsignment } from "@/lib/invoice-draft";
-import { notifyCustomer } from "@/lib/notify";
+import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { storagePosition } from "@/lib/storage-fee";
 import {
@@ -642,6 +642,28 @@ export async function confirmContainerPricing(
   books have already counted — and nobody is on the phone any more. That is a
   correction, and corrections belong to the desks holding invoice.edit.
 */
+/**
+ * FINANCE HEARS ABOUT EVERY PRICE A DESK OUTSIDE FINANCE MOVES.
+ *
+ * Support may change a price or give a discount without waiting for anybody —
+ * only money received waits for Finance. Finance still has to know: each such
+ * change lands on Finance's bell with who, what and why, linked to the bill,
+ * where Finance can change it again or take it back.
+ */
+async function tellFinance(
+  actor: { role: Role; name?: string | null; email?: string | null },
+  invoice: { id: string; number: string },
+  what: string
+) {
+  if (can(actor.role, "invoice.edit")) return;
+  await notifyStaff(await staffInDepartment("FINANCE"), {
+    kind: "invoice.changedOutsideFinance",
+    title: `${actor.name ?? actor.email ?? "Support"} changed ${invoice.number}`,
+    body: what,
+    href: `/app/finance/invoices/${invoice.id}`,
+  });
+}
+
 async function settledRefusal(
   actor: { role: Role },
   invoice: { status: string; cargoId: string }
@@ -767,6 +789,7 @@ export async function discountInvoice(
     entityId: invoice.id,
     summary: `Took ${invoice.currency} ${off} off ${invoice.number}: ${reason}`,
   });
+  await tellFinance(actor, invoice, `Discount of ${invoice.currency} ${off}: ${reason}`);
 
   /* The stored status follows the new total: a bill that now owes is not
      left reading PAID, and one a discount settled is not left reading ISSUED. */
@@ -834,9 +857,11 @@ export async function repriceInvoice(
 
   /* One freight line: its category and volume can be changed here. A bill
      with several is changed line by line on the bill itself. */
-  const single = cbmLines.length === 1 ? cbmLines[0] : null;
   /* The category is the cargo's — its lines' type, or its commodity when it
-     has no lines — never the invoice line's own kind ("Freight"). */
+     has no lines — never the invoice line's own kind ("Freight"). A new one
+     applies to every line. The volume is the bill's total; a new total is
+     shared across the freight lines in proportion, the last taking the
+     rounding, so a two-carton bill can be re-measured as easily as one. */
   const lineTypes = [...new Set(invoice.cargo?.packages.map((p) => p.cargoType) ?? [])];
   const oldCategory =
     (invoice.cargo?.packages.length ?? 0) === 0
@@ -845,19 +870,24 @@ export async function repriceInvoice(
         ? lineTypes[0]
         : null;
   const newCategory = category !== undefined && category !== oldCategory ? category : undefined;
+  const oldTotalCbm = cbmLines.reduce((sum, l) => sum.add(l.quantity), new Prisma.Decimal(0));
   const newCbm =
-    cbmIn !== undefined && single && !single.quantity.equals(new Prisma.Decimal(cbmIn))
+    cbmIn !== undefined && !oldTotalCbm.equals(new Prisma.Decimal(cbmIn).toDecimalPlaces(4))
       ? new Prisma.Decimal(cbmIn).toDecimalPlaces(4)
       : undefined;
-  if (!single) {
-    const moved = cbmLines.some(
-      (l) =>
-        (category !== undefined && l.category !== category) ||
-        (cbmIn !== undefined && !l.quantity.equals(new Prisma.Decimal(cbmIn)))
-    );
-    if (moved) {
-      return { error: "This bill has several freight lines — change the category or volume on the bill itself." };
-    }
+  const newQuantity = new Map<string, Prisma.Decimal>();
+  if (newCbm !== undefined) {
+    let given = new Prisma.Decimal(0);
+    cbmLines.forEach((line, index) => {
+      const share =
+        index === cbmLines.length - 1
+          ? newCbm.sub(given)
+          : oldTotalCbm.isZero()
+            ? newCbm.div(cbmLines.length).toDecimalPlaces(4)
+            : line.quantity.mul(newCbm).div(oldTotalCbm).toDecimalPlaces(4);
+      given = given.add(share);
+      newQuantity.set(line.id, share);
+    });
   }
 
   /* The book's rate for the new category, so the bill still says what the
@@ -872,7 +902,7 @@ export async function repriceInvoice(
   }
 
   const quantityOf = (item: (typeof invoice.items)[number]) =>
-    item === single && newCbm !== undefined ? newCbm : item.quantity;
+    newQuantity.get(item.id) ?? item.quantity;
 
   let subtotal = new Prisma.Decimal(0);
   for (const item of invoice.items) {
@@ -923,7 +953,7 @@ export async function repriceInvoice(
     }
     if (newCbm !== undefined) {
       await recordFieldChange(
-        { actor, entity: "Invoice", entityId: invoice.id, field: "billableCbm", oldValue: single!.quantity.toString(), newValue: newCbm.toString(), reason },
+        { actor, entity: "Invoice", entityId: invoice.id, field: "billableCbm", oldValue: oldTotalCbm.toString(), newValue: newCbm.toString(), reason },
         tx
       );
     }
@@ -961,8 +991,13 @@ export async function repriceInvoice(
     action: "invoice.reprice",
     entity: "Invoice",
     entityId: invoice.id,
-    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${single!.quantity} → ${newCbm} CBM` : ""}: ${reason}`,
+    summary: `Re-priced ${invoice.number} at ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${reason}`,
   });
+  await tellFinance(
+    actor,
+    invoice,
+    `Price changed to ${invoice.currency} ${next}/CBM${newCategory !== undefined ? `, category ${oldCategory ?? "none"} → ${newCategory ?? "none"}` : ""}${newCbm !== undefined ? `, ${oldTotalCbm} → ${newCbm} CBM` : ""}: ${reason}`
+  );
 
   await refreshInvoiceStatus(invoice.id);
 

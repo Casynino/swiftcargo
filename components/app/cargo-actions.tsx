@@ -190,7 +190,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
       {bill.cbm ? (
         <button type="button" onClick={() => setDialog("rate")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
           <Scale className="size-3.5" />
-          Change the price — category, CBM or rate
+          Edit price — category, CBM or rate
         </button>
       ) : null}
     </>
