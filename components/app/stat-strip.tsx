@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 export type StatChip = {
   label: string;
   value: string;
@@ -46,14 +47,14 @@ export function StatStrip({
         const body = (
           <span
             className={cn(
-              "inline-flex shrink-0 items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs shadow-soft transition-colors",
+              "inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border bg-card px-3 py-1.5 text-xs shadow-soft transition-colors",
               chip.href && "hover:border-brand/40 hover:bg-muted/60"
             )}
           >
             {Icon ? (
               <Icon className={cn("size-3.5", TONES[chip.tone ?? "neutral"])} />
             ) : null}
-            <span className="text-muted-foreground">{chip.label}</span>
+            <span className="text-muted-foreground"><Tx>{chip.label}</Tx></span>
             <span className="tnum font-semibold">{chip.value}</span>
           </span>
         );

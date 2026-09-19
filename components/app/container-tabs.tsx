@@ -27,7 +27,7 @@ export function ContainerTabs({ finance = true }: { finance?: boolean }) {
   /* A tab this desk cannot open is a door that answers "not yours". */
   const tabs = TABS.filter(([href]) => finance || !href.startsWith("/app/finance"));
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
       {tabs.map(([href, label]) => {
         const active = pathname === href;
         return (
@@ -35,7 +35,7 @@ export function ContainerTabs({ finance = true }: { finance?: boolean }) {
             key={href}
             href={href}
             className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+              "shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors",
               active
                 ? "border-brand bg-brand text-brand-foreground"
                 : "bg-card text-foreground hover:bg-secondary"

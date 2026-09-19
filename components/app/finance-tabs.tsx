@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * THE DEPARTMENT'S OWN TABS.
  *
@@ -30,10 +31,11 @@ const TABS = [
 ] as const;
 
 export function FinanceTabs() {
+  const t = useT();
   const pathname = usePathname();
 
   return (
-    <div className="-mx-1 flex flex-wrap gap-2 px-1">
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-1 sm:flex-wrap sm:overflow-visible sm:px-1 [&::-webkit-scrollbar]:hidden">
       {TABS.map(([href, label]) => {
         /* Exact match for the hub, prefix for the rest — otherwise every tab
            lights up on every finance screen. */
@@ -46,13 +48,13 @@ export function FinanceTabs() {
             key={href}
             href={href}
             className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+              "shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors",
               active
                 ? "border-brand bg-brand text-brand-foreground"
                 : "bg-card text-foreground hover:bg-secondary"
             )}
           >
-            {label}
+            {t(label)}
           </Link>
         );
       })}

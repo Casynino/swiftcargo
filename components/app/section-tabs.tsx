@@ -54,13 +54,16 @@ export function SectionTabs() {
   if (items.length < 2) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    /* One row a thumb swipes on a phone; the whole set wrapped where there is
+       room. Twelve wrapped pills filled half a phone screen before the page
+       under them started. */
+    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+            "shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-colors",
             item.href === best.href
               ? "border-brand bg-brand text-brand-foreground"
               : "bg-card text-foreground hover:bg-secondary"

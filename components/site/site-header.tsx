@@ -64,7 +64,7 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-40 border-b transition-[background-color,border-color,color] duration-300",
+        "fixed inset-x-0 top-0 z-40 border-b pt-[env(safe-area-inset-top)] transition-[background-color,border-color,color] duration-300",
         solid ? "glass text-foreground" : "border-transparent bg-transparent text-white"
       )}
     >

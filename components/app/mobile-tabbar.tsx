@@ -41,7 +41,7 @@ const TABS: Partial<Record<Role, Tab[]>> = {
   ADMIN: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/containers", icon: Ship },
+    { href: "/app/containers/loading", icon: Ship },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
   ],
   MANAGER: [

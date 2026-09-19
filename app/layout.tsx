@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 
+import { InstallApp } from "@/components/install-app";
 import { ThemeProvider } from "@/components/theme-provider";
 import { UploadBudget } from "@/components/upload-budget";
 import { metadataBaseUrl } from "@/lib/site-url";
@@ -40,12 +41,27 @@ export const metadata: Metadata = {
     ],
     apple: "/brand/apple-touch-icon.png",
   },
+  /* Opened from the home screen, it runs full screen like an installed app:
+     the status bar sits over the app's own navy header rather than a white
+     browser strip. */
+  appleWebApp: {
+    capable: true,
+    title: "Swift Cargo",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0e4c87",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1320" },
+  ],
   width: "device-width",
   initialScale: 1,
+  /* Draw under the notch and the home bar; every fixed bar pads itself with
+     the safe-area insets so nothing ends up behind them. */
+  viewportFit: "cover",
 };
 
 /**
@@ -66,6 +82,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${display.variable} font-sans`}>
         <ThemeProvider>{children}</ThemeProvider>
         <UploadBudget limitBytes={UPLOAD_REQUEST_BUDGET} />
+        <InstallApp />
       </body>
     </html>
   );

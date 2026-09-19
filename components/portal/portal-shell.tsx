@@ -180,7 +180,7 @@ export function PortalShell({
             className="absolute inset-0 bg-black/50"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-card shadow-raised">
+          <aside className="drawer-in absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-card pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] shadow-raised">
             <div className="flex h-16 items-center justify-between border-b px-4">
               <BrandMark size={28} />
               <button
@@ -199,7 +199,7 @@ export function PortalShell({
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="glass sticky top-0 z-30 flex h-16 items-center gap-3 border-b px-4 lg:px-8 print:hidden">
+        <header className="glass sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b px-4 pt-[env(safe-area-inset-top)] lg:px-8 print:hidden">
           <button
             type="button"
             aria-label="Open menu"

@@ -179,6 +179,42 @@
   ::selection {
     background: hsl(var(--brand) / 0.18);
   }
+
+  /* FEELS LIKE AN APP, NOT A PAGE.
+     No grey flash on a tap, no 300ms wait for a double-tap zoom, and no
+     sixteen-pixel rule broken: iOS zooms the whole screen into any field
+     smaller than that, which is the moment a web page gives itself away. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+  a,
+  button,
+  [role="button"],
+  label,
+  select {
+    touch-action: manipulation;
+  }
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+  /* Opened from the home screen: the page does not rubber-band off its own
+     edges, and the bars people press are not text to be selected. */
+  @media (display-mode: standalone) {
+    body {
+      overscroll-behavior-y: none;
+    }
+    nav,
+    header,
+    button {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  }
 }
 
 @layer components {
@@ -837,4 +873,23 @@
 .auth-card select {
   background: rgba(255, 255, 255, 0.09);
   border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* The side menu slides in from the edge it lives on, the way a phone's own
+   menus do, rather than appearing all at once. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.drawer-in {
+  animation: drawer-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-in {
+    animation: none;
+  }
 }
