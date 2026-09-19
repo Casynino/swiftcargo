@@ -522,7 +522,7 @@ export function IntakeForm({
                     name="itemDescription"
                     value={line.description}
                     onChange={(e) => update(line.key, "description", e.target.value)}
-                    placeholder="Cigarette paper"
+                    placeholder="What the goods are — e.g. Shoes, Phone cases"
                   />
                 </div>
 
