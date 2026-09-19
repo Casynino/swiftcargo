@@ -1483,7 +1483,7 @@ const ZH: Record<string, string> = {
   "Load a batch": "装载批次",
   "Load these, then seal and record the flight.":
     "把这些装上，然后封批并登记航班。",
-  "Loading": "加载中",
+  "Loading": "装柜中",
   "Loading batches": "装货批次",
   "Loading in China": "中国装货中",
   "Loading table": "表格加载中",
@@ -6066,6 +6066,17 @@ const ZH: Record<string, string> = {
     "按月列出公司各账户的收入和支出，包括特殊费用——这些钱确实离开了银行。借入和归还的钱单独成列：它们不是收入也不是费用，但确实改变了现金。",
 
   // ----------------------------------------------------------- Swift's own
+  "All containers": "全部货柜",
+  "Packages today": "今日件数",
+  "Pieces today": "今日数量",
+  "waiting for a container": "等待装柜",
+  "on the water to Dar": "海运前往达累斯萨拉姆",
+  "By where each consignment stands": "按每票货物所处状态",
+  "On no container": "未装柜",
+  "Sealed, ready to sail": "已封柜，待开船",
+  "Registered against loaded, a fortnight": "登记与装柜对比，近两周",
+  "More than 14 days": "超过 14 天",
+  "A container left open stops being a container and becomes a shelf. Seal it or ship it.": "货柜一直开着就不再是货柜，而是货架。请封柜或发运。",
   "on the shelf": "在货架上",
   "loading": "装柜中",
   "at the port": "在港口",

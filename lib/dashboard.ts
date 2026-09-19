@@ -612,12 +612,15 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
     prisma.cargo.count({
       where: { deletedAt: null, status: "RECEIVED_CHINA", photos: { none: {} } },
     }),
-    prisma.cargo.count({
+    /* Three days, as on the air side: long enough that a consignment waiting
+       for Saturday's box is not a worry, short enough that a forgotten one is. */
+    prisma.chinaReceiving.aggregate({
       where: {
-        deletedAt: null,
-        status: "RECEIVED_CHINA",
-        chinaReceiving: { receivedAt: { lt: daysAgo(14) } },
+        receivedAt: { lt: daysAgo(3) },
+        cargo: { deletedAt: null, status: "RECEIVED_CHINA" },
       },
+      _count: { _all: true },
+      _sum: { weightKg: true },
     }),
     prisma.darReceiving.count({ where: { discrepancy: true } }),
     prisma.cargo.count({ where: { deletedAt: null, status: "MISSING_AT_DAR" } }),
@@ -652,15 +655,16 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
       where: {
         deletedAt: null,
         status: { in: ["OPEN", "LOADING"] },
-        createdAt: { lt: daysAgo(7) },
+        createdAt: { lt: daysAgo(3) },
       },
     }),
   ]);
 
+  const waitingLong = onShelf._count._all;
   const rows: AttentionRow[] = [
     {
       id: "no-photo",
-      group: "Guangzhou",
+      group: "Registration",
       count: noPhoto,
       title: `${noPhoto} received with no photograph`,
       detail:
@@ -670,13 +674,14 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
     },
     {
       id: "on-shelf",
-      group: "Guangzhou",
-      count: onShelf,
-      title: `${onShelf} waiting more than a fortnight`,
+      group: "Waiting",
+      count: waitingLong,
+      title: `${waitingLong} waiting more than 3 days`,
       detail:
-        "Received in Guangzhou and still not loaded. Somebody is paying rent on it and the customer is asking.",
+        "Booked in and still in Guangzhou. Every day here is a day the customer is counting.",
       href: "/app/inventory?state=waiting",
-      tone: "warn",
+      tone: "neutral",
+      meta: `${Math.round(Number(onShelf._sum.weightKg ?? 0))} kg`,
     },
     {
       id: "short",
@@ -721,13 +726,13 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
     },
     {
       id: "open-too-long",
-      group: "Shipping",
+      group: "Loading",
       count: openTooLong,
-      title: `${openTooLong} container${openTooLong === 1 ? "" : "s"} open over a week`,
+      title: `${openTooLong} container${openTooLong === 1 ? "" : "s"} open more than 3 days`,
       detail:
-        "Still taking cargo. A box that never closes is a sailing nobody is on.",
-      href: "/app/containers?view=loading",
-      tone: "neutral",
+        "A container left open stops being a container and becomes a shelf. Seal it or ship it.",
+      href: "/app/containers/loading",
+      tone: "warn",
     },
   ];
 
@@ -778,10 +783,17 @@ export async function attentionItems(role?: Role): Promise<AttentionRow[]> {
   */
   if (role) rows.push(...(await deskRows(role)));
 
+  /* The Guangzhou desk sees Guangzhou's own failures, as on the air side: a
+     case in Dar or a ship running late is real, and nothing a clerk in China
+     can do anything about. */
+  const CHINA_GROUPS = new Set(["Registration", "Loading", "Waiting"]);
+  const mine =
+    role === "CHINA_WAREHOUSE" ? rows.filter((row) => CHINA_GROUPS.has(row.group)) : rows;
+
   /* A zero is not a worry. Worst first, then biggest — the list is read from
      the top and the top should be the thing that hurts. */
   const RANK = { bad: 0, warn: 1, neutral: 2 } as const;
-  return rows
+  return mine
     .filter((row) => row.count > 0)
     .sort((a, b) => RANK[a.tone] - RANK[b.tone] || b.count - a.count);
 }
@@ -842,8 +854,13 @@ export async function moneyPosition() {
  */
 export async function chinaFloor() {
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
+  /* "Today" is the Guangzhou floor's day, not the server's: a clerk opening
+     the page at 7am Guangzhou time is still in yesterday by UTC. China keeps
+     no summer time, so the day starts at a fixed 16:00 UTC. */
+  const GZ_OFFSET = 8 * 3_600_000;
+  const startOfDay = new Date(
+    Math.floor((now.getTime() + GZ_OFFSET) / 86_400_000) * 86_400_000 - GZ_OFFSET
+  );
 
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -864,10 +881,12 @@ export async function chinaFloor() {
       _sum: { cbm: true },
       where: { cargo: { deletedAt: null, status: "RECEIVED_CHINA" } },
     }),
-    prisma.chinaReceiving.count({ where: { receivedAt: { gte: startOfDay } } }),
+    prisma.chinaReceiving.count({
+      where: { receivedAt: { gte: startOfDay }, cargo: { deletedAt: null } },
+    }),
     prisma.chinaReceiving.aggregate({
-      _sum: { cbm: true },
-      where: { receivedAt: { gte: startOfDay } },
+      _sum: { cbm: true, packagesCount: true, weightKg: true },
+      where: { receivedAt: { gte: startOfDay }, cargo: { deletedAt: null } },
     }),
     prisma.chinaReceiving.count({ where: { receivedAt: { gte: monthStart } } }),
     prisma.chinaReceiving.count({
@@ -877,6 +896,9 @@ export async function chinaFloor() {
       where: {
         deletedAt: null,
         status: { in: ["ASSIGNED_TO_CONTAINER", "CONTAINER_LOADED"] },
+        containerLines: {
+          some: { container: { deletedAt: null, status: { in: ["OPEN", "LOADING"] } } },
+        },
       },
     }),
     prisma.cargo.count({
@@ -910,13 +932,32 @@ export async function chinaFloor() {
     waitingCbm: Number(waitingVolume._sum.cbm ?? 0),
     receivedToday,
     todayCbm: Number(todayVolume._sum.cbm ?? 0),
+    todayPackages: todayVolume._sum.packagesCount ?? 0,
+    /* A line with no piece count is one piece per package — the counter only
+       asks for pieces when the two differ. */
+    todayPieces: (
+      await prisma.chinaReceiving.findMany({
+        where: { receivedAt: { gte: startOfDay }, cargo: { deletedAt: null } },
+        select: { packagesCount: true, piecesCount: true },
+      })
+    ).reduce((n, r) => n + (r.piecesCount ?? r.packagesCount), 0),
+    todayKg: Number(todayVolume._sum.weightKg ?? 0),
     thisMonth,
     lastMonth,
     /* Null rather than zero when there is nothing to compare against: a first
        month is not a 100% rise. */
     delta:
       lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : null,
-    inContainers,
+    loading: inContainers,
+    sealed: await prisma.cargo.count({
+      where: {
+        deletedAt: null,
+        status: { in: ["ASSIGNED_TO_CONTAINER", "CONTAINER_LOADED"] },
+        containerLines: {
+          some: { container: { deletedAt: null, status: { in: ["LOADED", "SEALED"] } } },
+        },
+      },
+    }),
     atSea,
     seaCbm: Number(seaVolume._sum.cbm ?? 0),
     trend,
@@ -1239,39 +1280,8 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
   const rows: AttentionRow[] = [];
   const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
-  if (can(role, "receiving.china")) {
-    const [waiting, loading, shelf] = await Promise.all([
-      prisma.cargo.count({ where: { deletedAt: null, status: "RECEIVED_CHINA" } }),
-      prisma.container.count({ where: { deletedAt: null, status: { in: ["OPEN", "LOADING"] } } }),
-      prisma.chinaReceiving.aggregate({
-        where: { cargo: { deletedAt: null, status: "RECEIVED_CHINA" } },
-        _sum: { cbm: true },
-      }),
-    ]);
-    rows.push(
-      {
-        id: "desk-waiting",
-        group: "Guangzhou",
-        count: waiting,
-        title: `${waiting} ${plural(waiting, "consignment", "consignments")} waiting for a container`,
-        detail: "On the shelf in Guangzhou, not yet loaded.",
-        href: "/app/inventory",
-        tone: "neutral",
-        meta: `${Number(shelf._sum.cbm ?? 0).toFixed(3)} CBM`,
-        metaSub: "on the shelf",
-      },
-      {
-        id: "desk-loading",
-        group: "Guangzhou",
-        count: loading,
-        title: `${loading} ${plural(loading, "container", "containers")} being loaded`,
-        detail: "Still open for cargo — seal when full.",
-        href: "/app/containers/loading",
-        tone: "neutral",
-        meta: "loading",
-      }
-    );
-  }
+  /* Guangzhou's queue is the Waiting and Loading rows above, on Target's
+     three-day rule; a second count of the same shelf would only argue with it. */
 
   if (can(role, "receiving.dar")) {
     const [clearing, ready] = await Promise.all([

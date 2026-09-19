@@ -19,9 +19,14 @@ import { Donut, DonutLegend, type DonutSlice } from "@/components/charts/donut";
 import { FlowBars } from "@/components/charts/flow-bars";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Boxes,
+  Layers,
+  Package,
   PackagePlus,
   Ship,
   Warehouse,
+  Weight,
+  type LucideIcon,
 } from "lucide-react";
 import {
   attentionItems,
@@ -48,7 +53,9 @@ import { pillsFor, subtitleFor } from "@/lib/desk";
 import { formatDate, formatMoney, formatRelative } from "@/lib/format";
 import { can } from "@/lib/rbac";
 import { requireStaff } from "@/lib/session";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { viewerLocale } from "@/lib/viewer-locale";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -108,6 +115,30 @@ function QueueCard({ card, index }: { card: ActionCard; index: number }) {
         ) : null}
       </div>
     </Link>
+  );
+}
+
+/**
+ * One of the four "today" boxes, as on the air side: what the Guangzhou desk
+ * has done since midnight, read at a glance before anything else is asked.
+ */
+function TodayBox({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border bg-card px-4 py-3 shadow-soft">
+      <p className="flex items-center gap-2 truncate text-sm text-muted-foreground">
+        <Icon className="size-4 shrink-0" />
+        {label}
+      </p>
+      <p className="tnum mt-1 text-2xl font-bold tracking-tight">{value}</p>
+    </div>
   );
 }
 
@@ -196,9 +227,12 @@ export default async function DashboardPage() {
     myActivity(user.id),
   ]);
 
+  const locale = await viewerLocale();
+  const chinaHome = user.role === "CHINA_WAREHOUSE";
+  /* Greeted by the clock on the wall where they stand. */
   const hour = Number(
     new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Africa/Dar_es_Salaam",
+      timeZone: chinaHome ? "Asia/Shanghai" : "Africa/Dar_es_Salaam",
       hour: "2-digit",
       hour12: false,
     }).format(new Date())
@@ -245,14 +279,36 @@ export default async function DashboardPage() {
       <section>
         <SectionLabel
           count={attention.length}
-          action={{ href: "/app/exceptions", label: "All issues" }}
+          action={
+            chinaHome
+              ? { href: "/app/inventory", label: t(locale, "All cargo") }
+              : { href: "/app/exceptions", label: "All issues" }
+          }
         >
-          Needs your attention
+          {t(locale, "Needs your attention")}
         </SectionLabel>
         <AttentionCenter items={attention} />
+
+        {/* The four "today" boxes sit under the worry list, as on the air
+            side: the day's work in four numbers, counted from Guangzhou's
+            midnight. */}
+        {chinaHome && floor ? (
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <TodayBox icon={Package} label={t(locale, "Cargo today")} value={String(floor.receivedToday)} />
+            <TodayBox icon={Boxes} label={t(locale, "Packages today")} value={String(floor.todayPackages)} />
+            <TodayBox icon={Layers} label={t(locale, "Pieces today")} value={String(floor.todayPieces)} />
+            <TodayBox
+              icon={Weight}
+              label={t(locale, "Weight today")}
+              value={`${Math.round(floor.todayKg).toLocaleString("en-US")} kg`}
+            />
+          </div>
+        ) : null}
       </section>
 
-      {cards.length > 0 ? (
+      {/* The China desk's queue is the attention panel and the pills above; the
+          big queue cards repeated the same counts a third time. */}
+      {cards.length > 0 && !chinaHome ? (
         <section>
           <SectionLabel>What needs you today</SectionLabel>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -325,86 +381,100 @@ export default async function DashboardPage() {
       {floor && floorFlow && floorAgeing && floorMix && floorVolume && boxes ? (
         <>
           <section>
-            <SectionLabel action={{ href: "/app/inventory", label: "The floor" }}>
-              The floor · right now
+            <SectionLabel action={{ href: "/app/containers", label: t(locale, "All containers") }}>
+              {t(locale, "The desk · right now")}
             </SectionLabel>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <KpiCard
                 index={0}
-                label="Waiting in Guangzhou"
+                label={t(locale, "In China warehouse")}
                 numeric={floor.waiting}
                 icon={Warehouse}
                 tone="warning"
-                hint={`${floor.waitingCbm.toFixed(2)} CBM on the shelf`}
+                hint={`${floor.waitingCbm.toFixed(2)} CBM ${t(locale, "waiting for a container")}`}
                 href="/app/inventory"
               />
               <KpiCard
                 index={1}
-                label="Received this month"
+                label={t(locale, "Registered this month")}
                 numeric={floor.thisMonth}
                 icon={PackagePlus}
                 tone="brand"
                 delta={floor.delta ?? undefined}
-                deltaLabel="vs last month"
+                deltaLabel={t(locale, "vs last month")}
                 trend={floor.trend}
-                hint={`${floor.receivedToday} today · ${floor.todayCbm.toFixed(2)} CBM`}
               />
               <KpiCard
                 index={2}
-                label="Cargo at sea"
+                label={t(locale, "Cargo in transit")}
                 numeric={floor.atSea}
                 icon={Ship}
-                tone="marine"
-                hint={`${floor.seaCbm.toFixed(2)} CBM on the water to ${ROUTE.destinationCity}`}
+                tone="success"
+                hint={`${floor.seaCbm.toFixed(2)} CBM ${t(locale, "on the water to Dar")}`}
                 href="/app/containers?status=IN_TRANSIT"
               />
             </div>
           </section>
 
           <section>
-            <SectionLabel action={{ href: "/app/inventory", label: "The floor" }}>
-              The floor, in shape
+            <SectionLabel action={{ href: "/app/inventory", label: t(locale, "All cargo") }}>
+              {t(locale, "The desk, in shape")}
             </SectionLabel>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">What is in Guangzhou</CardTitle>
+                  <CardTitle className="text-base">{t(locale, "What is in Guangzhou")}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    By what is holding each consignment
+                    {t(locale, "By where each consignment stands")}
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-5">
-                  <Donut
-                    slices={[
-                      { label: "Waiting for a container", value: floor.waiting, tone: 3 },
-                      { label: "Loaded, not sailed", value: floor.inContainers, tone: 2 },
-                    ]}
-                    label={String(floor.waiting + floor.inContainers)}
-                    caption="consignments"
-                  />
-                  <div className="w-full">
-                    <DonutLegend
-                      slices={[
-                        { label: "Waiting for a container", value: floor.waiting, tone: 3 },
-                        { label: "Loaded, not sailed", value: floor.inContainers, tone: 2 },
-                      ]}
-                    />
-                  </div>
+                  {(() => {
+                    // One array for the ring and its key, so the two cannot be relabelled apart.
+                    const gz: DonutSlice[] = [
+                      { label: t(locale, "On no container"), value: floor.waiting, tone: 3 },
+                      { label: t(locale, "Loading"), value: floor.loading, tone: 4 },
+                      { label: t(locale, "Sealed, ready to sail"), value: floor.sealed, tone: 5 },
+                    ];
+                    return (
+                      <>
+                        <Donut
+                          slices={gz}
+                          label={String(floor.waiting + floor.loading + floor.sealed)}
+                          caption={t(locale, "consignments")}
+                        />
+                        <div className="w-full">
+                          <DonutLegend slices={gz} />
+                        </div>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">In and out</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Received against loaded, a fortnight
+                <CardHeader className="flex-row items-start justify-between gap-2 space-y-0">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base">{t(locale, "In and out")}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      {t(locale, "Registered against loaded, a fortnight")}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-right text-xs text-muted-foreground">
+                    <span className="font-mono font-semibold text-success">
+                      {floorFlow.reduce((n, d) => n + d.in, 0)}
+                    </span>
+                    {" / "}
+                    <span className="font-mono font-semibold text-signal">
+                      {floorFlow.reduce((n, d) => n + d.out, 0)}
+                    </span>
                   </p>
                 </CardHeader>
                 <CardContent>
                   <FlowBars
                     data={floorFlow}
-                    inLabel="Received"
-                    outLabel="Loaded"
+                    inLabel={t(locale, "Registered")}
+                    outLabel={t(locale, "Loaded")}
                     height={180}
                   />
                 </CardContent>
@@ -412,19 +482,19 @@ export default async function DashboardPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">How long it has waited</CardTitle>
+                  <CardTitle className="text-base">{t(locale, "How long it has waited")}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    From the day it was received in Guangzhou
+                    {t(locale, "From the day it was registered in Guangzhou")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <AgeingBar
                     bands={floorAgeing.map((b) => ({
-                      label: b.label,
+                      label: t(locale, b.label),
                       value: b.value,
                       tone: b.tone,
                     }))}
-                    format={(n) => `${n} consignment${n === 1 ? "" : "s"}`}
+                    format={(n) => `${n} ${t(locale, n === 1 ? "consignment" : "consignments")}`}
                   />
                   <ul className="space-y-1.5">
                     {floorAgeing.map((b) => (
@@ -442,7 +512,7 @@ export default async function DashboardPage() {
                           )}
                         />
                         <span className="flex-1 truncate text-muted-foreground">
-                          {b.label}
+                          {t(locale, b.label)}
                         </span>
                         <span className="tnum">{b.value}</span>
                         <span className="tnum w-20 text-right text-muted-foreground">
