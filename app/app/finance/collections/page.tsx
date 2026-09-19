@@ -159,10 +159,11 @@ export default async function CollectionsPage({
           description: true,
           status: true,
           clearedAt: true,
+          commodity: true,
           chinaReceiving: { select: { cbm: true } },
-          packages: { select: { id: true } },
+          packages: { where: { deletedAt: null }, select: { id: true, cargoType: true } },
           pickupNote: { select: { status: true, onCredit: true } },
-          darReceiving: { select: { receivedAt: true } },
+          darReceiving: { select: { receivedAt: true, cbm: true } },
           contacts: {
             orderBy: { createdAt: "desc" },
             take: 1,
@@ -179,16 +180,25 @@ export default async function CollectionsPage({
   });
 
   /*
-    WHAT MOVED EACH PRICE.
+    WHAT MOVED EACH PRICE — AND NOTHING WHEN NOTHING DID.
 
-    The category a bill was first priced at is the oldest recorded category —
-    changed on the cargo before the bill went out, or on the bill after. The
-    volume against China's measurement, and the agreed rate against the book.
+    Category: a category that was replaced by another, on the cargo before the
+    bill or on the bill after. A category being set for the first time is not a
+    change of price. Volume: re-priced on the bill, or Dar's measurement
+    differing from China's. Rate: an agreed rate beside the book's.
   */
-  const categoryChanges = await prisma.fieldChange.findMany({
+  const cargoOf = (invoice: (typeof invoices)[number]) => invoice.cargo;
+  const categoryOf = (invoice: (typeof invoices)[number]) => {
+    const c = cargoOf(invoice);
+    if (c.packages.length === 0) return c.commodity ?? null;
+    const types = [...new Set(c.packages.map((p) => p.cargoType))];
+    return types.length === 1 ? types[0] : null;
+  };
+  const history = await prisma.fieldChange.findMany({
     where: {
       OR: [
-        { entity: "Invoice", field: "category", entityId: { in: invoices.map((i) => i.id) } },
+        { entity: "Invoice", field: { in: ["cargoType", "billableCbm"] }, entityId: { in: invoices.map((i) => i.id) } },
+        { entity: "Cargo", field: "commodity", entityId: { in: invoices.map((i) => i.cargo.id) } },
         {
           entity: "CargoPackage",
           field: "cargoType",
@@ -197,25 +207,36 @@ export default async function CollectionsPage({
       ],
     },
     orderBy: { createdAt: "asc" },
-    select: { entity: true, entityId: true, oldValue: true },
+    select: { entityId: true, field: true, oldValue: true },
   });
-  const firstCategory = new Map<string, string | null>();
-  for (const invoice of invoices) {
-    const ids = new Set([invoice.id, ...invoice.cargo.packages.map((p) => p.id)]);
-    const first = categoryChanges.find((c) => ids.has(c.entityId));
-    if (first) firstCategory.set(invoice.id, first.oldValue);
-  }
   const changeOf = (invoice: (typeof invoices)[number]): PriceChange => {
-    const freight = invoice.items.filter((i) => i.unit === "CBM");
-    const now = freight.length === 1 ? freight[0].category : null;
-    const was = firstCategory.get(invoice.id);
-    const china = invoice.cargo.chinaReceiving?.cbm ? Number(invoice.cargo.chinaReceiving.cbm) : null;
+    const c = cargoOf(invoice);
+    const ids = new Set([invoice.id, c.id, ...c.packages.map((p) => p.id)]);
+    const mine = history.filter((h) => ids.has(h.entityId));
+    const nowCategory = categoryOf(invoice);
+    const wasCategory = mine.find(
+      (h) => (h.field === "cargoType" || h.field === "commodity") && h.oldValue
+    )?.oldValue;
+
     const billed = invoice.billableCbm ? Number(invoice.billableCbm) : null;
+    const rebilled = mine.find((h) => h.field === "billableCbm" && h.oldValue);
+    const china = c.chinaReceiving?.cbm ? Number(c.chinaReceiving.cbm) : null;
+    const dar = c.darReceiving?.cbm ? Number(c.darReceiving.cbm) : null;
+    const cbm =
+      rebilled && billed !== null && Math.abs(Number(rebilled.oldValue) - billed) > 0.0005
+        ? { from: Number(rebilled.oldValue), to: billed }
+        : china !== null && dar !== null && Math.abs(china - dar) > 0.0005
+          ? { from: china, to: dar }
+          : null;
+
     const std = invoice.standardRate ? Number(invoice.standardRate) : null;
     const applied = invoice.appliedRate ? Number(invoice.appliedRate) : null;
     return {
-      category: was !== undefined && was !== now ? { from: was, to: now } : null,
-      cbm: china !== null && billed !== null && Math.abs(china - billed) > 0.0005 ? { from: china, to: billed } : null,
+      category:
+        wasCategory && nowCategory && wasCategory !== nowCategory
+          ? { from: wasCategory, to: nowCategory }
+          : null,
+      cbm,
       rate: std !== null && applied !== null && Math.abs(std - applied) > 0.005 ? { from: std, to: applied } : null,
       currency: invoice.currency,
     };
@@ -709,7 +730,7 @@ export default async function CollectionsPage({
                           cbm={row.invoice.billableCbm ? Number(row.invoice.billableCbm) : null}
                           category={
                             row.invoice.items.filter((i) => i.unit === "CBM").length === 1
-                              ? row.invoice.items.find((i) => i.unit === "CBM")!.category
+                              ? categoryOf(row.invoice)
                               : undefined
                           }
                           categories={categories}

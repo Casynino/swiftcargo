@@ -1132,14 +1132,20 @@ describe("a price changed from the collection list", () => {
       });
       const line = after.items.find((i) => i.unit === "CBM")!;
       assert.equal(line.quantity.toString(), "1.5");
-      assert.equal(line.category, other.cargoType);
+      assert.equal(line.category, "Freight", "the line's kind is untouched");
+      const lines = await prisma.cargoPackage.findMany({ where: { cargoId: cargo.id } });
+      const commodity = (await prisma.cargo.findUniqueOrThrow({ where: { id: cargo.id } })).commodity;
+      assert.ok(
+        lines.length ? lines.every((l) => l.cargoType === other.cargoType) : commodity === other.cargoType,
+        "the cargo carries the new category"
+      );
       assert.equal(line.amount.toString(), "750");
       assert.equal(after.billableCbm?.toString(), "1.5");
       assert.equal(after.appliedRate?.toString(), "500");
       assert.equal(after.standardRate?.toString(), other.rate.toString(), "the book rate of the new category");
 
       const trail = await prisma.fieldChange.findMany({ where: { entityId: invoice.id } });
-      assert.ok(trail.some((c) => c.field === "category" && c.newValue === other.cargoType));
+      assert.ok(trail.some((c) => c.field === "cargoType" && c.newValue === other.cargoType));
       assert.ok(trail.some((c) => c.field === "billableCbm" && c.newValue === "1.5"));
     } finally {
       signedIn = null;

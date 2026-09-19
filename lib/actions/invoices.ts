@@ -807,7 +807,17 @@ export async function repriceInvoice(
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
-    include: { items: true, cargo: { select: { service: true } } },
+    include: {
+      items: true,
+      cargo: {
+        select: {
+          id: true,
+          service: true,
+          commodity: true,
+          packages: { where: { deletedAt: null }, select: { id: true, cargoType: true } },
+        },
+      },
+    },
   });
   if (!invoice) return { error: "That invoice no longer exists." };
   if (invoice.status === "CANCELLED") {
@@ -825,7 +835,15 @@ export async function repriceInvoice(
   /* One freight line: its category and volume can be changed here. A bill
      with several is changed line by line on the bill itself. */
   const single = cbmLines.length === 1 ? cbmLines[0] : null;
-  const oldCategory = single?.category ?? null;
+  /* The category is the cargo's — its lines' type, or its commodity when it
+     has no lines — never the invoice line's own kind ("Freight"). */
+  const lineTypes = [...new Set(invoice.cargo?.packages.map((p) => p.cargoType) ?? [])];
+  const oldCategory =
+    (invoice.cargo?.packages.length ?? 0) === 0
+      ? (invoice.cargo?.commodity ?? null)
+      : lineTypes.length === 1
+        ? lineTypes[0]
+        : null;
   const newCategory = category !== undefined && category !== oldCategory ? category : undefined;
   const newCbm =
     cbmIn !== undefined && single && !single.quantity.equals(new Prisma.Decimal(cbmIn))
@@ -879,11 +897,29 @@ export async function repriceInvoice(
         tx
       );
     }
-    if (newCategory !== undefined) {
+    if (newCategory !== undefined && invoice.cargo) {
       await recordFieldChange(
-        { actor, entity: "Invoice", entityId: invoice.id, field: "category", oldValue: oldCategory, newValue: newCategory, reason },
+        { actor, entity: "Invoice", entityId: invoice.id, field: "cargoType", oldValue: oldCategory, newValue: newCategory, reason },
         tx
       );
+      /* The cargo follows the bill, so the next draft, the packing list and
+         the price list all read the category that was charged. */
+      if (invoice.cargo.packages.length === 0) {
+        await recordFieldChange(
+          { actor, entity: "Cargo", entityId: invoice.cargo.id, field: "commodity", oldValue: invoice.cargo.commodity, newValue: newCategory, reason },
+          tx
+        );
+        await tx.cargo.update({ where: { id: invoice.cargo.id }, data: { commodity: newCategory } });
+      } else {
+        for (const line of invoice.cargo.packages) {
+          if (line.cargoType === newCategory) continue;
+          await recordFieldChange(
+            { actor, entity: "CargoPackage", entityId: line.id, field: "cargoType", oldValue: line.cargoType, newValue: newCategory, reason },
+            tx
+          );
+          await tx.cargoPackage.update({ where: { id: line.id }, data: { cargoType: newCategory } });
+        }
+      }
     }
     if (newCbm !== undefined) {
       await recordFieldChange(
@@ -899,7 +935,6 @@ export async function repriceInvoice(
         data: {
           unitPrice: next,
           quantity,
-          ...(item === single && newCategory !== undefined ? { category: newCategory } : {}),
           amount: quantity.mul(next).toDecimalPlaces(2),
         },
       });
