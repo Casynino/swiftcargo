@@ -5,9 +5,11 @@ import { PageHeader } from "@/components/app/page-header";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Open a container" };
 
 export default async function NewContainerPage() {
+  await primeLocale();
   await requirePermission("container.create");
 
   /*
@@ -31,8 +33,8 @@ export default async function NewContainerPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
-        title="Open a container"
-        description="It is numbered for you, and a voyage is created alongside it. The shipping line's own box number and the seal are recorded later, when the container is sealed."
+        title={T("Open a container")}
+        description={T("It is numbered for you, and a voyage is created alongside it. The shipping line's own box number and the seal are recorded later, when the container is sealed.")}
         back={{ href: "/app/containers", label: "Containers" }}
       />
       <ContainerForm nextReference={nextReference} />

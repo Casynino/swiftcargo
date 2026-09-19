@@ -24,6 +24,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Loading containers" };
 
 const TYPE_LABEL: Record<ContainerType, string> = {
@@ -85,6 +86,7 @@ export default async function LoadingContainersPage({
 }: {
   searchParams: Promise<{ view?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("container.view");
   const { view } = await searchParams;
   const chosen: View = view && view in VIEWS ? (view as View) : "all";
@@ -252,56 +254,56 @@ export default async function LoadingContainersPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Loading containers"
-        description="Every box still in Guangzhou and the ones that have just sailed. Open one to see exactly what is inside."
+        title={T("Loading containers")}
+        description={T("Every box still in Guangzhou and the ones that have just sailed. Open one to see exactly what is inside.")}
         actions={
           can(user.role, "container.create") ? (
             <Button asChild>
               <Link href="/app/containers/new">
                 <Plus />
-                Open a container
+                {T("Open a container")}
               </Link>
             </Button>
           ) : null
         }
       />
-      <ContainerTabs />
+      <ContainerTabs finance={can(user.role, "finance.view")} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
-          label="Taking cargo"
+          label={T("Taking cargo")}
           numeric={openBoxes.length}
           icon={PackageOpen}
           tone="signal"
-          hint={`${formatCbm(openBoxes.reduce((s, b) => s + b.cbm, 0))} loaded so far`}
+          hint={`${formatCbm(openBoxes.reduce((s, b) => s + b.cbm, 0))} ${T("loaded so far")}`}
           href="/app/containers/loading?view=open"
         />
         <KpiCard
           index={1}
-          label="Sealed, waiting to sail"
+          label={T("Sealed, waiting to sail")}
           numeric={sealedBoxes.length}
           icon={Lock}
           tone="brand"
-          hint={`${sealedBoxes.reduce((s, b) => s + b.lines.length, 0)} consignments on board`}
+          hint={`${sealedBoxes.reduce((s, b) => s + b.lines.length, 0)} ${T("consignments on board")}`}
           href="/app/containers/loading?view=sealed"
         />
         <KpiCard
           index={2}
-          label="On the Guangzhou floor"
+          label={T("On the Guangzhou floor")}
           numeric={floor.length}
           icon={Warehouse}
           tone={floorDays >= 14 ? "warning" : "marine"}
           hint={
             floor.length > 0
-              ? `${formatCbm(floorCbm)} on no container · oldest ${floorDays}d`
-              : "Everything measured is on a box"
+              ? `${formatCbm(floorCbm)} ${T("on no container")} · ${T("oldest")} ${floorDays}d`
+              : T("Everything measured is on a box")
           }
           href="/app/cargo?stage=china"
         />
         <KpiCard
           index={3}
-          label="Shipped recently"
+          label={T("Shipped recently")}
           numeric={shippedBoxes.length}
           icon={Ship}
           tone="success"
@@ -332,8 +334,8 @@ export default async function LoadingContainersPage({
         <div className="rounded-xl border bg-card">
           <EmptyState
             icon="Container"
-            title="No container is open"
-            description="Cargo measured in Guangzhou waits on the floor until a container is opened for it."
+            title={T("No container is open")}
+            description={T("Cargo measured in Guangzhou waits on the floor until a container is opened for it.")}
           />
         </div>
       ) : null}
@@ -482,22 +484,21 @@ export default async function LoadingContainersPage({
                   <div className="border-t">
                     {box.lines.length === 0 ? (
                       <p className="px-5 py-6 text-sm text-muted-foreground">
-                        Nothing loaded yet. Pick cargo off the Guangzhou floor
-                        from inside the container.
+                        {T("Nothing loaded yet. Pick cargo off the Guangzhou floor from inside the container.")}
                       </p>
                     ) : (
                       <div className="relative overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                              <th className="px-5 py-2 font-medium">Tracking</th>
-                              <th className="px-3 py-2 font-medium">Customer</th>
-                              <th className="px-3 py-2 font-medium">Goods</th>
-                              <th className="px-3 py-2 text-right font-medium">Pkgs</th>
-                              <th className="px-3 py-2 text-right font-medium">Pieces</th>
-                              <th className="px-3 py-2 text-right font-medium">Weight</th>
-                              <th className="px-3 py-2 text-right font-medium">Volume</th>
-                              <th className="px-5 py-2 text-right font-medium">Received</th>
+                              <th className="px-5 py-2 font-medium">{T("Tracking")}</th>
+                              <th className="px-3 py-2 font-medium">{T("Customer")}</th>
+                              <th className="px-3 py-2 font-medium">{T("Goods")}</th>
+                              <th className="px-3 py-2 text-right font-medium">{T("Pkgs")}</th>
+                              <th className="px-3 py-2 text-right font-medium">{T("Pieces")}</th>
+                              <th className="px-3 py-2 text-right font-medium">{T("Weight")}</th>
+                              <th className="px-3 py-2 text-right font-medium">{T("Volume")}</th>
+                              <th className="px-5 py-2 text-right font-medium">{T("Received")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y">
@@ -585,7 +586,7 @@ export default async function LoadingContainersPage({
           href="/app/containers/arrived"
           className="text-brand hover:underline"
         >
-          Arrived containers
+          {T("Arrived containers")}
         </Link>
         .
       </p>

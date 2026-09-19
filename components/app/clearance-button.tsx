@@ -14,6 +14,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * "Customs is done" — for one consignment, or every one on a container that
  * Dar has booked in. Asked once in a dialog because it sends customers a
@@ -32,6 +33,7 @@ export function ClearanceButton({
   waiting: number;
   label?: string;
 }) {
+  const tx = useT();
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<ClearanceState, FormData>(
     containerId ? markContainerCleared : markCargoCleared,
@@ -50,7 +52,7 @@ export function ClearanceButton({
       </Button>
       {state.ok ? <FormMessage ok={state.ok} /> : null}
       {open ? (
-        <Modal title="Clearance complete" onClose={close}>
+        <Modal title={tx("Clearance complete")} onClose={close}>
           <p className="text-sm text-muted-foreground">
             {containerId
               ? `${waiting} consignment${waiting === 1 ? "" : "s"} will be cleared and booked into our Dar warehouse — anything not yet checked in is checked in as China sent it. Anything reported missing is left out.`
@@ -63,15 +65,15 @@ export function ClearanceButton({
             {containerId ? <input type="hidden" name="containerId" value={containerId} /> : null}
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">
-                Note <span className="font-normal text-muted-foreground">optional</span>
+                {tx("Note")} <span className="font-normal text-muted-foreground">optional</span>
               </span>
-              <Textarea name="note" rows={2} maxLength={300} placeholder="Release order number, agent…" className="resize-none" />
+              <Textarea name="note" rows={2} maxLength={300} placeholder={tx("Release order number, agent…")} className="resize-none" />
             </label>
             <FormMessage error={state.error} />
             <div className="flex flex-wrap gap-2">
-              <SubmitButton size="sm">Mark cleared</SubmitButton>
+              <SubmitButton size="sm">{tx("Mark cleared")}</SubmitButton>
               <Button type="button" size="sm" variant="ghost" onClick={close}>
-                Leave it
+                {tx("Leave it")}
               </Button>
             </div>
           </form>

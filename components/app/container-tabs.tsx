@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useT } from "@/components/app/locale-provider";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -20,11 +21,14 @@ const TABS = [
  * the general ledger and payroll one click from a loading table, which is a
  * different job.
  */
-export function ContainerTabs() {
+export function ContainerTabs({ finance = true }: { finance?: boolean }) {
   const pathname = usePathname();
+  const t = useT();
+  /* A tab this desk cannot open is a door that answers "not yours". */
+  const tabs = TABS.filter(([href]) => finance || !href.startsWith("/app/finance"));
   return (
     <div className="flex flex-wrap gap-2">
-      {TABS.map(([href, label]) => {
+      {tabs.map(([href, label]) => {
         const active = pathname === href;
         return (
           <Link
@@ -37,7 +41,7 @@ export function ContainerTabs() {
                 : "bg-card text-foreground hover:bg-secondary"
             )}
           >
-            {label}
+            {t(label)}
           </Link>
         );
       })}

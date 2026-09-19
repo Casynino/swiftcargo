@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 
+import { useT } from "@/components/app/locale-provider";
 const KINDS = [
   ["PACKAGE", "Package"],
   ["SHIPPING_MARK", "Shipping mark"],
@@ -41,6 +42,7 @@ export function PhotoPanel({
   photos: Photo[];
   canUpload: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     uploadCargoPhotos,
     {}
@@ -80,7 +82,7 @@ export function PhotoPanel({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No photos yet.</p>
+        <p className="text-sm text-muted-foreground">{tx("No photos yet.")}</p>
       )}
 
       {canUpload ? (
@@ -89,7 +91,7 @@ export function PhotoPanel({
             <input type="hidden" name="cargoId" value={cargoId} />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="kind">What is this a photo of?</Label>
+                <Label htmlFor="kind">{tx("What is this a photo of?")}</Label>
                 <NativeSelect id="kind" name="kind" defaultValue="PACKAGE">
                   {KINDS.map(([value, label]) => (
                     <option key={value} value={value}>
@@ -99,12 +101,12 @@ export function PhotoPanel({
                 </NativeSelect>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="caption">Caption</Label>
+                <Label htmlFor="caption">{tx("Caption")}</Label>
                 <Input id="caption" name="caption" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="photos">Photos</Label>
+              <Label htmlFor="photos">{tx("Photos")}</Label>
               <Input
                 id="photos"
                 name="photos"
@@ -119,16 +121,16 @@ export function PhotoPanel({
             </div>
             <FormMessage error={state.error} ok={state.ok} />
             <div className="flex gap-2">
-              <SubmitButton pendingLabel="Uploading…">Upload</SubmitButton>
+              <SubmitButton pendingLabel={tx("Uploading…")}>{tx("Upload")}</SubmitButton>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {tx("Cancel")}
               </Button>
             </div>
           </form>
         ) : (
           <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
             <ImagePlus />
-            Add photos
+            {tx("Add photos")}
           </Button>
         )
       ) : null}

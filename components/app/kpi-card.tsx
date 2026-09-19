@@ -11,6 +11,7 @@ import { Ring } from "@/components/charts/ring";
 import { Sparkline } from "@/components/charts/sparkline";
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 type Tone = "brand" | "marine" | "signal" | "success" | "warning" | "danger";
 
 const ICON_TONES: Record<Tone, string> = {
@@ -132,7 +133,7 @@ export function KpiCard({
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {label}
+            <Tx>{label}</Tx>
           </p>
 
           <p
@@ -165,7 +166,7 @@ export function KpiCard({
           </p>
 
           {hint ? (
-            <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground"><Tx>{hint}</Tx></p>
           ) : null}
 
           {delta !== undefined ? (
@@ -184,7 +185,7 @@ export function KpiCard({
               )}
               {Math.abs(delta).toFixed(0)}%
               {deltaLabel ? (
-                <span className="font-normal opacity-80">{deltaLabel}</span>
+                <span className="font-normal opacity-80"><Tx>{deltaLabel}</Tx></span>
               ) : null}
             </p>
           ) : null}

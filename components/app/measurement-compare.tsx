@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 type Row = {
   label: string;
   china: string;
@@ -23,10 +24,10 @@ export function MeasurementCompare({ rows }: { rows: Row[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
-            <th className="py-2 text-left font-semibold">Measure</th>
-            <th className="py-2 text-right font-semibold">China</th>
-            <th className="py-2 text-right font-semibold">Dar</th>
-            <th className="py-2 text-right font-semibold">Difference</th>
+            <th className="py-2 text-left font-semibold">{T("Measure")}</th>
+            <th className="py-2 text-right font-semibold">{T("China")}</th>
+            <th className="py-2 text-right font-semibold">{T("Dar")}</th>
+            <th className="py-2 text-right font-semibold">{T("Difference")}</th>
           </tr>
         </thead>
         <tbody>

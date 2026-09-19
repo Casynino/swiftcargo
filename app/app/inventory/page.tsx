@@ -34,6 +34,7 @@ import { can } from "@/lib/rbac";
 import { cargoTypeOptions } from "@/lib/valuation";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Warehouse floor" };
 
 /*
@@ -83,6 +84,7 @@ export default async function InventoryPage({
     to?: string;
   }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("inventory.view");
   const { q, state, type, from, to } = await searchParams;
   const query = q?.trim() ?? "";
@@ -254,20 +256,20 @@ export default async function InventoryPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title={inChina ? "Guangzhou floor" : "Dar es Salaam floor"}
+        title={inChina ? T("Guangzhou floor") : T("Dar es Salaam floor")}
         description={
           inChina
             ? loadedView
-              ? "Received in Guangzhou and already in a container, with the box it went into."
-              : "Everything received and still waiting for a container."
-            : "Everything landed in Dar, oldest first."
+              ? T("Received in Guangzhou and already in a container, with the box it went into.")
+              : T("Everything received and still waiting for a container.")
+            : T("Everything landed in Dar, oldest first.")
         }
         actions={
           inChina && can(user.role, "receiving.china") ? (
             <Button asChild>
               <Link href="/app/receive/new">
                 <Package />
-                Receive cargo
+                {T("Receive cargo")}
               </Link>
             </Button>
           ) : null
@@ -278,15 +280,15 @@ export default async function InventoryPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
-          label={loadedView ? "Shown here" : "On the floor"}
+          label={loadedView ? T("Shown here") : T("On the floor")}
           numeric={cargo.length}
           icon={Warehouse}
           tone="brand"
-          hint={loadedView ? "Consignments in a box" : "Consignments physically here"}
+          hint={loadedView ? T("Consignments in a box") : T("Consignments physically here")}
         />
         <KpiCard
           index={1}
-          label={inChina ? "Waiting for a container" : "Waiting to be released"}
+          label={inChina ? T("Waiting for a container") : T("Waiting to be released")}
           numeric={waiting}
           icon={Boxes}
           tone={waiting > 0 ? "signal" : "success"}
@@ -294,16 +296,16 @@ export default async function InventoryPage({
         />
         <KpiCard
           index={2}
-          label={inChina ? "Gone into containers" : "Cleared to go"}
+          label={inChina ? T("Gone into containers") : T("Cleared to go")}
           numeric={loaded}
           icon={ContainerIcon}
           tone="marine"
-          hint={inChina ? "Still in Guangzhou, in a box" : undefined}
+          hint={inChina ? T("Still in Guangzhou, in a box") : undefined}
           href={inChina ? "/app/inventory?state=loaded" : undefined}
         />
         <KpiCard
           index={3}
-          label={loadedView ? "Volume shown" : "Volume on the floor"}
+          label={loadedView ? T("Volume shown") : T("Volume on the floor")}
           numeric={floorCbm}
           decimals={2}
           suffix="CBM"
@@ -316,35 +318,35 @@ export default async function InventoryPage({
         <Input
           name="q"
           defaultValue={query}
-          placeholder="Reference, mark, receipt no., customer or phone…"
+          placeholder={T("Reference, mark, receipt no., customer or phone…")}
           className="max-w-sm"
-          aria-label="Search the floor"
+          aria-label={T("Search the floor")}
         />
         <NativeSelect
           name="state"
           defaultValue={state ?? ""}
           className="w-56"
-          aria-label="Filter"
+          aria-label={T("Filter")}
         >
-          <option value="">Everything here</option>
+          <option value="">{T("Everything here")}</option>
           <option value="waiting">
             {inChina ? "Waiting for a container" : "Not yet released"}
           </option>
           {/* The other half of the building's stock. Not mixed into the default
               view, where it would double the volume on the floor, but reachable
               — "where is SC0041" is asked of the floor either way. */}
-          {inChina ? <option value="loaded">In a container</option> : null}
-          <option value="hold">On hold</option>
-          <option value="nophoto">No photograph</option>
+          {inChina ? <option value="loaded">{T("In a container")}</option> : null}
+          <option value="hold">{T("On hold")}</option>
+          <option value="nophoto">{T("No photograph")}</option>
         </NativeSelect>
         {categories.length > 0 ? (
           <NativeSelect
             name="type"
             defaultValue={category}
             className="w-48"
-            aria-label="Cargo type"
+            aria-label={T("Cargo type")}
           >
-            <option value="">Any cargo type</option>
+            <option value="">{T("Any cargo type")}</option>
             {categories.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -361,7 +363,7 @@ export default async function InventoryPage({
           min="2000-01-01"
           max="2099-12-31"
           className="w-40"
-          aria-label="Received from"
+          aria-label={T("Received from")}
         />
         <Input
           type="date"
@@ -370,10 +372,10 @@ export default async function InventoryPage({
           min="2000-01-01"
           max="2099-12-31"
           className="w-40"
-          aria-label="Received up to"
+          aria-label={T("Received up to")}
         />
         <Button type="submit" variant="outline">
-          Filter
+          {T("Filter")}
         </Button>
       </form>
 
@@ -385,15 +387,15 @@ export default async function InventoryPage({
           {cargo.length === 0 ? (
             <EmptyState
               icon="Warehouse"
-              title={query ? "Nothing matches" : "The floor is clear"}
+              title={query ? T("Nothing matches") : T("The floor is clear")}
               description={
                 query
-                  ? "Try a receipt number, or the mark written on the box."
+                  ? T("Try a receipt number, or the mark written on the box.")
                   : loadedView
-                    ? "Nothing received in Guangzhou is sitting in a container."
+                    ? T("Nothing received in Guangzhou is sitting in a container.")
                     : inChina
-                      ? "Nothing is waiting. Everything received has gone into a container."
-                      : "Nothing landed is still sitting here."
+                      ? T("Nothing is waiting. Everything received has gone into a container.")
+                      : T("Nothing landed is still sitting here.")
               }
             />
           ) : (
@@ -403,23 +405,23 @@ export default async function InventoryPage({
                   {/* THE NAME LEADS. A clerk looking for a consignment on the
                       floor is looking for a person — the tracking number is how
                       they confirm it, not how they find it. */}
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Tracking no.</TableHead>
-                  <TableHead className="hidden lg:table-cell">Goods</TableHead>
-                  <TableHead className="text-right">Pkgs</TableHead>
+                  <TableHead>{T("Customer")}</TableHead>
+                  <TableHead>{T("Tracking no.")}</TableHead>
+                  <TableHead className="hidden lg:table-cell">{T("Goods")}</TableHead>
+                  <TableHead className="text-right">{T("Pkgs")}</TableHead>
                   {/* Weight is not what this floor is sold or planned on —
                       volume is, and a kilo figure beside a cubic metre invited
                       somebody to price on the wrong one. It is still on the
                       consignment, where a claim needs it. */}
-                  <TableHead className="text-right">Pieces</TableHead>
+                  <TableHead className="text-right">{T("Pieces")}</TableHead>
                   <TableHead className="text-right">CBM</TableHead>
-                  <TableHead>Proof</TableHead>
+                  <TableHead>{T("Proof")}</TableHead>
                   {/* "Received in China" on the Guangzhou floor is every row
                       saying the name of the page. It is the customer's sentence,
                       not the warehouse's, and the date beside it already says
                       when. Dar keeps it: there a consignment can be landed,
                       booked in or cleared to go, and those are different jobs. */}
-                  {inChina ? null : <TableHead>Status</TableHead>}
+                  {inChina ? null : <TableHead>{T("Status")}</TableHead>}
                   {/* Nothing in the default Guangzhou view is in a container —
                       that is what "on the floor" means, and a column of "Not
                       assigned" was one word repeated twenty-three times. It
@@ -427,11 +429,11 @@ export default async function InventoryPage({
                       is the whole reason somebody opened the list, and Dar keeps
                       it always: there, the box it came off is how a consignment
                       is found. */}
-                  {!inChina || loadedView ? <TableHead>Container</TableHead> : null}
+                  {!inChina || loadedView ? <TableHead>{T("Container")}</TableHead> : null}
                   {/* Which warehouse it is in is the title of the page, and a
                       shelf number nobody fills in was two lines of nothing. The
                       date it came in is the fact a clerk actually wants. */}
-                  <TableHead className="hidden xl:table-cell">Received</TableHead>
+                  <TableHead className="hidden xl:table-cell">{T("Received")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -516,7 +518,7 @@ export default async function InventoryPage({
                             </a>
                           </div>
                         ) : (
-                          <Badge tone="warn">No photo</Badge>
+                          <Badge tone="warn">{T("No photo")}</Badge>
                         )}
                       </TableCell>
                       {inChina ? null : (

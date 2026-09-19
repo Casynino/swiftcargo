@@ -20,6 +20,13 @@ export type AttentionItem = {
   metaSub?: string;
 };
 
+/* A title is a count and a phrase — "23 waiting more than 3 days". The
+   phrase is what the dictionary knows; the number stays a number. */
+function titleIn(title: string, t: (text: string) => string) {
+  const m = title.match(/^(\d[\d,]*)\s+(.+)$/);
+  return m ? `${m[1]} ${t(m[2])}` : t(title);
+}
+
 /* As on the air side: red for what is wrong, amber for what is slipping,
    blue for the desk's everyday queue. */
 const BAR = {
@@ -119,7 +126,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
               )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold leading-tight">
-                  {item.title}
+                  {titleIn(item.title, t)}
                 </span>
                 <span className="mt-0.5 block truncate text-xs leading-tight text-muted-foreground">
                   {t(item.detail)}

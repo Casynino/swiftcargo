@@ -30,6 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCbm } from "@/lib/format";
 import { distinctMark } from "@/lib/customer-name";
 
+import { useT } from "@/components/app/locale-provider";
+import { Tm } from "@/components/app/tx";
 type Waiting = {
   id: string;
   reference: string;
@@ -72,6 +74,7 @@ export function LoadPanel({
   loadedCbm: number;
   capacityCbm: number | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(loadCargo, {});
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -84,7 +87,7 @@ export function LoadPanel({
   if (waiting.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Nothing is waiting for a container in Guangzhou.
+        {tx("Nothing is waiting for a container in Guangzhou.")}
       </p>
     );
   }
@@ -108,7 +111,7 @@ export function LoadPanel({
               <TableHead className="w-10">
                 <input
                   type="checkbox"
-                  aria-label="Select everything waiting"
+                  aria-label={tx("Select everything waiting")}
                   className="size-4 align-middle"
                   checked={selected.size === waiting.length && waiting.length > 0}
                   ref={(el) => {
@@ -126,10 +129,10 @@ export function LoadPanel({
                   }
                 />
               </TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Cargo</TableHead>
-              <TableHead>Goods</TableHead>
-              <TableHead className="text-right">Pkgs</TableHead>
+              <TableHead>{tx("Customer")}</TableHead>
+              <TableHead>{tx("Cargo")}</TableHead>
+              <TableHead>{tx("Goods")}</TableHead>
+              <TableHead className="text-right">{tx("Pkgs")}</TableHead>
               <TableHead className="text-right">CBM</TableHead>
             </TableRow>
           </TableHeader>
@@ -184,27 +187,26 @@ export function LoadPanel({
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-secondary px-3 py-2 text-sm">
         <span>
-          {selected.size} selected · {formatCbm(selectedCbm)}
+          {selected.size} {tx("selected")} · {formatCbm(selectedCbm)}
         </span>
         {capacityCbm !== null ? (
           <span className={over ? "font-medium text-destructive" : "text-muted-foreground"}>
-            {formatCbm(projected)} of {formatCbm(capacityCbm)}
-            {over ? " — over capacity" : ""}
+            {formatCbm(projected)} {tx("of")} {formatCbm(capacityCbm)}
+            {over ? ` — ${tx("over capacity")}` : ""}
           </span>
         ) : null}
       </div>
 
       {over ? (
         <p className="text-xs text-muted-foreground">
-          Capacity is a guide, not a gate — a loader on the floor can see what
-          fits better than a number in a database. Nothing is blocked.
+          {tx("Capacity is a guide, not a gate — a loader on the floor can see what fits better than a number in a database. Nothing is blocked.")}
         </p>
       ) : null}
 
       <FormMessage error={state.error} ok={state.ok} />
       <SubmitButton disabled={selected.size === 0}>
         <PackagePlus />
-        Load {selected.size > 0 ? `${selected.size} consignment(s)` : ""}
+        {tx("Load")} {selected.size > 0 ? `${selected.size} ${tx("consignment(s)")}` : ""}
       </SubmitButton>
     </form>
   );
@@ -219,6 +221,7 @@ export function SealPanel({
   containerNumber: string | null;
   lineCount: number;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     sealContainer,
     {}
@@ -236,7 +239,7 @@ export function SealPanel({
         disabled={lineCount === 0}
       >
         <Lock />
-        Seal container
+        {tx("Seal container")}
       </Button>
     );
   }
@@ -245,7 +248,7 @@ export function SealPanel({
     <form action={action} className="space-y-4 rounded-lg border border-accent/40 bg-accent/5 p-4">
       <input type="hidden" name="containerId" value={containerId} />
       <p className="text-sm font-medium">
-        Sealing closes the box for good
+        {tx("Sealing closes the box for good")}
       </p>
       <p className="text-xs text-muted-foreground">
         Nothing can be added or taken out afterwards, and all {lineCount}{" "}
@@ -253,7 +256,7 @@ export function SealPanel({
       </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="containerNumber">Container number</Label>
+          <Label htmlFor="containerNumber">{tx("Container number")}</Label>
           <Input
             id="containerNumber"
             name="containerNumber"
@@ -262,7 +265,7 @@ export function SealPanel({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="sealNumber">Seal number</Label>
+          <Label htmlFor="sealNumber">{tx("Seal number")}</Label>
           <Input id="sealNumber" name="sealNumber" required />
         </div>
       </div>
@@ -270,10 +273,10 @@ export function SealPanel({
       <div className="flex gap-2">
         <SubmitButton variant="accent">
           <Lock />
-          Seal
+          {tx("Seal")}
         </SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>
@@ -307,6 +310,7 @@ export function AdvancePanel({
   canArrive: boolean;
   canClose: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     advanceContainer,
     {}
@@ -338,12 +342,10 @@ export function AdvancePanel({
       <input type="hidden" name="containerId" value={containerId} />
       <input type="hidden" name="to" value={step.to} />
       <div className="space-y-2">
-        <Label htmlFor="when">When did it happen?</Label>
+        <Label htmlFor="when">{tx("When did it happen?")}</Label>
         <Input id="when" name="when" type="date" min="2000-01-01" max="2099-12-31" />
         <p className="text-xs text-muted-foreground">
-          Leave blank for now. Milestones are entered by staff — there is no
-          vessel feed behind this, and a moving ship the system is guessing about
-          would be a lie told smoothly.
+          {tx("Leave blank for now. Milestones are entered by staff — there is no vessel feed behind this, and a moving ship the system is guessing about would be a lie told smoothly.")}
         </p>
       </div>
       <FormMessage error={state.error} ok={state.ok} />
@@ -376,6 +378,7 @@ export function BoxForm({
     notes: string | null;
   };
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     updateContainerBox,
     {}
@@ -386,7 +389,7 @@ export function BoxForm({
       <input type="hidden" name="containerId" value={containerId} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="capacityCbm">Capacity (CBM)</Label>
+          <Label htmlFor="capacityCbm">{tx("Capacity (CBM)")}</Label>
           <Input
             id="capacityCbm"
             name="capacityCbm"
@@ -397,11 +400,11 @@ export function BoxForm({
             defaultValue={box.capacityCbm ?? ""}
           />
           <p className="text-xs text-muted-foreground">
-            What the loading bar is measured against. A guide, never a gate.
+            {tx("What the loading bar is measured against. A guide, never a gate.")}
           </p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="cargoDeadline">Cargo deadline</Label>
+          <Label htmlFor="cargoDeadline">{tx("Cargo deadline")}</Label>
           <Input
             id="cargoDeadline"
             name="cargoDeadline"
@@ -411,17 +414,16 @@ export function BoxForm({
             defaultValue={box.cargoDeadline ?? ""}
           />
           <p className="text-xs text-muted-foreground">
-            The day Guangzhou stops taking cargo for this sailing. It is
-            published, so moving it goes on the box's timeline.
+            {tx("The day Guangzhou stops taking cargo for this sailing. It is published, so moving it goes on the box's timeline.")}
           </p>
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="box-notes">Notes</Label>
+        <Label htmlFor="box-notes">{tx("Notes")}</Label>
         <Textarea id="box-notes" name="notes" defaultValue={box.notes ?? ""} />
       </div>
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton variant="outline">Save container</SubmitButton>
+      <SubmitButton variant="outline">{tx("Save container")}</SubmitButton>
     </form>
   );
 }
@@ -444,6 +446,7 @@ export function VoyageForm({
     notes: string | null;
   } | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     updateVoyage,
     {}
@@ -454,7 +457,7 @@ export function VoyageForm({
       <input type="hidden" name="containerId" value={containerId} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="shippingLine">Shipping line</Label>
+          <Label htmlFor="shippingLine">{tx("Shipping line")}</Label>
           <Input
             id="shippingLine"
             name="shippingLine"
@@ -462,15 +465,15 @@ export function VoyageForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="vessel">Vessel</Label>
+          <Label htmlFor="vessel">{tx("Vessel")}</Label>
           <Input id="vessel" name="vessel" defaultValue={shipment?.vessel ?? ""} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="voyage">Voyage</Label>
+          <Label htmlFor="voyage">{tx("Voyage")}</Label>
           <Input id="voyage" name="voyage" defaultValue={shipment?.voyage ?? ""} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="billOfLading">Bill of lading</Label>
+          <Label htmlFor="billOfLading">{tx("Bill of lading")}</Label>
           <Input
             id="billOfLading"
             name="billOfLading"
@@ -478,7 +481,7 @@ export function VoyageForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="departureDate">Departure</Label>
+          <Label htmlFor="departureDate">{tx("Departure")}</Label>
           <Input
             id="departureDate"
             name="departureDate"
@@ -494,7 +497,7 @@ export function VoyageForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">{tx("Notes")}</Label>
         <Textarea id="notes" name="notes" defaultValue={shipment?.notes ?? ""} />
       </div>
       {/* A bill of lading arriving after departure is routine and needs no
@@ -512,12 +515,12 @@ export function VoyageForm({
           <Input
             id="voyage-reason"
             name="reason"
-            placeholder="Line moved us to the next sailing"
+            placeholder={tx("Line moved us to the next sailing")}
           />
         </div>
       ) : null}
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton variant="outline">Save voyage</SubmitButton>
+      <SubmitButton variant="outline">{tx("Save voyage")}</SubmitButton>
     </form>
   );
 }
@@ -553,6 +556,7 @@ export function LoadedTable({
   lines: LoadedLine[];
   canEdit: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(unloadCargo, {});
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -582,7 +586,7 @@ export function LoadedTable({
               <TableHead className="w-10">
                 <input
                   type="checkbox"
-                  aria-label="Select every consignment in this container"
+                  aria-label={tx("Select every consignment in this container")}
                   className="size-4 align-middle"
                   checked={selected.size === lines.length && lines.length > 0}
                   ref={(el) => {
@@ -601,13 +605,13 @@ export function LoadedTable({
                 />
               </TableHead>
             ) : null}
-            <TableHead>Customer</TableHead>
-            <TableHead>Cargo</TableHead>
+            <TableHead>{tx("Customer")}</TableHead>
+            <TableHead>{tx("Cargo")}</TableHead>
             {/* WEIGHT IS NOT WHAT SEA FREIGHT IS ABOUT. It was a column of
                 kilos nobody prices on, taking the width that "what is it"
                 deserves — the loader wants the goods and the count. */}
-            <TableHead>Goods</TableHead>
-            <TableHead className="text-right">Pkgs</TableHead>
+            <TableHead>{tx("Goods")}</TableHead>
+            <TableHead className="text-right">{tx("Pkgs")}</TableHead>
             <TableHead className="text-right">CBM</TableHead>
           </TableRow>
         </TableHeader>
@@ -671,16 +675,16 @@ export function LoadedTable({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm text-muted-foreground">
             {selected.size > 0
-              ? `${selected.size} selected · ${formatCbm(selectedCbm)}`
-              : "Tick a row to take it back off."}
+              ? `${selected.size} ${tx("selected")} · ${formatCbm(selectedCbm)}`
+              : tx("Tick a row to take it back off.")}
           </span>
           <SubmitButton
             variant="outline"
             disabled={selected.size === 0}
-            pendingLabel="Taking off…"
+            pendingLabel={tx("Taking off…")}
           >
             <PackageMinus />
-            Take off{selected.size > 0 ? ` ${selected.size}` : ""}
+            {tx("Take off")}{selected.size > 0 ? ` ${selected.size}` : ""}
           </SubmitButton>
         </div>
       ) : null}
@@ -698,6 +702,7 @@ export function LoadedTable({
  * possible from the container page, where somebody has the paperwork open.
  */
 export function MarkArrivedButton({ containerId }: { containerId: string }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     advanceContainer,
     {}
@@ -707,12 +712,12 @@ export function MarkArrivedButton({ containerId }: { containerId: string }) {
     <form action={action}>
       <input type="hidden" name="containerId" value={containerId} />
       <input type="hidden" name="to" value="ARRIVED" />
-      <SubmitButton size="sm" pendingLabel="Recording…">
+      <SubmitButton size="sm" pendingLabel={tx("Recording…")}>
         <Anchor />
-        Mark as arrived
+        {tx("Mark as arrived")}
       </SubmitButton>
       {state.error ? (
-        <p className="mt-1 text-xs text-destructive">{state.error}</p>
+        <p className="mt-1 text-xs text-destructive"><Tm>{state.error}</Tm></p>
       ) : null}
     </form>
   );

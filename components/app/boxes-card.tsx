@@ -7,6 +7,7 @@ import { formatDateTime } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 /**
  * EVERY PHYSICAL BOX OF THE CONSIGNMENT, EACH WITH ITS OWN STORY.
  *
@@ -84,7 +85,7 @@ export async function BoxesCard({
         <div>
           <CardTitle className="flex items-center gap-2 text-base">
             <QrCode className="size-4" />
-            Boxes · one code each
+            {T("Boxes · one code each")}
           </CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
             {live.length} box{live.length === 1 ? "" : "es"} · {count((b) => b.darReceivedAt)} received at Dar ·{" "}
@@ -99,7 +100,7 @@ export async function BoxesCard({
             className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-secondary"
           >
             <Printer className="size-4" />
-            Print all box labels
+            {T("Print all box labels")}
           </Link>
         ) : null}
       </CardHeader>
@@ -108,10 +109,10 @@ export async function BoxesCard({
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2 pr-3 font-medium">Box</th>
-                <th className="py-2 pr-3 font-medium">Line</th>
-                <th className="py-2 pr-3 font-medium">Where it is</th>
-                <th className="py-2 pr-3 font-medium">What happened</th>
+                <th className="py-2 pr-3 font-medium">{T("Box")}</th>
+                <th className="py-2 pr-3 font-medium">{T("Line")}</th>
+                <th className="py-2 pr-3 font-medium">{T("Where it is")}</th>
+                <th className="py-2 pr-3 font-medium">{T("What happened")}</th>
                 <th className="py-2 font-medium" />
               </tr>
             </thead>
@@ -132,7 +133,7 @@ export async function BoxesCard({
                       {b.sequence} <span className="font-normal text-muted-foreground">/ {live.length}</span>
                       {b.id === highlight ? (
                         <span className="ml-2 rounded-full bg-brand px-2 py-0.5 text-[10px] font-semibold text-brand-foreground">
-                          Scanned
+                          {T("Scanned")}
                         </span>
                       ) : null}
                     </td>
@@ -166,7 +167,7 @@ export async function BoxesCard({
                         <div className="flex flex-col items-end gap-2">
                           {canPrint ? (
                             <Link href={`/app/cargo/${cargoId}/label?box=${b.id}`} className="text-xs text-brand hover:underline">
-                              Reprint label
+                              {T("Reprint label")}
                             </Link>
                           ) : null}
                           {canReport && !b.collectedAt ? (
@@ -189,7 +190,7 @@ export async function BoxesCard({
 
         {scans.length > 0 ? (
           <div>
-            <p className="text-sm font-semibold">Scan history</p>
+            <p className="text-sm font-semibold">{T("Scan history")}</p>
             <ul className="mt-2 divide-y rounded-lg border text-xs">
               {scans.map((scan) => (
                 <li key={scan.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">

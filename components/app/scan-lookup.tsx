@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normaliseCode } from "@/lib/format";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * The warehouse lookup.
  *
@@ -18,6 +19,7 @@ import { normaliseCode } from "@/lib/format";
  * nobody can update.
  */
 export function ScanLookup() {
+  const tx = useT();
   const router = useRouter();
   const [code, setCode] = useState("");
 
@@ -54,13 +56,13 @@ export function ScanLookup() {
         onChange={(e) => setCode(e.target.value)}
         autoFocus
         inputMode="text"
-        placeholder="Scan a label, or type SC0125 or a name"
-        aria-label="Cargo reference"
+        placeholder={tx("Scan a label, or type SC0125 or a name")}
+        aria-label={tx("Cargo reference")}
         className="tnum h-11"
       />
       <Button type="submit" size="lg">
         <Search />
-        Find
+        {tx("Find")}
       </Button>
     </form>
   );

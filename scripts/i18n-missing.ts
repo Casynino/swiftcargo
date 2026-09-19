@@ -19,7 +19,7 @@ const walk = (d: string) => {
 roots.forEach((r) => { try { statSync(r).isDirectory() ? walk(r) : files.push(r); } catch {} });
 
 const missing = new Map<string, string>();
-const call = /\bt\(\s*(?:locale\s*,\s*)?("(?:[^"\\]|\\.)*")\s*\)/g;
+const call = /\b(?:t|T|tx)\(\s*(?:locale\s*,\s*)?("(?:[^"\\]|\\.)*")\s*\)/g;
 const props = /(?:title|description|label)="([^"]+)"/g;
 for (const f of files) {
   const src = readFileSync(f, "utf8");

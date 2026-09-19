@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 const TYPES = [
   ["HQ_40", "40' High cube", 67],
   ["GP_40", "40' General purpose", 65],
@@ -21,6 +22,7 @@ const TYPES = [
 ] as const;
 
 export function ContainerForm({ nextReference }: { nextReference: string }) {
+  const tx = useT();
   const router = useRouter();
   const [state, action] = useActionState<ActionState, FormData>(
     createContainer,
@@ -50,14 +52,14 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
         */}
         <div className="rounded-lg border bg-surface-2/50 px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            It will be called
+            {tx("It will be called")}
           </p>
           <p className="tnum mt-0.5 text-lg font-semibold">{nextReference}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="type">Container type</Label>
+            <Label htmlFor="type">{tx("Container type")}</Label>
             <NativeSelect
               id="type"
               name="type"
@@ -77,7 +79,7 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
             </NativeSelect>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="capacityCbm">Usable capacity (CBM)</Label>
+            <Label htmlFor="capacityCbm">{tx("Usable capacity (CBM)")}</Label>
             <Input
               id="capacityCbm"
               name="capacityCbm"
@@ -93,15 +95,15 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoDeadline">Cargo receiving deadline</Label>
+            <Label htmlFor="cargoDeadline">{tx("Cargo receiving deadline")}</Label>
             <Input id="cargoDeadline" name="cargoDeadline" type="date" min="2000-01-01" max="2099-12-31" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="originPort">Origin port</Label>
+            <Label htmlFor="originPort">{tx("Origin port")}</Label>
             <Input id="originPort" name="originPort" defaultValue="Guangzhou" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="destinationPort">Destination port</Label>
+            <Label htmlFor="destinationPort">{tx("Destination port")}</Label>
             <Input
               id="destinationPort"
               name="destinationPort"
@@ -111,12 +113,12 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="notes">Notes</Label>
+          <Label htmlFor="notes">{tx("Notes")}</Label>
           <Textarea id="notes" name="notes" />
         </div>
 
         <FormMessage error={state.error} ok={state.ok} />
-        <SubmitButton>Open container</SubmitButton>
+        <SubmitButton>{tx("Open container")}</SubmitButton>
       </form>
     </Card>
   );

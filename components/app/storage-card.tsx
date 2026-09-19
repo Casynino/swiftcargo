@@ -8,6 +8,7 @@ import { SubmitButton } from "@/components/app/submit-button";
 import { chargeStorage, type ActionState } from "@/lib/actions/invoices";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 /**
  * WHAT THE FLOOR SPACE HAS COST, AND WHAT WE HAVE DONE ABOUT IT.
  *
@@ -47,6 +48,7 @@ export function StorageCard({
   /** The day the boxes landed on the Dar floor, formatted. */
   since: string;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     chargeStorage,
     {}
@@ -69,7 +71,7 @@ export function StorageCard({
               running ? "text-destructive" : "text-muted-foreground"
             )}
           />
-          Storage
+          {tx("Storage")}
         </p>
         <span
           className={cn(
@@ -84,7 +86,7 @@ export function StorageCard({
       <div className="border-b px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <p className="tnum text-sm">
-            Day <span className="text-lg font-semibold">{daysHeld}</span>{" "}
+            {tx("Day")} <span className="text-lg font-semibold">{daysHeld}</span>{" "}
             <span className="text-muted-foreground">of {freeDays} free</span>
           </p>
           {running ? (
@@ -132,7 +134,7 @@ export function StorageCard({
                 className="border-warning/40 text-warning hover:bg-warning/10"
               >
                 <Ban />
-                Waive storage fee
+                {tx("Waive storage fee")}
               </SubmitButton>
             </form>
           ) : null}

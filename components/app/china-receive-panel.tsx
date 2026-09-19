@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 const CONDITIONS = [
   ["GOOD", "Good"],
   ["MINOR_DAMAGE", "Minor damage"],
@@ -39,6 +40,7 @@ export function ChinaReceivePanel({
   } | null;
   defaultWarehouseId?: string | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     receiveInChina,
     {}
@@ -48,7 +50,7 @@ export function ChinaReceivePanel({
   if (!open) {
     return (
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        Correct the receiving record
+        {tx("Correct the receiving record")}
       </Button>
     );
   }
@@ -59,7 +61,7 @@ export function ChinaReceivePanel({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="warehouseId">Warehouse</Label>
+          <Label htmlFor="warehouseId">{tx("Warehouse")}</Label>
           <NativeSelect
             id="warehouseId"
             name="warehouseId"
@@ -67,7 +69,7 @@ export function ChinaReceivePanel({
             defaultValue={existing?.warehouseId ?? defaultWarehouseId ?? ""}
           >
             <option value="" disabled>
-              Choose…
+              {tx("Choose…")}
             </option>
             {warehouses.map((w) => (
               <option key={w.id} value={w.id}>
@@ -77,7 +79,7 @@ export function ChinaReceivePanel({
           </NativeSelect>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="condition">Condition</Label>
+          <Label htmlFor="condition">{tx("Condition")}</Label>
           <NativeSelect
             id="condition"
             name="condition"
@@ -91,7 +93,7 @@ export function ChinaReceivePanel({
           </NativeSelect>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="packagesCount">Packages counted</Label>
+          <Label htmlFor="packagesCount">{tx("Packages counted")}</Label>
           <Input
             id="packagesCount"
             name="packagesCount"
@@ -103,7 +105,7 @@ export function ChinaReceivePanel({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="piecesCount">Pieces inside</Label>
+          <Label htmlFor="piecesCount">{tx("Pieces inside")}</Label>
           <Input
             id="piecesCount"
             name="piecesCount"
@@ -114,7 +116,7 @@ export function ChinaReceivePanel({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="weightKg">Weight (kg)</Label>
+          <Label htmlFor="weightKg">{tx("Weight (kg)")}</Label>
           <Input
             id="weightKg"
             name="weightKg"
@@ -126,7 +128,7 @@ export function ChinaReceivePanel({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="location">Shelf / location</Label>
+          <Label htmlFor="location">{tx("Shelf / location")}</Label>
           <Input
             id="location"
             name="location"
@@ -136,7 +138,7 @@ export function ChinaReceivePanel({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">{tx("Notes")}</Label>
         <Textarea id="notes" name="notes" defaultValue={existing?.notes ?? ""} />
       </div>
 
@@ -149,7 +151,7 @@ export function ChinaReceivePanel({
         </SubmitButton>
         {existing ? (
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-            Cancel
+            {tx("Cancel")}
           </Button>
         ) : null}
       </div>

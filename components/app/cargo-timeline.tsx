@@ -4,6 +4,7 @@ import { CARGO_FLOW, CARGO_STATUS_META } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { CargoStatus } from "@prisma/client";
 
+import { primeLocale, T } from "@/lib/server-t";
 type Entry = { to: CargoStatus; at: string; by: string | null; reason: string | null };
 
 /**
@@ -25,7 +26,7 @@ export function CargoTimeline({
   if (status === "CANCELLED") {
     return (
       <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-        This consignment was cancelled.
+        {T("This consignment was cancelled.")}
       </p>
     );
   }

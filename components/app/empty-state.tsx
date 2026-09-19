@@ -1,5 +1,6 @@
 import * as Icons from "lucide-react";
 
+import { Tx } from "@/components/app/tx";
 export function EmptyState({
   icon = "Inbox",
   title,
@@ -19,9 +20,9 @@ export function EmptyState({
       <span className="grid size-11 place-items-center rounded-full bg-secondary">
         {Icon ? <Icon className="size-5 text-muted-foreground" /> : null}
       </span>
-      <p className="mt-4 font-medium">{title}</p>
+      <p className="mt-4 font-medium"><Tx>{title}</Tx></p>
       {description ? (
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground"><Tx>{description}</Tx></p>
       ) : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>

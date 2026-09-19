@@ -636,7 +636,7 @@ export default async function DashboardPage() {
                           <div className="flex items-center justify-between gap-3">
                             <span className="tnum font-medium">{box.label}</span>
                             <span className="text-xs text-muted-foreground">
-                              {CONTAINER_STATUS_LABELS[box.status]} ·{" "}
+                              {t(locale, CONTAINER_STATUS_LABELS[box.status])} ·{" "}
                               {formatDate(box.since)}
                             </span>
                           </div>

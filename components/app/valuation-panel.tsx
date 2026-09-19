@@ -13,6 +13,7 @@ import {
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
 import type { Valuation } from "@/lib/valuation";
 
+import { primeLocale, T } from "@/lib/server-t";
 const BASIS_LABEL: Record<string, string> = {
   PER_CBM: "per CBM",
   PER_KG: "per kg",
@@ -65,11 +66,11 @@ export function ValuationPanel({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Goods</TableHead>
-              <TableHead>Cargo type</TableHead>
+              <TableHead>{T("Goods")}</TableHead>
+              <TableHead>{T("Cargo type")}</TableHead>
               <TableHead className="text-right">CBM</TableHead>
-              <TableHead className="text-right">Rate</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
+              <TableHead className="text-right">{T("Rate")}</TableHead>
+              <TableHead className="text-right">{T("Amount")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

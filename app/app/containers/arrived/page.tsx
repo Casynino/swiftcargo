@@ -467,7 +467,7 @@ export default async function ArrivedContainersPage({
           "Every sailing that has left China. Open one to see its cargo, documents and full timeline."
         )}
       />
-      <ContainerTabs />
+      <ContainerTabs finance={can(user.role, "finance.view")} />
 
       {!showMoney ? (
         <p className="text-sm text-muted-foreground">

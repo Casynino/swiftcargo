@@ -35,6 +35,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 
+import { useT } from "@/components/app/locale-provider";
 export type CargoBill = {
   id: string;
   number: string;
@@ -109,6 +110,7 @@ const fmt = (n: number, currency: string) =>
  * permission, so every desk reading the page is looking at the same column.
  */
 export function CargoActions(props: Props) {
+  const tx = useT();
   const { bill } = props;
   const settled = bill ? bill.outstanding <= 0 && (bill.outstandingTzs ?? 0) <= 0 : false;
   const payable = bill && bill.status !== "DRAFT" && bill.status !== "CANCELLED";
@@ -116,7 +118,7 @@ export function CargoActions(props: Props) {
   return (
     <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-        <h2 className="text-sm font-semibold">Actions</h2>
+        <h2 className="text-sm font-semibold">{tx("Actions")}</h2>
         {props.notify}
       </div>
       <div className="divide-y">
@@ -129,6 +131,7 @@ export function CargoActions(props: Props) {
 }
 
 function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
+  const tx = useT();
   const { bill } = props;
   const [state, action] = useActionState<MergeState, FormData>(recordCombinedPayment, {});
   const [key, setKey] = useState(() => crypto.randomUUID());
@@ -185,12 +188,12 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
     <>
       <button type="button" onClick={() => setDialog("discount")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
         <Tag className="size-3.5" />
-        Give a discount
+        {tx("Give a discount")}
       </button>
       {bill.cbm ? (
         <button type="button" onClick={() => setDialog("rate")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
           <Scale className="size-3.5" />
-          Edit price — category, CBM or rate
+          {tx("Edit price — category, CBM or rate")}
         </button>
       ) : null}
     </>
@@ -234,14 +237,14 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
       {open && props.settled ? (
         <div className="mt-3 space-y-2 border-t pt-3">
           <p className="text-xs text-muted-foreground">
-            This bill is settled. These change the bill itself — use them to correct a price or a rate that was wrong.
+            {tx("This bill is settled. These change the bill itself — use them to correct a price or a rate that was wrong.")}
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {corrections}
             {props.canChangeRate ? (
               <button type="button" onClick={() => setDialog("fx")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
                 <ArrowLeftRight className="size-3.5" />
-                Change the rate
+                {tx("Change the rate")}
               </button>
             ) : null}
           </div>
@@ -257,7 +260,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 ? "Support recorded a payment on this bill that is waiting for you. Confirm it here if the money is in, or open the queue to send it back."
                 : "A payment for this bill is already waiting for Finance."}{" "}
               <Link href="/app/finance/collections/verify" className="font-semibold underline underline-offset-2">
-                Open Verify payments
+                {tx("Open Verify payments")}
               </Link>
             </p>
             {props.canDecide && bill.pendingPaymentId ? (
@@ -274,7 +277,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
 
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Cargo charge</Label>
+                <Label className="text-xs">{tx("Cargo charge")}</Label>
                 <Input
                   inputMode="decimal"
                   required
@@ -284,7 +287,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Paid in</Label>
+                <Label className="text-xs">{tx("Paid in")}</Label>
                 <NativeSelect
                   value={currency}
                   onChange={(e) => {
@@ -304,7 +307,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Transport they added</Label>
+                <Label className="text-xs">{tx("Transport they added")}</Label>
                 <Input
                   name="transport"
                   inputMode="decimal"
@@ -315,7 +318,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Transport settled from</Label>
+                <Label className="text-xs">{tx("Transport settled from")}</Label>
                 <NativeSelect
                   name="transportAccountId"
                   required={fare > 0}
@@ -325,7 +328,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                   className="h-10 disabled:opacity-50"
                 >
                   <option value="" disabled>
-                    Cash or the Lipa number
+                    {tx("Cash or the Lipa number")}
                   </option>
                   {fareAccounts.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -353,7 +356,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
             {props.canChangeRate ? (
               <button type="button" onClick={() => setDialog("fx")} className="flex items-center gap-1.5 text-xs text-brand hover:underline">
                 <ArrowLeftRight className="size-3.5" />
-                Change the rate
+                {tx("Change the rate")}
               </button>
             ) : null}
 
@@ -365,9 +368,9 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 </p>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" name="allowOverpayment" checked={acceptOver} onChange={(e) => setAcceptOver(e.target.checked)} className="size-4" />
-                  Accept overpayment — the extra stays on the bill as a credit
+                  {tx("Accept overpayment — the extra stays on the bill as a credit")}
                 </label>
-                {acceptOver ? <Input name="overpaymentReason" required minLength={3} placeholder="Why the extra is being accepted" className="h-9" /> : null}
+                {acceptOver ? <Input name="overpaymentReason" required minLength={3} placeholder={tx("Why the extra is being accepted")} className="h-9" /> : null}
               </div>
             ) : cargo > 0 && cargo < owed ? (
               <ShortfallNotice
@@ -394,10 +397,10 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
 
             {eligible.length > 0 ? (
               <div className="space-y-1.5">
-                <Label className="text-xs">Landed in</Label>
+                <Label className="text-xs">{tx("Landed in")}</Label>
                 <NativeSelect name="accountId" required value={accountId} onChange={(e) => setAccountId(e.target.value)} className="h-10">
                   <option value="" disabled>
-                    Choose the account
+                    {tx("Choose the account")}
                   </option>
                   {eligible.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -414,7 +417,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
 
             <label className="flex cursor-pointer items-center gap-2 rounded-md border border-warning/40 bg-warning/[0.06] px-3 py-2 text-xs">
               <Paperclip className="size-3.5 text-warning" />
-              <span className="font-medium text-warning">Proof</span>
+              <span className="font-medium text-warning">{tx("Proof")}</span>
               <input
                 type="file"
                 name="proof"
@@ -427,7 +430,7 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 recorded, and every later change keeps its own time. */}
             <FormMessage error={state.error} ok={state.ok} />
             <div className="flex flex-wrap items-center gap-2">
-              <SubmitButton size="sm" pendingLabel="Recording…" disabled={cargo <= 0 || (over && !acceptOver)}>
+              <SubmitButton size="sm" pendingLabel={tx("Recording…")} disabled={cargo <= 0 || (over && !acceptOver)}>
                 {props.canDecide ? "Confirm payment" : "Submit to Finance"}
               </SubmitButton>
               {props.canDecide ? (
@@ -473,16 +476,16 @@ function BillPanel({
   cargoId: string;
   raiseBill: boolean;
 }) {
+  const tx = useT();
   if (!bill && raiseBill) {
     return (
       <div className="px-4 py-3.5">
         <p className="flex items-center gap-2 text-sm font-medium">
           <FileText className="size-4 text-muted-foreground" />
-          Waiting for price confirmation
+          {tx("Waiting for price confirmation")}
         </p>
         <p className="mt-0.5 mb-2.5 text-xs text-muted-foreground">
-          No container is on record for this consignment, so its bill is raised
-          here from the rate book and confirmed on the invoice.
+          {tx("No container is on record for this consignment, so its bill is raised here from the rate book and confirmed on the invoice.")}
         </p>
         <GenerateInvoiceButton cargoId={cargoId} />
       </div>
@@ -508,20 +511,20 @@ function BillPanel({
     <div className="px-4 py-3.5">
       <p className="flex items-center gap-2 text-sm font-medium">
         <FileText className="size-4 text-brand" />
-        The bill (invoice)
+        {tx("The bill (invoice)")}
       </p>
       <div className="mt-2.5 flex flex-wrap gap-2">
         {confirmed ? (
           <Button asChild size="sm" className="px-2.5">
             <a href={`/app/finance/invoices/${bill.id}/pdf`} download>
-              Download
+              {tx("Download")}
             </a>
           </Button>
         ) : null}
         <Button asChild size="sm" variant="outline" className="gap-1.5 px-2.5">
           <Link href={`/app/finance/invoices/${bill.id}`}>
             <FileText className="size-3.5" />
-            Open invoice
+            {tx("Open invoice")}
           </Link>
         </Button>
       </div>
@@ -530,6 +533,7 @@ function BillPanel({
 }
 
 function PickupPanel(props: Props & { settled: boolean }) {
+  const tx = useT();
   const [state, action] = useActionState<{ error?: string; ok?: string }, FormData>(issuePickupNote, {});
   const note = props.pickupNote;
 
@@ -564,9 +568,9 @@ function PickupPanel(props: Props & { settled: boolean }) {
       <div className="px-4 py-3.5">
         <p className="flex items-center gap-2 text-sm font-medium">
           <QrCode className="size-4 text-muted-foreground" />
-          No pickup note yet
+          {tx("No pickup note yet")}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Appears once the bill is settled.</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{tx("Appears once the bill is settled.")}</p>
       </div>
     );
   }
@@ -578,7 +582,7 @@ function PickupPanel(props: Props & { settled: boolean }) {
         <input type="hidden" name="cargoId" value={props.cargoId} />
         <p className="flex items-center gap-2 text-sm font-medium">
           <QrCode className={cn("size-4", blocked ? "text-muted-foreground" : "text-brand")} />
-          Issue pickup note
+          {tx("Issue pickup note")}
         </p>
         <p className="text-xs text-muted-foreground">
           {blocked
@@ -586,8 +590,8 @@ function PickupPanel(props: Props & { settled: boolean }) {
             : "This clears the cargo for release and tells the warehouse."}
         </p>
         <FormMessage error={state.error} ok={state.ok} />
-        <SubmitButton size="sm" className="px-2.5" disabled={blocked} pendingLabel="Issuing…">
-          Issue pickup note
+        <SubmitButton size="sm" className="px-2.5" disabled={blocked} pendingLabel={tx("Issuing…")}>
+          {tx("Issue pickup note")}
         </SubmitButton>
       </form>
     </div>
@@ -596,12 +600,13 @@ function PickupPanel(props: Props & { settled: boolean }) {
 
 /** Finance confirming the claim Support left on this bill, without leaving the page. */
 function ConfirmWaiting({ paymentId }: { paymentId: string }) {
+  const tx = useT();
   const [state, action] = useActionState(verifyPayment, {});
   return (
     <form action={action} className="space-y-1.5">
       <input type="hidden" name="paymentId" value={paymentId} />
-      <SubmitButton size="sm" pendingLabel="Confirming…">
-        Confirm this payment
+      <SubmitButton size="sm" pendingLabel={tx("Confirming…")}>
+        {tx("Confirm this payment")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

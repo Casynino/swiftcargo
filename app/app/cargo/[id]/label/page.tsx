@@ -12,6 +12,7 @@ import { requireStaff } from "@/lib/session";
 import { canAny } from "@/lib/rbac";
 import { SmartBack } from "@/components/app/smart-back";
 
+import { primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -48,6 +49,7 @@ export default async function CargoLabelPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ box?: string; received?: string }>;
 }) {
+  await primeLocale();
   /* Every desk may look a box up; only a desk that handles the boxes may print
      what goes on them. The route table matches on prefixes and /app/cargo
      already resolves to cargo.view, so this guard is the whole gate. */
@@ -111,7 +113,7 @@ export default async function CargoLabelPage({
               className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
             >
               <Plus className="size-4" />
-              Receive next
+              {T("Receive next")}
             </Link>
           </div>
         </div>

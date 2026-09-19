@@ -9,6 +9,7 @@ import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 
+import { useT } from "@/components/app/locale-provider";
 export function DeliveryNoteButton({
   cargoId,
   existing,
@@ -18,6 +19,7 @@ export function DeliveryNoteButton({
   existing: { number: string } | null;
   canIssue: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     issueDeliveryNote,
     {}
@@ -41,7 +43,7 @@ export function DeliveryNoteButton({
       <input type="hidden" name="cargoId" value={cargoId} />
       <SubmitButton variant="outline" size="sm">
         <FileText />
-        Issue delivery note
+        {tx("Issue delivery note")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

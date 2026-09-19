@@ -9,6 +9,7 @@ import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 
+import { useT } from "@/components/app/locale-provider";
 export function PackingListButton({
   containerId,
   existing,
@@ -18,6 +19,7 @@ export function PackingListButton({
   existing: { number: string } | null;
   canIssue: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     issuePackingList,
     {}
@@ -41,7 +43,7 @@ export function PackingListButton({
       <input type="hidden" name="containerId" value={containerId} />
       <SubmitButton variant="outline">
         <ClipboardList />
-        Issue packing list
+        {tx("Issue packing list")}
       </SubmitButton>
       <FormMessage error={state.error} ok={state.ok} />
     </form>

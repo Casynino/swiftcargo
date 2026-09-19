@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useT } from "@/components/app/locale-provider";
 export type MessageOption = {
   kind: string;
   label: string;
@@ -53,6 +54,7 @@ export function NotifyCustomer({
   options: MessageOption[];
   lastContact?: { label: string; when: string; by: string } | null;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     logCustomerContact,
     {}
@@ -116,7 +118,7 @@ export function NotifyCustomer({
           size="sm"
           onClick={() => setOpen(false)}
         >
-          Close
+          {tx("Close")}
         </Button>
       </CardHeader>
 
@@ -132,7 +134,7 @@ export function NotifyCustomer({
           <input type="hidden" name="channel" value="WHATSAPP" />
 
           <div className="space-y-1.5">
-            <Label htmlFor="messageKind">What are you telling them?</Label>
+            <Label htmlFor="messageKind">{tx("What are you telling them?")}</Label>
             <NativeSelect
               id="messageKind"
               value={kind}
@@ -148,7 +150,7 @@ export function NotifyCustomer({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="messageBody">The message</Label>
+            <Label htmlFor="messageBody">{tx("The message")}</Label>
             <Textarea
               id="messageBody"
               name="body"
@@ -158,25 +160,23 @@ export function NotifyCustomer({
               className="font-sans text-sm"
             />
             <p className="text-xs text-muted-foreground">
-              Swahili first, English underneath. Edit it freely — what is in this
-              box is what gets logged.
+              {tx("Swahili first, English underneath. Edit it freely — what is in this box is what gets logged.")}
             </p>
           </div>
 
           <FormMessage error={state.error} ok={state.ok} />
 
           <div className="flex flex-wrap items-center gap-2">
-            <SubmitButton onClick={openWhatsApp} pendingLabel="Logging…">
+            <SubmitButton onClick={openWhatsApp} pendingLabel={tx("Logging…")}>
               <Send />
-              Open WhatsApp and log it
+              {tx("Open WhatsApp and log it")}
             </SubmitButton>
-            <SubmitButton variant="outline" pendingLabel="Logging…">
-              Log without opening
+            <SubmitButton variant="outline" pendingLabel={tx("Logging…")}>
+              {tx("Log without opening")}
             </SubmitButton>
           </div>
           <p className="text-xs text-muted-foreground">
-            WhatsApp opens with this text ready. You still press send there — we
-            record that we contacted them, not that it was delivered.
+            {tx("WhatsApp opens with this text ready. You still press send there — we record that we contacted them, not that it was delivered.")}
           </p>
         </form>
       </CardContent>
@@ -213,6 +213,7 @@ export function SendInvoice({
   displayPhone: string;
   options: MessageOption[];
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(logCustomerContact, {});
   const suggested = options.find((o) => o.suggested) ?? options[0];
   const [kind, setKind] = useState(suggested?.kind ?? "general");
@@ -226,9 +227,9 @@ export function SendInvoice({
 
   return (
     <section className="rounded-xl border bg-card p-5 shadow-soft print:hidden">
-      <h2 className="font-semibold">Send this invoice</h2>
+      <h2 className="font-semibold">{tx("Send this invoice")}</h2>
       <p className="mt-0.5 text-sm text-muted-foreground">
-        Open it in WhatsApp, then record it — recording marks the invoice as sent, which is what the follow-up list works from.
+        {tx("Open it in WhatsApp, then record it — recording marks the invoice as sent, which is what the follow-up list works from.")}
       </p>
       <form action={action} className="mt-4 space-y-4">
         {cargoId ? <input type="hidden" name="cargoId" value={cargoId} /> : null}
@@ -236,7 +237,7 @@ export function SendInvoice({
         <input type="hidden" name="kind" value={kind} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="send-kind">Message</Label>
+            <Label htmlFor="send-kind">{tx("Message")}</Label>
             <NativeSelect id="send-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
               {options.map((option) => (
                 <option key={option.kind} value={option.kind}>
@@ -246,7 +247,7 @@ export function SendInvoice({
             </NativeSelect>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="send-channel">How</Label>
+            <Label htmlFor="send-channel">{tx("How")}</Label>
             <NativeSelect id="send-channel" name="channel" value={channel} onChange={(e) => setChannel(e.target.value)}>
               {CHANNELS.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -257,7 +258,7 @@ export function SendInvoice({
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="send-body">Wording — edit it freely</Label>
+          <Label htmlFor="send-body">{tx("Wording — edit it freely")}</Label>
           <Textarea id="send-body" name="body" rows={10} value={body} onChange={(e) => setBody(e.target.value)} className="font-sans text-sm" />
         </div>
         <FormMessage error={state.error} ok={state.ok ? "Recorded as sent." : undefined} />
@@ -266,13 +267,13 @@ export function SendInvoice({
             <Button asChild variant="outline">
               <a href={`https://wa.me/${phone}?text=${encodeURIComponent(body)}`} target="_blank" rel="noopener noreferrer">
                 <MessageCircle />
-                Open in WhatsApp
+                {tx("Open in WhatsApp")}
               </a>
             </Button>
           ) : null}
-          <SubmitButton pendingLabel="Recording…">
+          <SubmitButton pendingLabel={tx("Recording…")}>
             <Send />
-            Record as sent
+            {tx("Record as sent")}
           </SubmitButton>
         </div>
         <p className="text-xs text-muted-foreground">

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 
+import { Tx } from "@/components/app/tx";
 /** A label and its value. Used everywhere two columns of facts are shown. */
 export function Field({
   label,
@@ -15,7 +16,7 @@ export function Field({
   return (
     <div className={className}>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
+        <Tx>{label}</Tx>
       </dt>
       <dd className={cn("mt-1 text-sm", mono && "tnum font-medium")}>
         {value === null || value === undefined || value === "" ? (

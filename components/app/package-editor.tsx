@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { useT } from "@/components/app/locale-provider";
 type Line = {
   id: string;
   reference: string;
@@ -85,6 +86,7 @@ export function PackageEditor({
   /** Once Dar has booked the boxes in, a line is never removed and its quantity only goes up. */
   checkedInAtDar?: boolean;
 }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(upsertPackage, {});
   const [deleteState, deleteAction] = useActionState<ActionState, FormData>(
     deletePackage,
@@ -113,13 +115,13 @@ export function PackageEditor({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Line</TableHead>
-              <TableHead>Cargo type</TableHead>
-              <TableHead>Packed as</TableHead>
-              <TableHead className="text-right">Qty</TableHead>
+              <TableHead>{tx("Line")}</TableHead>
+              <TableHead>{tx("Cargo type")}</TableHead>
+              <TableHead>{tx("Packed as")}</TableHead>
+              <TableHead className="text-right">{tx("Qty")}</TableHead>
               <TableHead className="text-right">L × W × H</TableHead>
               <TableHead className="text-right">CBM</TableHead>
-              <TableHead className="text-right">Weight</TableHead>
+              <TableHead className="text-right">{tx("Weight")}</TableHead>
               {canEdit ? <TableHead /> : null}
             </TableRow>
           </TableHeader>
@@ -148,7 +150,7 @@ export function PackageEditor({
                 </TableCell>
                 <TableCell className="text-sm">
                   {line.cargoType ?? (
-                    <Badge tone="warn">No category</Badge>
+                    <Badge tone="warn">{tx("No category")}</Badge>
                   )}
                 </TableCell>
                 <TableCell className="text-sm">{line.packageType}</TableCell>
@@ -204,7 +206,7 @@ export function PackageEditor({
             ))}
             <TableRow className="bg-secondary/40 font-medium">
               <TableCell colSpan={5} className="text-sm">
-                Total
+                {tx("Total")}
               </TableCell>
               <TableCell className="tnum text-right text-sm">
                 {total.toFixed(3)} CBM
@@ -215,7 +217,7 @@ export function PackageEditor({
         </Table>
       ) : (
         <p className="px-1 text-sm text-muted-foreground">
-          Nothing measured yet.
+          {tx("Nothing measured yet.")}
         </p>
       )}
 
@@ -224,7 +226,7 @@ export function PackageEditor({
       {canEdit && !showForm ? (
         <Button variant="outline" onClick={() => setAdding(true)}>
           <Plus />
-          Add a line
+          {tx("Add a line")}
         </Button>
       ) : null}
 
@@ -240,7 +242,7 @@ export function PackageEditor({
           ) : null}
 
           <div className="space-y-2">
-            <Label htmlFor="cargoType">Cargo type</Label>
+            <Label htmlFor="cargoType">{tx("Cargo type")}</Label>
             <NativeSelect
               id="cargoType"
               name="cargoType"
@@ -248,7 +250,7 @@ export function PackageEditor({
               required
             >
               <option value="" disabled>
-                Choose the category…
+                {tx("Choose the category…")}
               </option>
               {cargoTypes.map((t) => (
                 <option key={t} value={t}>
@@ -260,7 +262,7 @@ export function PackageEditor({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="packageType">Packed as</Label>
+              <Label htmlFor="packageType">{tx("Packed as")}</Label>
               <NativeSelect
                 id="packageType"
                 name="packageType"
@@ -274,7 +276,7 @@ export function PackageEditor({
               </NativeSelect>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="quantity">{tx("Quantity")}</Label>
               <Input
                 id="quantity"
                 name="quantity"
@@ -286,14 +288,14 @@ export function PackageEditor({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unit">Measured in</Label>
+              <Label htmlFor="unit">{tx("Measured in")}</Label>
               <NativeSelect
                 id="unit"
                 name="unit"
                 defaultValue={editing?.unit ?? "CM"}
               >
-                <option value="CM">Centimetres</option>
-                <option value="M">Metres</option>
+                <option value="CM">{tx("Centimetres")}</option>
+                <option value="M">{tx("Metres")}</option>
               </NativeSelect>
             </div>
           </div>
@@ -316,7 +318,7 @@ export function PackageEditor({
               </div>
             ))}
             <div className="space-y-2">
-              <Label htmlFor="weightKg">Gross weight (kg)</Label>
+              <Label htmlFor="weightKg">{tx("Gross weight (kg)")}</Label>
               <Input
                 id="weightKg"
                 name="weightKg"
@@ -328,7 +330,7 @@ export function PackageEditor({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cbm">Volume (CBM)</Label>
+              <Label htmlFor="cbm">{tx("Volume (CBM)")}</Label>
               <Input
                 id="cbm"
                 name="cbm"
@@ -344,7 +346,7 @@ export function PackageEditor({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{tx("Description")}</Label>
               <Input
                 id="description"
                 name="description"
@@ -352,11 +354,11 @@ export function PackageEditor({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="balerNumber">Bale number</Label>
+              <Label htmlFor="balerNumber">{tx("Bale number")}</Label>
               <Input
                 id="balerNumber"
                 name="balerNumber"
-                placeholder="Written on the outside in China"
+                placeholder={tx("Written on the outside in China")}
                 defaultValue={editing?.balerNumber ?? ""}
               />
             </div>
@@ -370,23 +372,23 @@ export function PackageEditor({
               <Input id="descriptionZh" name="descriptionZh" defaultValue={editing?.descriptionZh ?? ""} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="modelNo">Model no.</Label>
+              <Label htmlFor="modelNo">{tx("Model no.")}</Label>
               <Input id="modelNo" name="modelNo" defaultValue={editing?.modelNo ?? ""} />
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="pieces">Pieces / sets</Label>
+              <Label htmlFor="pieces">{tx("Pieces / sets")}</Label>
               <Input id="pieces" name="pieces" type="number" min={0} inputMode="numeric" defaultValue={editing?.pieces ?? ""} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="netWeightKg">Net weight (kg)</Label>
+              <Label htmlFor="netWeightKg">{tx("Net weight (kg)")}</Label>
               <Input id="netWeightKg" name="netWeightKg" type="number" step="0.001" min={0} inputMode="decimal" defaultValue={editing?.netWeightKg ?? ""} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="line-reason">Why (optional)</Label>
+            <Label htmlFor="line-reason">{tx("Why (optional)")}</Label>
             <Input
               id="line-reason"
               name="reason"
@@ -396,10 +398,7 @@ export function PackageEditor({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Leave the volume blank to have it calculated from the three sides and
-            the quantity. A volume typed in is used as it stands and is marked on
-            the line as entered by hand. Either way the change is recorded
-            against you with the old figure beside the new one.
+            {tx("Leave the volume blank to have it calculated from the three sides and the quantity. A volume typed in is used as it stands and is marked on the line as entered by hand. Either way the change is recorded against you with the old figure beside the new one.")}
           </p>
 
           <div className="flex gap-2">
@@ -412,7 +411,7 @@ export function PackageEditor({
                 setAdding(false);
               }}
             >
-              Cancel
+              {tx("Cancel")}
             </Button>
           </div>
         </form>
@@ -426,6 +425,7 @@ export function PackageEditor({
 }
 
 function OverrideCbm({ lines }: { lines: Line[] }) {
+  const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(overrideCbm, {});
   const [open, setOpen] = useState(false);
 
@@ -439,7 +439,7 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
         <FormMessage ok={state.ok} />
         <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           <TriangleAlert />
-          Override a calculated CBM
+          {tx("Override a calculated CBM")}
         </Button>
       </div>
     );
@@ -447,14 +447,13 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
 
   return (
     <form action={action} className="space-y-3 rounded-lg border border-amber-300 bg-amber-50/50 p-4">
-      <p className="text-sm font-medium">Replace a calculated volume</p>
+      <p className="text-sm font-medium">{tx("Replace a calculated volume")}</p>
       <p className="text-xs text-muted-foreground">
-        The measurement being replaced is kept, along with your name and reason.
-        Use this only when the calculation genuinely does not describe the cargo.
+        {tx("The measurement being replaced is kept, along with your name and reason. Use this only when the calculation genuinely does not describe the cargo.")}
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="override-packageId">Line</Label>
+          <Label htmlFor="override-packageId">{tx("Line")}</Label>
           <NativeSelect id="override-packageId" name="packageId" required>
             {lines.map((l) => (
               <option key={l.id} value={l.id}>
@@ -464,7 +463,7 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
           </NativeSelect>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="override-cbm">New CBM</Label>
+          <Label htmlFor="override-cbm">{tx("New CBM")}</Label>
           <Input
             id="override-cbm"
             name="cbm"
@@ -476,15 +475,15 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="override-reason">Reason</Label>
+          <Label htmlFor="override-reason">{tx("Reason")}</Label>
           <Input id="override-reason" name="reason" required />
         </div>
       </div>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
-        <SubmitButton variant="destructive">Record override</SubmitButton>
+        <SubmitButton variant="destructive">{tx("Record override")}</SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          Cancel
+          {tx("Cancel")}
         </Button>
       </div>
     </form>

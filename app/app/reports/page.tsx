@@ -21,6 +21,7 @@ import { formatCbm, formatDate, formatWeight } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 
+import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Warehouse reports" };
 
 /**
@@ -31,6 +32,7 @@ export const metadata: Metadata = { title: "Warehouse reports" };
  * bill", and answering both on one page means neither is easy to find.
  */
 export default async function ReportsPage() {
+  await primeLocale();
   await requirePermission("warehouse.reports");
 
   const since = new Date();
@@ -80,23 +82,23 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Warehouse reports"
-        description="Throughput at both ends over the last thirty days."
+        title={T("Warehouse reports")}
+        description={T("Throughput at both ends over the last thirty days.")}
       />
       <SectionTabs />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           index={0}
-          label="Received in China"
+          label={T("Received in China")}
           numeric={chinaTotals._count._all}
           icon={Warehouse}
           tone="brand"
-          hint="Consignments, last 30 days"
+          hint={T("Consignments, last 30 days")}
         />
         <KpiCard
           index={1}
-          label="Volume taken in"
+          label={T("Volume taken in")}
           numeric={Number(chinaTotals._sum.cbm ?? 0)}
           decimals={2}
           suffix="CBM"
@@ -105,15 +107,15 @@ export default async function ReportsPage() {
         />
         <KpiCard
           index={2}
-          label="Received in Dar"
+          label={T("Received in Dar")}
           numeric={darTotals._count._all}
           icon={Ship}
           tone="success"
-          hint="Consignments, last 30 days"
+          hint={T("Consignments, last 30 days")}
         />
         <KpiCard
           index={3}
-          label="Weight handled"
+          label={T("Weight handled")}
           numeric={Number(darTotals._sum.weightKg ?? 0)}
           decimals={1}
           suffix="kg"
@@ -125,7 +127,7 @@ export default async function ReportsPage() {
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Volume shipped, by month</CardTitle>
+            <CardTitle className="text-base">{T("Volume shipped, by month")}</CardTitle>
           </CardHeader>
           <CardContent>
             <BarChart
@@ -139,7 +141,7 @@ export default async function ReportsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Dar floor, last fortnight</CardTitle>
+            <CardTitle className="text-base">{T("Dar floor, last fortnight")}</CardTitle>
           </CardHeader>
           <CardContent>
             <FlowBars data={flow} inLabel="Received" outLabel="Released" />
@@ -148,17 +150,17 @@ export default async function ReportsPage() {
       </section>
 
       <section>
-        <SectionLabel>Containers</SectionLabel>
+        <SectionLabel>{T("Containers")}</SectionLabel>
         <Card>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Container</TableHead>
-                <TableHead>Vessel</TableHead>
-                <TableHead className="text-right">Consignments</TableHead>
-                <TableHead className="text-right">Volume</TableHead>
-                <TableHead className="text-right">Fill</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{T("Container")}</TableHead>
+                <TableHead>{T("Vessel")}</TableHead>
+                <TableHead className="text-right">{T("Consignments")}</TableHead>
+                <TableHead className="text-right">{T("Volume")}</TableHead>
+                <TableHead className="text-right">{T("Fill")}</TableHead>
+                <TableHead>{T("Status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -199,16 +201,16 @@ export default async function ReportsPage() {
       </section>
 
       <section>
-        <SectionLabel>Longest on the floor</SectionLabel>
+        <SectionLabel>{T("Longest on the floor")}</SectionLabel>
         <Card>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Received</TableHead>
-                <TableHead className="text-right">Days</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>{T("Cargo")}</TableHead>
+                <TableHead>{T("Customer")}</TableHead>
+                <TableHead>{T("Received")}</TableHead>
+                <TableHead className="text-right">{T("Days")}</TableHead>
+                <TableHead>{T("Location")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -58,6 +58,7 @@ import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
+import { primeLocale, T } from "@/lib/server-t";
 export async function generateMetadata({
   params,
 }: {
@@ -80,6 +81,7 @@ export default async function ContainerPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ edit?: string; floor?: string }>;
 }) {
+  await primeLocale();
   const user = await requirePermission("container.view");
   const { id } = await params;
   const { edit, floor } = await searchParams;
@@ -273,7 +275,7 @@ export default async function ContainerPage({
     open && can(user.role, "container.load") ? (
       <Card className="flex min-h-0 flex-1 flex-col">
         <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
-          <CardTitle className="text-base">Waiting in Guangzhou</CardTitle>
+          <CardTitle className="text-base">{T("Waiting in Guangzhou")}</CardTitle>
           {/* The same summary the box carries, for the pile it draws from. */}
           {waiting.length > 0 ? (
             <span className="tnum shrink-0 text-right text-xs text-muted-foreground">
@@ -294,11 +296,11 @@ export default async function ContainerPage({
               <Input
                 name="floor"
                 defaultValue={floorQuery}
-                placeholder="Name, reference, mark or receipt no.…"
-                aria-label="Search the Guangzhou floor"
+                placeholder={T("Name, reference, mark or receipt no.…")}
+                aria-label={T("Search the Guangzhou floor")}
               />
               <Button type="submit" variant="outline" size="sm">
-                Find
+                {T("Find")}
               </Button>
             </form>
           ) : null}
@@ -353,7 +355,7 @@ export default async function ContainerPage({
         actions={
           <>
             <Badge tone={container.status === "ARRIVED" ? "good" : "progress"}>
-              {CONTAINER_STATUS_LABELS[container.status]}
+              {T(CONTAINER_STATUS_LABELS[container.status])}
             </Badge>
             {can(user.role, "packingList.view") ? (
               <PackingListButton
@@ -377,7 +379,7 @@ export default async function ContainerPage({
                 href={`/app/containers/${container.id}/labels`}
                 className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-secondary"
               >
-                Box labels
+                {T("Box labels")}
               </Link>
             ) : null}
           </>
@@ -395,23 +397,23 @@ export default async function ContainerPage({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <KpiCard
           index={0}
-          label="Consignments"
+          label={T("Consignments")}
           numeric={container.cargoLines.length}
           icon={Package}
           tone="brand"
-          hint={open ? "Still taking cargo" : undefined}
+          hint={open ? T("Still taking cargo") : undefined}
         />
         <KpiCard
           index={1}
-          label="Customers"
+          label={T("Customers")}
           numeric={customers.size}
           icon={Users}
           tone="marine"
-          hint="Sharing this box"
+          hint={T("Sharing this box")}
         />
         <KpiCard
           index={2}
-          label="Packages"
+          label={T("Packages")}
           numeric={totals.packages}
           icon={Boxes}
           tone="signal"
@@ -420,7 +422,7 @@ export default async function ContainerPage({
             never tallied says so, rather than claiming zero. */}
         <KpiCard
           index={3}
-          label="Pieces"
+          label={T("Pieces")}
           {...(totals.pieces > 0
             ? { numeric: totals.pieces }
             : { value: "—", hint: "Not tallied" })}
@@ -429,7 +431,7 @@ export default async function ContainerPage({
         />
         <KpiCard
           index={4}
-          label="Weight"
+          label={T("Weight")}
           {...(totals.weightKg.greaterThan(0)
             ? {
                 numeric: Number(totals.weightKg),
@@ -442,7 +444,7 @@ export default async function ContainerPage({
         />
         <KpiCard
           index={5}
-          label="Volume loaded"
+          label={T("Volume loaded")}
           numeric={Number(loadedCbm)}
           decimals={3}
           suffix=" CBM"
@@ -451,7 +453,7 @@ export default async function ContainerPage({
           hint={
             container.capacityCbm
               ? `of ${formatCbm(container.capacityCbm)}`
-              : "No capacity set"
+              : T("No capacity set")
           }
           ring={
             container.capacityCbm
@@ -493,7 +495,7 @@ export default async function ContainerPage({
             <Card className="flex min-h-0 flex-1 flex-col">
               <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
                 <CardTitle className="text-base">
-                  What is in this container
+                  {T("What is in this container")}
                 </CardTitle>
                 {/* The running total, where the eye already is. It was a bar
                           under the table, which meant scrolling to read the one figure
@@ -513,8 +515,8 @@ export default async function ContainerPage({
               {container.cargoLines.length === 0 ? (
                 <EmptyState
                   icon="Boxes"
-                  title="Empty"
-                  description="Load cargo from the Guangzhou floor to start filling it."
+                  title={T("Empty")}
+                  description={T("Load cargo from the Guangzhou floor to start filling it.")}
                 />
               ) : (
                 <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -560,7 +562,7 @@ export default async function ContainerPage({
           <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
               <CardTitle className="text-base">
-                What is in this container
+                {T("What is in this container")}
               </CardTitle>
               {/* The running total, where the eye already is. It was a bar
                         under the table, which meant scrolling to read the one figure
@@ -580,8 +582,8 @@ export default async function ContainerPage({
             {container.cargoLines.length === 0 ? (
               <EmptyState
                 icon="Boxes"
-                title="Empty"
-                description="Load cargo from the Guangzhou floor to start filling it."
+                title={T("Empty")}
+                description={T("Load cargo from the Guangzhou floor to start filling it.")}
               />
             ) : (
               <CardContent className="flex min-h-0 flex-1 flex-col">
@@ -632,7 +634,7 @@ export default async function ContainerPage({
             {nextStep ? (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Move it along</CardTitle>
+                  <CardTitle className="text-base">{T("Move it along")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* EACH MILESTONE BELONGS TO A DIFFERENT END OF THE ROUTE.
@@ -648,8 +650,7 @@ export default async function ContainerPage({
                   />
                   {container.status === "CLOSED" ? (
                     <p className="text-sm text-muted-foreground">
-                      This container is closed. Everything on it has been
-                      received in Dar.
+                      {T("This container is closed. Everything on it has been received in Dar.")}
                     </p>
                   ) : null}
                 </CardContent>
@@ -687,7 +688,7 @@ export default async function ContainerPage({
                   : undefined
           }
         >
-          The paperwork
+          {T("The paperwork")}
         </SectionLabel>
 
         {/*
@@ -701,11 +702,9 @@ export default async function ContainerPage({
         {editingBox ? (
           <Card className="mb-4">
             <CardHeader>
-              <CardTitle className="text-base">Container</CardTitle>
+              <CardTitle className="text-base">{T("Container")}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
-                What the loading bar measures against and the day Guangzhou
-                stops taking cargo for this sailing. The line's own container
-                and seal numbers are recorded when the box is sealed.
+                {T("What the loading bar measures against and the day Guangzhou stops taking cargo for this sailing. The line's own container and seal numbers are recorded when the box is sealed.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -724,10 +723,9 @@ export default async function ContainerPage({
         {editingVoyage ? (
           <Card className="mb-4">
             <CardHeader>
-              <CardTitle className="text-base">Voyage</CardTitle>
+              <CardTitle className="text-base">{T("Voyage")}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
-                Whoever books the space fills this in. It prints on the packing
-                list and is what the customer is told about the sailing.
+                {T("Whoever books the space fills this in. It prints on the packing list and is what the customer is told about the sailing.")}
               </p>
             </CardHeader>
             <CardContent>
@@ -812,7 +810,7 @@ export default async function ContainerPage({
         same events. One page, one copy of each fact.
       */}
       <section className={showMoney ? "hidden" : undefined}>
-        <SectionLabel>History</SectionLabel>
+        <SectionLabel>{T("History")}</SectionLabel>
         <Card>
           <CardContent className="py-5">
             <ol className="flex flex-wrap gap-x-10 gap-y-5">
@@ -828,7 +826,7 @@ export default async function ContainerPage({
                       )}
                     />
                     <p className="text-sm font-medium">
-                      {CONTAINER_STATUS_LABELS[event.to]}
+                      {T(CONTAINER_STATUS_LABELS[event.to])}
                     </p>
                   </div>
                   <p className="mt-1 pl-[1.125rem] text-xs text-muted-foreground">

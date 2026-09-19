@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { Tx } from "@/components/app/tx";
 /**
  * The small uppercase rule above a block of a dashboard.
  *
@@ -31,7 +32,7 @@ export function SectionLabel({
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
       <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        {children}
+        {typeof children === "string" ? <Tx>{children}</Tx> : children}
         {count !== undefined && count > 0 ? (
           <span className="tnum rounded-full bg-warning/15 px-1.5 py-0.5 text-[11px] font-bold leading-none text-warning">
             {count}
@@ -44,7 +45,7 @@ export function SectionLabel({
           scroll={action.keepScroll ? false : undefined}
           className="focus-ring inline-flex shrink-0 items-center gap-1 rounded text-xs font-semibold text-brand hover:underline"
         >
-          {action.label}
+          <Tx>{action.label}</Tx>
           <ArrowRight className="size-3.5" />
         </Link>
       ) : null}
