@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronRight, Info, TriangleAlert } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Info, TriangleAlert } from "lucide-react";
 
 import { useT } from "@/components/app/locale-provider";
 import { cn } from "@/lib/utils";
@@ -60,10 +60,14 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border bg-card p-8 text-center shadow-soft">
-        <p className="text-sm font-medium">{t("Nothing needs you")}</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t("No missing cargo, no overdue bills, nothing held.")}
+      <div className="flex items-center gap-2.5 rounded-xl border bg-card px-4 py-3 shadow-soft">
+        <span aria-hidden className="h-7 w-0.5 shrink-0 rounded-full bg-success" />
+        <CheckCircle2 className="size-3.5 shrink-0 text-success" />
+        <p className="min-w-0 text-[13px] leading-tight">
+          <span className="font-semibold">{t("Nothing needs you")}</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            {t("No missing cargo, no overdue bills, nothing held.")}
+          </span>
         </p>
       </div>
     );
