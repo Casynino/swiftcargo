@@ -459,7 +459,7 @@ export function IntakeForm({
               >
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-medium">Item {index + 1}</p>
+                    <p className="text-sm font-medium">Package {index + 1}</p>
                     <div className="flex items-center gap-2">
                       <Label
                         htmlFor={`n-${line.key}`}
@@ -614,7 +614,7 @@ export function IntakeForm({
             }}
           >
             <Plus />
-            Add another item
+            Add package
           </Button>
         </CardContent>
       </Card>
@@ -666,8 +666,10 @@ export function IntakeForm({
             {[
               ["For", picked?.fullName ?? (newCustomer ? newName || "—" : "—")],
               [
-                "Items",
-                String(lines.filter((l) => l.description.trim()).length),
+                /* Every row on the form counts from the moment it is added,
+                   so the footer never reads 0 over a row the clerk can see. */
+                "Lines",
+                String(lines.length),
               ],
               ["Packages", String(totals.packages)],
               ["Pieces", totals.pieces > 0 ? String(totals.pieces) : "—"],
