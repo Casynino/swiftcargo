@@ -21,6 +21,7 @@ import { buildReport, type Cell, type ReportTable } from "@/lib/report-tables";
 import { storagePosition } from "@/lib/storage-fee";
 import { storageStart } from "@/lib/storage-clock";
 
+import { darFields, darStartOfDay, darStartOfMonth } from "@/lib/dar-time";
 /**
  * EVERY REPORT THE MANAGER CAN HAND OVER, ON THE BOOKS FINANCE ALREADY KEEPS.
  *
@@ -130,8 +131,8 @@ export function managementPeriod(sp: Record<string, string | undefined>, now = n
   const key: ManagementPeriod = asked === "custom" && !from && !to ? "month" : asked;
 
   if (key === "custom") {
-    const start = from ?? new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = to ? new Date(to.getTime() + DAY) : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const start = from ?? darStartOfMonth(now);
+    const end = to ? new Date(to.getTime() + DAY) : new Date(darStartOfDay(now).getTime() + DAY);
     const span = Math.max(DAY, end.getTime() - start.getTime());
     const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
     return {
@@ -147,8 +148,9 @@ export function managementPeriod(sp: Record<string, string | undefined>, now = n
     };
   }
   if (key === "last-month") {
-    const current = monthRange(now.getFullYear(), now.getMonth() - 1);
-    const previous = monthRange(now.getFullYear(), now.getMonth() - 2);
+    const here = darFields(now);
+    const current = monthRange(here.year, here.month - 1);
+    const previous = monthRange(here.year, here.month - 2);
     return { key, from: "", to: "", current, previous };
   }
   const { current, previous } = periodRange(key, now);
@@ -183,10 +185,11 @@ function balanceTzs(balance: number, currency: string, today: number) {
 
 function monthsCovering(range: Range) {
   const months: Range[] = [];
-  let cursor = new Date(range.from.getFullYear(), range.from.getMonth(), 1);
+  let cursor = darStartOfMonth(range.from);
   while (cursor < range.to && months.length < 36) {
-    months.push(monthRange(cursor.getFullYear(), cursor.getMonth()));
-    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    const civil = darFields(cursor);
+    months.push(monthRange(civil.year, civil.month));
+    cursor = darStartOfMonth(cursor, 1);
   }
   return months;
 }
@@ -239,9 +242,9 @@ export async function runManagementReport(
       /* One month is not "month against month"; a short window is read
          against the eleven before it. */
       if (months.length < 2) {
-        const end = new Date(range.to.getTime() - 1);
+        const end = darFields(new Date(range.to.getTime() - 1));
         months = Array.from({ length: 12 }, (_, i) =>
-          monthRange(end.getFullYear(), end.getMonth() - 11 + i)
+          monthRange(end.year, end.month - 11 + i)
         );
       }
       const rows = months.map((m) => {

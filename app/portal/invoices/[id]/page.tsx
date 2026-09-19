@@ -24,6 +24,7 @@ import { balanceOf, outstandingOf, paidOn } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { requireCustomer } from "@/lib/session";
 
+import { billLines } from "@/lib/invoice-lines";
 export const metadata: Metadata = { title: "Invoice" };
 
 export default async function PortalInvoicePage({
@@ -103,7 +104,7 @@ export default async function PortalInvoicePage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoice.items.map((item) => (
+            {billLines(invoice).map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="text-sm">{item.description}</TableCell>
                 <TableCell className="tnum text-right text-sm">

@@ -25,6 +25,8 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  /* A production build can be made beside a running dev server for timing. */
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   experimental: {
     // Cargo photos and payment proofs are uploaded straight through a server

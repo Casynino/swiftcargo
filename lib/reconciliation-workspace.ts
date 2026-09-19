@@ -8,6 +8,7 @@ import { formatCurrency, isUsableRate, roundMoney, usdToTzs } from "@/lib/curren
 import { impliedStatus, invoiceRate } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 
+import { darStartOfDay, darStartOfMonth, darStartOfWeek, darStartOfYear } from "@/lib/dar-time";
 /**
  * THE MANAGER'S RECONCILIATION WORKSPACE, ON THE BOOKS THE BUSINESS ALREADY HAS.
  *
@@ -69,20 +70,16 @@ export function periodWindow(
   period: string | undefined,
   now = new Date()
 ): { gte: Date; lt?: Date } | null {
-  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = darStartOfDay(now);
   if (period === "today") return { gte: day };
   if (period === "yesterday") {
-    const from = new Date(day);
-    from.setDate(from.getDate() - 1);
-    return { gte: from, lt: day };
+    return { gte: new Date(day.getTime() - 86_400_000), lt: day };
   }
   if (period === "week") {
-    const from = new Date(day);
-    from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
-    return { gte: from };
+    return { gte: darStartOfWeek(now) };
   }
-  if (period === "month") return { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-  if (period === "year") return { gte: new Date(now.getFullYear(), 0, 1) };
+  if (period === "month") return { gte: darStartOfMonth(now) };
+  if (period === "year") return { gte: darStartOfYear(now) };
   return null;
 }
 

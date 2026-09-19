@@ -10,6 +10,7 @@ import type { InvoicePdfInput, PdfTone } from "@/lib/invoice-pdf";
 import { accountsForInvoice } from "@/lib/invoice-accounts";
 import { prisma } from "@/lib/prisma";
 
+import { billLines } from "@/lib/invoice-lines";
 const money = (n: unknown, dp = 2) =>
   Number(n ?? 0).toLocaleString("en-US", {
     minimumFractionDigits: dp,
@@ -132,7 +133,7 @@ export async function loadInvoicePdf(key: string) {
       ["Exchange rate", invoice.fxRate ? `1 USD = ${money(invoice.fxRate, 0)} TZS` : "—"],
     ],
 
-    items: invoice.items.map((item) => ({
+    items: billLines(invoice).map((item) => ({
       receiptNo: item.paperReceiptNo ?? "—",
       description: item.description,
       packages: item.packages === null ? "—" : String(item.packages),

@@ -8,6 +8,7 @@ import { accountsForInvoice } from "@/lib/invoice-accounts";
 import { prisma } from "@/lib/prisma";
 import { invoiceQr } from "@/lib/invoice-verify";
 
+import { billLines } from "@/lib/invoice-lines";
 const money = (n: unknown, dp = 2) =>
   Number(n ?? 0).toLocaleString("en-US", {
     minimumFractionDigits: dp,
@@ -225,7 +226,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
               </tr>
             </thead>
             <tbody>
-              {invoice.items.map((item) => {
+              {billLines(invoice).map((item) => {
                 const negative = Number(item.amount) < 0;
                 /* Freight lines are written "GOODS — CATEGORY"; the category
                    is shown as what it is rather than as half a name. */

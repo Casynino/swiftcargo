@@ -808,6 +808,30 @@ export async function receiveNewCargo(
 ): Promise<ActionState> {
   const actor = await authorize("receiving.china");
 
+  /*
+    ONE PRESS, ONE CONSIGNMENT.
+
+    The form carries a key made when it was opened. A retry after a timeout the
+    server had already answered — a warehouse phone on a bad connection does
+    this — arrives with the same key, and is told about the consignment that
+    already exists instead of taking the same boxes in a second time.
+  */
+  const intakeKey = String(formData.get("intakeKey") ?? "").trim() || null;
+  if (intakeKey) {
+    const already = await prisma.cargo.findUnique({
+      where: { intakeKey },
+      select: { id: true, reference: true, deliveryNote: { select: { number: true } } },
+    });
+    if (already) {
+      return {
+        ok: `${already.reference} was already received.`,
+        id: already.id,
+        reference: already.reference,
+        noteNumber: already.deliveryNote?.number,
+      } as ActionState;
+    }
+  }
+
   /* The book number is written per item now, so the consignment takes the
      first of them — one delivery still answers to one number in a search, on
      the timeline and on the delivery note. */
@@ -1129,6 +1153,7 @@ export async function receiveNewCargo(
           supplierId,
           supplierRef: data.supplierRef || null,
           service: "LCL",
+          intakeKey,
           description: summary,
           descriptionZh: summaryZh,
           declaredPackages: totalPackages,
@@ -1318,6 +1343,26 @@ export async function receiveNewCargo(
       return { reference, noteNumber, id: cargo.id };
     });
   } catch (error) {
+    /* Both presses got through at once: one of them created it, and the key's
+       unique index caught the other. Answer with the consignment that exists. */
+    if (
+      intakeKey &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const already = await prisma.cargo.findUnique({
+        where: { intakeKey },
+        select: { id: true, reference: true, deliveryNote: { select: { number: true } } },
+      });
+      if (already) {
+        return {
+          ok: `${already.reference} was already received.`,
+          id: already.id,
+          reference: already.reference,
+          noteNumber: already.deliveryNote?.number,
+        } as ActionState;
+      }
+    }
     return {
       error: formMessage(error, "That did not save. Try again."),
     };

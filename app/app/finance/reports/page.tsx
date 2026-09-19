@@ -26,6 +26,7 @@ import { requirePermission } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { darFields } from "@/lib/dar-time";
 export const metadata: Metadata = { title: "Profit & loss" };
 
 /**
@@ -51,8 +52,9 @@ export default async function ProfitAndLossPage({
 
   const now = figures(books, p.current);
   const before = figures(books, p.previous);
-  const thisMonth = monthRange(new Date().getFullYear(), new Date().getMonth());
-  const lastMonth = monthRange(new Date().getFullYear(), new Date().getMonth() - 1);
+  const here = darFields();
+  const thisMonth = monthRange(here.year, here.month);
+  const lastMonth = monthRange(here.year, here.month - 1);
   const month = figures(books, thisMonth);
   const monthBefore = figures(books, lastMonth);
   const months = twelveMonths(books);

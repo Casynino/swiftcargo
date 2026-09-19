@@ -18,10 +18,12 @@ import { requirePermission } from "@/lib/session";
 import { SmartBack } from "@/components/app/smart-back";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { darFields } from "@/lib/dar-time";
 function readMonth(v?: string) {
   const now = new Date();
   const m = v && /^(\d{4})-(\d{2})$/.exec(v);
-  return m ? monthRange(Number(m[1]), Number(m[2]) - 1) : monthRange(now.getFullYear(), now.getMonth());
+  const here = darFields(now);
+  return m ? monthRange(Number(m[1]), Number(m[2]) - 1) : monthRange(here.year, here.month);
 }
 
 export async function generateMetadata({

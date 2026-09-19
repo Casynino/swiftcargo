@@ -7,6 +7,7 @@ import { owedAcross } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 
+import { darDaysAgo, darStartOfDay, darStartOfMonth } from "@/lib/dar-time";
 /**
  * WHAT DO I NEED TO DO TODAY?
  *
@@ -28,18 +29,10 @@ export type ActionCard = {
   hint?: string;
 };
 
-const startOfToday = () => {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
+/* Tanzanian days, not the server's: see lib/dar-time.ts. */
+const startOfToday = () => darStartOfDay();
 
-const daysAgo = (n: number) => {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - n);
-  return d;
-};
+const daysAgo = (n: number) => darDaysAgo(n);
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_LABELS = [
@@ -393,9 +386,7 @@ export async function warehouseFlow(days = 14) {
 
 /** Volume shipped, by month, for the last six. */
 export async function monthlyVolume(months = 6) {
-  const since = new Date();
-  since.setMonth(since.getMonth() - (months - 1), 1);
-  since.setHours(0, 0, 0, 0);
+  const since = darStartOfMonth(new Date(), -(months - 1));
 
   const lines = await prisma.containerCargo.findMany({
     where: { createdAt: { gte: since } },
@@ -420,9 +411,7 @@ export async function monthlyVolume(months = 6) {
 
 /** Billed against collected, by month — the shape of the cash position. */
 export async function revenueTrend(months = 6) {
-  const since = new Date();
-  since.setMonth(since.getMonth() - (months - 1), 1);
-  since.setHours(0, 0, 0, 0);
+  const since = darStartOfMonth(new Date(), -(months - 1));
 
   const [invoices, receipts] = await Promise.all([
     prisma.invoice.findMany({
@@ -967,8 +956,7 @@ export async function chinaFloor() {
 /** Received against loaded, day by day, for the last fortnight. */
 export async function chinaFlow() {
   const now = new Date();
-  const from = new Date(now.getTime() - 13 * 86_400_000);
-  from.setHours(0, 0, 0, 0);
+  const from = darDaysAgo(13, now);
 
   const [received, loaded] = await Promise.all([
     prisma.chinaReceiving.findMany({
@@ -1153,8 +1141,7 @@ export async function myActivity(userId: string) {
  * has to be posted somewhere is a figure somebody forgets to post.
  */
 export async function financeDesk() {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const startOfToday = darStartOfDay();
 
   const [
     invoices,

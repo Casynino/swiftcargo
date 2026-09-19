@@ -109,6 +109,10 @@ export function IntakeForm({
    */
   cargoTypes: string[];
 }) {
+  /* One press, one consignment: the server answers a retry carrying the same
+     key by naming the consignment it already created. Made after mount, so the
+     server's rendering and the browser's agree on what was sent. */
+  const [intakeKey, setIntakeKey] = useState("");
   const t = useT();
   const router = useRouter();
   const [state, action] = useActionState<ActionState, FormData>(
@@ -173,6 +177,10 @@ export function IntakeForm({
     if (!highest) return "";
     return String(highest + 1).padStart(width, "0");
   };
+
+  useEffect(() => {
+    setIntakeKey(crypto.randomUUID());
+  }, []);
 
   useEffect(() => {
     /* Straight to the stickers: the next thing the clerk does is put one on
@@ -255,6 +263,7 @@ export function IntakeForm({
 
   return (
     <form action={action} className="space-y-6">
+      <input type="hidden" name="intakeKey" value={intakeKey} />
       <input type="hidden" name="unit" value={unit} />
 
       {/* ---------------------------------------------------------- Customer */}

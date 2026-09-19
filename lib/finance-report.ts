@@ -1,5 +1,6 @@
 import { accountPositions } from "@/lib/accounts";
 import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
+import { darFields, darMidnight, darStartOfDay, darStartOfMonth, darStartOfQuarter, darStartOfWeek, darStartOfYear } from "@/lib/dar-time";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -32,44 +33,42 @@ export type PeriodKey = keyof typeof PERIODS;
 
 export type Range = { from: Date; to: Date; label: string };
 
-const MONTH = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
+const MONTH = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "Africa/Dar_es_Salaam" });
 
 export function periodRange(key: PeriodKey, now = new Date()): { current: Range; previous: Range } {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
+  /* Cut on the Tanzanian calendar, never the server's: takings between
+     midnight and three in the morning in Dar belong to that day. */
   let from: Date;
   let to: Date;
   let prevFrom: Date;
   if (key === "today") {
-    from = start;
-    to = new Date(start.getTime() + 86_400_000);
-    prevFrom = new Date(start.getTime() - 86_400_000);
+    from = darStartOfDay(now);
+    to = new Date(from.getTime() + 86_400_000);
+    prevFrom = new Date(from.getTime() - 86_400_000);
   } else if (key === "week") {
-    const day = (start.getDay() + 6) % 7; // Monday first
-    from = new Date(start.getTime() - day * 86_400_000);
+    from = darStartOfWeek(now);
     to = new Date(from.getTime() + 7 * 86_400_000);
     prevFrom = new Date(from.getTime() - 7 * 86_400_000);
   } else if (key === "month") {
-    from = new Date(start.getFullYear(), start.getMonth(), 1);
-    to = new Date(start.getFullYear(), start.getMonth() + 1, 1);
-    prevFrom = new Date(start.getFullYear(), start.getMonth() - 1, 1);
+    from = darStartOfMonth(now);
+    to = darStartOfMonth(now, 1);
+    prevFrom = darStartOfMonth(now, -1);
   } else if (key === "quarter") {
-    const q = Math.floor(start.getMonth() / 3) * 3;
-    from = new Date(start.getFullYear(), q, 1);
-    to = new Date(start.getFullYear(), q + 3, 1);
-    prevFrom = new Date(start.getFullYear(), q - 3, 1);
+    from = darStartOfQuarter(now);
+    to = darStartOfQuarter(now, 1);
+    prevFrom = darStartOfQuarter(now, -1);
   } else {
-    from = new Date(start.getFullYear(), 0, 1);
-    to = new Date(start.getFullYear() + 1, 0, 1);
-    prevFrom = new Date(start.getFullYear() - 1, 0, 1);
+    from = darStartOfYear(now);
+    to = darStartOfYear(now, 1);
+    prevFrom = darStartOfYear(now, -1);
   }
   const label = (f: Date, t: Date) =>
     key === "month"
       ? MONTH.format(f)
       : key === "year"
-        ? String(f.getFullYear())
+        ? String(darFields(f).year)
         : key === "quarter"
-          ? `Q${Math.floor(f.getMonth() / 3) + 1} ${f.getFullYear()}`
+          ? `Q${Math.floor(darFields(f).month / 3) + 1} ${darFields(f).year}`
           : `${f.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – ${new Date(t.getTime() - 1).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`;
   return {
     current: { from, to, label: label(from, to) },
@@ -79,8 +78,8 @@ export function periodRange(key: PeriodKey, now = new Date()): { current: Range;
 
 /** A calendar month, for the statement and the month-by-month views. */
 export function monthRange(year: number, month: number): Range {
-  const from = new Date(year, month, 1);
-  return { from, to: new Date(year, month + 1, 1), label: MONTH.format(from) };
+  const from = darMidnight(year, month, 1);
+  return { from, to: darMidnight(year, month + 1, 1), label: MONTH.format(from) };
 }
 
 export const within = (d: Date | null | undefined, r: { from: Date; to: Date }) =>
@@ -375,11 +374,13 @@ export function byCustomer(bills: Books["bills"]) {
 
 /** The last twelve calendar months, oldest first. */
 export function twelveMonths(books: Books, now = new Date()) {
+  const here = darFields(now);
   return Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
-    const r = monthRange(d.getFullYear(), d.getMonth());
+    const d = darMidnight(here.year, here.month - 11 + i, 1);
+    const civil = darFields(d);
+    const r = monthRange(civil.year, civil.month);
     return {
-      label: d.toLocaleDateString("en-GB", { month: "short" }),
+      label: d.toLocaleDateString("en-GB", { month: "short", timeZone: "Africa/Dar_es_Salaam" }),
       current: i === 11,
       in: sum(books.money.filter((m) => within(m.at, r)), (m) => m.amount),
       out: sum(books.costs.filter((c) => c.paid && within(c.at, r)), (c) => c.amount),

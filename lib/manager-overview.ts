@@ -19,6 +19,7 @@ import { balanceOf, invoiceRate, owedAcross, paymentTzs } from "@/lib/invoice-ba
 import { monthLabel, payrollFigure, payrollRuns, pendingPayrollApproval } from "@/lib/payroll";
 import { prisma } from "@/lib/prisma";
 
+import { darFields } from "@/lib/dar-time";
 /**
  * "What is happening in my company right now", in one object.
  *
@@ -391,8 +392,9 @@ export async function managerOverview(locale: Locale = "en", now = new Date()) {
 
   /* Cash, not accrual: money that arrived against money that left an account.
      The same two sides Finance's own chart draws, so the lines agree with it. */
-  const flow = Array.from({ length: now.getMonth() + 1 }, (_, m) => {
-    const r = monthRange(now.getFullYear(), m);
+  const here = darFields(now);
+  const flow = Array.from({ length: here.month + 1 }, (_, m) => {
+    const r = monthRange(here.year, m);
     return {
       label: MONTHS[m],
       in: sum(books.money.filter((x) => within(x.at, r)), (x) => x.amount).tzs,

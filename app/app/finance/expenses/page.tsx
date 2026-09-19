@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { darStartOfDay, darStartOfMonth, darStartOfWeek, darStartOfYear } from "@/lib/dar-time";
 export const metadata: Metadata = { title: "Expenses" };
 
 const PERIODS = {
@@ -67,12 +68,10 @@ type Outgoing = {
 
 function since(period: Period): Date | null {
   if (period === "all") return null;
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  if (period === "week") d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  if (period === "month") d.setDate(1);
-  if (period === "year") d.setMonth(0, 1);
-  return d;
+  if (period === "week") return darStartOfWeek();
+  if (period === "month") return darStartOfMonth();
+  if (period === "year") return darStartOfYear();
+  return darStartOfDay();
 }
 
 /**

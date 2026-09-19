@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { localeOf } from "@/lib/viewer-locale";
 
 import { primeLocale } from "@/lib/server-t";
+import { darStartOfMonth } from "@/lib/dar-time";
 export const metadata: Metadata = { title: "Finance" };
 
 /**
@@ -53,9 +54,7 @@ export default async function FinanceHubPage() {
      answering it is gated on this instead. */
   const seesCompanyMoney = can(user.role, "accounting.view");
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  const monthStart = darStartOfMonth();
   const thisMonth = { from: monthStart, to: new Date(8.64e15) };
 
   const [desk, position, held, books, monthPayments, containers, verdicts, unattributed, notesOut] =

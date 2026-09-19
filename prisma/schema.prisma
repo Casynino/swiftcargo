@@ -400,6 +400,16 @@ model Cargo {
   /// is only a name.
   qrToken String @unique
 
+  /**
+   * ONE PRESS, ONE CONSIGNMENT.
+   *
+   * The receiving form sends a key made when it was opened. A retry after a
+   * timeout the server had already answered — or a second press that got
+   * through — carries the same key, and is answered with the consignment
+   * already created rather than taking the same boxes in twice.
+   */
+  intakeKey String? @unique
+
   /// WHO SHIPS AND WHO COLLECTS ARE NOT ALWAYS THE SAME PERSON.
   ///
   /// The sender owns the shipping mark and dealt with the factory in China. The
