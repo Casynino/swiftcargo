@@ -345,10 +345,19 @@ export function composeMessage(
       /* The bill can go out while the ship is at sea; the sentence says where
          the goods actually are, and only says ready when they are. */
       if (context.stage === "ready" || context.stage === "cleared") {
+        /* The same shape as the clearance letter: no invoice number (the link
+           opens it), and a status line saying where the goods stand. */
         return letter(
           `Mzigo wako umefika salama ${ROUTE.destinationCity}, umekamilisha ` +
             `clearance na sasa uko tayari kuchukuliwa baada ya malipo kuthibitishwa.`,
-          { linkLabel: "Angalia invoice yako kamili na njia za malipo:" }
+          {
+            linkLabel: "Angalia invoice yako kamili na njia za malipo:",
+            detailsContext: {
+              ...context,
+              invoiceNumber: null,
+              statusLine: "Cleared — ready after payment",
+            },
+          }
         );
       }
       if (context.stage === "clearance") {
