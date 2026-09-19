@@ -17,6 +17,10 @@ import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/actions/auth";
 import { BUILD_ID } from "@/lib/build-id";
 import { type NavItem, type NavSection } from "@/lib/nav";
+import { LanguageSwitch } from "@/components/app/language-switch";
+import { LocaleProvider } from "@/components/app/locale-provider";
+import { t } from "@/lib/i18n";
+import type { Locale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
@@ -34,8 +38,11 @@ export function AppShell({
   unread,
   canRecordPayment = false,
   canClearShortfall = false,
+  locale = "en",
   children,
 }: {
+  /** The language this person reads the system in. */
+  locale?: Locale;
   canRecordPayment?: boolean;
   canClearShortfall?: boolean;
   sections: NavSection[];
@@ -47,6 +54,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const tr = (text: string) => t(locale, text);
 
   /* The drawer covers the page, so Escape has to take it away again — a
      keyboard user otherwise has no way out but tabbing through every row. */
@@ -87,7 +95,7 @@ export function AppShell({
       )}
     >
       <Glyph name={item.icon} className="size-4 shrink-0" />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate">{tr(item.label)}</span>
     </Link>
   );
 
@@ -104,7 +112,7 @@ export function AppShell({
           {section.label ? (
             <p className="flex items-center gap-2 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               <Glyph name={section.icon} className="size-3.5 shrink-0" />
-              {section.label}
+              {tr(section.label)}
             </p>
           ) : null}
           {/* The rule down the left is what makes a section read as a group
@@ -120,6 +128,7 @@ export function AppShell({
   );
 
   return (
+    <LocaleProvider locale={locale}>
     <div className="flex min-h-dvh bg-surface-2">
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex print:!hidden">
@@ -129,26 +138,26 @@ export function AppShell({
           </Link>
         </div>
         {nav}
-        <UserFooter user={user} />
+        <UserFooter user={user} locale={locale} />
       </aside>
 
       {/* Mobile drawer */}
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
-            aria-label="Close menu"
+            aria-label={tr("Close menu")}
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}
           />
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-background shadow-xl">
             <div className="flex h-16 items-center justify-between border-b px-4">
               <BrandMark size={32} />
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close menu">
+              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label={tr("Close menu")}>
                 <X />
               </Button>
             </div>
             {nav}
-            <UserFooter user={user} />
+            <UserFooter user={user} locale={locale} />
           </aside>
         </div>
       ) : null}
@@ -160,7 +169,7 @@ export function AppShell({
             size="icon"
             className="lg:hidden"
             onClick={() => setOpen(true)}
-            aria-label="Open menu"
+            aria-label={tr("Open menu")}
           >
             <Menu />
           </Button>
@@ -172,7 +181,7 @@ export function AppShell({
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground sm:inline">
-              {user.departmentLabel ?? user.roleLabel}
+              {tr(user.departmentLabel ?? user.roleLabel)}
             </span>
 
             {/* THE BELL BELONGS WHERE PEOPLE LOOK FOR IT. Buried in the menu it
@@ -182,8 +191,8 @@ export function AppShell({
               href="/app/notifications"
               aria-label={
                 unread > 0
-                  ? `Notifications, ${unread} unread`
-                  : "Notifications"
+                  ? `${tr("Notifications")}, ${unread}`
+                  : tr("Notifications")
               }
               className="relative grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             >
@@ -220,13 +229,16 @@ export function AppShell({
         {canRecordPayment ? <RecordPaymentDialog canClear={canClearShortfall} /> : null}
       </div>
     </div>
+    </LocaleProvider>
   );
 }
 
 function UserFooter({
   user,
+  locale,
 }: {
   user: { name: string; email: string; roleLabel: string };
+  locale: Locale;
 }) {
   return (
     <div className="border-t p-3">
@@ -242,7 +254,7 @@ function UserFooter({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium">{user.name}</span>
           <span className="block truncate text-xs text-muted-foreground">
-            {user.roleLabel}
+            {t(locale, user.roleLabel)}
           </span>
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
@@ -256,11 +268,14 @@ function UserFooter({
             className="w-full justify-start text-muted-foreground"
           >
             <LogOut />
-            Sign out
+            {t(locale, "Sign out")}
           </Button>
         </form>
         <ThemeToggle />
       </div>
+      {/* English or 中文, one press away on every screen — labelled each in its
+          own language, so it is legible to whoever needs it. */}
+      <LanguageSwitch current={locale} className="mt-2 w-full [&>button]:flex-1 [&>button]:justify-center" />
     </div>
   );
 }

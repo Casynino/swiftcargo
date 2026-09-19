@@ -7,6 +7,7 @@ import type { Role, WarehouseKind } from "@prisma/client";
 
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { ROLE_DEPARTMENT, ROLE_LABELS } from "@/lib/constants";
+import { defaultLocaleForRole } from "@/lib/locale";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { authorize, type SessionUser } from "@/lib/session";
 
@@ -195,6 +196,9 @@ export async function createUser(
         phone: input.phone || null,
         role,
         department: ROLE_DEPARTMENT[role],
+        /* Guangzhou opens in Chinese; everyone else in English. A starting
+           point only — whatever the person picks is kept from then on. */
+        locale: defaultLocaleForRole(role),
         warehouseId,
         status: input.status,
         // `status` is what a manager reads; `active` is what the sign-in check

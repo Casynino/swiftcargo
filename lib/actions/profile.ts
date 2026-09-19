@@ -124,3 +124,28 @@ export async function changeMyPassword(
 
   return { ok: "Password changed. It applies the next time you sign in." };
 }
+
+/**
+ * Switch the language this person reads the system in.
+ *
+ * Stored on the user rather than in a cookie: a Guangzhou packer on the bench
+ * computer in the morning and a phone in the afternoon should not set it twice.
+ * Every signed-in member of staff may choose it; it changes what the screens
+ * say and nothing about what the person may do.
+ */
+export async function setLanguage(locale: string): Promise<ProfileState> {
+  const user = await requireUser();
+  if (locale !== "en" && locale !== "zh") return { error: "That is not a language this system speaks." };
+  await prisma.user.update({ where: { id: user.id }, data: { locale } });
+  await recordAudit({
+    actor: user,
+    action: "profile.language",
+    entity: "User",
+    entityId: user.id,
+    summary: `${user.name} now reads the system in ${locale === "zh" ? "Chinese" : "English"}`,
+  });
+  /* Every server-rendered screen says something different now, so the whole
+     shell is stale — not just the page the switch was pressed on. */
+  revalidatePath("/app", "layout");
+  return { ok: "Saved." };
+}

@@ -4,6 +4,7 @@ import { homeFor, navigationFor } from "@/lib/nav";
 import { can } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/session";
+import { viewerLocale } from "@/lib/viewer-locale";
 
 /**
  * The staff shell requires only a session and that it is not a customer's.
@@ -19,15 +20,17 @@ export default async function AppLayout({
 }) {
   const user = await requireStaff();
 
-  const unread = await prisma.notification.count({
-    where: { userId: user.id, readAt: null },
-  });
+  const [unread, locale] = await Promise.all([
+    prisma.notification.count({ where: { userId: user.id, readAt: null } }),
+    viewerLocale(),
+  ]);
 
   return (
     <AppShell
       sections={navigationFor(user.role)}
       home={homeFor(user.role)}
       unread={unread}
+      locale={locale}
       canRecordPayment={can(user.role, "payment.submit")}
       canClearShortfall={can(user.role, "payment.verify")}
       user={{
