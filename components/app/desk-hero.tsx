@@ -3,6 +3,8 @@ import { Search, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { t } from "@/lib/i18n";
+import { viewerLocale } from "@/lib/viewer-locale";
 
 /**
  * The banner at the top of a desk's home screen.
@@ -16,7 +18,7 @@ import { Input } from "@/components/ui/input";
  * themes. It reads as a printed cover rather than as a piece of the interface,
  * which is what stops a bright panel from competing with the data below it.
  */
-export function DeskHero({
+export async function DeskHero({
   greeting,
   name,
   department,
@@ -68,104 +70,82 @@ export function DeskHero({
     }).format(now),
   }));
 
+  const locale = await viewerLocale();
+  const tr = (text: string) => t(locale, text);
+
   return (
-    <section className="relative overflow-hidden rounded-2xl bg-ink px-6 py-8 text-white shadow-raised sm:px-9 sm:py-10">
+    <section className="relative overflow-hidden rounded-2xl bg-ink px-4 py-4 text-white shadow-raised sm:px-6 sm:py-5">
       <div
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_-10%,hsl(var(--signal)/0.55),transparent_50%),radial-gradient(ellipse_at_85%_120%,hsl(var(--marine)/0.55),transparent_55%),radial-gradient(ellipse_at_60%_-30%,hsl(var(--brand)/0.6),transparent_60%)]"
-      />
-      {/* A faint grid, so the gradient reads as a printed surface rather than
-          as a blur somebody forgot to finish. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
-        }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_10%_-10%,hsl(var(--signal)/0.45),transparent_50%),radial-gradient(ellipse_at_85%_120%,hsl(var(--marine)/0.45),transparent_55%),radial-gradient(ellipse_at_60%_-30%,hsl(var(--brand)/0.5),transparent_60%)]"
       />
 
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-medium backdrop-blur">
+      <div className="relative">
+        {/* One short line: the day, the desk, and both clocks. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] text-white/70">
+          <p className="flex items-center gap-1.5">
             <span className="size-1.5 rounded-full bg-signal" />
-            {today}
-          </span>
-          <span className="rounded-full bg-white/12 px-3 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur">
-            {department}
-          </span>
+            {today} · <span className="font-semibold uppercase tracking-wider text-white/85">{tr(department)}</span>
+          </p>
+          <p className="tnum">
+            {clocks.map((clock, i) => (
+              <span key={clock.place}>
+                {i > 0 ? "  ·  " : ""}
+                {tr(clock.place)} <span className="font-semibold text-white">{clock.time}</span>
+              </span>
+            ))}
+          </p>
         </div>
 
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-          {greeting}, {name}
+        <h1 className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">
+          {tr(greeting)}, {name}
         </h1>
-        <p className="mt-2 max-w-xl text-white/70">{subtitle}</p>
+        <p className="mt-0.5 hidden max-w-xl text-sm text-white/65 sm:block">{tr(subtitle)}</p>
 
-        <form action={searchAction} className="mt-6 flex max-w-2xl gap-2">
+        <form action={searchAction} className="mt-3 flex max-w-2xl gap-2">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/45" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/45" />
             <Input
               name="q"
-              placeholder={searchPlaceholder}
-              aria-label="Search everything"
-              className="h-12 border-white/15 bg-black/25 pl-10 text-white placeholder:text-white/45 focus-visible:ring-white/40"
+              placeholder={tr(searchPlaceholder)}
+              aria-label={tr("Search")}
+              className="h-9 border-white/15 bg-black/25 pl-9 text-sm text-white placeholder:text-white/45 focus-visible:ring-white/40"
             />
           </div>
-          <Button type="submit" size="lg" className="h-12 bg-white text-ink hover:bg-white/90">
-            Search
+          <Button type="submit" size="sm" className="h-9 bg-white text-ink hover:bg-white/90">
+            {tr("Search")}
           </Button>
         </form>
-        </div>
 
-        <div className="flex shrink-0 flex-col gap-5 lg:items-end">
-        <div className="flex items-start gap-6">
-          {clocks.map((clock) => (
-            <div key={clock.place}>
-              <p className="text-xs font-medium text-white/60">{clock.place}</p>
-              <p className="tnum text-2xl font-semibold tracking-tight">
-                {clock.time}
-              </p>
-              <p className="tnum text-[11px] text-white/45">{clock.offset}</p>
-            </div>
-          ))}
-          {action ? (
-            <Button
-              asChild
-              size="lg"
-              className="h-11 bg-white text-ink hover:bg-white/90"
-            >
-              <Link href={action.href}>{action.label}</Link>
-            </Button>
-          ) : null}
-        </div>
-
-        {actions?.length ? (
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            {actions.map((item, index) => {
+        {action || actions?.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {action && !actions?.some((a) => a.href === action.href) ? (
+              <Button asChild size="sm" className="hidden h-8 rounded-full bg-white px-3 text-xs text-ink hover:bg-white/90 sm:inline-flex">
+                <Link href={action.href}>{tr(action.label)}</Link>
+              </Button>
+            ) : null}
+            {actions?.map((item, index) => {
               const Icon = item.icon;
               return (
                 <Button
                   key={item.href}
                   asChild
-                  size="lg"
+                  size="sm"
                   className={
                     index === 0
-                      ? "h-11 bg-white px-5 text-ink hover:bg-white/90"
-                      : "h-11 border border-white/25 bg-white/10 px-5 text-white backdrop-blur hover:bg-white/20"
+                      ? "h-8 rounded-full bg-white px-3 text-xs text-ink hover:bg-white/90"
+                      : "h-8 rounded-full border border-white/25 bg-white/10 px-3 text-xs text-white backdrop-blur hover:bg-white/20"
                   }
                 >
                   <Link href={item.href}>
-                    {Icon ? <Icon /> : null}
-                    {item.label}
+                    {Icon ? <Icon className="size-3.5" /> : null}
+                    {tr(item.label)}
                   </Link>
                 </Button>
               );
             })}
           </div>
         ) : null}
-        </div>
       </div>
     </section>
   );

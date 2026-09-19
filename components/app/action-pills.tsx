@@ -1,3 +1,5 @@
+import { t as tr } from "@/lib/i18n";
+import { viewerLocale } from "@/lib/viewer-locale";
 import Link from "next/link";
 import * as Icons from "lucide-react";
 
@@ -28,7 +30,9 @@ const TONES: Record<NonNullable<ActionPill["tone"]>, string> = {
   plain: "border bg-card text-foreground hover:bg-secondary",
 };
 
-export function ActionPills({ pills }: { pills: ActionPill[] }) {
+export async function ActionPills({ pills }: { pills: ActionPill[] }) {
+  const locale = await viewerLocale();
+  const t = (text: string) => tr(locale, text);
   if (pills.length === 0) return null;
 
   return (
@@ -45,12 +49,12 @@ export function ActionPills({ pills }: { pills: ActionPill[] }) {
             key={pill.href + pill.label}
             href={pill.href}
             className={cn(
-              "focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-soft transition-all hover:-translate-y-0.5",
+              "focus-ring inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-soft transition-all hover:-translate-y-0.5 sm:text-sm",
               TONES[pill.tone ?? "plain"]
             )}
           >
-            {Icon ? <Icon className="size-4" /> : null}
-            {pill.label}
+            {Icon ? <Icon className="size-3.5" /> : null}
+            {t(pill.label)}
           </Link>
         );
       })}
