@@ -296,7 +296,7 @@ const MANAGER_SECTIONS: NavSection[] = [
       { label: "Overview", href: "/app/finance", icon: "LayoutGrid", permissions: ["accounting.view"], pinned: true },
       { label: "Collections", href: "/app/finance/collections", icon: "HandCoins", permissions: ["finance.view"] },
       { label: "Profit & loss", href: "/app/finance/reports", icon: "TrendingUp", permissions: ["profit.view"] },
-      { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", permissions: ["record.review"] },
+      { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", permissions: ["record.reconcile"] },
       { label: "General ledger", href: "/app/finance/ledger", icon: "ArrowLeftRight", permissions: ["accounting.view"] },
       { label: "Record Payment", href: "#record-payment", icon: "Banknote", permissions: ["payment.submit"] },
     ],

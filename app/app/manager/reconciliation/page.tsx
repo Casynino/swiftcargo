@@ -192,10 +192,10 @@ export default async function ManagerReconciliation({
   searchParams: Promise<Params>;
 }) {
   await primeLocale();
-  const user = await requirePermission("record.review");
+  const user = await requirePermission("record.reconcile");
   const locale = await localeOf(user.id);
   const params = await searchParams;
-  const canReview = can(user.role, "record.review");
+  const canReview = can(user.role, "record.reconcile");
 
   const [queue, positions, checks, books, standings] = await Promise.all([
     reconciliationQueue(params),

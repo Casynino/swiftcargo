@@ -47,6 +47,12 @@ export type Permission =
   | "cargo.hold"
   | "cargo.photo"
   | "cargo.scan"
+  /// Customs is done and the goods are ours to store. Split off `receiving.dar`
+  /// because clearing is a paper step on a bill, not a count on a scale:
+  /// Finance pays the duty and files the entry, so Finance says when it is
+  /// through, and holding it no longer implies the authority to write what
+  /// physically came off the container.
+  | "cargo.clear"
 
   // --- Warehouse -----------------------------------------------------------
   | "receiving.china"
@@ -185,6 +191,10 @@ export type Permission =
   // --- Oversight and configuration -----------------------------------------
   | "search.global"
   | "record.review"
+  /// Agreeing what the system recorded against what the account actually holds.
+  /// Separate from `record.review` so the money half can sit with Finance
+  /// without the approvals queue and the control room going with it.
+  | "record.reconcile"
   | "report.view"
   | "audit.view"
   | "records.viewDeleted"
@@ -283,6 +293,7 @@ const DAR_WAREHOUSE: Permission[] = [
   "cargo.scan",
   "receiving.dar",
   "receiving.verify",
+  "cargo.clear",
   "deliveryNote.view",
   "inventory.view",
   "warehouse.reports",
@@ -376,7 +387,15 @@ const FINANCE: Permission[] = [
   "cargo.viewAll",
   "cargo.viewInternal",
   "deliveryNote.view",
+  /* Finance carries the container through the port, by the owner's decision:
+     it is the desk holding the bill of lading and paying the duty, so it is
+     the desk that knows the box has landed and that the entry is through.
+     `container.arrive` marks the landing (and undoes it while nothing stands
+     on it); `cargo.clear` says customs is finished. Neither writes a
+     measurement — what came off the container is still the floor's word. */
   "container.view",
+  "container.arrive",
+  "cargo.clear",
   /* Finance is the other desk that notices: a container whose price list does
      not add up to the cargo standing in the warehouse. */
   "container.amendArrived",
@@ -402,6 +421,10 @@ const FINANCE: Permission[] = [
   "expense.view",
   "expense.record",
   "profit.view",
+  /* Agreeing the books against the bank. The desk that holds the accounts is
+     the desk that can see a statement, and every agreement is signed with the
+     name of whoever made it. */
+  "record.reconcile",
   /* Finance sets out the salary run and sends it up. payroll.approve stays
      off this list: the desk that writes the figures must not be the desk that
      agrees them. */

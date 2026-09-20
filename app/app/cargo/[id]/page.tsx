@@ -381,7 +381,7 @@ export default async function CargoDetailPage({
                 <Badge tone="warn">In customs clearance</Badge>
               )
             ) : null}
-            {(dar || cargo.status === "ARRIVED_TANZANIA") && !cargo.clearedAt && can(user.role, "receiving.dar") &&
+            {(dar || cargo.status === "ARRIVED_TANZANIA") && !cargo.clearedAt && can(user.role, "cargo.clear") &&
             !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
               <ClearanceButton cargoId={cargo.id} waiting={1} />
             ) : null}

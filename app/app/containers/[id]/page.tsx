@@ -207,6 +207,41 @@ export default async function ContainerPage({
           ? can(user.role, "container.close")
           : false;
 
+  /*
+    THE NEXT MILESTONE, WHEREVER THE READER IS STANDING.
+
+    It used to live in the manifest column, which is hidden from anyone reading
+    the money instead — and once Finance carries the box through the port, that
+    was one of the two desks that record the arrival. The card is built here
+    and placed on whichever half of the page the reader is looking at.
+  */
+  const advance = nextStep ? (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{T("Move it along")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* EACH MILESTONE BELONGS TO A DESK THAT SEES THE THING HAPPEN.
+            Guangzhou records the departure; the arrival is Dar's or Finance's,
+            and Dar closes the box once everything on it is booked in. Showing
+            a clerk a button their desk cannot press only teaches them the
+            system is broken. */}
+        <AdvancePanel
+          containerId={container.id}
+          status={container.status}
+          canDepart={can(user.role, "container.depart")}
+          canArrive={can(user.role, "container.arrive")}
+          canClose={can(user.role, "container.close")}
+        />
+        {container.status === "CLOSED" ? (
+          <p className="text-sm text-muted-foreground">
+            {T("This container is closed. Everything on it has been received in Dar.")}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  ) : null;
+
   const waitingCbm = waiting.reduce(
     (sum, w) =>
       sum.add(w.packages.reduce((n, p) => n.add(p.cbm), new Prisma.Decimal(0))),
@@ -368,7 +403,7 @@ export default async function ContainerPage({
                 }
               />
             ) : null}
-            {can(user.role, "receiving.dar") && inClearance > 0 ? (
+            {can(user.role, "cargo.clear") && inClearance > 0 ? (
               <ClearanceButton containerId={container.id} waiting={inClearance} />
             ) : null}
             {can(user.role, "container.arrive") && container.status === "ARRIVED" && arrivalUndoable ? (
@@ -478,6 +513,10 @@ export default async function ContainerPage({
         Renders nothing without `finance.view`: the warehouse never sees a price.
       */}
       {showMoney ? <ContainerMoney id={container.id} user={user} /> : null}
+
+      {/* Finance records the arrival and reads this page as money, so the step
+          has to stand on this half of it as well as the manifest's. */}
+      {showMoney && !open && advance ? <div className="grid gap-6">{advance}</div> : null}
 
       {/*
         A SEALED BOX IS ONE PAGE, NOT TWO COLUMNS.
@@ -632,31 +671,7 @@ export default async function ContainerPage({
                     an open one this rendered as a card with a heading and nothing
                     underneath — a promise of a control that was never coming.
                   */}
-            {nextStep ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">{T("Move it along")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {/* EACH MILESTONE BELONGS TO A DIFFERENT END OF THE ROUTE.
-                            Guangzhou records the departure; Dar records the arrival and
-                            closes the box. Showing a clerk a button their desk cannot
-                            press only teaches them the system is broken. */}
-                  <AdvancePanel
-                    containerId={container.id}
-                    status={container.status}
-                    canDepart={can(user.role, "container.depart")}
-                    canArrive={can(user.role, "container.arrive")}
-                    canClose={can(user.role, "container.close")}
-                  />
-                  {container.status === "CLOSED" ? (
-                    <p className="text-sm text-muted-foreground">
-                      {T("This container is closed. Everything on it has been received in Dar.")}
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ) : null}
+            {advance}
           </div>
         </div>
       )}

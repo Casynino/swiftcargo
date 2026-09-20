@@ -332,7 +332,7 @@ export function AdvancePanel({
           ? "Guangzhou records the departure."
           : step.to === "CLOSED"
             ? "Dar closes the container once everything on it is booked in."
-            : "Dar records the arrival."}
+            : "Dar or Finance records the arrival."}
       </p>
     );
   }

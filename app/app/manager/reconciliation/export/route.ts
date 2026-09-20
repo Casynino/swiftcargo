@@ -22,7 +22,7 @@ export const maxDuration = 60;
  */
 export async function GET(request: NextRequest) {
   try {
-    await authorize("record.review");
+    await authorize("record.reconcile");
   } catch {
     return new NextResponse("Not permitted.", { status: 403 });
   }

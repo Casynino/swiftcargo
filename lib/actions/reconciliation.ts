@@ -74,7 +74,7 @@ export async function checkAccount(
 ): Promise<ReviewActionState> {
   let actor: SessionUser;
   try {
-    actor = await authorize("record.review");
+    actor = await authorize("record.reconcile");
   } catch (error) {
     return { error: failure(error) };
   }
@@ -285,7 +285,7 @@ export async function reviewRecord(
 ): Promise<ReviewActionState> {
   let actor: SessionUser;
   try {
-    actor = await authorize("record.review");
+    actor = await authorize("record.reconcile");
   } catch (error) {
     return { error: failure(error) };
   }
@@ -333,7 +333,7 @@ export async function reviewRecords(
 ): Promise<ReviewActionState> {
   let actor: SessionUser;
   try {
-    actor = await authorize("record.review");
+    actor = await authorize("record.reconcile");
   } catch (error) {
     return { error: failure(error) };
   }

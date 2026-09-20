@@ -87,12 +87,12 @@ function sentence(outcome: Awaited<ReturnType<typeof clearAndReceive>>): Clearan
   };
 }
 
-/** Customs is done for one consignment. The Dar desk's call, not Finance's. */
+/** Customs is done for one consignment — the Dar floor's call, or Finance's. */
 export async function markCargoCleared(
   _prev: ClearanceState,
   formData: FormData
 ): Promise<ClearanceState> {
-  const actor = await authorize("receiving.dar");
+  const actor = await authorize("cargo.clear");
   const cargoId = String(formData.get("cargoId") ?? "");
   const note = String(formData.get("note") ?? "").slice(0, 300);
   try {
@@ -111,7 +111,7 @@ export async function markContainerCleared(
   _prev: ClearanceState,
   formData: FormData
 ): Promise<ClearanceState> {
-  const actor = await authorize("receiving.dar");
+  const actor = await authorize("cargo.clear");
   const containerId = String(formData.get("containerId") ?? "");
   const note = String(formData.get("note") ?? "").slice(0, 300);
   const lines = await prisma.containerCargo.findMany({

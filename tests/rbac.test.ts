@@ -109,6 +109,9 @@ describe("the support desk explains; it does not do", () => {
     ["invoice.issue", "cannot issue one by hand"],
     ["invoice.cancel", "cannot cancel one"],
     ["release.execute", "cannot hand the boxes over"],
+    ["cargo.clear", "cannot say customs is finished"],
+    ["container.arrive", "cannot mark a container landed"],
+    ["record.reconcile", "cannot agree the books against the bank"],
     ["cargo.hold", "cannot stop a release"],
     ["cbm.override", "cannot overwrite a measured volume"],
     ["user.manage", "cannot make accounts"],
@@ -145,6 +148,39 @@ describe("the support desk explains; it does not do", () => {
       "delivery.manage",
     ] as Permission[]) {
       assert.ok(can("CUSTOMER_SUPPORT", p), p);
+    }
+  });
+
+  test("the port steps belong to the desks that do them", () => {
+    /* Finance holds the bill of lading and pays the duty, so Finance marks a
+       container landed and says when the entry is through — the owner's
+       decision, and the reason clearing has a permission of its own rather
+       than riding on the Dar floor's `receiving.dar`. The counter that only
+       explains what happened holds neither. */
+    for (const role of ["DAR_WAREHOUSE", "FINANCE", "MANAGER", "ADMIN"] as Role[]) {
+      assert.ok(can(role, "cargo.clear"), role);
+    }
+    assert.equal(can("CUSTOMER_SUPPORT", "cargo.clear"), false);
+    assert.equal(can("CHINA_WAREHOUSE", "cargo.clear"), false);
+
+    assert.ok(can("FINANCE", "container.arrive"));
+    assert.equal(can("CUSTOMER_SUPPORT", "container.arrive"), false);
+
+    /* Clearing is a paper step. It carries no authority over what the boxes
+       actually are: Finance still cannot write a receiving count. */
+    assert.equal(can("FINANCE", "receiving.dar"), false);
+    assert.equal(can("FINANCE", "receiving.verify"), false);
+    assert.equal(can("FINANCE", "cbm.override"), false);
+  });
+
+  test("Finance reconciles; the approvals queue stays the manager's", () => {
+    assert.ok(can("FINANCE", "record.reconcile"));
+    /* The money half only. Approvals, the control room and the management
+       report are still `record.review`, and Finance does not hold it. */
+    assert.equal(can("FINANCE", "record.review"), false);
+    assert.equal(can("CUSTOMER_SUPPORT", "record.reconcile"), false);
+    for (const role of ["MANAGER", "ADMIN"] as Role[]) {
+      assert.ok(can(role, "record.reconcile"), role);
     }
   });
 
