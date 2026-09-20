@@ -36,6 +36,7 @@ export function pillsFor(role: Role): ActionPill[] {
         { label: "Release on credit", href: "/app/finance/credit", icon: "CalendarClock" },
         { label: "Payment follow-up", href: "/app/finance/collections", icon: "Clock", tone: "warning" },
         { label: "Record a cost", href: "/app/finance/expenses", icon: "Wallet", tone: "danger" },
+        { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", tone: "signal" },
       ];
     case "CUSTOMER_SUPPORT":
       return [
