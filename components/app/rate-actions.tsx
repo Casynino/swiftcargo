@@ -117,7 +117,6 @@ function RemoveForm({
     <form action={action} className="space-y-3">
       <input type="hidden" name="id" value={id} />
       <p className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">{warning}</p>
-      <Input name="reason" required minLength={3} placeholder={tx("Why it is being removed")} className="h-9" />
       <FormMessage error={state.error} />
       <div className="flex gap-2">
         <SubmitButton size="sm" variant="destructive">
@@ -217,7 +216,6 @@ export function RateCardActions({ rate, cargoTypes }: { rate: EditableRate; carg
             <input type="checkbox" name="published" defaultChecked={rate.published} className="size-4" />
             {tx("Show on the public rates page")}
           </label>
-          <Input name="reason" required minLength={3} placeholder={tx("Why the rate is changing")} className="h-9" />
           <p className="text-[11px] text-muted-foreground">
             {tx("New bills use the new figures. Bills already raised keep the rate they were priced at.")}
           </p>
@@ -295,7 +293,6 @@ export function CustomerRateActions({
               <option value="FLAT">{tx("Flat")}</option>
             </NativeSelect>
           </div>
-          <Input name="reason" required minLength={3} placeholder={tx("Why it is changing")} className="h-9 min-w-48 flex-1" />
           <SubmitButton size="sm">{tx("Save")}</SubmitButton>
           <div className="w-full">
             <FormMessage error={editState.error} />

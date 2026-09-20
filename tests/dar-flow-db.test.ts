@@ -234,20 +234,19 @@ describe("confirming a container at Dar", () => {
     });
   });
 
-  test("the authority without a reason is still refused", async () => {
+  test("the manager's authority alone signs it off — no reason is demanded", async () => {
     await inRollback(async (tx) => {
       const container = await landedContainer(tx);
       await consignment(tx, container.id, "unchecked");
 
-      await assert.rejects(
-        async () =>
-          confirmLib.confirmContainerAtDar(tx, await actor(tx, "MANAGER"), {
-            container,
-            overrideReason: "x",
-            mayOverride: true,
-          }),
-        (error: Error) => error instanceof confirmLib.ConfirmationRefused
-      );
+      /* The owner's decision: the authority is the control, not a typed
+         sentence. Who did it and what it covered is still on the record. */
+      const result = await confirmLib.confirmContainerAtDar(tx, await actor(tx, "MANAGER"), {
+        container,
+        overrideReason: "",
+        mayOverride: true,
+      });
+      assert.equal(result.overridden, true);
     });
   });
 

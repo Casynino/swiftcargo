@@ -428,13 +428,13 @@ function FinishCheckIn({
                     htmlFor="override-reason"
                     className="text-xs font-medium"
                   >
-                    Or confirm over them, and say why
+                    Or confirm over them (a note, if you want one)
                   </label>
                   <Input
                     id="override-reason"
                     value={reason}
                     onChange={(event) => setReason(event.target.value)}
-                    placeholder="Why the box is being signed off unchecked"
+                    placeholder="Optional note"
                     className="mt-1.5 h-8 text-xs"
                   />
                   <Button
@@ -442,7 +442,7 @@ function FinishCheckIn({
                     size="sm"
                     variant="destructive"
                     className="mt-2 w-full"
-                    disabled={pending || reason.trim().length < 3}
+                    disabled={pending}
                     onClick={() => {
                       setError(null);
                       start(async () => {

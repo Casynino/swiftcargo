@@ -184,8 +184,6 @@ function AccountItem({ account, locale }: { account: CollectionAccountRow; local
                 <Input
                   id={`reason-${account.id}`}
                   name="reason"
-                  required
-                  minLength={3}
                   placeholder={t(locale, "Account closed by the bank")}
                   className="h-10"
                 />

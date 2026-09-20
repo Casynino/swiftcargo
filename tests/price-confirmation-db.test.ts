@@ -533,7 +533,7 @@ describe("the price for one cargo, set from the row", () => {
     });
   });
 
-  test("an issued bill will not move without a reason", async () => {
+  test("an issued bill moves without a reason, and the change is recorded", async () => {
     await inRollback(async (tx) => {
       await rateBook(tx);
       const me = await actor(tx);
@@ -553,20 +553,19 @@ describe("the price for one cargo, set from the row", () => {
         data: { status: "ISSUED", issuedAt: new Date() },
       });
 
-      await assert.rejects(
-        () =>
-          lib.setWaitingPrice(tx, me, {
-            cargoId: cargo.id,
-            basis: "PER_CBM",
-            rate: new Prisma.Decimal(100),
-            freight: null,
-            extra: null,
-            discount: null,
-            reason: "",
-          }),
-        (error: unknown) =>
-          error instanceof lib.PriceListRefused && /Say why/.test(error.message)
-      );
+      /* The owner's decision: an issued bill moves without a typed reason.
+         The change itself is still recorded, with who made it. */
+      await lib.setWaitingPrice(tx, me, {
+        cargoId: cargo.id,
+        basis: "PER_CBM",
+        rate: new Prisma.Decimal(100),
+        freight: null,
+        extra: null,
+        discount: null,
+        reason: "",
+      });
+      const after = await tx.invoice.findFirstOrThrow({ where: { cargoId: cargo.id } });
+      assert.equal(after.appliedRate?.toString(), "100");
     });
   });
 });

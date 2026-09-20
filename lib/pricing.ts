@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { Prisma, type RateBasis, type ServiceType } from "@prisma/client";
 
 import { chargeableCbm } from "@/lib/cbm";
@@ -286,15 +288,32 @@ export function applyVat(subtotal: Prisma.Decimal, vatPercent: Prisma.Decimal) {
  * Invoices pin the ROW, not the figure, so a bill can always be traced back to
  * the rate it was raised at and who set it.
  */
+const liveRate = cache(async () =>
+  prisma.exchangeRate.findFirst({
+    where: { fromCurrency: "USD", toCurrency: "TZS", active: true },
+    orderBy: { effectiveFrom: "desc" },
+  })
+);
+
 export async function currentExchangeRate(
   client: TxClient | typeof prisma = prisma
 ) {
+  /* One read per request for the ordinary case. A page that prices twenty
+     rows was asking the database for the same rate twenty times, and every
+     one of those is a round trip to another continent. Inside a transaction
+     the caller's own client is used, never the cached read. */
+  if (client === prisma) return liveRate();
   return client.exchangeRate.findFirst({
     where: { fromCurrency: "USD", toCurrency: "TZS", active: true },
     orderBy: { effectiveFrom: "desc" },
   });
 }
 
+const settingsOnce = cache(async () =>
+  prisma.companySetting.findUnique({ where: { id: "singleton" } })
+);
+
 export async function companySettings(client: TxClient | typeof prisma = prisma) {
+  if (client === prisma) return settingsOnce();
   return client.companySetting.findUnique({ where: { id: "singleton" } });
 }

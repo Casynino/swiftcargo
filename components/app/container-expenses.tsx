@@ -255,8 +255,6 @@ function ExpenseRow({
           <input type="hidden" name="expenseId" value={row.id} />
           <Input
             name="reason"
-            required
-            minLength={3}
             placeholder={tx("Why is it being cancelled?")}
             className="w-60"
           />

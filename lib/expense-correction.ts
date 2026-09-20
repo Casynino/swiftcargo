@@ -192,8 +192,7 @@ export async function correctExpense(
   actor: SessionUser,
   input: ExpenseCorrection
 ): Promise<CorrectionResult> {
-  const reason = input.reason.trim();
-  if (reason.length < 3) throw new CorrectionRefusal("Say what was wrong with the record.");
+  const reason = input.reason.trim() || "No reason given";
 
   const expense = await tx.containerExpense.findFirst({
     where: { id: input.expenseId, deletedAt: null },

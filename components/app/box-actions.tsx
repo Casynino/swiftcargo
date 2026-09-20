@@ -51,7 +51,7 @@ export function BoxActions({
       {open ? (
         <form action={damageAction} className="space-y-2 rounded-md border bg-secondary/40 p-2">
           <input type="hidden" name="boxId" value={boxId} />
-          <Input name="note" placeholder={tx("What is wrong — crushed, wet, opened…")} required minLength={3} />
+          <Input name="note" placeholder={tx("What is wrong — crushed, wet, opened…")} />
           <Input name="photo" type="file" accept="image/*" capture="environment" multiple />
           <SubmitButton size="sm" pendingLabel="Saving…">{tx("Save damage report")}</SubmitButton>
           <FormMessage error={damage.error} ok={damage.ok} />

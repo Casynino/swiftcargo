@@ -933,11 +933,6 @@ async function repriceIssuedBill(
   input: WaitingPriceInput,
   reason: string
 ): Promise<{ invoiceNumber: string; total: Prisma.Decimal; issued: boolean }> {
-  if (reason.length < 3) {
-    throw new PriceListRefused(
-      "Say why this bill is changing — the customer has already been given it."
-    );
-  }
   /* VERIFIED money only. A PENDING claim is somebody SAYING money moved and
      nobody having checked; refusing on it would leave a bill frozen by an
      unverified sentence, which is the opposite of what verification is for.

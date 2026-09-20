@@ -69,8 +69,6 @@ export function MoveCargo({
           </NativeSelect>
           <Input
             name="reason"
-            required
-            minLength={3}
             placeholder={tx("Why — e.g. came off the next box down")}
             className="min-w-[16rem] flex-1"
           />
@@ -91,8 +89,6 @@ export function MoveCargo({
         <input type="hidden" name="containerId" value={containerId} />
         <Input
           name="reason"
-          required
-          minLength={3}
           placeholder={tx("Why it is not on this container")}
           className="min-w-[16rem] flex-1"
         />
@@ -157,8 +153,6 @@ export function AddToContainer({
       </NativeSelect>
       <Input
         name="reason"
-        required
-        minLength={3}
         placeholder={tx("Why — e.g. mark not on the packing list")}
         className="min-w-[14rem] flex-1"
       />

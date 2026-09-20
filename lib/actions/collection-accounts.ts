@@ -243,9 +243,6 @@ export async function setCollectionAccountActive(
   if (account.active === active) {
     return { ok: active ? "It is already open." : "It is already retired." };
   }
-  if (!active && reason.length < 3) {
-    return { error: "Say why this account is being retired." };
-  }
 
   if (!active) {
     const position = (await accountPositions()).find((p) => p.id === account.id);

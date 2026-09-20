@@ -50,7 +50,8 @@ const pill =
  * correction dialog, where a paid figure is cancelled and reposted rather than
  * written over. Either way the old value, the new one and the reason are
  * written before anything moves. Cancel is the record's own reversal
- * or cancellation, with the reason required: the row stays on the register,
+ * or cancellation, with a reason if the desk wants to give one: the row stays
+ * on the register,
  * struck through and no longer counted.
  */
 export function LedgerRowFix({
@@ -280,13 +281,12 @@ export function LedgerRowFix({
                 <div className="space-y-1.5">
                   <Label htmlFor="fix-reason">
                     {open === "cancel"
-                      ? t(locale, "Why? (required)")
-                      : t(locale, "What was wrong with the record? (required)")}
+                      ? t(locale, "Why? (optional)")
+                      : t(locale, "What was wrong with the record? (optional)")}
                   </Label>
                   <Textarea
                     id="fix-reason"
                     rows={2}
-                    required
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder={t(

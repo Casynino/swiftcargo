@@ -166,10 +166,7 @@ export async function queryCountWithDar(
   const cargoId = String(formData.get("cargoId") ?? "");
   const raw = String(formData.get("kind") ?? "OTHER");
   const kind: QueryKind = raw in QUERY_KINDS ? (raw as QueryKind) : "OTHER";
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 4) {
-    return { error: "Say what looks wrong, so the floor knows what to re-check." };
-  }
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const cargo = await prisma.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },

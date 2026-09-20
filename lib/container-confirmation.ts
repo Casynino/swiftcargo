@@ -167,23 +167,14 @@ export async function confirmContainerAtDar(
       .slice(0, 5)
       .map((c) => c.reference)
       .join(", ");
-    if (!reason) {
+    if (!input.mayOverride) {
       throw new ConfirmationRefused(
         `${counts.unchecked.length} consignment(s) on ${container.reference} have not been checked in — ${named}${
           counts.unchecked.length > 5 ? " and others" : ""
-        }. Check them in, or report them missing.`
+        }. Checking a container in over them is a manager's decision.`
       );
     }
-    if (!input.mayOverride) {
-      throw new ConfirmationRefused(
-        "Confirming a container over cargo nobody counted is a manager's decision. Check the rest in, or report them missing."
-      );
-    }
-    if (reason.length < 3) {
-      throw new ConfirmationRefused(
-        "Say why the container is being confirmed over cargo nobody counted."
-      );
-    }
+
     overridden = true;
   }
 

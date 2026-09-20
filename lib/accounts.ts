@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -78,7 +80,7 @@ const label = (a: { bankName: string; currency: string }) =>
  * movements; pass none for every account. `take` limits each source, for
  * screens that show only the latest.
  */
-export async function accountRegister(
+export const accountRegister = cache(async function accountRegister(
   accountId?: string,
   take?: number
 ): Promise<AccountEntry[]> {
@@ -312,10 +314,10 @@ export async function accountRegister(
   return entries
     .filter((e) => !accountId || e.accountId === accountId)
     .sort((a, b) => b.at.getTime() - a.at.getTime());
-}
+});
 
 /** Every account's balance, as its register added up. */
-export async function accountPositions(): Promise<AccountPosition[]> {
+export const accountPositions = cache(async function accountPositions(): Promise<AccountPosition[]> {
   const [accounts, register, counts] = await Promise.all([
     prisma.bankAccount.findMany({
       orderBy: [{ active: "desc" }, { sortOrder: "asc" }, { bankName: "asc" }],
@@ -363,4 +365,4 @@ export async function accountPositions(): Promise<AccountPosition[]> {
         : null,
     };
   });
-}
+});

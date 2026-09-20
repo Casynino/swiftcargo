@@ -198,8 +198,7 @@ export async function cancelTransfer(
   const actor = await authorize("accounting.manage");
 
   const id = String(formData.get("transferId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why it is being cancelled." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const transfer = await prisma.accountTransfer.findUnique({
     where: { id },
@@ -247,7 +246,7 @@ export async function setOpeningBalance(
   const raw = String(formData.get("amount") ?? "").trim();
   const amount = Number(raw);
   const on = String(formData.get("on") ?? "").trim();
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   if (raw === "" || !Number.isFinite(amount)) {
     return { error: "What was in the account?" };
@@ -256,10 +255,6 @@ export async function setOpeningBalance(
   const account = await prisma.bankAccount.findUnique({ where: { id: accountId } });
   if (!account) return { error: "That account no longer exists." };
 
-  const changing = account.openingBalanceAt !== null || Number(account.openingBalance) !== 0;
-  if (changing && reason.length < 3) {
-    return { error: "It already has an opening balance. Say why it is changing." };
-  }
 
   /* Before the first movement it comes before. Accounts are often put on the
      system after money has already been recorded against them. */

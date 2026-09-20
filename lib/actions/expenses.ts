@@ -186,8 +186,7 @@ export async function cancelExpense(
   const actor = await authorize("expense.record");
 
   const id = String(formData.get("expenseId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why it is being cancelled." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const expense = await prisma.containerExpense.findFirst({
     where: { id, deletedAt: null },

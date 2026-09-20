@@ -181,7 +181,6 @@ export async function requestCredit(
   const reason = String(formData.get("creditReason") ?? "").trim();
 
   if (!TERMS.includes(days)) return { error: "Pick the terms they are asking for." };
-  if (reason.length < 3) return { error: "Say why they are asking — Finance reads this." };
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },

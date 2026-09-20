@@ -66,7 +66,6 @@ export function HoldToggle({
         <Input
           id="reason"
           name="reason"
-          required
           placeholder={tx("Customs query, dispute, open case…")}
         />
       </div>

@@ -451,8 +451,7 @@ export async function rejectPayment(
   const actor = await authorize("payment.verify");
 
   const paymentId = String(formData.get("paymentId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) return { error: "Say why it does not check out." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
@@ -508,8 +507,7 @@ export async function reversePayment(
   const actor = await authorize("payment.verify");
 
   const paymentId = String(formData.get("paymentId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) return { error: "Say why it is being reversed." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },

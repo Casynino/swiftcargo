@@ -106,7 +106,7 @@ const customerRateSchema = z.object({
   cargoType: z.string().trim().optional(),
   basis: z.enum(["PER_CBM", "PER_KG", "FLAT"]),
   rate: z.coerce.number().positive(),
-  reason: z.string().trim().min(3, "Say why this customer has their own rate."),
+  reason: z.string().trim().optional(),
 });
 
 /**
@@ -158,7 +158,7 @@ export async function createCustomerRate(
         cargoType: data.cargoType || null,
         basis: data.basis,
         rate: data.rate,
-        reason: data.reason,
+        reason: data.reason || "Customer rate agreed",
         approvedById: actor.id,
       },
     });
@@ -169,7 +169,7 @@ export async function createCustomerRate(
     action: "customerRate.set",
     entity: "Customer",
     entityId: data.customerId,
-    summary: `${customer.fullName}: ${data.service} at ${data.rate} — ${data.reason}`,
+    summary: `${customer.fullName}: ${data.service} at ${data.rate}${data.reason ? ` — ${data.reason}` : ""}`,
   });
 
   revalidatePath("/app/finance/rates");
@@ -206,9 +206,6 @@ export async function setExchangeRate(
      a market. Refused rather than published to every new bill. */
   if (rate.lessThan(100) || rate.greaterThan(100000)) {
     return { error: "That rate is outside any sensible USD → TZS range." };
-  }
-  if (reason.length < 3) {
-    return { error: "Say why the rate is changing." };
   }
   if (!confirmed) {
     return { error: "Tick the box to confirm the new rate." };
@@ -471,7 +468,9 @@ const editRateSchema = z.object({
   minimumCbm: z.coerce.number().min(0).optional(),
   minimumKg: z.coerce.number().min(0).optional(),
   published: z.boolean(),
-  reason: z.string().trim().min(3, "Say why the rate is changing."),
+  /* Optional by the owner's decision: the rate book is edited often and the
+     history already records who changed what, from which figure to which. */
+  reason: z.string().trim().optional(),
 });
 
 /**
@@ -564,7 +563,7 @@ export async function updateRate(
         service: current.service,
         currency: current.currency,
         effectiveFrom: now,
-        notes: data.reason,
+        notes: data.reason || "Rate edited",
         ...next,
       },
     });
@@ -580,7 +579,7 @@ export async function updateRate(
         action: "rate.edit",
         entity: "ShippingRate",
         entityId: created.id,
-        summary: `Edited ${current.service} / ${current.cargoType ?? "General rate"}: ${changes.join(", ")} — ${data.reason}`,
+        summary: `Edited ${current.service} / ${current.cargoType ?? "General rate"}: ${changes.join(", ")}${data.reason ? ` — ${data.reason}` : ""}`,
         metadata: {
           previousRateId: current.id,
           oldValue: {
@@ -599,7 +598,7 @@ export async function updateRate(
             minimumKg: next.minimumKg?.toString() ?? null,
             published: next.published,
           },
-          reason: data.reason,
+          reason: data.reason || "Rate edited",
         },
       },
       tx
@@ -626,8 +625,7 @@ export async function deleteRate(
   const actor = await authorize("rate.manage");
 
   const id = String(formData.get("id") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why this rate is being removed." };
+  const reason = String(formData.get("reason") ?? "").trim() || "Rate withdrawn";
 
   const current = await prisma.shippingRate.findUnique({ where: { id } });
   if (!current || !current.active) {
@@ -672,10 +670,9 @@ export async function updateCustomerRate(
   const id = String(formData.get("id") ?? "");
   const rate = Number(formData.get("rate"));
   const basis = String(formData.get("basis") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   if (!(rate > 0)) return { error: "A rate has to be above zero." };
   if (!["PER_CBM", "PER_KG", "FLAT"].includes(basis)) return { error: "Choose how it is charged." };
-  if (reason.length < 3) return { error: "Say why the agreed rate is changing." };
 
   const current = await prisma.customerRate.findUnique({
     where: { id },
@@ -730,8 +727,7 @@ export async function deleteCustomerRate(
   const actor = await authorize("customerRate.manage");
 
   const id = String(formData.get("id") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why the agreed rate is ending." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const current = await prisma.customerRate.findUnique({
     where: { id },
@@ -776,8 +772,7 @@ export async function deleteExchangeRate(
   const actor = await authorize("fx.manage");
 
   const id = String(formData.get("id") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why this rate is being withdrawn." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const current = await prisma.exchangeRate.findUnique({ where: { id } });
   if (!current || !current.active) {

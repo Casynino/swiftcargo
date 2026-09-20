@@ -158,8 +158,7 @@ export async function cancelPickupNote(
   const actor = await authorize("payment.verify");
 
   const id = String(formData.get("noteId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) return { error: "Say why it is being withdrawn." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const claim = await prisma.pickupNote.updateMany({
     where: { id, status: "ACTIVE" },

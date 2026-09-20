@@ -308,8 +308,6 @@ function Dialog({
           <Input
             id="details-reason"
             name="reason"
-            required
-            minLength={3}
             maxLength={300}
             placeholder={t(locale, "e.g. Mark misread at the counter")}
           />

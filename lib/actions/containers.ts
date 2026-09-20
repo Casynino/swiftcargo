@@ -866,7 +866,7 @@ export async function updateVoyage(
   });
   if (!shipment) return { error: "That container has no voyage." };
 
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const next = {
     shippingLine: data.shippingLine || null,
@@ -908,11 +908,6 @@ export async function updateVoyage(
     ([field, was]) =>
       was !== null && ["vessel", "voyage", "departureDate"].includes(field)
   );
-  if (sailed && rewriting && reason.length < 3) {
-    return {
-      error: `${shipment.container.reference} has already sailed. Say why the sailing details are being changed — it goes on the record with your name.`,
-    };
-  }
 
   await prisma.$transaction(async (tx) => {
     for (const [field, was, now] of moved) {
@@ -1376,10 +1371,7 @@ export async function takeOffArrivedContainer(
 
   const containerId = String(formData.get("containerId") ?? "");
   const cargoId = String(formData.get("cargoId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) {
-    return { error: "Say why it is coming off the manifest — it goes on the record with your name." };
-  }
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const container = await prisma.container.findFirst({
     where: { id: containerId, deletedAt: null },
@@ -1530,10 +1522,7 @@ export async function putOnArrivedContainer(
 
   const containerId = String(formData.get("containerId") ?? "");
   const cargoId = String(formData.get("cargoId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (reason.length < 3) {
-    return { error: "Say why it belongs on this container — it goes on the record with your name." };
-  }
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const container = await prisma.container.findFirst({
     where: { id: containerId, deletedAt: null },

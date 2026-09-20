@@ -329,7 +329,7 @@ export function OpeningBalanceForm({
       />
       <Input name="on" type="date" aria-label={tx("As of")} />
       {isSet ? (
-        <Input name="reason" placeholder={tx("Why it is changing")} required minLength={3} />
+        <Input name="reason" placeholder={tx("Why it is changing")} />
       ) : null}
       <FormMessage error={state.error} />
       <div className="flex gap-2">

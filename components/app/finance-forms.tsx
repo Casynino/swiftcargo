@@ -207,7 +207,7 @@ export function CustomerRateForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="cr-reason">{tx("Why?")}</Label>
-          <Input id="cr-reason" name="reason" required placeholder={tx("Volume customer since 2024")} />
+          <Input id="cr-reason" name="reason" placeholder={tx("Volume customer since 2024")} />
         </div>
         <p className="text-xs text-muted-foreground">
           {tx("The standard rate stays where it is — it is what this discount is measured against, and every invoice will show both.")}
@@ -384,7 +384,7 @@ export function AdjustInvoiceForm({
       </div>
       <div className="space-y-2">
         <Label htmlFor="adj-reason">{tx("Reason")}</Label>
-        <Input id="adj-reason" name="reason" required />
+        <Input id="adj-reason" name="reason" />
       </div>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
@@ -419,7 +419,7 @@ export function CancelInvoiceForm({ invoiceId }: { invoiceId: string }) {
       <input type="hidden" name="invoiceId" value={invoiceId} />
       <div className="space-y-2">
         <Label htmlFor="cancel-reason">{tx("Why?")}</Label>
-        <Input id="cancel-reason" name="reason" required />
+        <Input id="cancel-reason" name="reason" />
       </div>
       <FormMessage error={state.error} ok={state.ok} />
       <div className="flex gap-2">
@@ -668,7 +668,7 @@ export function VerifyPaymentButtons({ paymentId }: { paymentId: string }) {
     return (
       <form action={rejectAction} className="space-y-2">
         <input type="hidden" name="paymentId" value={paymentId} />
-        <Input name="reason" required placeholder={tx("Not on the statement…")} className="h-9" />
+        <Input name="reason" placeholder={tx("Not on the statement…")} className="h-9" />
         <div className="flex gap-1">
           <SubmitButton variant="destructive" size="sm">
             {tx("Reject")}
@@ -721,7 +721,7 @@ export function ReversePaymentForm({ paymentId }: { paymentId: string }) {
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="paymentId" value={paymentId} />
-      <Input name="reason" required placeholder={tx("Why is it being reversed?")} className="h-9" />
+      <Input name="reason" placeholder={tx("Why is it being reversed?")} className="h-9" />
       <p className="text-xs text-muted-foreground">
         {tx("The payment stays on the record as reversed. The receipt already issued would otherwise point at nothing.")}
       </p>

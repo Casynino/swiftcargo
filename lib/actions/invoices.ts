@@ -413,7 +413,7 @@ const adjustSchema = z.object({
   appliedRate: z.coerce.number().min(0).optional(),
   additionalCharge: z.coerce.number().optional(),
   chargeDescription: z.string().trim().optional(),
-  reason: z.string().trim().min(3, "Say why."),
+  reason: z.string().trim().optional(),
 });
 
 /**
@@ -557,8 +557,7 @@ export async function cancelInvoice(
   const actor = await authorize("invoice.cancel");
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
-  if (!reason) return { error: "Say why it is being cancelled." };
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
@@ -701,12 +700,11 @@ export async function discountInvoice(
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const amount = Number(formData.get("amount") ?? 0);
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return { error: "How much is coming off?" };
   }
-  if (reason.length < 3) return { error: "Say why it is being discounted." };
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
@@ -814,7 +812,7 @@ export async function repriceInvoice(
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const rate = Number(formData.get("rate") ?? 0);
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   /* Optional: the category and the volume, the two things our prices move on
      besides the rate itself. Absent means unchanged. */
   const rawCategory = formData.get("category");
@@ -1246,7 +1244,7 @@ export async function saveInvoiceAdjustments(
   await authorize("invoice.discount");
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
     include: { items: true },
@@ -1320,10 +1318,6 @@ export async function saveInvoiceAdjustments(
   }
 
   if (steps.length === 0) return { error: "Nothing was changed." };
-  const needsReason = steps.some((s) => s.label !== "note");
-  if (needsReason && reason.length < 3) {
-    return { error: "Say why the bill is changing — it goes on the record with your name." };
-  }
 
   const done: string[] = [];
   for (const step of steps) {
@@ -1348,7 +1342,7 @@ async function addInvoiceCharge(formData: FormData): Promise<ActionState> {
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const amount = Number(formData.get("amount") ?? 0);
   const description = String(formData.get("description") ?? "").trim() || "Additional charge";
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   if (!Number.isFinite(amount) || amount <= 0) {
     return { error: "An additional charge has to be above zero. Use a discount to take money off." };
   }

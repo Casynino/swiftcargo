@@ -303,7 +303,7 @@ export function DiscountDialog({
             {" · "}the bill is {usd(total)}
           </p>
         ) : null}
-        <Input name="reason" required minLength={3} placeholder={tx("Why — agreed with the customer, damaged goods…")} className="h-9" />
+        <Input name="reason" placeholder={tx("Why — agreed with the customer, damaged goods…")} className="h-9" />
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
           <SubmitButton size="sm" pendingLabel="Saving…">{tx("Apply")}</SubmitButton>

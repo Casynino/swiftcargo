@@ -84,9 +84,6 @@ export async function applyDarMeasurement(
   input: DarMeasurementInput
 ) {
   const reason = input.reason.trim();
-  if (reason.length < 3) {
-    throw new CorrectionRefused("Say why the count is being corrected.");
-  }
 
   const cargo = await tx.cargo.findFirst({
     where: { id: input.cargoId, deletedAt: null },
@@ -788,8 +785,7 @@ export async function applyCargoDetails(
   actor: Actor,
   input: CargoDetailsInput
 ) {
-  const reason = input.reason.trim();
-  if (reason.length < 3) throw new CorrectionRefused("Say why the details are changing.");
+  const reason = input.reason.trim() || "No reason given";
   if (input.description.trim().length < 2) throw new CorrectionRefused("Say what the cargo is.");
 
   const cargo = await tx.cargo.findFirst({

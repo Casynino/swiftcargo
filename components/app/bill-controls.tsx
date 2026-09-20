@@ -129,7 +129,6 @@ function DiscountForm({
         <Input
           id="discount-reason"
           name="reason"
-          required
           placeholder={tx("Agreed with the customer…")}
           className="h-9"
         />
@@ -191,7 +190,6 @@ function RepriceForm({
         <Input
           id="reprice-reason"
           name="reason"
-          required
           placeholder={tx("Rate agreed for this customer…")}
           className="h-9"
         />

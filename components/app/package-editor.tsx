@@ -477,7 +477,7 @@ function OverrideCbm({ lines }: { lines: Line[] }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="override-reason">{tx("Reason")}</Label>
-          <Input id="override-reason" name="reason" required />
+          <Input id="override-reason" name="reason" />
         </div>
       </div>
       <FormMessage error={state.error} ok={state.ok} />

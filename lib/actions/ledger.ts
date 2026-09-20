@@ -46,9 +46,8 @@ export async function editLedgerPayment(
   const actor = await authorize("payment.verify");
 
   const ids = [...new Set(formData.getAll("paymentId").map(String).filter(Boolean))];
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   if (ids.length === 0) return { error: "Which payment?" };
-  if (reason.length < 3) return { error: "Say what was wrong with the record." };
 
   const method = text(formData, "method");
   if (method && !(METHODS as readonly string[]).includes(method)) {
@@ -144,9 +143,8 @@ export async function reverseCombinedPayment(
   const actor = await authorize("payment.verify");
 
   const ids = [...new Set(formData.getAll("paymentId").map(String).filter(Boolean))];
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   if (ids.length === 0) return { error: "Which payment?" };
-  if (!reason) return { error: "Say why it is being reversed." };
 
   const payments = await prisma.payment.findMany({
     where: { id: { in: ids }, writtenOff: false },

@@ -381,10 +381,8 @@ export async function overrideCbm(
   const actor = await authorize("cbm.override");
 
   const packageId = String(formData.get("packageId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
   const raw = String(formData.get("cbm") ?? "").trim();
-
-  if (!reason) return { error: "Say why. This one does need a reason." };
 
   let value: Prisma.Decimal;
   try {
@@ -570,7 +568,7 @@ export async function setOperationalHold(
 
   const cargoId = String(formData.get("cargoId") ?? "");
   const on = formData.get("hold") === "on";
-  const reason = String(formData.get("reason") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   if (on && !reason) return { error: "Say why it is being held." };
 

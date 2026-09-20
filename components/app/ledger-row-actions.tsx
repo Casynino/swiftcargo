@@ -81,7 +81,7 @@ export function LedgerRowActions({
       <form action={action} className="min-w-[15rem] space-y-2">
         <input type="hidden" name={spec.field} value={id} />
         <p className="text-xs text-muted-foreground"><Tx>{spec.ask}</Tx></p>
-        <Input name="reason" required minLength={3} placeholder={tx("The reason")} />
+        <Input name="reason" placeholder={tx("The reason")} />
         <FormMessage error={state.error} ok={state.ok} />
         <div className="flex gap-2">
           <SubmitButton size="sm" variant="destructive">

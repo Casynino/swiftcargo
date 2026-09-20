@@ -118,8 +118,6 @@ export function DarCountCorrection({
         <Input
           id="dar-reason"
           name="reason"
-          required
-          minLength={3}
           maxLength={300}
           placeholder={t(locale, "e.g. Re-weighed on the Dar scale")}
         />
