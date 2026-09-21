@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -78,10 +79,9 @@ export function PasswordForm() {
     <form action={action} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="current">{tx("Current password")}</Label>
-        <Input
+        <PasswordInput
           id="current"
           name="current"
-          type="password"
           autoComplete="current-password"
           required
         />
@@ -89,10 +89,9 @@ export function PasswordForm() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="next">{tx("New password")}</Label>
-          <Input
+          <PasswordInput
             id="next"
             name="next"
-            type="password"
             autoComplete="new-password"
             minLength={10}
             required
@@ -100,10 +99,9 @@ export function PasswordForm() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirm">{tx("New password again")}</Label>
-          <Input
+          <PasswordInput
             id="confirm"
             name="confirm"
-            type="password"
             autoComplete="new-password"
             minLength={10}
             required

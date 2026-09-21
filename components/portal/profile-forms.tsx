@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { FormMessage } from "@/components/app/form-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { changeMyPassword, updateMyCustomerDetails, type ProfileState } from "@/lib/actions/profile";
 
@@ -70,7 +71,11 @@ function Text({
   return (
     <div className={wide ? "space-y-2 sm:col-span-2" : "space-y-2"}>
       <Label htmlFor={`pf-${name}`}>{label}</Label>
-      <Input id={`pf-${name}`} name={name} type={type} defaultValue={value} autoComplete={autoComplete} />
+      {type === "password" ? (
+        <PasswordInput id={`pf-${name}`} name={name} defaultValue={value} autoComplete={autoComplete} />
+      ) : (
+        <Input id={`pf-${name}`} name={name} type={type} defaultValue={value} autoComplete={autoComplete} />
+      )}
     </div>
   );
 }

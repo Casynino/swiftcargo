@@ -4604,6 +4604,8 @@ const ZH: Record<string, string> = {
     "客服台和官网指南上都会显示。",
   "shpt": "票",
   "Sign in": "登录",
+  "Show password": "显示密码",
+  "Hide password": "隐藏密码",
   "Sign out": "退出登录",
   "Sign-in history": "登录记录",
   "Signed in": "登录成功",
