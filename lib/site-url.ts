@@ -23,8 +23,28 @@ const NOT_PUBLIC = /localhost|127\.0\.0\.1|0\.0\.0\.0/;
  * redeploy.
  */
 export function configuredSiteUrl(): string | null {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  return configured && !NOT_PUBLIC.test(configured) ? configured : null;
+  return normalSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+}
+
+/**
+ * A site address as somebody typed it into a dashboard, made whole.
+ *
+ * "www.swiftcargotz.com" with no scheme is how an address is usually written,
+ * and passed to `new URL` it failed every production build — robots.txt and
+ * the page metadata read it at build time. The scheme is supplied rather than
+ * demanded; anything that still is not an address is treated as unset.
+ */
+export function normalSiteUrl(raw: string | null | undefined): string | null {
+  let value = raw?.trim().replace(/\/+$/, "");
+  if (!value) return null;
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  try {
+    const url = new URL(value);
+    if (NOT_PUBLIC.test(url.hostname)) return null;
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
 }
 
 /**

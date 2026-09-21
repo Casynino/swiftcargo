@@ -1,6 +1,7 @@
 import "server-only";
 
 import { COMPANY, ROUTE } from "@/lib/constants";
+import { normalSiteUrl } from "@/lib/site-url";
 import { trackKey } from "@/lib/track-key";
 
 /**
@@ -224,11 +225,8 @@ export function billLetter(
 }
 
 export function trackUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (configured && !configured.includes("localhost")) {
-    return `${configured.replace(/\/$/, "")}/track`;
-  }
-  return "www.swiftcargotz.com/track";
+  const configured = normalSiteUrl(process.env.NEXT_PUBLIC_SITE_URL);
+  return configured ? `${configured}/track` : "https://www.swiftcargotz.com/track";
 }
 
 export function composeMessage(

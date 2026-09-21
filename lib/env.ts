@@ -25,12 +25,21 @@ const schema = z
   .object({
     DATABASE_URL: postgres,
     DIRECT_URL: postgres.optional(),
-    NEXT_PUBLIC_SITE_URL: z
+    /* "www.swiftcargotz.com" is how the address is usually typed into a
+       dashboard; the scheme is supplied, as lib/site-url.ts does, rather than
+       a server refused over it. An explicit http:// is still refused below. */
+    NEXT_PUBLIC_SITE_URL: z.preprocess(
+      (v) =>
+        typeof v === "string" && v.trim() && !/^[a-z]+:\/\//i.test(v.trim())
+          ? `https://${v.trim()}`
+          : v,
+      z
       .string({ required_error: "is not set (the public https address, printed on labels)" })
       .trim()
       .url("must be a full URL such as https://www.swiftcargotz.com")
       .refine((v) => v.startsWith("https://"), "must be https")
-      .refine((v) => !NOT_PUBLIC.test(v), "must not point at localhost"),
+      .refine((v) => !NOT_PUBLIC.test(v), "must not point at localhost")
+    ),
   })
   .passthrough();
 

@@ -39,6 +39,20 @@ describe("production environment", () => {
     assert.ok(problems.some((p) => p.startsWith("AUTH_SECRET")));
   });
 
+  test("the address typed without https:// is accepted; http:// is not", () => {
+    /* "www.swiftcargotz.com" was saved in the dashboard exactly like this, and
+       every production build failed on it until the scheme was supplied. */
+    assert.deepEqual(
+      environmentProblems({ ...complete, NEXT_PUBLIC_SITE_URL: "www.swiftcargotz.com" }),
+      []
+    );
+    assert.ok(
+      environmentProblems({ ...complete, NEXT_PUBLIC_SITE_URL: "http://www.swiftcargotz.com" }).some(
+        (p) => p.startsWith("NEXT_PUBLIC_SITE_URL")
+      )
+    );
+  });
+
   test("NEXTAUTH_SECRET is accepted in place of AUTH_SECRET", () => {
     const { AUTH_SECRET, ...rest } = complete;
     assert.deepEqual(environmentProblems({ ...rest, NEXTAUTH_SECRET: AUTH_SECRET }), []);
