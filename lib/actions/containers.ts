@@ -503,17 +503,11 @@ export async function loadCargo(
       },
     });
 
-    await notifyCustomer(
-      /* The receiver collects and pays; the sender shipped it. Both follow the box. */
-      cargo.flatMap((c) => [c.senderId, c.receiverId]),
-      {
-        kind: "cargo.assigned",
-        title: "Your cargo has a container",
-        body: `Loading has started on ${container.reference}.`,
-        href: "/portal",
-      },
-      tx
-    );
+    /* No message to the customer. Loading is ours, not a milestone they
+       follow (the owner's list): they are told when the goods are received,
+       when the box leaves China, when it lands, and when it is cleared. A
+       consignment loaded and taken off again the same afternoon would
+       otherwise have announced a container it never sailed in. */
 
     return cargo.length;
   });

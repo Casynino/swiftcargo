@@ -124,10 +124,10 @@ const STEP_ICON: Record<StageKey, typeof Ship> = {
   RECEIVED_CHINA: Warehouse,
   LOADED: Boxes,
   DEPARTED: Ship,
-  AT_SEA: Waves,
+  AT_SEA: Ship,
   ARRIVED_DAR: Anchor,
   RECEIVED_DAR: MapPin,
-  CLEARANCE: FileSearch,
+  CLEARANCE: Anchor,
   CLEARED: ShieldCheck,
   INVOICED: Receipt,
   READY: PackageCheck,
@@ -808,7 +808,7 @@ function stepPlace(key: StageKey, result: PublicTracking): string {
     case "DEPARTED":
       return `${result.origin}, China`;
     case "AT_SEA":
-      return result.vessel ?? "At sea";
+      return result.vessel ? `${result.origin} → ${result.destination} · ${result.vessel}` : `${result.origin} → ${result.destination}`;
     case "ARRIVED_DAR":
       return `${result.destination} port`;
     case "RECEIVED_DAR":
@@ -816,8 +816,10 @@ function stepPlace(key: StageKey, result: PublicTracking): string {
     case "HANDED_OVER":
       return `${result.destination} warehouse`;
     case "CLEARANCE":
+      return `${result.destination} port`;
+    /* Cleared and ready are one step, and it is where the goods are collected. */
     case "CLEARED":
-      return `${result.destination} customs`;
+      return `${result.destination} warehouse`;
     case "INVOICED":
       return "Swift Cargo";
   }

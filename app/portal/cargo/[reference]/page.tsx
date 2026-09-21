@@ -108,7 +108,7 @@ export default async function PortalCargoPage({
   const owed = owedAcross(invoices);
   const firstUnpaid = invoices.find((invoice) => owedAcross([invoice]).owes) ?? invoices[0];
   const ready = journey.ready;
-  const arrivedAt = journey.steps.find((s) => s.key === "ARRIVED_DAR")?.at ?? null;
+  const arrivedAt = journey.steps.find((s) => s.key === "CLEARANCE")?.at ?? null;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

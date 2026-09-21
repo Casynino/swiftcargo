@@ -496,80 +496,62 @@ export function publicJourney(input: JourneyInput): Journey {
 
   const etaOpen = container?.eta && !reached.ARRIVED_DAR ? container.eta : null;
 
+  /*
+    THE FIVE STEPS A CUSTOMER FOLLOWS — the owner's list.
+
+    Received in Guangzhou, in transit, arrived in Dar and in clearance,
+    cleared and ready for pickup, collected. What happens inside our walls
+    between them — loading onto a container, sealing it, booking it into the
+    Dar warehouse — is ours, not a milestone for the customer: it said the same
+    thing twice ("Departed China", then "At sea") and left a customer reading
+    ten stations for a journey of five. The facts behind every step are the
+    same records as before; only fewer are shown.
+  */
+  const inChina = stage === "RECEIVED_CHINA" || stage === "ASSIGNED" || stage === "PACKED";
   const draft: Omit<JourneyStep, "state">[] = [
     {
       key: "RECEIVED_CHINA",
-      label: "Received at our Guangzhou warehouse",
-      /* The counter measures and puts the boxes down in one act, so this step
-         is also where they are stored until a container is loaded. */
-      detail:
-        stage === "RECEIVED_CHINA" ? "Stored, waiting for a container" : null,
+      label: "Received in Guangzhou",
+      detail: inChina ? "In our warehouse, waiting for the next sailing" : null,
       at: stamps.RECEIVED_CHINA ?? null,
     },
     {
-      key: "LOADED",
-      label: "Loaded into a container",
-      detail:
-        stage === "ASSIGNED"
-          ? "The container is being packed"
-          : stage === "PACKED"
-            ? "Container sealed and the packing list issued"
-            : null,
-      at: stamps.ASSIGNED_TO_CONTAINER ?? stamps.CONTAINER_LOADED ?? null,
-    },
-    {
-      key: "DEPARTED",
-      label: "Departed China",
-      detail: null,
-      at: departedAt,
-    },
-    {
       key: "AT_SEA",
-      label: "At sea",
+      label: "In transit",
       detail: reached.ARRIVED_DAR
         ? null
         : etaOpen
           ? etaOpen.getTime() < now.getTime()
             ? "Running later than planned — we will update the date"
-            : "Expected in Dar es Salaam"
+            : `Expected in Dar es Salaam`
           : null,
-      at: reached.ARRIVED_DAR ? null : etaOpen,
-    },
-    {
-      key: "ARRIVED_DAR",
-      label: "Ship arrived at Dar es Salaam port",
-      detail: null,
-      at: arrivedAt,
+      /* The day it left; the expected day sits in the detail above. */
+      at: departedAt,
     },
     {
       key: "CLEARANCE",
-      label: "Customs clearance",
+      label: "Arrived in Dar — clearance in progress",
       detail:
         stage === "IN_CLEARANCE" || stage === "WAREHOUSE_CLEARANCE"
-          ? "In progress — we will tell you when it is complete"
+          ? "We will tell you as soon as customs has cleared it"
           : null,
       at: arrivedAt,
     },
+    /* Cleared and ready are one step to the customer (the owner's word): once
+       customs lets the goods go they are there to collect. Release is still
+       computed — an unpaid bill keeps them — so the step says what is left
+       to do rather than promising a pickup the counter would refuse. */
     {
       key: "CLEARED",
-      label: "Cleared",
-      detail: stage === "CLEARED_TO_WAREHOUSE" ? "Being brought to our Dar warehouse" : null,
-      at: input.clearance?.clearedAt ?? null,
-    },
-    {
-      key: "RECEIVED_DAR",
-      label: "Arrived at our Dar warehouse",
-      detail:
-        stage === "DAR_VERIFICATION"
-          ? "We are checking it against the packing list"
-          : null,
-      at: stamps.RECEIVED_DAR ?? null,
-    },
-    {
-      key: "READY",
-      label: "Ready for pickup",
-      detail: null,
-      at: stamps.READY_FOR_RELEASE ?? null,
+      label: "Cleared — ready for pickup",
+      detail: ready
+        ? "Bring your ID and this reference to our Dar es Salaam warehouse"
+        : stage === "CLEARED_TO_WAREHOUSE" || stage === "DAR_VERIFICATION"
+          ? "Being checked into our Dar warehouse"
+          : reached.CLEARED && !handedOver
+            ? "Pay your invoice, then come and collect"
+            : null,
+      at: input.clearance?.clearedAt ?? stamps.READY_FOR_RELEASE ?? null,
     },
     {
       key: "HANDED_OVER",
