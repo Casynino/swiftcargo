@@ -227,7 +227,7 @@ export function trackUrl(): string {
   if (configured && !configured.includes("localhost")) {
     return `${configured.replace(/\/$/, "")}/track`;
   }
-  return "swiftcargo.co.tz/track";
+  return "www.swiftcargotz.com/track";
 }
 
 export function composeMessage(

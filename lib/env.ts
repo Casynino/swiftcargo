@@ -28,7 +28,7 @@ const schema = z
     NEXT_PUBLIC_SITE_URL: z
       .string({ required_error: "is not set (the public https address, printed on labels)" })
       .trim()
-      .url("must be a full URL such as https://swiftcargo.co.tz")
+      .url("must be a full URL such as https://www.swiftcargotz.com")
       .refine((v) => v.startsWith("https://"), "must be https")
       .refine((v) => !NOT_PUBLIC.test(v), "must not point at localhost"),
   })

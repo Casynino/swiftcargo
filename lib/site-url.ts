@@ -42,7 +42,7 @@ export function labelSiteUrl(): string {
   if (configured) return configured;
   if (process.env.NODE_ENV !== "production") return "http://localhost:3177";
   throw new Error(
-    "NEXT_PUBLIC_SITE_URL is not set to the public address (for example https://swiftcargo.co.tz). " +
+    "NEXT_PUBLIC_SITE_URL is not set to the public address (for example https://www.swiftcargotz.com). " +
       "Set it in the deployment environment and redeploy before printing labels or pickup notes."
   );
 }
