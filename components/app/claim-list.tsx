@@ -42,6 +42,9 @@ export type ClaimRow = {
   paidAsLabel: string | null;
   owedLabel: string;
   overpayment: string | null;
+  /** The desk asked for the rest of the bill to be written off with this
+      payment. Verifying it does that; Finance must see it before pressing. */
+  clearingAsked: string | null;
   transactionRef: string | null;
   /* Everything else the record says, so the edit starts from it. */
   accountId: string | null;
@@ -324,6 +327,11 @@ function ClaimRowItem({
           <p className="tnum text-xs text-muted-foreground">owed {row.owedLabel}</p>
           {row.overpayment ? (
             <p className="max-w-56 text-[11px] font-medium text-destructive">Overpaid · {row.overpayment}</p>
+          ) : null}
+          {row.clearingAsked ? (
+            <p className="mt-1 inline-block rounded-md bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">
+              Also clears {row.clearingAsked} short
+            </p>
           ) : null}
         </div>
 

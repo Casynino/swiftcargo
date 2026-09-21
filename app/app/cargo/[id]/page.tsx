@@ -38,6 +38,7 @@ import {
   formatWeight,
 } from "@/lib/format";
 import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
+import { formatCurrency } from "@/lib/currency";
 import { prisma } from "@/lib/prisma";
 import { storagePosition } from "@/lib/storage-fee";
 import { receiverLockReason } from "@/lib/cargo-corrections";
@@ -952,6 +953,11 @@ export default async function CargoDetailPage({
                           : undefined,
                       pending: billHere.payments.some((p) => p.status === "PENDING"),
                       pendingPaymentId: billHere.payments.find((p) => p.status === "PENDING")?.id ?? null,
+                      /* A write-off Support asked for rides on that payment. */
+                      pendingClearing: (() => {
+                        const asked = billHere.payments.find((p) => p.status === "PENDING")?.clearShortfallTzs;
+                        return asked && asked.greaterThan(0) ? formatCurrency(asked, "TZS") : null;
+                      })(),
                     }
                   : null
               }

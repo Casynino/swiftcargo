@@ -686,7 +686,8 @@ export function MergePaymentForm({
             <ShortfallNotice
               gapTzs={pay === "TZS" ? -gap : lastRate ? Math.round(-gap * lastRate) : 0}
               gapUsd={pay === "USD" ? -gap : lastRate ? Math.round((-gap / lastRate) * 100) / 100 : null}
-              canClear={canClear}
+              canClear
+              decides={canClear}
               armed={clearArmed}
               onArmedChange={setClearArmed}
               billNumber={ticked[ticked.length - 1]?.number}

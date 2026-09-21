@@ -113,6 +113,9 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
         ? `${formatCurrency(owed.outstandingTzs, "TZS")} (${formatCurrency(owed.outstanding, "USD")})`
         : formatCurrency(owed.outstanding, p.invoice.currency),
       overpayment: p.overpaymentReason,
+      clearingAsked: p.clearShortfallTzs && p.clearShortfallTzs.greaterThan(0)
+        ? formatCurrency(p.clearShortfallTzs, "TZS")
+        : null,
       transactionRef: p.transactionRef,
       accountId: p.accountId,
       paidAt: (p.paidAt ?? p.createdAt).toISOString().slice(0, 10),

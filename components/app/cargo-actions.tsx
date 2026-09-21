@@ -56,6 +56,8 @@ export type CargoBill = {
   pending: boolean;
   /** Which one, so Finance can confirm it where it stands. */
   pendingPaymentId?: string | null;
+  /** Asked for with the waiting payment: written off if it is confirmed. */
+  pendingClearing?: string | null;
 };
 
 export type CargoAccount = {
@@ -263,6 +265,13 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                 {tx("Open Verify payments")}
               </Link>
             </p>
+            {bill.pendingClearing ? (
+              <p className="font-semibold">
+                {props.canDecide
+                  ? `Confirming it also clears ${bill.pendingClearing} left short.`
+                  : `Finance has been asked to clear ${bill.pendingClearing} left short.`}
+              </p>
+            ) : null}
             {props.canDecide && bill.pendingPaymentId ? (
               <ConfirmWaiting paymentId={bill.pendingPaymentId} />
             ) : null}
@@ -388,7 +397,8 @@ function PaymentPanel(props: Props & { bill: CargoBill; settled: boolean }) {
                       ? Math.round(((owed - cargo) / rate) * 100) / 100
                       : null
                 }
-                canClear={props.canDecide}
+                canClear
+                decides={props.canDecide}
                 armed={clearArmed}
                 onArmedChange={setClearArmed}
                 billNumber={bill.number}

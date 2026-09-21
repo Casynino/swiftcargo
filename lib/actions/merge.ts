@@ -183,9 +183,10 @@ export async function recordCombinedPayment(
   const clearUpTo = Number(formData.get("clearShortfallUpTo") ?? 0);
   let clearOnLast: Prisma.Decimal | null = null;
   if (clearShortfall && !overpaid) {
-    if (!can(actor.role, "payment.verify")) {
-      return { error: "Writing off the difference is Finance's decision. Record what came in, and ask Finance to clear the rest." };
-    }
+    /* Anybody who may send a payment may ask for the rest to be cleared; it
+       is written off only when the payment is verified (lib/payment-confirm),
+       so from Support it is a request Finance sees and decides on the verify
+       screen, never a write-off made by the desk that asked. */
     const last = slices[slices.length - 1];
     const owingAfter = (stillTakeableTzs(last.invoice) ?? new Prisma.Decimal(0)).sub(last.baseCurrencyAmount);
     if (owingAfter.greaterThan(0) && clearUpTo > 0) {

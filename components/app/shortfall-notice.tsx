@@ -17,13 +17,15 @@ const LARGE_TZS = 50_000;
  * the last bill it reached, never more than the figure shown here. A large gap
  * is flagged, never blocked.
  *
- * Only a desk that may verify money may clear. Anyone else sees the shortfall
- * and it stays owing.
+ * Every desk that records a payment may press it. Where Finance verifies the
+ * payment itself it is done on verification; from Support it travels with the
+ * claim as a request, shown on the verify screen, and Finance decides.
  */
 export function ShortfallNotice({
   gapTzs,
   gapUsd,
   canClear,
+  decides = true,
   armed,
   onArmedChange,
   billNumber,
@@ -31,6 +33,8 @@ export function ShortfallNotice({
   gapTzs: number;
   gapUsd: number | null;
   canClear: boolean;
+  /** False for a desk whose payment goes to Finance: clearing is then asked for, not done. */
+  decides?: boolean;
   armed: boolean;
   onArmedChange: (armed: boolean) => void;
   billNumber?: string;
@@ -58,7 +62,11 @@ export function ShortfallNotice({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 font-medium">
           {armed ? <Check className="size-4" /> : <TriangleAlert className="size-4" />}
-          {armed ? `Clearing ${figures} — written off when verified` : `Short ${figures}`}
+          {armed
+            ? decides
+              ? `Clearing ${figures} — written off when verified`
+              : `Asking Finance to clear ${figures}`
+            : `Short ${figures}`}
         </p>
         {canClear ? (
           armed ? (
