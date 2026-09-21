@@ -512,11 +512,17 @@ export default async function ContainerPage({
 
         Renders nothing without `finance.view`: the warehouse never sees a price.
       */}
-      {showMoney ? <ContainerMoney id={container.id} user={user} /> : null}
+      {/*
+        THE NEXT STEP, FIRST.
 
-      {/* Finance records the arrival and reads this page as money, so the step
-          has to stand on this half of it as well as the manifest's. */}
-      {showMoney && !open && advance ? <div className="grid gap-6">{advance}</div> : null}
+        Once the box is sealed the only thing left to do on this page is the
+        next milestone — departure, then arrival, then closing — so it sits
+        straight under the six figures, one press, for whichever desk takes
+        it. It was below the manifest, and on the money view not at all.
+      */}
+      {!open ? advance : null}
+
+      {showMoney ? <ContainerMoney id={container.id} user={user} /> : null}
 
       {/*
         A SEALED BOX IS ONE PAGE, NOT TWO COLUMNS.
@@ -663,16 +669,6 @@ export default async function ContainerPage({
             )}
           </Card>
 
-          <div className="grid gap-6">
-            {/*
-                    AN OPEN BOX HAS NOWHERE TO GO YET.
-
-                    The next milestone only exists once the container is sealed, so on
-                    an open one this rendered as a card with a heading and nothing
-                    underneath — a promise of a control that was never coming.
-                  */}
-            {advance}
-          </div>
         </div>
       )}
 

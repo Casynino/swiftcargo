@@ -341,15 +341,15 @@ export function AdvancePanel({
     <form action={action} className="space-y-3">
       <input type="hidden" name="containerId" value={containerId} />
       <input type="hidden" name="to" value={step.to} />
-      <div className="space-y-2">
-        <Label htmlFor="when">{tx("When did it happen?")}</Label>
-        <Input id="when" name="when" type="date" min="2000-01-01" max="2099-12-31" />
-        <p className="text-xs text-muted-foreground">
-          {tx("Leave blank for now. Milestones are entered by staff — there is no vessel feed behind this, and a moving ship the system is guessing about would be a lie told smoothly.")}
-        </p>
-      </div>
+      {/* ONE PRESS, NOT A FORM. The step is recorded as it happens, so the
+          moment of the press is the date — the action already takes now when
+          no date is sent. Asking for a date nobody needed was a second step
+          on every milestone, and a place to type the wrong day. */}
+      <p className="text-sm text-muted-foreground">
+        {tx("Press when it happens — today's date and time are recorded.")}
+      </p>
       <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton>
+      <SubmitButton className="h-11 w-full sm:w-auto">
         {step.icon}
         <Tx>{step.label}</Tx>
       </SubmitButton>
