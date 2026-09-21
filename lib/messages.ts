@@ -1,6 +1,7 @@
 import "server-only";
 
 import { COMPANY, ROUTE } from "@/lib/constants";
+import { trackKey } from "@/lib/track-key";
 
 /**
  * WHAT WE SAY TO CUSTOMERS, AND WHEN.
@@ -237,7 +238,8 @@ export function composeMessage(
   const name = context.customerName.split(" ")[0] ?? context.customerName;
   const ref = context.reference ?? "";
   const track = context.trackUrl ?? trackUrl();
-  const link = ref ? `${track}/${ref}?${SHARE_TAG}` : track;
+  /* The key lets the page offer this customer's invoice as a PDF. */
+  const link = ref ? `${track}/${ref}?${SHARE_TAG}&k=${trackKey(ref)}` : track;
 
   /**
    * ONE LETTER, WHATEVER THE DESK.

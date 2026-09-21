@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Download,
   FileSearch,
   MapPin,
   MessageCircle,
@@ -27,6 +28,7 @@ import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { clientAddress, hit } from "@/lib/rate-limit";
 import { whatsappLink, WHATSAPP_OPENER } from "@/lib/site-contact";
 import { SHARE_CARD_TEXT } from "@/lib/share-card-text";
+import { trackKeyValid } from "@/lib/track-key";
 import {
   referenceFromInput,
   trackByReference,
@@ -80,6 +82,9 @@ export async function generateMetadata({
       description: SHARE_CARD_TEXT.description,
     },
     robots: { index: false, follow: false },
+    /* The link may carry the invoice key; a page it opens from here is not
+       told the address it came from. */
+    referrer: "no-referrer",
   };
 }
 
@@ -146,11 +151,14 @@ const dayMonthYear = (value: string | null) =>
 
 export default async function TrackResultPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ k?: string }>;
 }) {
   const locale = DEFAULT_LOCALE;
   const { code } = await params;
+  const { k } = await searchParams;
   const reference = referenceFromInput(safeDecode(code));
 
   if (!reference) {
@@ -234,13 +242,30 @@ export default async function TrackResultPage({
     <>
       <TrackHero reference={result.reference} />
       <Backdrop>
-        <TrackingCard result={result} />
+        <TrackingCard
+          result={result}
+          invoiceHref={
+            /* Only from the customer's own link: see lib/track-key.ts. */
+            result.charge && trackKeyValid(result.reference, k)
+              ? `/track/${encodeURIComponent(result.reference)}/invoice?i=${encodeURIComponent(
+                  result.charge.invoiceId
+                )}&k=${encodeURIComponent(k!)}`
+              : null
+          }
+        />
       </Backdrop>
     </>
   );
 }
 
-function TrackingCard({ result }: { result: PublicTracking }) {
+function TrackingCard({
+  result,
+  invoiceHref,
+}: {
+  result: PublicTracking;
+  /** The full bill as a PDF, when the page was opened from our message. */
+  invoiceHref: string | null;
+}) {
   const locale = DEFAULT_LOCALE;
   const { journey, charge, storage } = result;
   /* Opens with the greeting already in the box, so the customer presses send
@@ -456,6 +481,20 @@ function TrackingCard({ result }: { result: PublicTracking }) {
               <p className="tnum mt-1 font-mono text-xs text-muted-foreground">
                 {t(locale, "Invoice")} {charge.invoiceNumber}
               </p>
+
+              {invoiceHref ? (
+                /* A plain link, not a script: it has to work in the browser
+                   WhatsApp opens, which is often not the phone's own. */
+                <Button asChild className="mt-4 h-auto w-full justify-start gap-3 whitespace-normal py-3 text-left sm:w-auto">
+                  <a href={invoiceHref} download rel="nofollow">
+                    <Download className="size-5 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block font-semibold">Pakua invoice kamili (PDF)</span>
+                      <span className="block text-xs font-normal opacity-80">Download the full invoice</span>
+                    </span>
+                  </a>
+                </Button>
+              ) : null}
 
               {/* How the figure was reached. Read off the invoice, never
                   recomputed — a second opinion about what somebody owes is the

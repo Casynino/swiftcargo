@@ -63,6 +63,9 @@ export type PublicChargeLine = {
 };
 
 export type PublicCharge = {
+  /** For the download link, which is only drawn when the page was opened with
+      the key from the customer's own message — see lib/track-key.ts. */
+  invoiceId: string;
   invoiceNumber: string;
   currency: string;
   total: string;
@@ -351,6 +354,7 @@ export type TrackingSource = {
 };
 
 export type TrackingInvoice = {
+  id: string;
   number: string;
   status: string;
   currency: string;
@@ -569,6 +573,7 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
   }
 
   return {
+    invoiceId: invoice.id,
     invoiceNumber: invoice.number,
     currency: invoice.currency,
     total: balance.total.toFixed(2),
@@ -760,6 +765,7 @@ export async function trackByReference(raw: string): Promise<PublicTracking | nu
     where: { cargoId: cargo.id, status: { notIn: ["DRAFT", "CANCELLED"] } },
     orderBy: { createdAt: "asc" },
     select: {
+      id: true,
       number: true,
       status: true,
       currency: true,
