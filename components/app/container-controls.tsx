@@ -290,9 +290,11 @@ const NEXT_STEP: Record<
   OPEN: null,
   LOADING: null,
   LOADED: null,
-  SEALED: { to: "DEPARTED", label: "Record departure from China", icon: <Ship /> },
-  DEPARTED: { to: "IN_TRANSIT", label: "Mark in transit", icon: <Anchor /> },
-  IN_TRANSIT: { to: "ARRIVED", label: "Record arrival in Tanzania", icon: <Truck /> },
+  /* Departure puts the box at sea in the same press; there is no in-transit
+     step. DEPARTED is only ever seen on a box that left before that change. */
+  SEALED: { to: "DEPARTED", label: "Depart container", icon: <Ship /> },
+  DEPARTED: { to: "ARRIVED", label: "Mark as arrived in Dar", icon: <Truck /> },
+  IN_TRANSIT: { to: "ARRIVED", label: "Mark as arrived in Dar", icon: <Truck /> },
   ARRIVED: { to: "CLOSED", label: "Close the container", icon: <Lock /> },
   CLOSED: null,
 };
@@ -332,7 +334,7 @@ export function AdvancePanel({
           ? "Guangzhou records the departure."
           : step.to === "CLOSED"
             ? "Dar closes the container once everything on it is booked in."
-            : "Dar or Finance records the arrival."}
+            : "Dar, Finance or Support records the arrival."}
       </p>
     );
   }
@@ -695,11 +697,8 @@ export function LoadedTable({
 /**
  * "Mark as arrived", at the receiving dock.
  *
- * The same milestone as the one on the container's own page, minus the date
- * field: a box being booked in at the dock arrived today, and asking a clerk
- * with a forklift behind them to fill in a date they are about to type as
- * today's is a question with one answer. Backdating an arrival is still
- * possible from the container page, where somebody has the paperwork open.
+ * The same one-press milestone as on the container's own page: the arrival is
+ * recorded at the moment it is pressed.
  */
 export function MarkArrivedButton({ containerId }: { containerId: string }) {
   const tx = useT();

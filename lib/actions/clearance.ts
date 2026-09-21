@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { acceptAsExpected } from "@/lib/actions/dar";
+import { acceptAsExpectedBy } from "@/lib/accept-as-expected";
 import { announceDarArrival, clearCargo } from "@/lib/clearance";
 import { prisma } from "@/lib/prisma";
 import { formMessage } from "@/lib/safe-error";
@@ -56,9 +56,9 @@ async function clearAndReceive(actor: SessionUser, cargoIds: string[], note: str
   let received = 0;
   const unchecked: string[] = [];
   if (toReceive.length > 0) {
-    const form = new FormData();
-    for (const c of toReceive) form.append("cargoIds", c.id);
-    await acceptAsExpected({}, form);
+    /* As the person clearing, who is authorised for clearance — not as the
+       floor, whose own button asks for receiving.dar. */
+    await acceptAsExpectedBy(actor, toReceive.map((c) => c.id));
     const after = await prisma.cargo.findMany({
       where: { id: { in: toReceive.map((c) => c.id) } },
       select: { reference: true, darReceiving: { select: { id: true } } },

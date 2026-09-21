@@ -996,19 +996,23 @@ export async function updateVoyage(
  * guessing about is a lie told very smoothly.
  */
 const MILESTONES = {
+  /*
+    DEPARTING IS GOING TO SEA — ONE PRESS, NOT TWO.
+
+    A box that has left Guangzhou is at sea; there is nothing a person learns
+    between the two that needs a second button. Departure is still written as
+    its own event, first, so the history and the tracking page keep the day it
+    left, and the box, the shipment and every consignment then stand at
+    IN_TRANSIT in the same transaction. There is no in-transit milestone to
+    press any more; a box already standing at DEPARTED from before goes
+    straight on to arrival.
+  */
   DEPARTED: {
     from: ["SEALED"] as ContainerStatus[],
-    shipment: "DEPARTED_CHINA" as const,
-    cargo: "DEPARTED_CHINA" as const,
-    title: "Your cargo has left China",
-    body: (ref: string) => `Container ${ref} has departed.`,
-  },
-  IN_TRANSIT: {
-    from: ["DEPARTED"] as ContainerStatus[],
     shipment: "IN_TRANSIT" as const,
     cargo: "IN_TRANSIT" as const,
-    title: "Your cargo is at sea",
-    body: (ref: string) => `Container ${ref} is in transit.`,
+    title: "Your cargo has left China and is at sea",
+    body: (ref: string) => `Container ${ref} has departed Guangzhou and is on its way to Dar es Salaam.`,
   },
   ARRIVED: {
     from: ["DEPARTED", "IN_TRANSIT"] as ContainerStatus[],
@@ -1031,8 +1035,8 @@ const MILESTONES = {
   string,
   {
     from: ContainerStatus[];
-    shipment: "DEPARTED_CHINA" | "IN_TRANSIT" | "ARRIVED_TANZANIA" | "COMPLETED";
-    cargo: "DEPARTED_CHINA" | "IN_TRANSIT" | "ARRIVED_TANZANIA" | null;
+    shipment: "IN_TRANSIT" | "ARRIVED_TANZANIA" | "COMPLETED";
+    cargo: "IN_TRANSIT" | "ARRIVED_TANZANIA" | null;
     title: string;
     body: (ref: string) => string;
   }
@@ -1072,7 +1076,7 @@ export async function advanceContainer(
           ? "Recording a departure is Guangzhou's to do."
           : to === "CLOSED"
             ? "Closing a container is Dar's to do."
-            : "Recording an arrival is Dar's to do.",
+            : "Your desk cannot record an arrival.",
     };
   }
 
@@ -1119,9 +1123,10 @@ export async function advanceContainer(
 
   try {
     await prisma.$transaction(async (tx) => {
+      const lands: ContainerStatus = to === "DEPARTED" ? "IN_TRANSIT" : (to as ContainerStatus);
       const claim = await tx.container.updateMany({
         where: { id: container.id, status: { in: step.from } },
-        data: { status: to as ContainerStatus },
+        data: { status: lands },
       });
       if (claim.count === 0) {
         throw new Error(
@@ -1137,6 +1142,16 @@ export async function advanceContainer(
           actorId: actor.id,
         },
       });
+      if (lands !== to) {
+        await tx.containerEvent.create({
+          data: {
+            containerId: container.id,
+            from: to as ContainerStatus,
+            to: lands,
+            actorId: actor.id,
+          },
+        });
+      }
 
       await tx.shipment.updateMany({
         where: { containerId: container.id },
@@ -1148,6 +1163,17 @@ export async function advanceContainer(
       });
 
       if (step.cargo) {
+        /* The consignments keep the day they left China in their own history,
+           then stand at sea with the box. */
+        if (to === "DEPARTED") {
+          await setCargoStatusBulk(
+            tx,
+            container.cargoLines.map((l) => l.cargoId),
+            "DEPARTED_CHINA",
+            actor,
+            `Container ${container.reference}`
+          );
+        }
         await setCargoStatusBulk(
           tx,
           container.cargoLines.map((l) => l.cargoId),

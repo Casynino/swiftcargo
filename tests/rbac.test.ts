@@ -96,7 +96,6 @@ describe("the support desk explains; it does not do", () => {
     ["container.load", "cannot pack one"],
     ["container.seal", "cannot shut one"],
     ["container.depart", "cannot sail one"],
-    ["container.arrive", "cannot land one"],
     ["packingList.issue", "cannot freeze a manifest"],
     ["cargo.scan", "cannot scan cargo in or out"],
     ["payment.record", "cannot record money as taken"],
@@ -109,8 +108,6 @@ describe("the support desk explains; it does not do", () => {
     ["invoice.issue", "cannot issue one by hand"],
     ["invoice.cancel", "cannot cancel one"],
     ["release.execute", "cannot hand the boxes over"],
-    ["cargo.clear", "cannot say customs is finished"],
-    ["container.arrive", "cannot mark a container landed"],
     ["record.reconcile", "cannot agree the books against the bank"],
     ["cargo.hold", "cannot stop a release"],
     ["cbm.override", "cannot overwrite a measured volume"],
@@ -151,20 +148,19 @@ describe("the support desk explains; it does not do", () => {
     }
   });
 
-  test("the port steps belong to the desks that do them", () => {
-    /* Finance holds the bill of lading and pays the duty, so Finance marks a
-       container landed and says when the entry is through — the owner's
-       decision, and the reason clearing has a permission of its own rather
-       than riding on the Dar floor's `receiving.dar`. The counter that only
-       explains what happened holds neither. */
-    for (const role of ["DAR_WAREHOUSE", "FINANCE", "MANAGER", "ADMIN"] as Role[]) {
-      assert.ok(can(role, "cargo.clear"), role);
+  test("the port steps belong to every desk in Dar that may hear first", () => {
+    /* By the owner's decision, arrival and clearance are marked by whichever
+       of these desks learns of it — the floor, Finance with the bill of
+       lading, Support with the clearing agent on the phone, the manager, the
+       owner. Clearing has a permission of its own so that holding it carries
+       no authority over what the boxes are. Guangzhou holds neither. */
+    for (const role of ["DAR_WAREHOUSE", "FINANCE", "CUSTOMER_SUPPORT", "MANAGER", "ADMIN"] as Role[]) {
+      assert.ok(can(role, "container.arrive"), `${role} marks arrival`);
+      assert.ok(can(role, "cargo.clear"), `${role} marks clearance`);
     }
-    assert.equal(can("CUSTOMER_SUPPORT", "cargo.clear"), false);
+    assert.equal(can("CHINA_WAREHOUSE", "container.arrive"), false);
     assert.equal(can("CHINA_WAREHOUSE", "cargo.clear"), false);
-
-    assert.ok(can("FINANCE", "container.arrive"));
-    assert.equal(can("CUSTOMER_SUPPORT", "container.arrive"), false);
+    assert.equal(can("CUSTOMER_SUPPORT", "receiving.dar"), false);
 
     /* Clearing is a paper step. It carries no authority over what the boxes
        actually are: Finance still cannot write a receiving count. */

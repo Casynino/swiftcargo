@@ -341,6 +341,12 @@ const CUSTOMER_SUPPORT: Permission[] = [
   */
   "deliveryNote.view",
   "container.view",
+  /* By the owner's decision the port steps are anybody's who hears first: the
+     customer's clearing agent often rings this desk to say the box is in, or
+     that the entry is through. Marking it is one press on a record that says
+     who pressed it; what came off the container is still the floor's to count. */
+  "container.arrive",
+  "cargo.clear",
   /* The customer rings to say their goods were not on the sailing they were
      told about. The counter that takes the call is the counter that can put it
      right, rather than passing it to the floor and back. */
