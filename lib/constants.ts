@@ -164,7 +164,9 @@ export const CONTAINER_STATUS_LABELS: Record<ContainerStatus, string> = {
   LOADING: "Loading",
   LOADED: "Loaded",
   SEALED: "Sealed",
-  DEPARTED: "Departed",
+  /* A departed box is at sea: departure lands on IN_TRANSIT in one press, and
+     a box left at DEPARTED from before that reads the same way. */
+  DEPARTED: "In transit",
   IN_TRANSIT: "In transit",
   ARRIVED: "Arrived",
   CLOSED: "Closed",
@@ -185,7 +187,7 @@ export const LOADABLE_CONTAINER_STATUSES: ContainerStatus[] = [
 export const SHIPMENT_STATUS_LABELS: Record<ShipmentStatus, string> = {
   PREPARING: "Preparing",
   READY: "Ready",
-  DEPARTED_CHINA: "Departed China",
+  DEPARTED_CHINA: "In transit",
   IN_TRANSIT: "In transit",
   ARRIVED_TANZANIA: "Arrived Tanzania",
   CLEARANCE: "In clearance",
