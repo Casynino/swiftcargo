@@ -168,10 +168,11 @@ export async function loadInvoicePdf(key: string) {
       })),
 
     totals: {
-      subtotalLabel: vat.baseLabel,
-      subtotal: `${money(vat.base)} ${invoice.currency}`,
-      vatLabel: vat.vatLabel,
-      vat: `${money(vat.vat)} ${invoice.currency}`,
+      /* Null on a bill whose price contains VAT: it prints one total. */
+      subtotalLabel: vat.shown ? vat.baseLabel : null,
+      subtotal: vat.shown ? `${money(vat.base)} ${invoice.currency}` : null,
+      vatLabel: vat.shown ? vat.vatLabel : null,
+      vat: vat.shown ? `${money(vat.vat)} ${invoice.currency}` : null,
       total: `${money(invoice.total)} ${invoice.currency}`,
       totalTzs: invoice.totalTzs ? `${money(invoice.totalTzs, 0)} TZS` : null,
       paid:

@@ -63,11 +63,11 @@ export type InvoicePdfInput = {
   banks: PaymentLine[];
   mobile: PaymentLine[];
   totals: {
-    /** "Sub total", or "Before VAT" on a bill whose price contains it. */
-    subtotalLabel: string;
-    subtotal: string;
-    vatLabel: string;
-    vat: string;
+    /** All four null on a bill whose price contains VAT: one total, no tax lines. */
+    subtotalLabel: string | null;
+    subtotal: string | null;
+    vatLabel: string | null;
+    vat: string | null;
     total: string;
     totalTzs: string | null;
     paid: string | null;
@@ -478,13 +478,16 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
 
   const rowH = 22;
   const navyRows: [string, string, boolean][] = [
-    [input.totals.vatLabel, input.totals.vat, false],
+    ...(input.totals.vatLabel && input.totals.vat
+      ? [[input.totals.vatLabel, input.totals.vat, false] as [string, string, boolean]]
+      : []),
     ["Total", input.totals.total, true],
     ...(input.totals.totalTzs ? [["Total", input.totals.totalTzs, true] as [string, string, boolean]] : []),
     ...(input.totals.paid ? [["Paid", input.totals.paid, false] as [string, string, boolean]] : []),
   ];
   const dueH = input.due ? 42 + (input.due.sub ? 11 : 0) + (input.due.credit ? 11 : 0) : 0;
-  const totalsH = rowH + navyRows.length * rowH + dueH;
+  const subH = input.totals.subtotal ? rowH : 0;
+  const totalsH = subH + navyRows.length * rowH + dueH;
 
   need(Math.max(payH, totalsH));
   const top = y;
@@ -519,11 +522,13 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
 
   // Totals
   let ty = top;
-  fill(GREY_ROW);
-  doc.rect(totalsX, ty, totalsW, rowH, "F");
-  put(input.totals.subtotalLabel.toUpperCase(), totalsX + 14, ty + 14.5, { size: 8.5, style: "bold" });
-  put(input.totals.subtotal, RIGHT - 14, ty + 14.5, { size: 8.5, style: "bold", align: "right" });
-  ty += rowH;
+  if (input.totals.subtotal && input.totals.subtotalLabel) {
+    fill(GREY_ROW);
+    doc.rect(totalsX, ty, totalsW, rowH, "F");
+    put(input.totals.subtotalLabel.toUpperCase(), totalsX + 14, ty + 14.5, { size: 8.5, style: "bold" });
+    put(input.totals.subtotal, RIGHT - 14, ty + 14.5, { size: 8.5, style: "bold", align: "right" });
+    ty += rowH;
+  }
 
   fill(NAVY);
   doc.rect(totalsX, ty, totalsW, navyRows.length * rowH, "F");
@@ -533,7 +538,8 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
       doc.line(totalsX, ty, RIGHT, ty);
     }
     const colour: RGB = k === "Paid" ? [216, 226, 238] : WHITE;
-    const size = strong && i === 1 ? 10 : 8.5;
+    /* The bill's own total is the large one, wherever it falls in the list. */
+    const size = strong && v === input.totals.total ? 10 : 8.5;
     put(k.toUpperCase(), totalsX + 14, ty + 14.5, { size, style: strong ? "bold" : "normal", colour });
     put(v, RIGHT - 14, ty + 14.5, { size, style: strong ? "bold" : "normal", colour, align: "right" });
     ty += rowH;

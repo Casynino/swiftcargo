@@ -478,23 +478,26 @@ function TrackingCard({
                 </p>
               )}
 
-              <p className="tnum mt-1 font-mono text-xs text-muted-foreground">
-                {t(locale, "Invoice")} {charge.invoiceNumber}
-              </p>
-
-              {invoiceHref ? (
-                /* A plain link, not a script: it has to work in the browser
-                   WhatsApp opens, which is often not the phone's own. */
-                <Button asChild className="mt-4 h-auto w-full justify-start gap-3 whitespace-normal py-3 text-left sm:w-auto">
-                  <a href={invoiceHref} download rel="nofollow">
-                    <Download className="size-5 shrink-0" />
-                    <span className="min-w-0">
-                      <span className="block font-semibold">Pakua invoice kamili (PDF)</span>
-                      <span className="block text-xs font-normal opacity-80">Download the full invoice</span>
-                    </span>
+              {/* The invoice number and its file on one line: the download is a
+                  small pill beside the number it belongs to, not a second
+                  headline competing with the amount above. A plain link, not a
+                  script, so it works in the browser WhatsApp opens. */}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                <p className="tnum font-mono text-xs text-muted-foreground">
+                  {t(locale, "Invoice")} {charge.invoiceNumber}
+                </p>
+                {invoiceHref ? (
+                  <a
+                    href={invoiceHref}
+                    download
+                    rel="nofollow"
+                    className="focus-ring inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-3 text-xs font-semibold text-brand transition-colors hover:bg-brand/20"
+                  >
+                    <Download className="size-3.5" />
+                    Pakua PDF · Download
                   </a>
-                </Button>
-              ) : null}
+                ) : null}
+              </div>
 
               {/* How the figure was reached. Read off the invoice, never
                   recomputed — a second opinion about what somebody owes is the
@@ -522,15 +525,6 @@ function TrackingCard({
                       {charge.currency} {grouped(charge.total)}
                     </dd>
                   </div>
-                  {charge.vatIncluded ? (
-                    /* Part of the total above, not added to it. */
-                    <div className="flex justify-between gap-4 text-xs text-muted-foreground">
-                      <dt>Ikiwemo {charge.vatIncluded.label}</dt>
-                      <dd className="tnum font-mono">
-                        {charge.currency} {grouped(charge.vatIncluded.amount)}
-                      </dd>
-                    </div>
-                  ) : null}
                   {charge.rate ? (
                     /* The invoice's own pinned rate. Never today's: a bill
                        agreed at 2,650 is still 2,650 after the board moves. */
@@ -542,9 +536,6 @@ function TrackingCard({
                     </div>
                   ) : null}
                 </dl>
-              ) : null}
-              {charge.coverNote ? (
-                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{charge.coverNote}</p>
               ) : null}
             </div>
 

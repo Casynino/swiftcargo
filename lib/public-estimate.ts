@@ -149,14 +149,16 @@ export async function estimate(input: {
     currency: priced.currency,
     lines: [
       { label: "Sea freight", amount: formatCurrency(priced.amount, priced.currency) },
-      {
-        /* Inside the price, the VAT is part of the freight figure above it, not
-           a second amount under it. */
-        label: vatInside
-          ? `of which VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`
-          : `VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`,
-        amount: formatCurrency(vatAmount, priced.currency),
-      },
+      /* A price that contains VAT is one price: nothing about tax is said
+         (the owner's decision). Only a book priced before VAT adds a line. */
+      ...(vatInside || vatAmount.isZero()
+        ? []
+        : [
+            {
+              label: `VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`,
+              amount: formatCurrency(vatAmount, priced.currency),
+            },
+          ]),
     ],
     freight: formatCurrency(priced.amount, priced.currency),
     vatPercent: vatPercent.toDecimalPlaces(2).toString(),

@@ -120,6 +120,8 @@ export default async function PortalInvoicePage({
                 </TableCell>
               </TableRow>
             ))}
+            {vat.shown ? (
+              <>
             <TableRow>
               <TableCell colSpan={3} className="text-right text-sm">
                 {vat.baseLabel}
@@ -136,6 +138,8 @@ export default async function PortalInvoicePage({
                 {formatMoney(vat.vat, invoice.currency)}
               </TableCell>
             </TableRow>
+              </>
+            ) : null}
             <TableRow className="bg-secondary/40">
               <TableCell colSpan={3} className="text-right font-semibold">
                 Total
@@ -156,11 +160,6 @@ export default async function PortalInvoicePage({
             ) : null}
           </TableBody>
         </Table>
-        {vat.note ? (
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground">
-            {vat.noteSw} {vat.note}
-          </p>
-        ) : null}
       </Card>
 
       <Card>

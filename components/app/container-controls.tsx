@@ -283,21 +283,96 @@ export function SealPanel({
   );
 }
 
-const NEXT_STEP: Record<
-  string,
-  { to: string; label: string; icon: React.ReactNode } | null
-> = {
+/*
+  EACH STEP SAYS WHAT IT MEANS, NOT JUST ITS NAME.
+
+  "Depart container" on its own left a clerk wondering whether it meant load,
+  seal or sail. Each step carries a heading saying where the box stands, the
+  sentence of what pressing does — including who is told — and one button
+  named for the thing that has happened. Departure puts the box at sea in the
+  same press; there is no in-transit step. DEPARTED is only ever seen on a box
+  that left before that change.
+*/
+type Step = {
+  to: string;
+  heading: string;
+  body: string;
+  button: string;
+  icon: React.ReactNode;
+  waiting: string;
+};
+const NEXT_STEP: Record<string, Step | null> = {
   OPEN: null,
   LOADING: null,
   LOADED: null,
-  /* Departure puts the box at sea in the same press; there is no in-transit
-     step. DEPARTED is only ever seen on a box that left before that change. */
-  SEALED: { to: "DEPARTED", label: "Depart container", icon: <Ship /> },
-  DEPARTED: { to: "ARRIVED", label: "Mark as arrived in Dar", icon: <Truck /> },
-  IN_TRANSIT: { to: "ARRIVED", label: "Mark as arrived in Dar", icon: <Truck /> },
-  ARRIVED: { to: "CLOSED", label: "Close the container", icon: <Lock /> },
+  SEALED: {
+    to: "DEPARTED",
+    heading: "Sealed — ready to leave Guangzhou",
+    body: "Press when the ship has left with this container. It goes to sea straight away, and every customer with goods inside is told it is on the way to Dar es Salaam.",
+    button: "The container has left China",
+    icon: <Ship />,
+    waiting: "Guangzhou records the departure.",
+  },
+  DEPARTED: {
+    to: "ARRIVED",
+    heading: "At sea — on the way to Dar es Salaam",
+    body: "Press when the container is at Dar es Salaam port. Customers are told it has arrived and that customs clearance has started.",
+    button: "The container has arrived in Dar",
+    icon: <Anchor />,
+    waiting: "Dar, Finance or Support records the arrival.",
+  },
+  IN_TRANSIT: {
+    to: "ARRIVED",
+    heading: "At sea — on the way to Dar es Salaam",
+    body: "Press when the container is at Dar es Salaam port. Customers are told it has arrived and that customs clearance has started.",
+    button: "The container has arrived in Dar",
+    icon: <Anchor />,
+    waiting: "Dar, Finance or Support records the arrival.",
+  },
+  ARRIVED: {
+    to: "CLOSED",
+    heading: "In Dar es Salaam",
+    body: "Close it once every consignment on it is checked in or reported missing. Nothing more can happen to a closed container.",
+    button: "Close the container",
+    icon: <Lock />,
+    waiting: "Dar closes the container once everything on it is booked in.",
+  },
   CLOSED: null,
 };
+
+/* Where the box is on its journey, in four words. */
+const JOURNEY = [
+  { key: "SEALED", label: "Sealed" },
+  { key: "AT_SEA", label: "At sea" },
+  { key: "ARRIVED", label: "In Dar" },
+  { key: "CLOSED", label: "Closed" },
+] as const;
+const JOURNEY_AT: Record<string, number> = { SEALED: 0, DEPARTED: 1, IN_TRANSIT: 1, ARRIVED: 2, CLOSED: 3 };
+
+function JourneyStrip({ status }: { status: string }) {
+  const tx = useT();
+  const at = JOURNEY_AT[status] ?? -1;
+  return (
+    <ol className="flex items-center gap-1.5 text-[11px] font-medium">
+      {JOURNEY.map((j, i) => (
+        <li key={j.key} className="flex items-center gap-1.5">
+          <span
+            className={
+              i < at
+                ? "rounded-full bg-success/15 px-2 py-0.5 text-success"
+                : i === at
+                  ? "rounded-full bg-brand px-2 py-0.5 text-brand-foreground"
+                  : "rounded-full bg-secondary px-2 py-0.5 text-muted-foreground"
+            }
+          >
+            {tx(j.label)}
+          </span>
+          {i < JOURNEY.length - 1 ? <span aria-hidden className="h-px w-3 bg-border" /> : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export function AdvancePanel({
   containerId,
@@ -327,35 +402,30 @@ export function AdvancePanel({
         ? canClose
         : canArrive;
 
-  if (!allowed) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        {step.to === "DEPARTED"
-          ? "Guangzhou records the departure."
-          : step.to === "CLOSED"
-            ? "Dar closes the container once everything on it is booked in."
-            : "Dar, Finance or Support records the arrival."}
-      </p>
-    );
-  }
-
   return (
-    <form action={action} className="space-y-3">
-      <input type="hidden" name="containerId" value={containerId} />
-      <input type="hidden" name="to" value={step.to} />
-      {/* ONE PRESS, NOT A FORM. The step is recorded as it happens, so the
-          moment of the press is the date — the action already takes now when
-          no date is sent. Asking for a date nobody needed was a second step
-          on every milestone, and a place to type the wrong day. */}
-      <p className="text-sm text-muted-foreground">
-        {tx("Press when it happens — today's date and time are recorded.")}
-      </p>
-      <FormMessage error={state.error} ok={state.ok} />
-      <SubmitButton className="h-11 w-full sm:w-auto">
-        {step.icon}
-        <Tx>{step.label}</Tx>
-      </SubmitButton>
-    </form>
+    <div className="space-y-4">
+      <JourneyStrip status={status} />
+      <div>
+        <p className="text-lg font-semibold tracking-tight">{tx(step.heading)}</p>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          {allowed ? tx(step.body) : tx(step.waiting)}
+        </p>
+      </div>
+      {allowed ? (
+        /* ONE PRESS, NOT A FORM. The moment of the press is the date: the
+           action takes now when no date is sent. */
+        <form action={action} className="space-y-3">
+          <input type="hidden" name="containerId" value={containerId} />
+          <input type="hidden" name="to" value={step.to} />
+          <FormMessage error={state.error} ok={state.ok} />
+          <SubmitButton size="lg" className="h-12 w-full gap-2 text-base sm:w-auto sm:px-6" pendingLabel={tx("Recording…")}>
+            {step.icon}
+            {tx(step.button)}
+          </SubmitButton>
+          <p className="text-xs text-muted-foreground">{tx("Today's date and time are recorded with your name.")}</p>
+        </form>
+      ) : null}
+    </div>
   );
 }
 

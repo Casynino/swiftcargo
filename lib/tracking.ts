@@ -1,6 +1,5 @@
 import "server-only";
 
-import { vatLines } from "@/lib/invoice-vat";
 import { Prisma, type CargoStatus, type PhotoKind, type ServiceType } from "@prisma/client";
 
 import { ROUTE } from "@/lib/constants";
@@ -64,10 +63,6 @@ export type PublicChargeLine = {
 };
 
 export type PublicCharge = {
-  /** VAT that is part of the price, said under the total rather than added. */
-  vatIncluded: { label: string; amount: string } | null;
-  /** What the total covers, on a VAT-inclusive bill. */
-  coverNote: string | null;
   /** For the download link, which is only drawn when the page was opened with
       the key from the customer's own message — see lib/track-key.ts. */
   invoiceId: string;
@@ -570,8 +565,8 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
     });
   }
   const vat = dec(invoice.vatAmount);
-  /* On a bill whose price contains VAT, VAT is not a line that adds to the
-     sum — that is the double charge. It is said under the total instead. */
+  /* On a bill whose price contains VAT nothing is said about VAT: the
+     customer is shown one price (the owner's decision). */
   const inside = invoice.vatInclusive && vat.greaterThan(0);
   if (vat.greaterThan(0) && !inside) {
     lines.push({
@@ -581,11 +576,7 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
     });
   }
 
-  const words = vatLines({ ...invoice, subtotal: invoice.total });
   return {
-    /* Printed after "Ikiwemo" (including), which already says it. */
-    vatIncluded: inside ? { label: words.vatLabel.replace(/ included$/, ""), amount: vat.toFixed(2) } : null,
-    coverNote: inside ? `${words.noteSw} ${words.note}` : null,
     invoiceId: invoice.id,
     invoiceNumber: invoice.number,
     currency: invoice.currency,

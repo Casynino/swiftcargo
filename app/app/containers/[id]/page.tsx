@@ -216,11 +216,8 @@ export default async function ContainerPage({
     and placed on whichever half of the page the reader is looking at.
   */
   const advance = nextStep ? (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{T("Move it along")}</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="border-brand/30">
+      <CardContent className="pt-6">
         {/* EACH MILESTONE BELONGS TO A DESK THAT SEES THE THING HAPPEN.
             Guangzhou records the departure; the arrival is Dar's or Finance's,
             and Dar closes the box once everything on it is booked in. Showing

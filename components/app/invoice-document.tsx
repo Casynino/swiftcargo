@@ -321,20 +321,26 @@ export async function InvoiceDocument({ id }: { id: string }) {
         </div>
 
         <div className="self-start overflow-hidden rounded-lg text-sm">
-          <div className="flex justify-between bg-neutral-100 px-4 py-2 font-semibold uppercase">
-            <span>{vat.baseLabel}</span>
-            <span className="tnum">
-              {money(vat.base)} {invoice.currency}
-            </span>
-          </div>
-          <div className="bg-navy-700 text-white">
-            <div className="flex justify-between px-4 py-2">
-              <span className="uppercase">{vat.vatLabel}</span>
+          {/* One price when the price contains VAT; the old three rows only on
+              a bill that added VAT on top (lib/invoice-vat.ts). */}
+          {vat.shown ? (
+            <div className="flex justify-between bg-neutral-100 px-4 py-2 font-semibold uppercase">
+              <span>{vat.baseLabel}</span>
               <span className="tnum">
-                {money(vat.vat)} {invoice.currency}
+                {money(vat.base)} {invoice.currency}
               </span>
             </div>
-            <div className="flex justify-between border-t border-white/15 px-4 py-2 text-base font-bold">
+          ) : null}
+          <div className="bg-navy-700 text-white">
+            {vat.shown ? (
+              <div className="flex justify-between px-4 py-2">
+                <span className="uppercase">{vat.vatLabel}</span>
+                <span className="tnum">
+                  {money(vat.vat)} {invoice.currency}
+                </span>
+              </div>
+            ) : null}
+            <div className="flex justify-between border-t border-white/15 px-4 py-2 text-base font-bold first:border-t-0">
               <span className="uppercase">Total</span>
               <span className="tnum">
                 {money(invoice.total)} {invoice.currency}

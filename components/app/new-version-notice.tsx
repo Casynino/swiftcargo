@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useT } from "@/components/app/locale-provider";
+import { checkVersion, useStale } from "@/components/app/version-watch";
 /**
  * "New update is up."
  *
@@ -21,41 +22,25 @@ import { useT } from "@/components/app/locale-provider";
  * seconds would be a thousand requests a day per phone to answer a question
  * that changes twice.
  */
-const EVERY = 5 * 60 * 1000;
+/* A minute: a JSON answer of forty bytes, and only while the tab is being
+   looked at. Five minutes let a press made just after a deploy go out from
+   the old page and hang. */
+const EVERY = 60 * 1000;
 
 export function NewVersionNotice({ build }: { build: string }) {
   const tx = useT();
-  const [stale, setStale] = useState(false);
+  const stale = useStale();
 
   useEffect(() => {
-    /* A dev server rebuilds constantly and would cry wolf all day. */
     if (build === "development") return;
-
-    let alive = true;
-
-    async function check() {
-      if (!alive || document.visibilityState !== "visible") return;
-      try {
-        const res = await fetch("/api/version", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { build?: string };
-        /* Only ever set. Once a newer build exists, a network hiccup answering
-           with the old one must not make the banner flicker away. */
-        if (alive && data.build && data.build !== build) setStale(true);
-      } catch {
-        /* Offline, or the deploy is mid-flight. Silence is the right answer:
-           this is a convenience, and it must never interrupt somebody's work
-           to report its own failure. */
-      }
-    }
-
+    const check = () => {
+      if (document.visibilityState === "visible") void checkVersion();
+    };
     const timer = setInterval(check, EVERY);
     document.addEventListener("visibilitychange", check);
     window.addEventListener("focus", check);
     check();
-
     return () => {
-      alive = false;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", check);
       window.removeEventListener("focus", check);
