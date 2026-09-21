@@ -14,3 +14,6 @@ next-env.d.ts
 /public/uploads
 /storage
 .next-prod/
+
+# Database backups hold customer data; they never go in the repository.
+*.dump
