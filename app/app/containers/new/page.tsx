@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 
 import { ContainerForm } from "@/components/app/container-form";
 import { PageHeader } from "@/components/app/page-header";
-import { formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
-import { nextOpenSailing, publicSailings } from "@/lib/sailing-schedule";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
@@ -32,10 +30,6 @@ export default async function NewContainerPage() {
     now.getMonth() + 1
   ).padStart(2, "0")}C${(counter?.value ?? 0) + 1}`;
 
-  /* The same answer the action reaches when the box is opened. */
-  const sailing = nextOpenSailing(await publicSailings({ count: 3 }));
-  const deadline = sailing ? formatDate(sailing.cargoDeadline) : null;
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PageHeader
@@ -43,7 +37,7 @@ export default async function NewContainerPage() {
         description={T("It is numbered for you, and a voyage is created alongside it. The shipping line's own box number and the seal are recorded later, when the container is sealed.")}
         back={{ href: "/app/containers", label: "Containers" }}
       />
-      <ContainerForm nextReference={nextReference} deadline={deadline} />
+      <ContainerForm nextReference={nextReference} />
     </div>
   );
 }
