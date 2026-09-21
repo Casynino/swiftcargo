@@ -9,6 +9,7 @@ import {
   Clock,
   Download,
   FileSearch,
+  FileText,
   MapPin,
   MessageCircle,
   PackageCheck,
@@ -478,26 +479,31 @@ function TrackingCard({
                 </p>
               )}
 
-              {/* The invoice number and its file on one line: the download is a
-                  small pill beside the number it belongs to, not a second
-                  headline competing with the amount above. A plain link, not a
-                  script, so it works in the browser WhatsApp opens. */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-                <p className="tnum font-mono text-xs text-muted-foreground">
-                  {t(locale, "Invoice")} {charge.invoiceNumber}
-                </p>
-                {invoiceHref ? (
-                  <a
-                    href={invoiceHref}
-                    download
-                    rel="nofollow"
-                    className="focus-ring inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-3 text-xs font-semibold text-brand transition-colors hover:bg-brand/20"
-                  >
-                    <Download className="size-3.5" />
-                    Pakua PDF · Download
-                  </a>
-                ) : null}
-              </div>
+              {/* THE BILL AS A FILE, ONE TAP.
+                  No invoice number beside it — the customer asked for the
+                  bill, not its reference. A card-shaped row rather than a
+                  loud button: it sits under the amount without competing
+                  with it. A plain link, not a script, so it works in the
+                  browser WhatsApp opens. */}
+              {invoiceHref ? (
+                <a
+                  href={invoiceHref}
+                  download
+                  rel="nofollow"
+                  className="focus-ring group mt-4 flex w-full max-w-sm items-center gap-3 rounded-xl border border-brand/25 bg-gradient-to-r from-brand/10 to-transparent p-3 transition-colors hover:border-brand/50 hover:from-brand/15"
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand/15 text-brand">
+                    <FileText className="size-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-foreground">Pakua invoice hapa</span>
+                    <span className="block text-xs text-muted-foreground">Download your invoice · PDF</span>
+                  </span>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-brand-foreground transition-transform group-hover:translate-y-0.5">
+                    <Download className="size-4" />
+                  </span>
+                </a>
+              ) : null}
 
               {/* How the figure was reached. Read off the invoice, never
                   recomputed — a second opinion about what somebody owes is the
