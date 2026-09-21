@@ -1,5 +1,6 @@
 import "server-only";
 
+import { vatLines } from "@/lib/invoice-vat";
 import { Prisma, type CargoStatus, type PhotoKind, type ServiceType } from "@prisma/client";
 
 import { ROUTE } from "@/lib/constants";
@@ -63,6 +64,10 @@ export type PublicChargeLine = {
 };
 
 export type PublicCharge = {
+  /** VAT that is part of the price, said under the total rather than added. */
+  vatIncluded: { label: string; amount: string } | null;
+  /** What the total covers, on a VAT-inclusive bill. */
+  coverNote: string | null;
   /** For the download link, which is only drawn when the page was opened with
       the key from the customer's own message — see lib/track-key.ts. */
   invoiceId: string;
@@ -355,6 +360,7 @@ export type TrackingSource = {
 
 export type TrackingInvoice = {
   id: string;
+  vatInclusive: boolean;
   number: string;
   status: string;
   currency: string;
@@ -564,7 +570,10 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
     });
   }
   const vat = dec(invoice.vatAmount);
-  if (vat.greaterThan(0)) {
+  /* On a bill whose price contains VAT, VAT is not a line that adds to the
+     sum — that is the double charge. It is said under the total instead. */
+  const inside = invoice.vatInclusive && vat.greaterThan(0);
+  if (vat.greaterThan(0) && !inside) {
     lines.push({
       label: `VAT ${dec(invoice.vatPercent).toFixed(0)}%`,
       note: null,
@@ -572,7 +581,10 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
     });
   }
 
+  const words = vatLines({ ...invoice, subtotal: invoice.total });
   return {
+    vatIncluded: inside ? { label: words.vatLabel, amount: vat.toFixed(2) } : null,
+    coverNote: inside ? `${words.noteSw} ${words.note}` : null,
     invoiceId: invoice.id,
     invoiceNumber: invoice.number,
     currency: invoice.currency,
@@ -766,6 +778,7 @@ export async function trackByReference(raw: string): Promise<PublicTracking | nu
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      vatInclusive: true,
       number: true,
       status: true,
       currency: true,

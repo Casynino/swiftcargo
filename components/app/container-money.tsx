@@ -739,7 +739,7 @@ export async function ContainerMoney({
         otherContainers={otherContainers}
         canConfirm={mayConfirm}
         canAmend={mayAmend}
-        vatPercent={Number(priceList.vatPercent)}
+        vatPercent={priceList.vatIncluded ? 0 : Number(priceList.vatPercent)}
         locale={locale}
       />
 

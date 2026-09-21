@@ -130,7 +130,8 @@ export async function estimate(input: {
 
   const settings = await companySettings(client);
   const vatPercent = new Prisma.Decimal(settings?.vatPercent ?? 0);
-  const { vatAmount, total } = applyVat(priced.amount, vatPercent);
+  const vatInside = settings?.pricesIncludeVat ?? true;
+  const { vatAmount, total } = applyVat(priced.amount, vatPercent, vatInside);
 
   const fx = await currentExchangeRate(client);
   const totalTzs = fx ? usdToTzs(total, fx.rate) : null;
@@ -149,7 +150,11 @@ export async function estimate(input: {
     lines: [
       { label: "Sea freight", amount: formatCurrency(priced.amount, priced.currency) },
       {
-        label: `VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`,
+        /* Inside the price, the VAT is part of the freight figure above it, not
+           a second amount under it. */
+        label: vatInside
+          ? `of which VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`
+          : `VAT at ${vatPercent.toDecimalPlaces(2).toString()}%`,
         amount: formatCurrency(vatAmount, priced.currency),
       },
     ],

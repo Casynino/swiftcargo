@@ -25,6 +25,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCustomer } from "@/lib/session";
 
 import { billLines } from "@/lib/invoice-lines";
+import { vatLines } from "@/lib/invoice-vat";
 export const metadata: Metadata = { title: "Invoice" };
 
 export default async function PortalInvoicePage({
@@ -49,6 +50,7 @@ export default async function PortalInvoicePage({
   if (!invoice) notFound();
 
   const balance = balanceOf(invoice);
+  const vat = vatLines(invoice);
   const owing = balance.outstanding;
   const tzs = balance.outstandingTzs !== null;
   const cancelled = invoice.status === "CANCELLED";
@@ -120,18 +122,18 @@ export default async function PortalInvoicePage({
             ))}
             <TableRow>
               <TableCell colSpan={3} className="text-right text-sm">
-                Subtotal
+                {vat.baseLabel}
               </TableCell>
               <TableCell className="tnum text-right text-sm">
-                {formatMoney(invoice.subtotal, invoice.currency)}
+                {formatMoney(vat.base, invoice.currency)}
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell colSpan={3} className="text-right text-sm">
-                VAT at {Number(invoice.vatPercent)}%
+                {vat.vatLabel}
               </TableCell>
               <TableCell className="tnum text-right text-sm">
-                {formatMoney(invoice.vatAmount, invoice.currency)}
+                {formatMoney(vat.vat, invoice.currency)}
               </TableCell>
             </TableRow>
             <TableRow className="bg-secondary/40">
@@ -154,6 +156,11 @@ export default async function PortalInvoicePage({
             ) : null}
           </TableBody>
         </Table>
+        {vat.note ? (
+          <p className="border-t px-4 py-3 text-xs text-muted-foreground">
+            {vat.noteSw} {vat.note}
+          </p>
+        ) : null}
       </Card>
 
       <Card>

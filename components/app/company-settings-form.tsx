@@ -29,6 +29,7 @@ export type CompanySettingsValues = {
   darAddress: string;
   darPostal: string;
   vatPercent: string;
+  pricesIncludeVat: boolean;
   freeStorageDays: number;
   storagePerDay: string;
   invoiceTerms: string;
@@ -180,6 +181,18 @@ export function CompanySettingsForm({
               onChange={(e) => setVat(e.target.value)}
               className="money-input h-11"
             />
+            {/* Ticked: a rate of 380 is 380 on the bill, VAT inside it.
+                Unticked: VAT is added on top. Bills already issued keep the
+                way they were priced. */}
+            <label className="mt-2 flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="pricesIncludeVat"
+                defaultChecked={settings.pricesIncludeVat}
+                className="mt-0.5 size-4 shrink-0"
+              />
+              <span>{t(locale, "Our prices already include VAT — do not add it on top")}</span>
+            </label>
           </Field>
           <Field
             id="freeStorageDays"

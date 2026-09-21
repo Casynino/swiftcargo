@@ -118,7 +118,8 @@ describe("the public calculator prices what the invoice would price", () => {
       ]);
       await ownMoney(tx, "18", "2500");
 
-      /* Two cubic metres of shoes: 2 × 320 = 640, VAT 115.20, total 755.20. */
+      /* Two cubic metres of shoes: 2 × 320 = 640, and the price contains the
+         VAT — 640 × 18 / 118 = 97.63 of it — so the total is 640. */
       const priced = await estimate({ cargoType: "Shoes", cbm: "2", client: tx });
       assert.equal(priced.kind, "priced");
       if (priced.kind !== "priced") return;
@@ -126,10 +127,10 @@ describe("the public calculator prices what the invoice would price", () => {
       assert.equal(priced.billableCbm, "2.000");
       assert.equal(priced.minimumApplied, false);
       assert.equal(priced.freight, "USD 640.00");
-      assert.equal(priced.vat, "USD 115.20");
-      assert.equal(priced.total, "USD 755.20");
-      /* 755.20 × 2,500 = 1,888,000, to the whole shilling. */
-      assert.equal(priced.totalTzs, "TZS 1,888,000");
+      assert.equal(priced.vat, "USD 97.63");
+      assert.equal(priced.total, "USD 640.00");
+      /* 640 × 2,500 = 1,600,000, to the whole shilling. */
+      assert.equal(priced.totalTzs, "TZS 1,600,000");
     });
   });
 

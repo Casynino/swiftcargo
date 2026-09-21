@@ -110,6 +110,7 @@ export default async function CompanySettingsPage() {
           darAddress: company?.darAddress ?? "",
           darPostal: company?.darPostal ?? "",
           vatPercent: company?.vatPercent.toString() ?? "18",
+          pricesIncludeVat: company?.pricesIncludeVat ?? true,
           freeStorageDays: company?.freeStorageDays ?? 7,
           storagePerDay: company?.storagePerDay.toString() ?? "0",
           invoiceTerms: company?.invoiceTerms ?? "",

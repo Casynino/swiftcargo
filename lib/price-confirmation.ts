@@ -183,7 +183,7 @@ export async function priceWaitingCargo(
     currentExchangeRate(client),
   ]);
   const vatPercent = new Prisma.Decimal(settings?.vatPercent ?? 0);
-  const { vatAmount, total } = applyVat(priced.amount, vatPercent);
+  const { vatAmount, total } = applyVat(priced.amount, vatPercent, settings?.pricesIncludeVat ?? true);
   const line = cargo.containerLines.at(-1) ?? null;
 
   const invoice = await client.invoice.create({
@@ -204,6 +204,7 @@ export async function priceWaitingCargo(
       subtotal: priced.amount,
       vatPercent,
       vatAmount,
+      vatInclusive: settings?.pricesIncludeVat ?? true,
       total,
       currency: priced.currency,
       exchangeRateId: fx?.id ?? null,
@@ -830,7 +831,7 @@ export async function setWaitingPrice(
   if (subtotal.lessThan(0)) {
     throw new PriceListRefused("That takes the bill below nothing. Lower the discount.");
   }
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
   if (
     (invoice.appliedRate?.toString() ?? null) !== (appliedRate?.toString() ?? null)
@@ -1082,7 +1083,10 @@ async function repriceIssuedBill(
   if (subtotal.lessThan(0)) {
     throw new PriceListRefused("That takes the bill below nothing. Lower the discount.");
   }
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  /* Re-priced on purpose, so priced the way the company prices now — how a
+     bill issued with VAT on top is brought to a price that contains it. */
+  const repriceInclusive = (await companySettings(client))?.pricesIncludeVat ?? true;
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, repriceInclusive);
 
   for (const [field, before, after] of [
     ["appliedRate", invoice.appliedRate?.toString() ?? "from the rate book", appliedRate?.toString() ?? "typed as a total"],
@@ -1107,6 +1111,7 @@ async function repriceIssuedBill(
       discount: off ?? new Prisma.Decimal(0),
       subtotal,
       vatAmount,
+      vatInclusive: repriceInclusive,
       total,
       /* The rate this bill was agreed at, never today's. */
       totalTzs: invoice.fxRate ? usdToTzs(total, invoice.fxRate) : invoice.totalTzs,
@@ -1197,7 +1202,7 @@ export async function setWaitingRate(
       item.unit === "CBM" ? item.quantity.mul(input.rate).toDecimalPlaces(2) : item.amount
     );
   }
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
   await recordFieldChange(
     {

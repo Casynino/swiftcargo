@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { vatLines } from "@/lib/invoice-vat";
+
 import { formatCurrency, formatRate } from "@/lib/currency";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { balanceOf } from "@/lib/invoice-balance";
@@ -71,7 +73,7 @@ export async function InvoiceDocument({ id }: { id: string }) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const vatPercent = Number(invoice.vatPercent);
+  const vat = vatLines(invoice);
   const balance = balanceOf(invoice);
   const inTzs = balance.outstandingTzs !== null;
   const paidSomething = (balance.paidTzs ?? balance.paid).greaterThan(0);
@@ -105,6 +107,9 @@ export async function InvoiceDocument({ id }: { id: string }) {
   const perDayLabel = `${storageCurrency} ${perDay % 1 === 0 ? perDay : perDay.toFixed(2)}`;
   /* The storage policy has its own box on the bill; a terms line saying the
      same thing in fewer words is the same rule printed twice. */
+  /* What the price covers is the company's own terms line ("The invoice
+     total includes customs, shipping and clearance fees…"), edited in
+     settings — not a second copy of it written here. */
   const shownTerms = perDay > 0 ? terms.filter((line) => !/storage fee/i.test(line)) : terms;
 
   const details: [string, string][] = [
@@ -317,16 +322,16 @@ export async function InvoiceDocument({ id }: { id: string }) {
 
         <div className="self-start overflow-hidden rounded-lg text-sm">
           <div className="flex justify-between bg-neutral-100 px-4 py-2 font-semibold uppercase">
-            <span>Sub total</span>
+            <span>{vat.baseLabel}</span>
             <span className="tnum">
-              {money(invoice.subtotal)} {invoice.currency}
+              {money(vat.base)} {invoice.currency}
             </span>
           </div>
           <div className="bg-navy-700 text-white">
             <div className="flex justify-between px-4 py-2">
-              <span className="uppercase">VAT ({vatPercent % 1 === 0 ? vatPercent : vatPercent.toFixed(2)}%)</span>
+              <span className="uppercase">{vat.vatLabel}</span>
               <span className="tnum">
-                {money(invoice.vatAmount)} {invoice.currency}
+                {money(vat.vat)} {invoice.currency}
               </span>
             </div>
             <div className="flex justify-between border-t border-white/15 px-4 py-2 text-base font-bold">

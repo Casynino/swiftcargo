@@ -94,6 +94,8 @@ export type PriceList = {
   rows: PriceListRow[];
   /** From CompanySetting, so the row dialog adds up to what the bill says. */
   vatPercent: string;
+  /** Prices already contain VAT: the dialog adds nothing on top. */
+  vatIncluded: boolean;
   /** Rows that can be confirmed now. */
   ready: number;
   totalUsdLabel: string;
@@ -239,7 +241,7 @@ export async function priceListFor(
             ? "No cargo type yet, and the rate book has no general rate. Choose a type."
             : priced.blockedReason;
       } else {
-        total = applyVat(priced.amount, vatPercent).total;
+        total = applyVat(priced.amount, vatPercent, settings?.pricesIncludeVat ?? true).total;
         rate = priced.appliedRate;
         standardRate = priced.standardRate;
         billableCbm = priced.billableCbm;
@@ -280,6 +282,7 @@ export async function priceListFor(
   return {
     rows,
     vatPercent: vatPercent.toString(),
+    vatIncluded: settings?.pricesIncludeVat ?? true,
     ready: ready.length,
     totalUsdLabel: formatCurrency(sumUsd, "USD"),
     totalTzsLabel: sumTzs === null ? null : formatCurrency(sumTzs, "TZS"),

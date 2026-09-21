@@ -112,11 +112,29 @@ describe("the rate book prices a volume exactly", () => {
     });
   });
 
-  test("VAT is added to the subtotal, never to itself", () => {
-    const { vatAmount, total } = pricing.applyVat(new Prisma.Decimal(380), new Prisma.Decimal(18));
+  test("a price that includes VAT is the total: 380 is 380, with 57.97 of it VAT", () => {
+    /* The owner's rule since prices started to include VAT. The bill that
+       showed 380 + 68.40 = 448.40 charged the tax twice. */
+    const { vatAmount, total } = pricing.applyVat(new Prisma.Decimal(380), new Prisma.Decimal(18), true);
+    assert.equal(total.toFixed(2), "380.00");
+    assert.equal(vatAmount.toFixed(2), "57.97");
+    assert.equal(total.sub(vatAmount).toFixed(2), "322.03");
+    assert.equal(currency.usdToTzs(total, RATE).toFixed(0), "1026000");
+  });
+
+  test("a bill issued with VAT on top still adds up as it was issued", () => {
+    const { vatAmount, total } = pricing.applyVat(new Prisma.Decimal(380), new Prisma.Decimal(18), false);
     assert.equal(vatAmount.toFixed(2), "68.40");
     assert.equal(total.toFixed(2), "448.40");
     assert.equal(currency.usdToTzs(total, RATE).toFixed(0), "1210680");
+  });
+
+  test("no VAT rate means nothing is VAT, either way", () => {
+    for (const inclusive of [true, false]) {
+      const { vatAmount, total } = pricing.applyVat(new Prisma.Decimal(380), new Prisma.Decimal(0), inclusive);
+      assert.equal(vatAmount.toFixed(2), "0.00");
+      assert.equal(total.toFixed(2), "380.00");
+    }
   });
 });
 

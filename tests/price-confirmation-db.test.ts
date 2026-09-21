@@ -139,7 +139,8 @@ async function withVat(tx: Prisma.TransactionClient, amount: string) {
   const settings = await pricing.companySettings(tx);
   return pricing.applyVat(
     new Prisma.Decimal(amount),
-    new Prisma.Decimal(settings?.vatPercent ?? 0)
+    new Prisma.Decimal(settings?.vatPercent ?? 0),
+    settings?.pricesIncludeVat ?? true
   ).total;
 }
 

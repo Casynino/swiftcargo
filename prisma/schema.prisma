@@ -1238,6 +1238,11 @@ model Invoice {
   vatPercent Decimal @default(0) @db.Decimal(5, 2)
   vatAmount  Decimal @default(0) @db.Decimal(14, 2)
   total      Decimal @default(0) @db.Decimal(14, 2)
+  /// True: `total` equals `subtotal` and `vatAmount` is the part of it that is
+  /// VAT. False: VAT was added on top (bills issued before prices included
+  /// it). Pinned when the bill is priced, so a setting changed later never
+  /// restates a bill a customer is holding.
+  vatInclusive Boolean @default(true)
 
   currency String @default("USD")
 
@@ -2781,6 +2786,12 @@ model CompanySetting {
   /// The VAT percentage applied to new invoices. On the row rather than in code
   /// because a tax rate is a thing that changes by law, not by deploy.
   vatPercent Decimal @default(18) @db.Decimal(5, 2)
+
+  /// Whether the rate book's prices already contain VAT. By the owner's
+  /// decision they do: a rate of 380 is 380 on the bill, with the VAT inside it
+  /// shown, never 18% added on top. Each invoice pins the answer it was
+  /// priced under (`Invoice.vatInclusive`).
+  pricesIncludeVat Boolean @default(true)
 
   /// Free storage days at the Dar warehouse before charges begin.
   freeStorageDays Int @default(7)

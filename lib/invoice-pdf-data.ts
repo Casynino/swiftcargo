@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { vatLines } from "@/lib/invoice-vat";
+
 import type { Prisma } from "@prisma/client";
 
 import { formatCurrency, formatRate } from "@/lib/currency";
@@ -72,7 +74,6 @@ export async function loadInvoicePdf(key: string) {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const vatPercent = Number(invoice.vatPercent);
   const balance = balanceOf(invoice);
   const inTzs = balance.outstandingTzs !== null;
   const paidSomething = (balance.paidTzs ?? balance.paid).greaterThan(0);
@@ -100,6 +101,10 @@ export async function loadInvoicePdf(key: string) {
   const perDay = Number(company?.storagePerDay ?? 0);
   const storageCurrency = company?.storageCurrency ?? "USD";
   const perDayLabel = `${storageCurrency} ${perDay % 1 === 0 ? perDay : perDay.toFixed(2)}`;
+  const vat = vatLines(invoice);
+  /* What the price covers is the company's own terms line ("The invoice
+     total includes customs, shipping and clearance fees…"), edited in
+     settings — not a second copy of it written here. */
   const shownTerms = perDay > 0 ? terms.filter((line) => !/storage fee/i.test(line)) : terms;
 
   const companyName = company?.name ?? "Swift Cargo";
@@ -163,9 +168,10 @@ export async function loadInvoicePdf(key: string) {
       })),
 
     totals: {
-      subtotal: `${money(invoice.subtotal)} ${invoice.currency}`,
-      vatLabel: `VAT (${vatPercent % 1 === 0 ? vatPercent : vatPercent.toFixed(2)}%)`,
-      vat: `${money(invoice.vatAmount)} ${invoice.currency}`,
+      subtotalLabel: vat.baseLabel,
+      subtotal: `${money(vat.base)} ${invoice.currency}`,
+      vatLabel: vat.vatLabel,
+      vat: `${money(vat.vat)} ${invoice.currency}`,
       total: `${money(invoice.total)} ${invoice.currency}`,
       totalTzs: invoice.totalTzs ? `${money(invoice.totalTzs, 0)} TZS` : null,
       paid:

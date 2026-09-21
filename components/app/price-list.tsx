@@ -88,7 +88,7 @@ export function PriceList({
                 row={row}
                 cargoTypes={cargoTypes}
                 canEdit={canConfirm}
-                vatPercent={Number(list.vatPercent)}
+                vatPercent={list.vatIncluded ? 0 : Number(list.vatPercent)}
                 locale={locale}
               />
             ))}

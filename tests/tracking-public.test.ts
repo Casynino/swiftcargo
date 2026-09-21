@@ -93,6 +93,7 @@ function source(over: Partial<Source> = {}): Source {
 function invoice(over: Partial<Invoice> = {}): Invoice {
   return {
     id: "inv_5",
+    vatInclusive: false,
     number: "INV-2026-000005",
     status: "ISSUED",
     currency: "USD",

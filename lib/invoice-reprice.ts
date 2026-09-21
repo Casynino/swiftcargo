@@ -90,7 +90,7 @@ export async function repriceDraftInvoices(
       .filter((i) => i.category === "Discount")
       .reduce((sum, i) => sum.add(i.amount.negated()), ZERO);
     const subtotal = priced.amount.add(keptSum);
-    const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+    const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
     await recordFieldChange(
       {

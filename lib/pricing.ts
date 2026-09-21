@@ -277,7 +277,25 @@ export async function quote(
  * law. It is written onto the invoice at issue, so a rate change next year does
  * not restate last year's bills.
  */
-export function applyVat(subtotal: Prisma.Decimal, vatPercent: Prisma.Decimal) {
+export function applyVat(
+  subtotal: Prisma.Decimal,
+  vatPercent: Prisma.Decimal,
+  /**
+   * Whether the prices already contain VAT — `CompanySetting.pricesIncludeVat`
+   * for a bill being priced, `Invoice.vatInclusive` for one being restated as
+   * it was. Required, so no caller can fall back to adding it on top.
+   */
+  inclusive: boolean
+) {
+  if (inclusive) {
+    /* 380 is 380. The VAT is the part of it the tax office is owed:
+       380 × 18 / 118 = 57.97, rounded once to the cent. */
+    const total = subtotal.toDecimalPlaces(2);
+    const vatAmount = vatPercent.greaterThan(0)
+      ? total.mul(vatPercent).div(vatPercent.add(100)).toDecimalPlaces(2)
+      : new Prisma.Decimal(0);
+    return { vatAmount, total };
+  }
   const vatAmount = subtotal.mul(vatPercent).div(100).toDecimalPlaces(2);
   return { vatAmount, total: subtotal.add(vatAmount).toDecimalPlaces(2) };
 }

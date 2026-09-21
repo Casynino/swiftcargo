@@ -282,6 +282,7 @@ const SETTING_FIELDS = {
   darAddress: "Dar es Salaam office address",
   darPostal: "Dar es Salaam postal address",
   vatPercent: "VAT",
+  pricesIncludeVat: "Prices include VAT",
   freeStorageDays: "Free storage days",
   storagePerDay: "Storage per day",
   invoiceTerms: "Invoice terms",
@@ -314,6 +315,7 @@ const settingsSchema = z.object({
     .trim()
     .regex(DECIMAL, "VAT is a percentage, e.g. 18.")
     .refine((v) => Number(v) <= 100, "VAT cannot be more than 100%."),
+  pricesIncludeVat: z.boolean(),
   freeStorageDays: z.coerce
     .number({ invalid_type_error: "Free storage days is a whole number." })
     .int("Free storage days is a whole number.")
@@ -349,6 +351,8 @@ export async function updateCompanySettings(
   const parsed = settingsSchema.safeParse({
     ...Object.fromEntries(Object.keys(SETTING_FIELDS).map((key) => [key, read(key)])),
     storagePerDay: read("storagePerDay") || "0",
+    /* A checkbox sends "on" when ticked and nothing at all when not. */
+    pricesIncludeVat: formData.get("pricesIncludeVat") === "on",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
@@ -380,6 +384,7 @@ export async function updateCompanySettings(
     darAddress: input.darAddress || null,
     darPostal: input.darPostal || null,
     vatPercent: new Prisma.Decimal(input.vatPercent),
+    pricesIncludeVat: input.pricesIncludeVat,
     freeStorageDays: input.freeStorageDays,
     /* Quoted in dollars only. The storage line is added to a dollar bill as it
        stands, so a shilling rate here would be billed as that many dollars. */

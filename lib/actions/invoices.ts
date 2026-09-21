@@ -123,7 +123,7 @@ export async function generateInvoice(
   }
 
   const vatPercent = new Prisma.Decimal(settings?.vatPercent ?? 0);
-  const { vatAmount, total } = applyVat(priced.amount, vatPercent);
+  const { vatAmount, total } = applyVat(priced.amount, vatPercent, settings?.pricesIncludeVat ?? true);
 
   let invoice: Awaited<ReturnType<typeof prisma.invoice.create>>;
   try {
@@ -160,6 +160,7 @@ export async function generateInvoice(
           subtotal: priced.amount,
           vatPercent,
           vatAmount,
+          vatInclusive: settings?.pricesIncludeVat ?? true,
           total,
           currency: priced.currency,
           exchangeRateId: fx?.id ?? null,
@@ -261,7 +262,7 @@ export async function generateContainerInvoices(
       continue;
     }
 
-    const { vatAmount, total } = applyVat(priced.amount, vatPercent);
+    const { vatAmount, total } = applyVat(priced.amount, vatPercent, settings?.pricesIncludeVat ?? true);
 
     /* Two people pressing this on the same container both read the same lines
        and both try to write. The unique constraint on the sailing decides it,
@@ -285,6 +286,7 @@ export async function generateContainerInvoices(
           subtotal: priced.amount,
           vatPercent,
           vatAmount,
+          vatInclusive: settings?.pricesIncludeVat ?? true,
           total,
           currency: priced.currency,
           exchangeRateId: fx?.id ?? null,
@@ -467,7 +469,7 @@ export async function adjustInvoice(
       : new Prisma.Decimal(0);
 
   const subtotal = freight.add(extra);
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
   const standardTotal = invoice.standardRate
     ? billable.mul(invoice.standardRate)
     : subtotal;
@@ -735,7 +737,7 @@ export async function discountInvoice(
   }
 
   const subtotal = invoice.subtotal.sub(off);
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
   await prisma.$transaction(async (tx) => {
     /* Written before it takes effect, like every other change to a figure
@@ -910,7 +912,11 @@ export async function repriceInvoice(
       item.unit === "CBM" ? quantityOf(item).mul(next) : item.amount
     );
   }
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  /* A re-price is Finance pricing the bill again, so it is priced the way the
+     company prices now — which is how a bill issued with VAT on top is brought
+     to a price that already contains it. */
+  const repriceInclusive = (await companySettings())?.pricesIncludeVat ?? true;
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, repriceInclusive);
 
   await prisma.$transaction(async (tx) => {
     if (!invoice.appliedRate || !invoice.appliedRate.equals(next)) {
@@ -978,6 +984,7 @@ export async function repriceInvoice(
         appliedRate: next,
         subtotal,
         vatAmount,
+        vatInclusive: repriceInclusive,
         total,
         totalTzs: invoice.fxRate
           ? usdToTzs(total, invoice.fxRate)
@@ -1046,7 +1053,7 @@ export async function chargeStorage(
       new Prisma.Decimal(0)
     );
     const subtotal = invoice.subtotal.sub(off);
-    const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+    const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
     await prisma.$transaction(async (tx) => {
       await tx.invoiceItem.deleteMany({
@@ -1105,7 +1112,7 @@ export async function chargeStorage(
   }
 
   const subtotal = invoice.subtotal.add(position.amount);
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
   await prisma.$transaction(async (tx) => {
     await tx.invoiceItem.create({
@@ -1354,7 +1361,7 @@ async function addInvoiceCharge(formData: FormData): Promise<ActionState> {
 
   const value = new Prisma.Decimal(amount).toDecimalPlaces(2);
   const subtotal = invoice.subtotal.add(value);
-  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
 
   await prisma.$transaction(async (tx) => {
     await tx.invoiceItem.create({

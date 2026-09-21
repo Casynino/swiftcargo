@@ -4605,6 +4605,7 @@ const ZH: Record<string, string> = {
   "shpt": "票",
   "Sign in": "登录",
   "Show password": "显示密码",
+  "Our prices already include VAT — do not add it on top": "我们的价格已含增值税——不再另加",
   "Press when it happens — today's date and time are recorded.": "发生时按下即可——系统自动记录当天日期和时间。",
   "Last day for cargo": "截止收货日期",
   "from the sailing schedule": "按船期自动设定",

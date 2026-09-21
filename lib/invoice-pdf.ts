@@ -63,6 +63,8 @@ export type InvoicePdfInput = {
   banks: PaymentLine[];
   mobile: PaymentLine[];
   totals: {
+    /** "Sub total", or "Before VAT" on a bill whose price contains it. */
+    subtotalLabel: string;
     subtotal: string;
     vatLabel: string;
     vat: string;
@@ -519,7 +521,7 @@ export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
   let ty = top;
   fill(GREY_ROW);
   doc.rect(totalsX, ty, totalsW, rowH, "F");
-  put("SUB TOTAL", totalsX + 14, ty + 14.5, { size: 8.5, style: "bold" });
+  put(input.totals.subtotalLabel.toUpperCase(), totalsX + 14, ty + 14.5, { size: 8.5, style: "bold" });
   put(input.totals.subtotal, RIGHT - 14, ty + 14.5, { size: 8.5, style: "bold", align: "right" });
   ty += rowH;
 

@@ -169,8 +169,8 @@ export function RowPriceEditor({
   const effectiveFreight =
     fromRate ?? (typed.trim() === "" ? freight : n(typed));
   const subtotal = effectiveFreight + n(more) - n(off);
-  /* VAT is added by the bill, so the dialog adds it too. A preview that stops
-     at the subtotal sends the desk back to the row to find a bigger number. */
+  /* The dialog adds what the bill adds. `vatPercent` arrives as zero when the
+     company's prices already contain VAT, and the preview is the price. */
   const vat = Math.round(subtotal * (vatPercent / 100) * 100) / 100;
   const preview = subtotal + vat;
 
