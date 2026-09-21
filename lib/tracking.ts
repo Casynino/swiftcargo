@@ -583,7 +583,8 @@ function chargeFrom(invoice: TrackingInvoice): PublicCharge {
 
   const words = vatLines({ ...invoice, subtotal: invoice.total });
   return {
-    vatIncluded: inside ? { label: words.vatLabel, amount: vat.toFixed(2) } : null,
+    /* Printed after "Ikiwemo" (including), which already says it. */
+    vatIncluded: inside ? { label: words.vatLabel.replace(/ included$/, ""), amount: vat.toFixed(2) } : null,
     coverNote: inside ? `${words.noteSw} ${words.note}` : null,
     invoiceId: invoice.id,
     invoiceNumber: invoice.number,

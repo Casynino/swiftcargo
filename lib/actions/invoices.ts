@@ -919,6 +919,20 @@ export async function repriceInvoice(
   const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, repriceInclusive);
 
   await prisma.$transaction(async (tx) => {
+    /* The total can move at an unchanged rate — a bill issued with VAT on top
+       re-priced the way prices are now — so it is written on its own. */
+    if (!invoice.total.equals(total)) {
+      await recordFieldChange(
+        { actor, entity: "Invoice", entityId: invoice.id, field: "total", oldValue: invoice.total.toString(), newValue: total.toString(), reason: why },
+        tx
+      );
+    }
+    if (invoice.vatInclusive !== repriceInclusive) {
+      await recordFieldChange(
+        { actor, entity: "Invoice", entityId: invoice.id, field: "vatInclusive", oldValue: String(invoice.vatInclusive), newValue: String(repriceInclusive), reason: why },
+        tx
+      );
+    }
     if (!invoice.appliedRate || !invoice.appliedRate.equals(next)) {
       await recordFieldChange(
         {

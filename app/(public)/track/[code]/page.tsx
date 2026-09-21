@@ -522,6 +522,15 @@ function TrackingCard({
                       {charge.currency} {grouped(charge.total)}
                     </dd>
                   </div>
+                  {charge.vatIncluded ? (
+                    /* Part of the total above, not added to it. */
+                    <div className="flex justify-between gap-4 text-xs text-muted-foreground">
+                      <dt>Ikiwemo {charge.vatIncluded.label}</dt>
+                      <dd className="tnum font-mono">
+                        {charge.currency} {grouped(charge.vatIncluded.amount)}
+                      </dd>
+                    </div>
+                  ) : null}
                   {charge.rate ? (
                     /* The invoice's own pinned rate. Never today's: a bill
                        agreed at 2,650 is still 2,650 after the board moves. */
@@ -533,6 +542,9 @@ function TrackingCard({
                     </div>
                   ) : null}
                 </dl>
+              ) : null}
+              {charge.coverNote ? (
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{charge.coverNote}</p>
               ) : null}
             </div>
 
