@@ -280,16 +280,15 @@ export default async function PortalCargoPage({
                   >
                     {t(locale, step.label)}
                   </p>
-                  {step.detail || step.at ? (
+                  {/* Every date says what it is the date of. */}
+                  {step.at ? (
                     <p className="tnum text-xs text-muted-foreground">
-                      {step.detail ? t(locale, step.detail) : null}
-                      {step.detail && step.at ? " · " : null}
-                      {step.at
-                        ? step.key === "AT_SEA"
-                          ? formatDate(step.at)
-                          : formatDateTime(step.at)
-                        : null}
+                      {t(locale, step.atLabel)}{" "}
+                      {step.key === "AT_SEA" ? formatDate(step.at) : formatDateTime(step.at)}
                     </p>
+                  ) : null}
+                  {step.detail ? (
+                    <p className="text-xs font-medium text-brand">{t(locale, step.detail)}</p>
                   ) : null}
                 </div>
               </li>

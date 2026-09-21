@@ -139,9 +139,14 @@ export type JourneyStep = {
   key: StageKey;
   /** English — the page passes it through t(). */
   label: string;
-  /** A short English explanation for a step that is not a bare fact. */
+  /** A few English words for a step that is not a bare fact. */
   detail: string | null;
   at: Date | null;
+  /**
+   * What `at` is the date OF — "Arrived", "Cleared". A bare date under
+   * "Arrived in Dar — clearance in progress" read as the day it was cleared.
+   */
+  atLabel: string;
   state: "done" | "current" | "upcoming";
 };
 
@@ -507,57 +512,56 @@ export function publicJourney(input: JourneyInput): Journey {
     ten stations for a journey of five. The facts behind every step are the
     same records as before; only fewer are shown.
   */
-  const inChina = stage === "RECEIVED_CHINA" || stage === "ASSIGNED" || stage === "PACKED";
   const draft: Omit<JourneyStep, "state">[] = [
     {
       key: "RECEIVED_CHINA",
       label: "Received in Guangzhou",
-      detail: inChina ? "In our warehouse, waiting for the next sailing" : null,
+      detail: null,
       at: stamps.RECEIVED_CHINA ?? null,
+      atLabel: "Received",
     },
     {
       key: "AT_SEA",
       label: "In transit",
-      detail: reached.ARRIVED_DAR
-        ? null
-        : etaOpen
-          ? etaOpen.getTime() < now.getTime()
-            ? "Running later than planned — we will update the date"
-            : `Expected in Dar es Salaam`
+      /* The expected day is printed by the page beside this step; only a date
+         that has already gone by needs words. */
+      detail:
+        !reached.ARRIVED_DAR && etaOpen && etaOpen.getTime() < now.getTime()
+          ? "Running later than planned"
           : null,
-      /* The day it left; the expected day sits in the detail above. */
       at: departedAt,
+      atLabel: "Left China",
     },
     {
       key: "CLEARANCE",
       label: "Arrived in Dar — clearance in progress",
-      detail:
-        stage === "IN_CLEARANCE" || stage === "WAREHOUSE_CLEARANCE"
-          ? "We will tell you as soon as customs has cleared it"
-          : null,
+      detail: null,
       at: arrivedAt,
+      atLabel: "Arrived",
     },
     /* Cleared and ready are one step to the customer (the owner's word): once
        customs lets the goods go they are there to collect. Release is still
-       computed — an unpaid bill keeps them — so the step says what is left
-       to do rather than promising a pickup the counter would refuse. */
+       computed — an unpaid bill keeps them — so the step says, in a few words,
+       what is left to do. */
     {
       key: "CLEARED",
       label: "Cleared — ready for pickup",
       detail: ready
-        ? "Bring your ID and this reference to our Dar es Salaam warehouse"
+        ? "Bring your ID to collect"
         : stage === "CLEARED_TO_WAREHOUSE" || stage === "DAR_VERIFICATION"
-          ? "Being checked into our Dar warehouse"
+          ? "Being checked in"
           : reached.CLEARED && !handedOver
-            ? "Pay your invoice, then come and collect"
+            ? "Pay first, then collect"
             : null,
       at: input.clearance?.clearedAt ?? stamps.READY_FOR_RELEASE ?? null,
+      atLabel: "Cleared",
     },
     {
       key: "HANDED_OVER",
       label: status === "DELIVERED" ? "Delivered" : "Collected",
       detail: null,
       at: stamps.DELIVERED ?? stamps.COLLECTED ?? null,
+      atLabel: status === "DELIVERED" ? "Delivered" : "Collected",
     },
   ];
 

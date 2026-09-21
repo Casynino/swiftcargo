@@ -85,7 +85,7 @@ describe("public journey", () => {
     assert.deepEqual(j.steps[0].at, day(-3));
     /* Receiving and storing are one act at the counter, so the second is said
        under the first rather than claimed as a step of its own. */
-    assert.equal(detail(j, "RECEIVED_CHINA"), "In our warehouse, waiting for the next sailing");
+    assert.equal(detail(j, "RECEIVED_CHINA"), null, "the date says it; no sentence");
   });
 
   test("on a manifest with the box still open: assigned, being packed", () => {
@@ -101,7 +101,6 @@ describe("public journey", () => {
     /* Loading is ours, not a customer's milestone: the goods are still in
        Guangzhou waiting to sail, and the badge says they are assigned. */
     assert.equal(state(j, "RECEIVED_CHINA"), "current");
-    assert.equal(detail(j, "RECEIVED_CHINA"), "In our warehouse, waiting for the next sailing");
     assert.ok(!j.steps.some((s) => (s.key as string) === "LOADED"), "no loading step");
   });
 
@@ -340,7 +339,7 @@ describe("public journey", () => {
     assert.equal(j.headline, "At our Dar warehouse — payment required before pickup");
     /* Cleared and ready are one step: reached, and saying what is left. */
     assert.equal(state(j, "CLEARED"), "current");
-    assert.equal(detail(j, "CLEARED"), "Pay your invoice, then come and collect");
+    assert.equal(detail(j, "CLEARED"), "Pay first, then collect");
   });
 
   test("at the port, customs has it; cleared, it is on the way to our warehouse", () => {
@@ -357,7 +356,7 @@ describe("public journey", () => {
     );
     assert.equal(cleared.stage, "CLEARED_TO_WAREHOUSE");
     assert.equal(state(cleared, "CLEARED"), "current");
-    assert.equal(detail(cleared, "CLEARED"), "Being checked into our Dar warehouse");
+    assert.equal(detail(cleared, "CLEARED"), "Being checked in");
     assert.equal(cleared.ready, false);
   });
 
@@ -420,7 +419,7 @@ describe("public journey", () => {
     );
     assert.notEqual(paidButNotReleasable.headline, "Ready for pickup");
     assert.equal(paidButNotReleasable.ready, false);
-    assert.notEqual(detail(paidButNotReleasable, "CLEARED"), "Bring your ID and this reference to our Dar es Salaam warehouse");
+    assert.notEqual(detail(paidButNotReleasable, "CLEARED"), "Bring your ID to collect");
 
     const releasable = publicJourney(
       input({
@@ -439,7 +438,7 @@ describe("public journey", () => {
     assert.equal(releasable.headline, "Ready for pickup");
     assert.equal(releasable.ready, true);
     assert.equal(state(releasable, "CLEARED"), "current");
-    assert.equal(detail(releasable, "CLEARED"), "Bring your ID and this reference to our Dar es Salaam warehouse");
+    assert.equal(detail(releasable, "CLEARED"), "Bring your ID to collect");
   });
 
   test("a hold outranks progress and never says why", () => {

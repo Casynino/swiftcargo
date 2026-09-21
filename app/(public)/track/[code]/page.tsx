@@ -781,16 +781,20 @@ function Timeline({ result }: { result: PublicTracking }) {
               <p className="text-xs text-muted-foreground">
                 {stepPlace(step.key, result)}
               </p>
-              {step.detail || step.at ? (
+              {/* Every date says what it is the date of. */}
+              {step.at ? (
                 <p className="tnum mt-0.5 text-xs text-muted-foreground/80">
-                  {step.detail ? t(locale, step.detail) : null}
-                  {step.detail && step.at ? " · " : null}
-                  {step.at
-                    ? step.key === "AT_SEA"
-                      ? formatDate(step.at)
-                      : formatDateTime(step.at)
-                    : null}
+                  {t(locale, step.atLabel)}{" "}
+                  {step.key === "AT_SEA" ? formatDate(step.at) : formatDateTime(step.at)}
                 </p>
+              ) : null}
+              {step.key === "AT_SEA" && step.state === "current" && result.journey.eta && !result.journey.etaPassed ? (
+                <p className="tnum mt-0.5 text-xs text-muted-foreground/80">
+                  {t(locale, "Expected")} {formatDate(result.journey.eta)}
+                </p>
+              ) : null}
+              {step.detail ? (
+                <p className="mt-0.5 text-xs font-medium text-brand">{t(locale, step.detail)}</p>
               ) : null}
             </div>
           </li>
