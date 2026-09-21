@@ -4605,6 +4605,8 @@ const ZH: Record<string, string> = {
   "shpt": "票",
   "Sign in": "登录",
   "Show password": "显示密码",
+  "Last day for cargo": "截止收货日期",
+  "from the sailing schedule": "按船期自动设定",
   "Hide password": "隐藏密码",
   "Sign out": "退出登录",
   "Sign-in history": "登录记录",

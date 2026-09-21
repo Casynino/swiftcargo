@@ -21,7 +21,14 @@ const TYPES = [
   ["LCL_CONSOLIDATED", "LCL consolidation", 0],
 ] as const;
 
-export function ContainerForm({ nextReference }: { nextReference: string }) {
+export function ContainerForm({
+  nextReference,
+  deadline,
+}: {
+  nextReference: string;
+  /** The next open sailing's last day for cargo, already formatted. */
+  deadline: string | null;
+}) {
   const tx = useT();
   const router = useRouter();
   const [state, action] = useActionState<ActionState, FormData>(
@@ -95,8 +102,11 @@ export function ContainerForm({ nextReference }: { nextReference: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cargoDeadline">{tx("Cargo receiving deadline")}</Label>
-            <Input id="cargoDeadline" name="cargoDeadline" type="date" min="2000-01-01" max="2099-12-31" />
+            <Label>{tx("Last day for cargo")}</Label>
+            <p className="flex h-10 items-center rounded-md border border-dashed px-3 text-sm">
+              <span className="tnum font-medium">{deadline ?? "—"}</span>
+              <span className="ml-2 text-xs text-muted-foreground">{tx("from the sailing schedule")}</span>
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="originPort">{tx("Origin port")}</Label>

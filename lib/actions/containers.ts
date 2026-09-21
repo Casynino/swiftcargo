@@ -19,6 +19,7 @@ import {
 } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma, type TxClient } from "@/lib/prisma";
+import { nextOpenSailing, publicSailings } from "@/lib/sailing-schedule";
 import { formMessage } from "@/lib/safe-error";
 import { authorize } from "@/lib/session";
 
@@ -69,13 +70,18 @@ export async function createContainer(
   }
   const data = parsed.data;
 
-  let deadline: Date | null;
-  try {
-    deadline = formDate(data.cargoDeadline, "cargo deadline");
-  } catch (error) {
-    if (error instanceof DateOutOfRange) return { error: error.message };
-    throw error;
-  }
+  /*
+    THE LAST DAY FOR CARGO, OFF THE SCHEDULE.
+
+    Not asked for: the week's rule already says it — Guangzhou takes cargo
+    until the Friday before the Monday the ship leaves — and the public page,
+    the portal and the booking form all print that date. A box opened today
+    closes with the next sailing still open. Typing it again only made room
+    for a second date that disagreed with the one customers were told. A week
+    that slips is corrected on the container page, where it always could be.
+  */
+  const deadline =
+    nextOpenSailing(await publicSailings({ count: 3 }))?.cargoDeadline ?? null;
 
   /*
     THE BOX'S OWN HOME, OFF THE PERSON OPENING IT.
