@@ -1,0 +1,1781 @@
+[
+ {
+  "id": "common-login",
+  "role": null,
+  "path": "/login",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "pub-home",
+  "role": null,
+  "path": "/",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "pub-services",
+  "role": null,
+  "path": "/services",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-rates",
+  "role": null,
+  "path": "/rates",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-calculator",
+  "role": null,
+  "path": "/calculator",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-schedule",
+  "role": null,
+  "path": "/schedule",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-china",
+  "role": null,
+  "path": "/china",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-about",
+  "role": null,
+  "path": "/about",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-contact",
+  "role": null,
+  "path": "/contact",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-book",
+  "role": null,
+  "path": "/book",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-quote",
+  "role": null,
+  "path": "/quote",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-pickup",
+  "role": null,
+  "path": "/pickup",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-track",
+  "role": null,
+  "path": "/track",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-register",
+  "role": null,
+  "path": "/register",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "pub-track-result",
+  "role": null,
+  "path": "/track/SC0007?s=2&k=8EI8csdxlAqD5mgV",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ],
+  "anchor": "Cargo"
+ },
+ {
+  "id": "pub-track-timeline",
+  "role": null,
+  "path": "/track/SC0007?s=2&k=8EI8csdxlAqD5mgV",
+  "vw": [
+   "m"
+  ],
+  "anchor": "Cargo timeline"
+ },
+ {
+  "id": "cn-en-dashboard",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-drawer",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()",
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-receive",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/receive/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "callouts": [
+   {
+    "text": "Who is it for?",
+    "n": 1
+   },
+   {
+    "text": "What did they bring?",
+    "n": 2
+   },
+   {
+    "text": "Receipt number",
+    "n": 3,
+    "tag": "label"
+   },
+   {
+    "text": "Cargo type",
+    "n": 4,
+    "tag": "label"
+   },
+   {
+    "text": "CBM",
+    "n": 5,
+    "tag": "label"
+   },
+   {
+    "text": "Add package",
+    "n": 6,
+    "tag": "button"
+   },
+   {
+    "text": "Confirm receiving",
+    "n": 7,
+    "tag": "button"
+   }
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-receive-newcust",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/receive/new",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b=[...document.querySelectorAll('button')].find(x=>/New customer|\u65b0\u5ba2\u6237|\u65b0\u5efa\u5ba2\u6237/.test(x.innerText)); if(b) b.click(); return !!b; })()",
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-floor",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/inventory",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-shipments",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-container-new",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-loading-list",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/loading",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-container-loading",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmtvjfe99002oy82nqaolb7hz",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-container-sealed",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "callouts": [
+   {
+    "sel": "ol li span",
+    "n": 1
+   },
+   {
+    "text": "The container has left China",
+    "n": 2,
+    "tag": "button"
+   }
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-packing-list",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq/packing-list",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-container-labels",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq/labels",
+  "vw": [
+   "d"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-cargo",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-cargo-boxes",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t",
+  "vw": [
+   "d"
+  ],
+  "anchor": "Boxes",
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-cargo-label",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t/label",
+  "vw": [
+   "d"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-delivery-note",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t/delivery-note",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-search",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/search?q=SC0029",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-customers",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-customer",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-customer-new",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-requests",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/support/requests",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-exceptions",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/exceptions",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-reports",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/reports",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-notifications",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/notifications",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-profile",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/profile",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-en-scan-result",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/t/SWQe1305d5c8e4e4f688eb283985e30da4da450521d2a9545c1b624af3780439c38",
+  "vw": [
+   "m"
+  ],
+  "locale": "en"
+ },
+ {
+  "id": "cn-zh-dashboard",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-drawer",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()",
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-receive",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/receive/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "callouts": [
+   {
+    "text": "Who is it for?",
+    "n": 1
+   },
+   {
+    "text": "What did they bring?",
+    "n": 2
+   },
+   {
+    "text": "Receipt number",
+    "n": 3,
+    "tag": "label"
+   },
+   {
+    "text": "Cargo type",
+    "n": 4,
+    "tag": "label"
+   },
+   {
+    "text": "CBM",
+    "n": 5,
+    "tag": "label"
+   },
+   {
+    "text": "Add package",
+    "n": 6,
+    "tag": "button"
+   },
+   {
+    "text": "Confirm receiving",
+    "n": 7,
+    "tag": "button"
+   }
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-receive-newcust",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/receive/new",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b=[...document.querySelectorAll('button')].find(x=>/New customer|\u65b0\u5ba2\u6237|\u65b0\u5efa\u5ba2\u6237/.test(x.innerText)); if(b) b.click(); return !!b; })()",
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-floor",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/inventory",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-shipments",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-container-new",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-loading-list",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/loading",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-container-loading",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmtvjfe99002oy82nqaolb7hz",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-container-sealed",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "callouts": [
+   {
+    "sel": "ol li span",
+    "n": 1
+   },
+   {
+    "text": "The container has left China",
+    "n": 2,
+    "tag": "button"
+   }
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-packing-list",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq/packing-list",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-container-labels",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/containers/cmucp834w0000sbncho53t6kq/labels",
+  "vw": [
+   "d"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-cargo",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-cargo-boxes",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t",
+  "vw": [
+   "d"
+  ],
+  "anchor": "Boxes",
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-cargo-label",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t/label",
+  "vw": [
+   "d"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-delivery-note",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/cargo/cmtvjqx27004qy834hz8frn4t/delivery-note",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-search",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/search?q=SC0029",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-customers",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-customer",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-customer-new",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/customers/new",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-requests",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/support/requests",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-exceptions",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/exceptions",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-reports",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/reports",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-notifications",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/notifications",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-profile",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/app/profile",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "cn-zh-scan-result",
+  "role": "CHINA_WAREHOUSE",
+  "path": "/t/SWQe1305d5c8e4e4f688eb283985e30da4da450521d2a9545c1b624af3780439c38",
+  "vw": [
+   "m"
+  ],
+  "locale": "zh"
+ },
+ {
+  "id": "dar-dashboard",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "dar-drawer",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/dashboard",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "dar-scan",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/scan",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-dock",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/receive/dar",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-dock-container",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/receive/dar/cmtu861za000wsb7lusshqw51",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "dar-container-sea",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/containers/cmtud7chd0003sbbsonwljo5k",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "anchor": "At sea"
+ },
+ {
+  "id": "dar-container-arrived",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/containers/cmtu861za000wsb7lusshqw51",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-cargo-clearance",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/cargo/cmtvmdtgb000zy8hbsmbu2rmv",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-floor",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/inventory",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-release",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/release",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "dar-release-one",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/release?q=SC0057",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-collected",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/release/collected",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-arrived-list",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/containers/arrived",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-exceptions",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/exceptions",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-exception",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/exceptions/cmtu8jirz0034sb7lxbp0qafh",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-reports",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/reports",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-search",
+  "role": "DAR_WAREHOUSE",
+  "path": "/app/search?q=SC0057",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "dar-scan-result",
+  "role": "DAR_WAREHOUSE",
+  "path": "/t/SWQe1305d5c8e4e4f688eb283985e30da4da450521d2a9545c1b624af3780439c38",
+  "vw": [
+   "m"
+  ]
+ },
+ {
+  "id": "sup-home",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "sup-drawer",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "sup-search",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/search?q=Amina",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-customers",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/customers",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-customer",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/customers/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-customer-edit",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/customers/cmtu7ri130000sb7luu3u5kci/edit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-cargo",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/cargo/cmtu7sz700005sb7litl1nx7o",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-cargo-actions",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/cargo/cmtvmdtgb000zy8hbsmbu2rmv",
+  "vw": [
+   "d"
+  ],
+  "anchor": "Actions"
+ },
+ {
+  "id": "sup-collections",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/collections",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-record-payment",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/collections",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "before": "(() => { const a = document.querySelector('a[href=\"#record-payment\"]'); if (a) a.click(); return !!a; })()"
+ },
+ {
+  "id": "sup-rates",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/rates",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-credit",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/credit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-pickup-notes",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/pickup-notes",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-merge",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/finance/payments/new/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-tickets",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support/tickets",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-ticket",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support/cmtud7cm8003isbbs7zayzefp",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-requests",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support/requests",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-exceptions",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/exceptions",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-markets",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support/markets",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-sourcing",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/support/sourcing",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "sup-arrived",
+  "role": "CUSTOMER_SUPPORT",
+  "path": "/app/containers/arrived",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-home",
+  "role": "FINANCE",
+  "path": "/app/dashboard",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "fin-drawer",
+  "role": "FINANCE",
+  "path": "/app/dashboard",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "fin-overview",
+  "role": "FINANCE",
+  "path": "/app/finance",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-collections",
+  "role": "FINANCE",
+  "path": "/app/finance/collections",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-verify",
+  "role": "FINANCE",
+  "path": "/app/finance/collections/verify",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-with-finance",
+  "role": "FINANCE",
+  "path": "/app/finance/collections/with-finance",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-sent-back",
+  "role": "FINANCE",
+  "path": "/app/finance/collections/sent-back",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-record-payment",
+  "role": "FINANCE",
+  "path": "/app/finance/collections",
+  "vw": [
+   "d",
+   "m"
+  ],
+  "before": "(() => { const a = document.querySelector('a[href=\"#record-payment\"]'); if (a) a.click(); return !!a; })()"
+ },
+ {
+  "id": "fin-merge",
+  "role": "FINANCE",
+  "path": "/app/finance/payments/new/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-invoice",
+  "role": "FINANCE",
+  "path": "/app/finance/invoices/cmu44y5ah0003sbvf0qqzu6k0",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "fin-invoice-doc",
+  "role": "FINANCE",
+  "path": "/app/finance/invoices/cmu44y5ah0003sbvf0qqzu6k0/document",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-price-list",
+  "role": "FINANCE",
+  "path": "/app/containers/cmtu861za000wsb7lusshqw51",
+  "vw": [
+   "d"
+  ],
+  "anchor": "Confirm all"
+ },
+ {
+  "id": "fin-container-money",
+  "role": "FINANCE",
+  "path": "/app/containers/cmtu861za000wsb7lusshqw51",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-container-finances",
+  "role": "FINANCE",
+  "path": "/app/finance/containers",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-container-finance",
+  "role": "FINANCE",
+  "path": "/app/finance/containers/cmtu861za000wsb7lusshqw51",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-rates",
+  "role": "FINANCE",
+  "path": "/app/finance/rates",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-fx",
+  "role": "FINANCE",
+  "path": "/app/finance/exchange-rate",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-accounts",
+  "role": "FINANCE",
+  "path": "/app/finance/accounts",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-account",
+  "role": "FINANCE",
+  "path": "/app/finance/accounts/cmtvp4dic0000sbtvsbzkxuqw",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-expenses",
+  "role": "FINANCE",
+  "path": "/app/finance/expenses",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-credit",
+  "role": "FINANCE",
+  "path": "/app/finance/credit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-payroll",
+  "role": "FINANCE",
+  "path": "/app/finance/payroll",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-pl",
+  "role": "FINANCE",
+  "path": "/app/finance/reports",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-pickup-notes",
+  "role": "FINANCE",
+  "path": "/app/finance/pickup-notes",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-pickup-note",
+  "role": "FINANCE",
+  "path": "/app/finance/pickup-notes/cmtzxst9j0016sb3bgxmf7swf",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-receipts",
+  "role": "FINANCE",
+  "path": "/app/finance/receipts",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-receipt",
+  "role": "FINANCE",
+  "path": "/app/finance/receipts/cmtu9980x004xsb7l61lqae0x",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-ledger",
+  "role": "FINANCE",
+  "path": "/app/finance/ledger",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-ledger-row",
+  "role": "FINANCE",
+  "path": "/app/finance/ledger/cmu46xk7v000dsb9ftqimiwsa",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-reconciliation",
+  "role": "FINANCE",
+  "path": "/app/manager/reconciliation",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-closed",
+  "role": "FINANCE",
+  "path": "/app/containers/closed",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-audit",
+  "role": "FINANCE",
+  "path": "/app/admin/audit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-customer",
+  "role": "FINANCE",
+  "path": "/app/customers/cmtu7ri130000sb7luu3u5kci",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "fin-cargo",
+  "role": "FINANCE",
+  "path": "/app/cargo/cmtvmdtgb000zy8hbsmbu2rmv",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-home",
+  "role": "MANAGER",
+  "path": "/app/manager",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "mgr-drawer",
+  "role": "MANAGER",
+  "path": "/app/manager",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "mgr-control",
+  "role": "MANAGER",
+  "path": "/app/manager/control",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-approvals",
+  "role": "MANAGER",
+  "path": "/app/manager/approvals",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-payroll",
+  "role": "MANAGER",
+  "path": "/app/manager/payroll",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-reports",
+  "role": "MANAGER",
+  "path": "/app/manager/reports",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-money-audit",
+  "role": "MANAGER",
+  "path": "/app/finance/audit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-deleted",
+  "role": "MANAGER",
+  "path": "/app/admin/deleted",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-staff",
+  "role": "MANAGER",
+  "path": "/app/admin/users",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "mgr-exceptions",
+  "role": "MANAGER",
+  "path": "/app/exceptions",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-home",
+  "role": "ADMIN",
+  "path": "/app/dashboard",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "adm-drawer",
+  "role": "ADMIN",
+  "path": "/app/dashboard",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b = document.querySelector('nav.fixed.bottom-0 button'); if (b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "adm-admin",
+  "role": "ADMIN",
+  "path": "/app/admin",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-users",
+  "role": "ADMIN",
+  "path": "/app/admin/users",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-user",
+  "role": "ADMIN",
+  "path": "/app/admin/users/cmtu6yxml000bsby88dvwleqa",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-settings",
+  "role": "ADMIN",
+  "path": "/app/admin/settings",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "adm-warehouses",
+  "role": "ADMIN",
+  "path": "/app/admin/warehouses",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-content",
+  "role": "ADMIN",
+  "path": "/app/admin/content",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-markets",
+  "role": "ADMIN",
+  "path": "/app/admin/markets",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-audit",
+  "role": "ADMIN",
+  "path": "/app/admin/audit",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-deleted",
+  "role": "ADMIN",
+  "path": "/app/admin/deleted",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-rates",
+  "role": "ADMIN",
+  "path": "/app/admin/rates",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "adm-scan",
+  "role": "ADMIN",
+  "path": "/app/scan",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-home",
+  "role": "CUSTOMER",
+  "path": "/portal",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "por-more",
+  "role": "CUSTOMER",
+  "path": "/portal",
+  "vw": [
+   "m"
+  ],
+  "before": "(() => { const b=[...document.querySelectorAll('nav button, nav a')].find(x=>/More/.test(x.innerText)); if(b) b.click(); return !!b; })()"
+ },
+ {
+  "id": "por-cargo",
+  "role": "CUSTOMER",
+  "path": "/portal/cargo",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-cargo-ready",
+  "role": "CUSTOMER",
+  "path": "/portal/cargo/SC0057",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-cargo-clearance",
+  "role": "CUSTOMER",
+  "path": "/portal/cargo/SC0047",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-shipments",
+  "role": "CUSTOMER",
+  "path": "/portal/shipments",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-book",
+  "role": "CUSTOMER",
+  "path": "/portal/book",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-calculator",
+  "role": "CUSTOMER",
+  "path": "/portal/calculator",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-invoices",
+  "role": "CUSTOMER",
+  "path": "/portal/invoices",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-invoice",
+  "role": "CUSTOMER",
+  "path": "/portal/invoices/cmu44y5ah0003sbvf0qqzu6k0",
+  "vw": [
+   "d",
+   "m",
+   "t"
+  ]
+ },
+ {
+  "id": "por-payments",
+  "role": "CUSTOMER",
+  "path": "/portal/payments",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-pickups",
+  "role": "CUSTOMER",
+  "path": "/portal/pickups",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-documents",
+  "role": "CUSTOMER",
+  "path": "/portal/documents",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-notifications",
+  "role": "CUSTOMER",
+  "path": "/portal/notifications",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-messages",
+  "role": "CUSTOMER",
+  "path": "/portal/messages",
+  "vw": [
+   "d",
+   "m"
+  ]
+ },
+ {
+  "id": "por-profile",
+  "role": "CUSTOMER",
+  "path": "/portal/profile",
+  "vw": [
+   "d",
+   "m"
+  ]
+ }
+]

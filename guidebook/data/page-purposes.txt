@@ -1,0 +1,122 @@
+/about |  | 
+/book |  | 
+/calculator |  | 
+/china |  | 
+/contact |  | 
+ |  | 
+/pickup |  | 
+/quote |  | 
+/rates |  | 
+/schedule |  | 
+/services |  | 
+/track/[code] |  | 
+/track | "Priced per cubic metre" | 
+/app/[...missing] |  | 
+/app/admin/audit | "Audit log" | "Append-only. Every privileged action, who did it, and when. Nothing here can be edited or removed, including by the owner."
+/app/admin/content | "Website content" | "The public schedule runs itself: cargo in by Friday, packed that Friday, sails Monday, thirty days at sea. Publish a row here only for the week that is different."
+/app/admin/deleted | "Deleted records" | "Nothing is ever destroyed. Every deletion and every cancelled payment is kept here with its reason and the person who made it."
+/app/admin/markets | "China markets" | "What the support desk recommends when a customer asks where to buy."
+/app/admin | "Administration" | "System configuration. Every change here is audited, including yours."
+/app/admin/rates |  | 
+/app/admin/settings | "Company settings" | "The accounts customers pay into, the offices they collect from, how they reach you, and the figures every bill is worked out with. Changed here, changed everywhere at once."
+/app/admin/users/[id] |  | 
+/app/admin/users | "Staff" | "Create accounts, move people between departments, and switch access off the moment someone leaves."
+/app/admin/warehouses | "Warehouses" | "Where cargo is received at each end. The Guangzhou address is what customers forward to their supplier."
+/app/cargo/[id]/delivery-note |  | 
+/app/cargo/[id]/label |  | 
+/app/cargo/[id] |  | 
+/app/cargo | "Cargo" | "Every consignment, wherever it is on the journey."
+/app/containers/[id]/labels |  | 
+/app/containers/[id]/packing-list |  | 
+/app/containers/[id] | "Empty" | "Load cargo from the Guangzhou floor to start filling it."
+/app/containers/arrived | "Arrived containers" | "Every sailing that has left China. Open one to see its cargo, documents and full timeline."
+/app/containers/closed | "Closed containers" | "Sailings where everything has been handed over. Collected against what it cost — the only point at which a margin is a result rather than a forecast."
+/app/containers/loading | "Loading containers" | "Every box still in Guangzhou and the ones that have just sailed. Open one to see exactly what is inside."
+/app/containers/new | "Open a container" | "It is numbered for you, and a voyage is created alongside it. The shipping line's own box number and the seal are recorded later, when the container is sealed."
+/app/containers | "Shipments" | "One box, one sailing, many customers. Open it, load it, seal it, send it — a sailing that has gone is the warehouse's history of it."
+/app/customers/[id]/edit |  | 
+/app/customers/[id] | "No cargo yet" | "Nothing has been booked for this customer."
+/app/customers/new | "Register a customer" | "The phone number is how everybody finds them again, so get that one right."
+/app/customers | "Customers" | "Created automatically the first time cargo is registered against a name or number."
+/app/dashboard |  | 
+/app/deliveries | "Deliveries" | "Customers who asked us to bring their cargo to them instead of collecting."
+/app/exceptions/[id] |  | 
+/app/exceptions | "Issues & Claims" | "Every item flagged missing, damaged or wrong on arrival — held here, with the boxes it belongs to, until someone closes it out."
+/app/finance/accounts/[id] |  | 
+/app/finance/accounts | "Accounts" | "Where the company's money sits, and everything that has moved through it. Each balance is that account's own history added up — nothing here is typed."
+/app/finance/audit | "Money audit" | "Every money action on the system, who did it and when. Append-only — nothing here can be edited or removed, including by the owner."
+/app/finance/collections |  | 
+/app/finance/collections/sent-back |  | 
+/app/finance/collections/verify |  | 
+/app/finance/collections/with-finance |  | 
+/app/finance/containers/[id] | "Nothing collected on this container yet" | "Payments appear here the moment they are verified against any consignment on it."
+/app/finance/containers | "Container finances" | "What every sailing earned and what it cost. Open one to read its whole book — every payment, every cost, and everything still owed on it."
+/app/finance/credit | "Finance" | "What the business holds, what it is owed, what it has spent, and every movement between them."
+/app/finance/exchange-rate |  | 
+/app/finance/expenses | "Expenses" | "What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left."
+/app/finance/invoices/[id]/document |  | 
+/app/finance/invoices/[id] |  | 
+/app/finance/invoices |  | 
+/app/finance/ledger/[id] |  | 
+/app/finance/ledger | "Finance" | 
+/app/finance |  | 
+/app/finance/payments/new/[customerId]/bill |  | 
+/app/finance/payments/new/[customerId] |  | "One payment, against as many of their bills as it covers. The account moves once."
+/app/finance/payments/new | "Merge Payment" | "Merge Payment lets a customer with multiple cargo or invoices pay them together as one handover. Select the cargo/invoices the payment covers, and the system spreads the money across their outstanding amounts oldest first, while each cargo keeps its own invoice, container, and pickup note."
+/app/finance/payments |  | 
+/app/finance/payroll | "Payroll" | "Build the month from the staff register, correct the exceptions, and send it to the manager. Nothing leaves an account until it is agreed."
+/app/finance/pickup-notes/[id] |  | 
+/app/finance/pickup-notes | "Pickup notes" | "The warehouse's authority to hand cargo over. Issued by Finance the moment a bill is settled — everyone else prints it and rings the customer."
+/app/finance/rates | "Rate book" | "Every figure Swift Cargo quotes comes from this page — the rate for each kind of goods, customers' agreed rates and today's exchange rate. Change it here and the next bill follows; a bill already raised keeps what it was priced at."
+/app/finance/receipts/[id] |  | 
+/app/finance/receipts |  | 
+/app/finance/reports | "Profit & loss" | "Revenue against costs, for a period and for a sailing. Every figure is derived from the operational record — there is no separate set of books."
+/app/finance/reports/print |  | 
+/app/finance/reports/statement |  | 
+/app/finance/verify |  | 
+/app/inventory |  | 
+/app/manager/approvals | "Approvals" | "Every queue in the company that is waiting on somebody, oldest item first — and what has lately been ruled on."
+/app/manager/control | "Control room" | "Every place the company can quietly go wrong, and how long it has been wrong."
+/app/manager |  | 
+/app/manager/payroll | "Payroll" | "What Finance has prepared, name by name. Accept it — which pays it — or send it back with a reason."
+/app/manager/reconciliation | "Reconciliation" | "Pick a record from the list to check it."
+/app/manager/reports | "Management report" | "What moved, what it earned, and how much of it is still owed."
+/app/no-access |  | 
+/app/notifications | "Notifications" | "What happened that concerns your desk."
+/app/packing-lists |  | 
+/app/profile | "My profile" | "Your details and your password. Anything about your job is set by the office."
+/app/receive/dar/[id] |  | 
+/app/receive/dar | "Receiving dock" | "Everything inbound — on the water, landed, and being checked off. Oldest first; a container on the floor comes before one still at sea."
+/app/receive/new | "Receive cargo" | "A driver is at the door. Everything below happens in one go — the reference, the delivery note and the customer's notification."
+/app/release/collected | "Collected cargo" | "Everything that has left the Dar warehouse, newest first — who took it and who handed it over."
+/app/release | "Pickup list" | "Customers who have paid and whose cargo is cleared to collect. Open a row to hand it over."
+/app/reports | "Warehouse reports" | "Throughput at both ends over the last thirty days."
+/app/scan | "Scan" | "Scan a label or a pickup note, or type the reference. It opens the consignment."
+/app/search | "Search cargo" | "Find a box by its QR label, tracking number, customer name or phone number."
+/app/support/[id] |  | 
+/app/support/markets | "China markets" | "Where to send a customer for what they are buying."
+/app/support |  | 
+/app/support/requests | "Website requests" | "Collections, service enquiries and quotes. Nothing here is confirmed until somebody here confirms it, and nothing here is cargo until a counter takes the goods in."
+/app/support/sourcing/[id] |  | 
+/app/support/sourcing | "Sourcing requests" | "Customers who want something found in China."
+/app/support/tickets | "Tickets" | "Every question, complaint and request the desk has taken, and what happened next."
+/login |  | 
+/portal/book |  | 
+/portal/calculator |  | 
+/portal/cargo/[reference] |  | 
+/portal/cargo |  | 
+/portal/documents |  | 
+/portal/invoices/[id] |  | 
+/portal/invoices |  | 
+/portal/messages/[id] |  | 
+/portal/messages |  | 
+/portal/notifications |  | 
+/portal |  | 
+/portal/payments |  | 
+/portal/pickups/[id] |  | 
+/portal/pickups |  | 
+/portal/profile |  | 
+/portal/shipments |  | 
+/register |  | 
+/t/[token] |  | 
+/v/[token] |  | 

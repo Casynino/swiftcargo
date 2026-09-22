@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCbm } from "@/lib/format";
 import { distinctMark } from "@/lib/customer-name";
 
-import { useT } from "@/components/app/locale-provider";
+import { useLocale, useT } from "@/components/app/locale-provider";
 import { Tm, Tx } from "@/components/app/tx";
 type Waiting = {
   id: string;
@@ -273,7 +273,7 @@ export function SealPanel({
       <div className="flex gap-2">
         <SubmitButton variant="accent">
           <Lock />
-          {tx("Seal")}
+          {tx("Seal the container")}
         </SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           {tx("Cancel")}
@@ -342,15 +342,17 @@ const NEXT_STEP: Record<string, Step | null> = {
 
 /* Where the box is on its journey, in four words. */
 const JOURNEY = [
-  { key: "SEALED", label: "Sealed" },
-  { key: "AT_SEA", label: "At sea" },
-  { key: "ARRIVED", label: "In Dar" },
-  { key: "CLOSED", label: "Closed" },
+  /* Chinese given here, not looked up: the dictionary's "Sealed" and
+     "Closed" are a batch and a case, which read wrongly on a container. */
+  { key: "SEALED", label: "Sealed", zh: "已封柜" },
+  { key: "AT_SEA", label: "At sea", zh: "海运途中" },
+  { key: "ARRIVED", label: "In Dar", zh: "已到港" },
+  { key: "CLOSED", label: "Closed", zh: "已关柜" },
 ] as const;
 const JOURNEY_AT: Record<string, number> = { SEALED: 0, DEPARTED: 1, IN_TRANSIT: 1, ARRIVED: 2, CLOSED: 3 };
 
 function JourneyStrip({ status }: { status: string }) {
-  const tx = useT();
+  const locale = useLocale();
   const at = JOURNEY_AT[status] ?? -1;
   return (
     <ol className="flex items-center gap-1.5 text-[11px] font-medium">
@@ -365,7 +367,7 @@ function JourneyStrip({ status }: { status: string }) {
                   : "rounded-full bg-secondary px-2 py-0.5 text-muted-foreground"
             }
           >
-            {tx(j.label)}
+            {locale === "zh" ? j.zh : j.label}
           </span>
           {i < JOURNEY.length - 1 ? <span aria-hidden className="h-px w-3 bg-border" /> : null}
         </li>

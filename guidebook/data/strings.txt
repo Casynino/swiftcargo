@@ -1,0 +1,999 @@
+### app/(public)/about/page.tsx (16)
+About us | Get a quote | Contact us | How we work | Nothing on this page | is a promise we cannot keep. | What we tell you is how the operation actually runs — which is what a trader choosing a forwarder is really trying to find out. | One route | days at sea. | A ship every week. Cargo in Guangzhou by Friday sails on Monday. | Where we are | Two warehouses, | one company. | Ship with people who count your boxes. | Twice. | Create an account
+
+### app/(public)/book/page.tsx (6)
+Sails | cargo in by | Book a service | Book your space | on the next ship. | Tell us what you are moving and we will come back with space, a price and the sailing it goes on.
+
+### app/(public)/calculator/page.tsx (4)
+Price calculator | Shipping price calculator. | Measure, choose, done. | Put in the size of your boxes — or your CBM if you already know it — choose your goods, and your price appears.
+
+### app/(public)/china/page.tsx (36)
+Explore China | Explore China's markets, | we ship it home. | Cities that make the world's goods, markets that sell them by the carton, and a warehouse in Guangzhou to bring it all together. Find where to buy what you sell — then send it to us. | Get my shipping mark | Request a pickup | Factories and showrooms | Where it is made, | where it is sold. | Buy from a factory in Dongguan, a showroom in Foshan and a stall in Guangzhou in the same week. Everything with your mark waits for you in our warehouse. | Factory floors | Furniture showrooms | Lighting | Garment makers | Tiles and ceramics | Electronics | Wholesale halls | Clothing | Leather goods | Toys | Beauty | Auto parts | Bought it? Here is what happens | From the market | to your shop in Tanzania. | Swift Cargo Guangzhou warehouse | Available on request | Your supplier must write your shipping mark on every box. Without it we cannot tell whose goods have arrived. | Our recommendations | Markets we recommend | by name. | If you know what you want but not where to get it, we probably do. | Want us to source for you? | Tell us what you need. | What you are looking for, your budget and the quantity. We find suppliers, compare prices, check the goods before they load and consolidate everything into one shipment. | Talk to us about sourcing
+
+### app/(public)/contact/page.tsx (12)
+Get in touch | Talk to | Call us, message us on WhatsApp, or leave your details and we will come back with a price. | Call us | Message us | Email | Already shipping? | Track your cargo | Ask for a price | Need a collection from a factory? | Request a pickup | Book space on a sailing
+
+### app/(public)/error.tsx (5)
+Something went wrong | Try again in a moment. You can still track cargo and reach us on WhatsApp. | Try again | Track cargo | Home
+
+### app/(public)/layout.tsx (0)
+
+
+### app/(public)/page.tsx (54)
+Shipping from China to Tanzania, | on time, every time. | Loose cargo and full containers by sea, | days from our Guangzhou warehouse to Dar es Salaam. Every box counted, weighed, measured and photographed the day it reaches us. | Get a quote | Price calculator | Track your cargo | Next sailing (next ship) | Departs | Arrives about | Last day to receive cargo: | days at sea | Who we are | One sea route, | run properly from end to end. | More about us | What we do | Two ways to ship, | and help finding what to ship. | All services | Explore China | Where the world's goods | are made and sold. | Guangzhou's markets, Yiwu's small goods, Shenzhen's electronics, Foshan's furniture. Find where to buy what you sell — we bring it home. | Explore all | How it works | Five steps, | factory to your shop. | South China Sea · Malacca · Indian Ocean | days | Next out | A ship every Monday. | Cargo in by Friday. | Full schedule | What it costs | What will my shipping cost? | Find out in seconds. | Choose your goods, enter your CBM or your box sizes, and your price appears. | Who we ship for | Shops, wholesalers and importers | across Tanzania. | Register once and you get your own shipping mark. Every box your suppliers send us is recorded under your name, and you can follow it from your phone. | Get my shipping mark | Request a pickup in China | Where to send your goods | A warehouse at each end | of the voyage. | Address available on request | Call us | Ready to ship from China? | Start today. | Create an account, get your shipping mark, and send it to your supplier. | Create an account | Talk to us
+
+### app/(public)/pickup/page.tsx (4)
+China pickup | We collect it | from your supplier. | We can collect from your supplier in China and bring it to our Guangzhou warehouse.
+
+### app/(public)/quote/page.tsx (3)
+Get a quote. | Tell us what you ship. | Tell us what you are shipping and we will come back with a price.
+
+### app/(public)/rates/page.tsx (12)
+Shipping rates | What will my shipping cost? | Find out in seconds. | Choose your goods, enter your CBM, and see your rate and your total straight away. | Our rate card is being updated. Please ask us for a quote. | What is not included | Shilling figures at | set | Your invoice pins the rate on the day it is issued. | Not sure of your volume? | Price calculator | Get a quote
+
+### app/(public)/schedule/page.tsx (8)
+Sailing schedule | A ship every Monday. | Cargo in by Friday. | We take cargo in Guangzhou until Friday, pack the container that Friday, and the ship leaves on Monday. Get your goods to the warehouse before the deadline and they are on that sailing. | No sailings published at the moment | Contact us and we will tell you when the next container closes. | Contact us | Sailings slip for weather, port congestion and customs, and we will tell you when one does.
+
+### app/(public)/services/page.tsx (12)
+Free storage for | days after arrival | Storage after arrival | Everything between your supplier | and your shop. | We handle the whole journey — receiving in China, loading, the sailing, clearing, storage in Dar and delivery. | Get a quote | Book space on a sailing | Not sure which one you need? | Ask us. | Tell us what you are shipping and roughly how much, and we will tell you the cheapest way to move it. | Price calculator
+
+### app/(public)/track/[code]/opengraph-image.tsx (0)
+
+
+### app/(public)/track/[code]/page.tsx (54)
+That is not a tracking reference | Your reference is on your delivery note and on every box label. It looks like SC0125. | Too many lookups | Please wait a few minutes and try again, or sign in to see all of your cargo at once. | Sign in | Contact us | We cannot find | Check the reference on your delivery note or box label. If your goods were only received today they may not be on the system yet. | Shipping marks cannot be tracked here. Sign in to see everything under your mark. | Ask us instead | Not yet loaded | Cargo | Warehouse storage | Arrived | Days in warehouse | day | days | Status | Collected — the clock has stopped | Days overdue | Free storage remaining | Charged so far | Storage is charged at | a day until the cargo is collected. | The first | days are free. After that storage is | a day until it is collected. | Expected in Dar | Arrived in Dar | Picture of your cargo | Tap to view and download. | Settled in full | Amount due | on the invoice | Jumla | Rate iliyotumika | Paid | Partly paid | Not yet paid | received of | a day until it is collected. Collecting sooner costs less. | Lipa number | Cash — at our office | Pay at the counter when you collect. | There is nothing to pay on this consignment yet. | Your invoice is raised once the cargo is checked in at our Dar es Salaam warehouse. | Everything is settled. Bring your ID and this reference to our Dar es Salaam warehouse. | We release cargo once payment is confirmed. | Cargo timeline | Full container | Loose cargo | Ask about this cargo | now | Expected
+
+### app/(public)/track/opengraph-image.tsx (0)
+
+
+### app/(public)/track/page.tsx (11)
+Nothing to show yet | Your reference is printed on the delivery note we sent when your goods reached our Guangzhou warehouse, and on the label on every box. | days at sea, loose cargo and full containers. | Priced per cubic metre | Counted, weighed, measured and photographed at our own counter. | Ask us on WhatsApp | If the reference is lost, the desk can find your cargo. | The journey | to | days | What a reference shows, and what it does not
+
+### app/app/[...missing]/page.tsx (0)
+
+
+### app/app/admin/audit/page.tsx (19)
+Audit log | Append-only. Every privileged action, who did it, and when. Nothing here can be edited or removed, including by the owner. | Search what happened, or a reference | Search the audit log | Who | Everybody | What | All records | From | To | Filter | Clear | Nothing matches those filters | Nothing logged yet | System | Page | of | Previous | Next
+
+### app/app/admin/content/page.tsx (12)
+Website content | The public schedule runs itself: cargo in by Friday, packed that Friday, sails Monday, thirty days at sea. Publish a row here only for the week that is different. | What the website is showing | No sailings overridden | The public schedule is running on the weekly rule, which is usually what you want. | Week | Vessel | Cargo deadline | Departs | Arrives | Status | Public
+
+### app/app/admin/deleted/page.tsx (27)
+by | Deleted records | Nothing is ever destroyed. Every deletion and every cancelled payment is kept here with its reason and the person who made it. | Cancelled money | No payment or transfer has been taken back. | transfer cancelled | Deleted cargo | Deleted cargo appears here, with everything it had at the moment it was removed. | Reason | No reason recorded | Deleted by | nobody on record | photo | photos | preserved | Preserved photo for | Package lines removed from a consignment | Deleted containers and costs | No container or cost has been deleted or cancelled. | container deleted | consignments | costs | Cost | cost deleted | cost cancelled | Every deletion and restore is also written to the | audit log
+
+### app/app/admin/markets/page.tsx (2)
+China markets | What the support desk recommends when a customer asks where to buy.
+
+### app/app/admin/page.tsx (2)
+Administration | System configuration. Every change here is audited, including yours.
+
+### app/app/admin/rates/page.tsx (0)
+
+
+### app/app/admin/settings/page.tsx (2)
+Company settings | The accounts customers pay into, the offices they collect from, how they reach you, and the figures every bill is worked out with. Changed here, changed everywhere at once.
+
+### app/app/admin/users/[id]/page.tsx (16)
+All staff | Last two weeks | Actions recorded per day | actions | Audit history | Nothing recorded against this account. | Payroll | Oversight | Never | System | Not given | Sign-in history | Last signed in {when}. | No sign-ins recorded yet. | Signed in | Failed attempt
+
+### app/app/admin/users/page.tsx (7)
+Staff | Create accounts, move people between departments, and switch access off the moment someone leaves. | Name | Role | Last login | Access | No staff accounts yet.
+
+### app/app/admin/warehouses/page.tsx (2)
+Warehouses | Where cargo is received at each end. The Guangzhou address is what customers forward to their supplier.
+
+### app/app/cargo/[id]/delivery-note/page.tsx (0)
+
+
+### app/app/cargo/[id]/label/page.tsx (1)
+Receive next
+
+### app/app/cargo/[id]/loading.tsx (0)
+
+
+### app/app/cargo/[id]/page.tsx (8)
+Cargo | What each warehouse counted | Packages | Pieces | Weight | Volume | Neither column corrects the other. Both are true statements about different moments, and the gap between them is the record of what happened on the water. | Dar corrects these lines now. Every change is kept with the old figure, and China's own totals stay as China measured them.
+
+### app/app/cargo/page.tsx (19)
+Cargo | Every consignment, wherever it is on the journey. | Receive cargo | Reference, mark, customer, supplier ref… | Search cargo | Filter by status | Any status | Filter | Nothing matches | No cargo yet | Try a different reference or clear the filter. | Register the first consignment to get started. | Reference | Customer | Description | Container | Pkgs | Status | Booked
+
+### app/app/containers/[id]/labels/page.tsx (0)
+
+
+### app/app/containers/[id]/loading.tsx (0)
+
+
+### app/app/containers/[id]/packing-list/page.tsx (0)
+
+
+### app/app/containers/[id]/page.tsx (24)
+This container is closed. Everything on it has been received in Dar. | Waiting in Guangzhou | Name, reference, mark or receipt no.… | Search the Guangzhou floor | Find | Box labels | Consignments | Still taking cargo | Customers | Sharing this box | Packages | Pieces | Weight | Volume loaded | No capacity set | What is in this container | Empty | Load cargo from the Guangzhou floor to start filling it. | The paperwork | Container | What the loading bar measures against and the day Guangzhou stops taking cargo for this sailing. The line's own container and seal numbers are recorded when the box is sealed. | Voyage | Whoever books the space fills this in. It prints on the packing list and is what the customer is told about the sailing. | History
+
+### app/app/containers/arrived/page.tsx (38)
+Containers | cargo | Expected | Collected | Outstanding | Expenses | Expected profit | Arrived containers | Every sailing that has left China. Open one to see its cargo, documents and full timeline. | The floor has finished counting. Finance confirms the price on Dar’s CBM before anybody is asked for money. | Confirm prices | Search container number, vessel, voyage or seal… | Search containers | In Dar with no container on record | Nothing is waiting for a price | Cargo appears here as soon as Dar checks it in. | Checked in at Dar before this system held its sailing. Open each one to raise and confirm its bill. | Cargo | Customer | Packages | Volume | Checked in | Draft to confirm | Open | Container | Route | Status | CBM | Arrived | under investigation | Counting | In transit | Closed | to price | Money columns in thousands (k) and millions (M) of shillings | Figures in USD — no exchange rate published | Cargo still waiting in China is on the | loading tables
+
+### app/app/containers/closed/page.tsx (14)
+Closed containers | Sailings where everything has been handed over. Collected against what it cost — the only point at which a margin is a result rather than a forecast. | Nothing is closed yet | A container closes once every consignment on it has been handed over at the Dar counter. | Container | Vessel | Arrived | Cargo | Volume | Billed | Collected | Still owed | Spent | Made
+
+### app/app/containers/loading.tsx (0)
+
+
+### app/app/containers/loading/page.tsx (24)
+Loading containers | Every box still in Guangzhou and the ones that have just sailed. Open one to see exactly what is inside. | Open a container | Taking cargo | loaded so far | Sealed, waiting to sail | consignments on board | On the Guangzhou floor | on no container | oldest | Everything measured is on a box | Shipped recently | No container is open | Cargo measured in Guangzhou waits on the floor until a container is opened for it. | Nothing loaded yet. Pick cargo off the Guangzhou floor from inside the container. | Tracking | Customer | Goods | Pkgs | Pieces | Weight | Volume | Received | Arrived containers
+
+### app/app/containers/new/page.tsx (2)
+Open a container | It is numbered for you, and a voyage is created alongside it. The shipping line's own box number and the seal are recorded later, when the container is sealed.
+
+### app/app/containers/page.tsx (26)
+Shipments | One box, one sailing, many customers. Open it, load it, seal it, send it — a sailing that has gone is the warehouse's history of it. | Open a container | Taking cargo | Open for loading in Guangzhou | Sealed | Shut and waiting for the vessel | At sea | Volume at sea | Landed | Arrived, being booked in at Dar | Container, seal, vessel or voyage… | Search sailings | Nothing matches | Nothing sailing | Try another word, or pick Everything above. | Open a container to start loading cargo for a sailing. | Container | Packing list | Vessel / voyage | Cargo | Customers | Packages | Weight | Departed | Status
+
+### app/app/customers/[id]/edit/page.tsx (0)
+
+
+### app/app/customers/[id]/loading.tsx (0)
+
+
+### app/app/customers/[id]/page.tsx (27)
+Receive cargo | Edit | Details | Customer code | Phone | Second phone | Email | City | Registered | Portal account | Not signed up | Name / shipping mark | Their name as written on every box — what they give the supplier, and how Guangzhou knows whose cargo has arrived. | Address for their supplier | Outstanding | Cargo | No cargo yet | Nothing has been booked for this customer. | Reference | Description | Container | Status | Owing | Invoices | Number | Issued | Total
+
+### app/app/customers/loading.tsx (0)
+
+
+### app/app/customers/new/page.tsx (2)
+Register a customer | The phone number is how everybody finds them again, so get that one right.
+
+### app/app/customers/page.tsx (20)
+Customers | Created automatically the first time cargo is registered against a name or number. | Add customer | Name, customer ID, phone, email, city or cargo reference | Searches every customer on file, however long ago they registered. | The suggestions are the customers on this page. | Show everyone | Show records with no email | Nothing matches. | Showing | of | filtered | Clear the search | No customer matches that | No customers yet | Try a shorter piece of the name, the customer ID off an old invoice, or the last few digits of the phone number. | They appear here as soon as the China desk receives cargo. | Newer | Page | Older
+
+### app/app/dashboard/loading.tsx (0)
+
+
+### app/app/dashboard/page.tsx (27)
+All cargo | Needs your attention | Cargo today | Packages today | Pieces today | Weight today | All containers | The desk · right now | In China warehouse | waiting for a container | Registered this month | vs last month | Cargo in transit | on the water to Dar | The desk, in shape | What is in Guangzhou | By where each consignment stands | On no container | Loading | Sealed, ready to sail | consignments | In and out | Registered against loaded, a fortnight | Registered | Loaded | How long it has waited | From the day it was registered in Guangzhou
+
+### app/app/deliveries/page.tsx (5)
+Deliveries | Customers who asked us to bring their cargo to them instead of collecting. | No deliveries to arrange | Customers request delivery from their own portal once their cargo clears. | Finished
+
+### app/app/error.tsx (5)
+Home | This screen could not load | Nothing you had not already saved was changed. Try again — if it keeps happening, tell the administrator and quote the reference below. | Try again | Go back
+
+### app/app/exceptions/[id]/page.tsx (18)
+What happened | Evidence | Resolution | History | Update this case | Case | Type | Department | Assigned to | Raised by | Opened | Resolved | Cargo | Reference | Customer | Phone | China counted | Dar counted
+
+### app/app/exceptions/page.tsx (12)
+Issues & Claims | Every item flagged missing, damaged or wrong on arrival — held here, with the boxes it belongs to, until someone closes it out. | Packages unaccounted for | Oldest open | Nobody carrying | Showing cases on | Show the whole queue | Nothing on | Nothing of this kind here | This cargo has no case in this view. Try another card above. | Other cases are in this view — switch the filter above to see them. | Recently closed
+
+### app/app/finance/accounts/[id]/page.tsx (0)
+
+
+### app/app/finance/accounts/page.tsx (21)
+Accounts | Where the company's money sits, and everything that has moved through it. Each balance is that account's own history added up — nothing here is typed. | Across every account | No accounts yet | An administrator adds the banks, mobile-money numbers and tills the business collects into. | Nothing has moved through this account yet | Office cash | What is in the tin, what went through it, and the two things you do to it. The balance is the ledger added up, so it cannot disagree with its own history. | No cash tin on the system | An administrator marks an account as cash, and it becomes countable here. | Everything that went through the tin | Full report | Nothing has moved yet | Verified payments, costs paid out and transfers between accounts appear here as they happen. | Date | Entry | Description | Type | Recorded by | Out | The money arrived and nobody said where it landed. It cannot be reconciled against a bank until somebody does.
+
+### app/app/finance/audit/page.tsx (12)
+Money audit | Every money action on the system, who did it and when. Append-only — nothing here can be edited or removed, including by the owner. | Everything | Cancelled & deleted | Nothing recorded yet | Actions appear here as they happen — a price confirmed, a payment taken, a cost paid. | System | Page | of | entries | Previous | Next
+
+### app/app/finance/collections/loading.tsx (0)
+
+
+### app/app/finance/collections/page.tsx (15)
+Customer, tracking number, invoice or phone… | Search the call list | Search | Storage is not yet on the bill until Finance adds it. | Nothing matches | Nobody owes anything | Try a phone number, or the tracking number. | Every confirmed bill has been settled in full. | Customer | Cargo | Waiting | Owed | Next action | Reach them | Open the bill
+
+### app/app/finance/collections/sent-back/page.tsx (2)
+Customer, reference, invoice or tracking number… | Search
+
+### app/app/finance/collections/verify/page.tsx (2)
+Customer, reference, invoice or tracking number… | Search
+
+### app/app/finance/collections/with-finance/page.tsx (2)
+Customer, reference, invoice or tracking number… | Search
+
+### app/app/finance/containers/[id]/page.tsx (22)
+Guangzhou | Open container | Money in | Nothing collected on this container yet | Payments appear here the moment they are verified against any consignment on it. | When | Customer | Cargo | How | Landed in | Amount | Money out | No costs booked to this container | Ocean freight, clearing, port charges and transport appear here once Finance records them against it. | What | Paid from | Recorded by | Still owed on this container | Every bill on this container is settled | Nothing on it is waiting for a customer to pay. | Bill | Outstanding
+
+### app/app/finance/containers/page.tsx (10)
+Container finances | What every sailing earned and what it cost. Open one to read its whole book — every payment, every cost, and everything still owed on it. | Every container, worst margin first | Container | Revenue | Collected | Outstanding | Costs | Profit / loss | No container has a bill or a cost on it yet.
+
+### app/app/finance/credit/page.tsx (20)
+Finance | What the business holds, what it is owed, what it has spent, and every movement between them. | Collections workspace | Collections | Credit | Cargo released before payment. None of this is cash — it is money customers still owe, and the oldest debt is the one to ring about. | the cargo does not move until you answer | Asked for credit | days | asked by | plus | on bills with no rate, not counted above | Customer, invoice, tracking or phone… | Search the credit book | Search | Clear | No credit here | still owing | of | let go by
+
+### app/app/finance/exchange-rate/page.tsx (0)
+
+
+### app/app/finance/expenses/page.tsx (13)
+Expenses | What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left. | Everything recorded has been paid. | What it was, the number, who was paid, a container… | Search | Every category | Any status | Paid | Not paid | Cancelled | Any account | Nothing here for this period. | Open the payment
+
+### app/app/finance/invoices/[id]/document/page.tsx (0)
+
+
+### app/app/finance/invoices/[id]/loading.tsx (0)
+
+
+### app/app/finance/invoices/[id]/page.tsx (15)
+Notify on WhatsApp | Download PDF | Print | This price has not been confirmed yet. Confirm it before downloading or sending the invoice. | Released on credit | Payments | Nothing recorded against this invoice yet. | Reference | Amount | Credited | Method | Status | Proof | Receipts | Paying for several at once? Take it as one payment.
+
+### app/app/finance/invoices/page.tsx (0)
+
+
+### app/app/finance/ledger/[id]/page.tsx (15)
+The customer, from the portal | Not paid out yet | Uncategorised | The sailing | No | none | General ledger | at the rate it moved at | written off | Attachments | No proof was attached to this payment. | No receipt was attached to this cost. The typed amount is the only record that it happened. | This kind of movement carries no attachment. | History | Nothing has been changed since it was recorded.
+
+### app/app/finance/ledger/loading.tsx (0)
+
+
+### app/app/finance/ledger/page.tsx (39)
+Finance | Merge | Credit | Cost | Every movement of money — freight collected, costs paid, transfers between accounts — with its account, who recorded it, and a running balance. | Everything that landed, transport included | Costs, refunds, transport passed on — and moves between our own accounts | cancelled, not counted | in costs still to pay | money the business owes. Not counted above, because none of it has left an account yet. | released on credit and still owed | overdue | None of it is in this register: cargo let go on credit moves no money, so it touches no account. It appears here as a credit payment on the day the customer pays. | Nothing matches | No movements yet | Try a shorter search, or clear the filters. | Every payment, cost and transfer writes a line here as it happens. | Date | Description | Type | Account | By | Debit | Credit (in) | Balance | Proof | Fix | Open | Cancelled | Transport | written off | Executive | Submitted by | Verified by | View | Page | of | Previous | Next
+
+### app/app/finance/loading.tsx (0)
+
+
+### app/app/finance/page.tsx (0)
+
+
+### app/app/finance/payments/new/[customerId]/bill/page.tsx (0)
+
+
+### app/app/finance/payments/new/[customerId]/page.tsx (5)
+Another customer | One payment, against as many of their bills as it covers. The account moves once. | Notify on WhatsApp | Every bill is settled | Nothing on this customer is waiting to be paid.
+
+### app/app/finance/payments/new/page.tsx (14)
+Merge Payment | Waiting to pay | customers with more than one open bill | Open bills | consignments still to be settled | Outstanding | Customer name, phone or tracking number | Search | Customer | Owed | Reach them | Remind them on WhatsApp | Nobody matched that. | Nobody has more than one unpaid consignment right now. Search for a customer to take a payment.
+
+### app/app/finance/payments/page.tsx (0)
+
+
+### app/app/finance/payroll/page.tsx (19)
+Payroll | Build the month from the staff register, correct the exceptions, and send it to the manager. Nothing leaves an account until it is agreed. | prepared by | Sent back | No reason was given. | Correct the lines below and send it up again. Last time's ruling is dropped the moment it goes. | With the manager since | Nothing on it can change while it waits. It comes back only if he sends it back. | Agreed by | The money has not moved. The manager pays it, out of | no account named | Paid | out of | the salaries expense has since been cancelled | Sent up with a note: | Earlier months | staff | agreed by | No salary run has been built yet. Build one above and it appears here, name by name, for you to correct before it goes up.
+
+### app/app/finance/pickup-notes/[id]/page.tsx (0)
+
+
+### app/app/finance/pickup-notes/page.tsx (30)
+Pickup notes | The warehouse's authority to hand cargo over. Issued by Finance the moment a bill is settled — everyone else prints it and rings the customer. | Note number, customer, phone or tracking number | Search | of | match | Clear | Oldest has been waiting | — storage runs the whole time the cargo is on our floor. | Nothing matches | Nothing here | Try the tracking number, or a shorter search. | A note appears the moment Finance confirms the payment that settles a bill. | Note | Customer | Cargo | Paid | Waiting | Reach them | not collected | picked up | cancelled | on credit | issued by | Call them | Call | Notify on WhatsApp | no phone | Print | under an hour
+
+### app/app/finance/rates/page.tsx (16)
+Rate book | The floor has received cargo of these types and there is no live rate for them and no general rate to fall back on. They reach Finance with no price until one is published. | Rates by kind of goods | No rate is live. Publish one to start pricing cargo. | Agreed customer rates | A customer who pays less than the book. The book rate stays — it is what the discount is measured against, and every bill shows both. | Nobody has an agreed rate. Everyone pays the book. | Superseded rates | Exchange rate | Applied to every bill raised from now on. Bills already issued keep the rate they were raised at. | Previous rates | Publish a rate | Supersedes the live rate for the same goods rather than editing it. Leave the kind of goods blank for the general rate. | Agree a customer rate | Change history | Nothing has been changed yet.
+
+### app/app/finance/receipts/[id]/page.tsx (0)
+
+
+### app/app/finance/receipts/page.tsx (0)
+
+
+### app/app/finance/reports/page.tsx (38)
+Profit & loss | Revenue against costs, for a period and for a sailing. Every figure is derived from the operational record — there is no separate set of books. | Profit margin | Where the money went | No costs incurred in this period. | Profit per container | Only costs tied to a container count here. Rent and salaries belong to the business, not to one sailing. | Container performance | Business volume | Where revenue comes from | Freight billed in this period. There is no other kind of income in the system — every invoice belongs to a consignment. | Guangzhou → Dar es Salaam | Where money is spent | A cost against a container is a container cost. One with no container is the business's own — office, special or executive. | Financial position | Across every account | Collection performance | What was billed in this period against what has come in for it. | Collection rate | Financial health | Twelve months | Money in against money out | Money in | Money out | One scale | Cargo landed in Dar, by month | Cubic metres counted off containers at the Dar floor. | Financial statement | The whole set of books, as one document | Period | Open the statement | Reports to download | One table each, over the period chosen at the top — the working papers behind the statement. Spreadsheet to work in, PDF to hand over. | From | Container | Every container | Apply | Spreadsheet
+
+### app/app/finance/reports/print/page.tsx (0)
+
+
+### app/app/finance/reports/statement/page.tsx (5)
+Profit & loss | Download PDF / print | Swift Cargo | Guangzhou → Dar es Salaam | Financial statement
+
+### app/app/finance/verify/page.tsx (0)
+
+
+### app/app/inventory/page.tsx (44)
+Guangzhou floor | Dar es Salaam floor | Received in Guangzhou and already in a container, with the box it went into. | Everything received and still waiting for a container. | Everything landed in Dar, oldest first. | Receive cargo | Shown here | On the floor | Consignments in a box | Consignments physically here | Waiting for a container | Waiting to be released | Gone into containers | Cleared to go | Still in Guangzhou, in a box | Volume shown | Volume on the floor | Reference, mark, receipt no., customer or phone… | Search the floor | Filter | Everything here | In a container | On hold | No photograph | Cargo type | Any cargo type | Received from | Received up to | Nothing matches | The floor is clear | Try a receipt number, or the mark written on the box. | Nothing received in Guangzhou is sitting in a container. | Nothing is waiting. Everything received has gone into a container. | Nothing landed is still sitting here. | Customer | Tracking no. | Goods | Pkgs | Pieces | Proof | Status | Container | Received | No photo
+
+### app/app/layout.tsx (0)
+
+
+### app/app/loading.tsx (0)
+
+
+### app/app/manager/approvals/page.tsx (14)
+Approvals | Every queue in the company that is waiting on somebody, oldest item first — and what has lately been ruled on. | still waiting | oldest today | oldest | Nothing is waiting | No credit request, payment, price, container statement or claim is sitting undecided. | Nothing agreed yet | Nothing sent back | Rulings appear here the moment they are made, on the screen that makes them. | System | Clear: | The last 30 of each: payments verified, sent back and reversed, credit releases and withdrawals, container prices confirmed, and cases finished. | The full log has everything else.
+
+### app/app/manager/control/page.tsx (7)
+Control room | Every place the company can quietly go wrong, and how long it has been wrong. | Nothing wrong. Every tin is counted, every queue is moving, and nothing is in dispute. | Nothing urgent — these are waiting on somebody | nothing wrong | since today | oldest
+
+### app/app/manager/loading.tsx (0)
+
+
+### app/app/manager/page.tsx (0)
+
+
+### app/app/manager/payroll/page.tsx (14)
+Payroll | What Finance has prepared, name by name. Accept it — which pays it — or send it back with a reason. | Nothing is waiting on you | Finance has not sent up a salary run, and nothing you have agreed is still unpaid. | no account named | prepared by | sent up today | waiting | staff | out of | Finance says: | You prepared this run, so you cannot be the one who agrees it. Somebody else holding payroll approval has to read it. | Already ruled on | Payslips
+
+### app/app/manager/reconciliation/page.tsx (86)
+without a rate | Reconciliation | Review and reconcile what Finance recorded against the money the accounts actually hold. | Reconcile an account | Export | Reconciliation progress | of | agreed | looked at and still open | of the pile | nothing in this view | Reference, receipt, invoice, customer, container, vendor… | Search | Account | All accounts | Type | All types | Recorded by | Anyone | Period | Any date | Filter | Clear | To check | Records to check | shown | transfers not counted | No record matches these filters. | Nothing is waiting on you. Everything agreed sits under the Reconciled filter. | no account | Previous | Next | Nothing selected | Pick a record from the list to check it. | at its own rate | what the system recorded | Back to the list | none given | Open where it was recorded | This record | System | Actual | not given | Difference | never checked | Checked | money has moved since | No account is named on this record, so there is nothing to hold it against. | Transfers carry no attachment. Hold it against both statements. | No document attached. Ask for it before agreeing this one. | Evidence | Your verdict | Reading only — recording a verdict is the manager's and the owner's. | History | actual | Append-only. Nothing here can be edited or removed. | The accounts | need a check | System is what the register says, worked out from its own rows. Actual is what somebody proved from outside it — a statement, a phone, a till count. | No live accounts | what the register says | Containers | Every container | Container | Billed | Collected | Still owed | Costs | No container has figures yet. | scroll for | more | billed | collected | still owed | cost | Last said | Pick a container to agree its figures or hand them back. | The books against themselves | disagree | Each figure asked twice, by two different routes. These need no verdict — they are arithmetic, and a disagreement is a fault to chase. | Agrees | Differs | The two agree. | Apart by | Open the register behind this check | check(s) disagree — chase these before agreeing the month.
+
+### app/app/manager/reports/page.tsx (30)
+bills raised | Released against payment | Released against a promise | Verified payments that arrived, write-offs excluded | margin | Management report | What moved, what it earned, and how much of it is still owed. | Print | Custom | From | To | Show | Covering | against | What moved | What it earned | Open credit | What is still owed | How old it is | bills | Not in the bands: dollar bills with no rate | Who owes the most | Nobody owes anything today. | oldest | days | Every report you can run | Each one covers the period chosen above, in shillings at each record's own rate. A few can only be read as at today; each says so on its own document. | PDF | Excel (CSV) | Money in shillings at each record's own rate. Prepared by
+
+### app/app/no-access/page.tsx (4)
+That page is not yours | You are signed in as | This screen belongs to another desk. If you need it, ask a manager rather than another sign-in. | Back to dashboard
+
+### app/app/not-found.tsx (4)
+We could not find that | The link may be old, the record may have been removed, or the reference was mistyped. | Search | Home
+
+### app/app/notifications/page.tsx (3)
+Notifications | What happened that concerns your desk. | Nothing yet
+
+### app/app/packing-lists/page.tsx (0)
+
+
+### app/app/profile/page.tsx (11)
+My profile | Your details and your password. Anything about your job is set by the office. | About you | Password | Set by the office. Ask a manager if any of it is wrong. | Desk | Department | Warehouse | Sign-in email | Joined | Last signed in
+
+### app/app/receive/dar/[id]/page.tsx (3)
+Packing list | Box labels | Scan boxes off the container
+
+### app/app/receive/dar/page.tsx (27)
+Nothing matches | Try the vessel, or our own container number. | Container | Where | Vessel / voyage | Departed / landed | Cargo | Checked in | Packages present | Checked by | Waiting | Not sailed | Not landed | See what is in it | Receiving dock | Everything inbound — on the water, landed, and being checked off. Oldest first; a container on the floor comes before one still at sea. | Cargo to check in | Containers on the floor | Landed, not yet closed off | Containers at sea | Longest on the floor | Chase anything past two days | Open now | Container, vessel, voyage or seal… | Search inbound containers | Landed and checked in | Open one to add a consignment that turned up after it was closed.
+
+### app/app/receive/new/page.tsx (2)
+Receive cargo | A driver is at the door. Everything below happens in one go — the reference, the delivery note and the customer's notification.
+
+### app/app/release/collected/page.tsx (18)
+Collected cargo | Everything that has left the Dar warehouse, newest first — who took it and who handed it over. | Released, all time | Released this month | Packages on this page | Tracking number, customer, or who collected… | Search collected cargo | Nothing matches | Nothing has been released yet | Try the tracking number, or the name of the person who collected. | Cargo shows up here the moment it is handed over. | Customer | Tracking no. | Goods | Collected by | Pkgs | How | Released
+
+### app/app/release/page.tsx (6)
+Pickup list | Customers who have paid and whose cargo is cleared to collect. Open a row to hand it over. | Reference, mark, customer or phone… | Find cargo | Nobody is waiting to collect | Cargo joins this list the moment it is verified, invoiced and paid in full.
+
+### app/app/reports/page.tsx (22)
+Warehouse reports | Throughput at both ends over the last thirty days. | Received in China | Consignments, last 30 days | Volume taken in | Received in Dar | Weight handled | Volume shipped, by month | Dar floor, last fortnight | Containers | Container | Vessel | Consignments | Volume | Fill | Status | Longest on the floor | Cargo | Customer | Received | Days | Location
+
+### app/app/scan/page.tsx (2)
+Scan | Scan a label or a pickup note, or type the reference. It opens the consignment.
+
+### app/app/search/page.tsx (14)
+Search cargo | Find a box by its QR label, tracking number, customer name or phone number. | Use the camera | QR code, tracking number, customer name or phone number | Search | That code is not a Swift Cargo label | Nothing in the system carries it. Check you scanned our sticker and not a supplier's, then try the tracking number instead. | Label read | Its cargo is first in the results below. | Nothing matched | Try a shorter piece of it — part of a name, the last few digits of the phone number, or the carton reference written on the box. | Kind | Found | scanned
+
+### app/app/support/[id]/page.tsx (20)
+Reply | Move it forward | Customer | Name | Phone | Code | Trades as | Outstanding | This cargo | Reference | Where it is | Their tracking says | Container | Vessel | Invoice | Billed | Owing on it | Rate on the bill | Payments | Only verified payments count against the balance.
+
+### app/app/support/markets/page.tsx (13)
+China markets | Where to send a customer for what they are buying. | Edit the directory | Product, market or city… | Search markets | No market matches that | No markets in the directory yet | Try the kind of goods rather than the product name. | Once the directory is written, every market appears here with what it sells. | What they sell | Tell the customer | A customer who wants us to find it for them becomes a | sourcing request
+
+### app/app/support/page.tsx (73)
+Tickets | marked urgent | A customer is waiting on an answer somebody flagged as important. | Collections | to chase | Their cargo has reached Dar, the bill is out, and the money has not arrived. | sent back by Finance | Finance could not verify these. The customer needs ringing before the claim can go up again. | needs a call | with Finance | Payments handed up, waiting to be checked. Nothing to do but watch. | waiting on Finance | Sourcing | open | Somebody asked us to find them something in China. | Cases | waiting on the customer | A case is parked until somebody rings them back. That call is this desk's. | Pickups asked for on the website that nobody has picked up yet. | Habari | Support desk | Find cargo by tracking number, a customer's name, the number they are calling from, a container or an invoice. | Tracking number, customer name, phone, container or invoice | The call list | Needs your attention | All customers | The desk · today | Customers | On the books | Active cargo | In China, at sea or waiting in Dar | Ready for pickup | Pickup notes issued and not yet used | Contacted today | Calls and messages recorded to customers | Full queue | Where the queue is stuck | What the queue is made of | Every consignment in the Dar warehouse, by whether its money has arrived | in the warehouse | How long they have waited | Days on the Dar floor since the container was unloaded | over a fortnight | nothing stale | Opened and closed | Tickets raised against tickets finished, a fortnight | Opened | Closed | Call these customers first | Ranked by what it is costing them and us. | late | Payment with Finance | Chase payment — billed | ago | owed | Nothing owed on cargo that has reached Dar. Quiet day. | Customers waiting on us | All tickets | No open tickets. | Quick actions | Create a support ticket | Log a call, a complaint or a price inquiry | Create a sourcing request | Customer wants something found in China | Chase a payment | Cargo that has been billed and is still unpaid | Open a customer profile | History, balance, previous invoices | China markets directory | Recommend the right market for their goods | Sourcing in progress | Unknown | No open requests.
+
+### app/app/support/requests/page.tsx (8)
+Website requests | Collections, service enquiries and quotes. Nothing here is confirmed until somebody here confirms it, and nothing here is cargo until a counter takes the goods in. | China pickup requests | No pickup requests | Service requests | No service requests | Quote requests | No quote requests
+
+### app/app/support/sourcing/[id]/page.tsx (26)
+opened | by | What they asked for | No details taken. | Quantity | Not given | Budget | Open | Market | Not chosen | Handled by | Unassigned | What we found | History | Nothing has changed since it was opened. | updated | unassigned | System | Customer | Unknown | No number taken | Not registered as a customer yet. | Browse the China markets directory | to point them at the right place. | Move it forward | You can read this request but not work it.
+
+### app/app/support/sourcing/page.tsx (11)
+Sourcing requests | Customers who want something found in China. | Close | New request | New sourcing request | Product, reference, customer or phone… | Search sourcing requests | Unknown | unassigned | Empty | Cancelled, kept off the board:
+
+### app/app/support/tickets/page.tsx (17)
+Tickets | Every question, complaint and request the desk has taken, and what happened next. | Priority | Ticket number, customer, phone, cargo reference, what was said… | Search | Clear the filters | Nothing matches those filters | No tickets in this view. | Try another view, or clear the filters above. | Every call, complaint and question the desk takes belongs here — that is how the next person picks it up. | Ticket | Customer | Cargo | Status | Handled by | Last activity | Unread
+
+### app/global-error.tsx (4)
+Something went wrong | Try again in a moment. If it keeps happening, quote this reference. | Try again | Home
+
+### app/layout.tsx (0)
+
+
+### app/login/page.tsx (0)
+
+
+### app/not-found.tsx (4)
+We could not find that page | The link may be old or mistyped. If you are looking for your cargo, track it by its reference. | Track cargo | Home
+
+### app/portal/book/page.tsx (10)
+Sails | cargo in by | sailing | collecting | asked for | Book / request a service | A request is not yet a shipment — we look at it, come back to you, and confirm. | My requests | No active bookings. Requests you send appear here with their status. | Sent
+
+### app/portal/calculator/page.tsx (2)
+Shipping calculator | Estimated shipping cost. Final price is confirmed by Swift Cargo after cargo verification.
+
+### app/portal/cargo/[reference]/page.tsx (20)
+My cargo | You sent this consignment. It is addressed to somebody else, who pays for it and collects it. | Your goods have arrived in Dar es Salaam and are going through customs clearance. They are not ready to collect yet — we will tell you as soon as clearance is complete. | Ready for pickup | Cleared and paid. Bring your pickup note and ID to our Dar es Salaam warehouse, or ask us to deliver it below. | Amount due | You can pay now. Your cargo is ready to collect once it has cleared customs and your payment is confirmed. | Cleared — payment is required before pickup. | See invoice and pay | Journey | Running later than planned — we will update the date | Expected in Dar es Salaam | Arrived in Dar es Salaam | Photos of your cargo | Tap to view and download. | Would you like it delivered? | Requested — status: | We will call you to confirm the time and charge. | Delivery note | issued
+
+### app/portal/cargo/page.tsx (14)
+My cargo | Everything you have sent with us, and where each one is now. | Cargo reference, shipping mark or description | Search | Nothing matches | No cargo yet | Try another search, or show all your cargo. | Send your first shipment to Swift Cargo and track everything from here. | Show all | Book cargo | Calculate shipping | to pay | Newer | Older
+
+### app/portal/documents/page.tsx (4)
+My documents | Your invoices, payment receipts and pickup notes, ready to open or download. | No documents yet | Your invoice appears here once we confirm your charges, then receipts as you pay.
+
+### app/portal/error.tsx (5)
+This page could not load | Your cargo and your invoices are safe — this is only the screen. Try again, and if it keeps happening send us a message and quote the reference below. | Try again | My dashboard | Message us
+
+### app/portal/invoices/[id]/page.tsx (0)
+
+
+### app/portal/invoices/page.tsx (0)
+
+
+### app/portal/layout.tsx (0)
+
+
+### app/portal/loading.tsx (0)
+
+
+### app/portal/messages/[id]/page.tsx (1)
+You
+
+### app/portal/messages/page.tsx (0)
+
+
+### app/portal/not-found.tsx (4)
+We cannot find that on your account | The link may be old, or it may belong to a different account. If you think something is missing, send us a message. | My cargo | Messages
+
+### app/portal/notifications/page.tsx (0)
+
+
+### app/portal/page.tsx (29)
+Here is everything happening with your cargo. | Customer | Account active | WhatsApp us | Quick actions | My cargo | Nothing on the way right now | No cargo yet | Send your first shipment to Swift Cargo and track everything from here. | Book cargo | Calculate shipping | Current shipment | None of your cargo is in a container at the moment. | Payments | Outstanding | View and pay | All your invoices are paid. | No invoices yet. They appear here once we confirm your charges. | Recent activity | Nothing has happened on your account yet. | Upcoming sailings | Next sailing | Sails | Book | Send this to your supplier | Your shipping mark | This must be written on every box. Without it we cannot tell whose cargo has arrived. | Our Guangzhou warehouse | Ask us for the address
+
+### app/portal/payments/page.tsx (7)
+Payment history | Every payment on your account, in the currency you paid it in. | No payments yet | When you pay an invoice, the payment appears here — first as being checked, then as received. | ref | For invoice | receipt
+
+### app/portal/pickups/[id]/page.tsx (9)
+My pickups | Print | Pickup note | Issued | Pickup code | Show this code at the Dar warehouse counter | Bring photo ID. The code works once. | Collected | This note was withdrawn. Ask us for a new one.
+
+### app/portal/pickups/page.tsx (9)
+My pickups | Collecting your cargo from our Dar es Salaam warehouse. | Ready for pickup | Nothing is waiting for you to collect right now. | Show pickup note | Pickup notes | A pickup note is issued once your invoice is paid. It appears here, with the code the warehouse scans. | Issued | collected
+
+### app/portal/profile/page.tsx (0)
+
+
+### app/portal/shipments/page.tsx (8)
+My shipments | The containers carrying your cargo from | to | No shipments yet | Once your cargo is loaded into a container, the container and its journey appear here. | See my cargo | Container | Your cargo in this shipment
+
+### app/register/page.tsx (0)
+
+
+### app/t/[token]/page.tsx (0)
+
+
+### app/v/[token]/page.tsx (0)
+
+
+### components/app/account-check-button.tsx (19)
+Check | Reconcile an account | Close | Account | The register says | What it actually holds | Matches the register exactly. | Short by | Over by | the account holds less than the books say. | the account holds more than the books say. | Note | e.g. bank charge not yet booked | Say what explains the difference, or that nothing does yet — the next person to read this check will ask. | This records the check beside the account. It changes no figure. | Recording… | Record the check | LABEL: {t(locale, "Account")} | LABEL: {t(locale, "Note")}
+
+### components/app/account-tools.tsx (17)
+Move money between accounts | Out of | Into | What for (optional) | Banked Friday&rsquo;s takings | Date (blank for today) | Record the move | Count the cash | What is physically in the tin, against what the ledger says should be. | Which tin | Note (optional) | Anything that explains a difference | Record the count | As of | Why it is changing | Save | Cancel
+
+### components/app/action-pills.tsx (0)
+
+
+### components/app/activity-bars.tsx (0)
+
+
+### components/app/activity-feed.tsx (3)
+View all | No activity yet. | System
+
+### components/app/admin-forms.tsx (34)
+Add a warehouse | Code | Name | Country | China | Tanzania | Address, in the local script | Address, in English | City | Phone | Receiver at the door (收货人) | Cancel | Override a sailing week | Which sailing week | An extra sailing — no generated week | The week this row stands in for. Everything else that week is generated from the rule: cargo in by Friday, packed that Friday, sails Monday. | Vessel | MSC Kalamata | Voyage reference | Shipping line | Origin | Destination | Status | Last day to receive cargo | Container packed | Departs China | Days at sea | Note for the website | Deadline brought forward for the public holiday. | Show on the public website | Save | Remove sailing | LABEL: {tx("Address, in the local script")} | LABEL: {tx("Address, in English")}
+
+### components/app/agreed-rate.tsx (1)
+Special rate for this cargo
+
+### components/app/app-shell.tsx (6)
+Close menu | Open menu | Open the public website — you stay signed in | Main site | Notifications | Sign out
+
+### components/app/ask-for-credit.tsx (0)
+
+
+### components/app/attention-center.tsx (4)
+Nothing needs you | No missing cargo, no overdue bills, nothing held. | scroll for | more
+
+### components/app/bill-controls.tsx (20)
+Give a discount | Edit the rate per CBM | Why | Agreed with the customer… | Appended as its own line with your name on it. The original charge stays on the bill. | Apply | Cancel | Rate agreed for this customer… | Every line priced per cubic metre is re-multiplied. Flat and per-kilo lines are left alone. | Re-price | Storage is not charged. An administrator sets a daily rate in Settings. | Remove the storage fee | Change the rate | Rate for this payment | Pinned to this payment only. The bill keeps the rate it was raised at. | Use the board rate | LABEL: Take off ({currency}) | LABEL: {tx("Why")} | LABEL: Rate per CBM ({currency}) | LABEL: {tx("Rate for this payment")}
+
+### components/app/bill-dialogs.tsx (28)
+Edit price | Standard rate | Current rate | Special rate | Category | Total CBM | Rate per CBM | Save price | Cancel | Give a discount | Why — agreed with the customer, damaged goods… | Apply | Change the rate | This bill only. The dollar total does not move — only what it comes to in shillings. | Note (optional) — agreed at the counter, bank rate on the day… | Save | Edit price — category, CBM or rate | Edit the rate | Record a payment | Terms | Why are they asking? Finance reads this. | Release it on credit | Never mind | Granted the moment you press it, in your name, with the due date counted from today. The pickup note is written and the bill stays owed until the customer pays — it is a sale, not a payment. | On credit — see the terms | See the credit terms | Release on credit | Download the invoice
+
+### components/app/box-actions.tsx (4)
+Report damage | Missing | What is wrong — crushed, wet, opened… | Save damage report
+
+### components/app/box-scanner.tsx (0)
+
+
+### components/app/boxes-card.tsx (9)
+Boxes · one code each | Print all box labels | Box | Line | Where it is | What happened | Scanned | Reprint label | Scan history
+
+### components/app/cargo-actions.tsx (28)
+Actions | Give a discount | Edit price — category, CBM or rate | This bill is settled. These change the bill itself — use them to correct a price or a rate that was wrong. | Change the rate | Open Verify payments | Cargo charge | Paid in | Transport they added | Transport settled from | Cash or the Lipa number | Accept overpayment — the extra stays on the bill as a credit | Why the extra is being accepted | Landed in | Choose the account | Proof | Recording… | Waiting for price confirmation | No container is on record for this consignment, so its bill is raised here from the rate book and confirmed on the invoice. | The bill (invoice) | Download | Open invoice | No pickup note yet | Appears once the bill is settled. | Issue pickup note | Issuing… | Confirming… | Confirm this payment
+
+### components/app/cargo-details-edit.tsx (22)
+Edit details | Every change is kept with the old value, your name and your reason. Weights, counts and volumes are corrected where each warehouse's figures are shown. | Receiver | Invoiced, and the only person who may collect. | Sender | Who dealt with the supplier in China. | Shipping mark | Differs from the sender's name, so it is shown beside it. | What is written on the boxes. Blank means the sender's own mark. | Receipt number | Description | Cargo type | Choose the category… | Goods type | Not recorded | Notes | Internal notes | Never shown to the customer. | Why | e.g. Mark misread at the counter | Cancel | Save changes
+
+### components/app/cargo-mix.tsx (5)
+What you are sending | Nothing received yet in this period. | goods lines | line(s) without a cargo type | The rate book prices cargo by type, so these cannot be priced until one is chosen.
+
+### components/app/cargo-sticker.tsx (0)
+
+
+### components/app/cargo-timeline.tsx (1)
+This consignment was cancelled.
+
+### components/app/check-in-list.tsx (0)
+
+
+### components/app/china-receive-panel.tsx (10)
+Correct the receiving record | Warehouse | Choose… | Condition | Packages counted | Pieces inside | Weight (kg) | Shelf / location | Notes | Cancel
+
+### components/app/claim-list.tsx (20)
+Pick all | Verify | Send it back | Submitted by | How much came in | Paid in | Give a discount | Edit price — category, CBM or rate | Change the rate | Where the customer's money landed | Proof | View the proof on file | What was wrong with it? (optional) | Reference typed wrong | Delete this submission instead | Leave it | Send this payment back | Why it does not check out | The customer and the person who recorded it are told this | Keep it
+
+### components/app/clearance-button.tsx (5)
+Clearance complete | Note | Release order number, agent… | Mark cleared | Leave it
+
+### components/app/collection-accounts.tsx (36)
+Collection accounts | Printed on every invoice and its PDF, and offered when a payment is recorded. These are the same accounts Finance keeps balances for, so a payment lands on the account the customer was told to use. | Add an account | No account is open. Invoices are printing with nowhere to pay. | Retired accounts | Bank | Mobile money | Retired | on the books | Edit | Retire | Reopening… | Reopen | Why is it being retired? | Account closed by the bank | Retiring… | Retire account | Keep it | Label the customer sees | Number | Account name | Kind | Currency | Branch | Order on the invoice | Money has moved through this account, so its number, holder, kind and currency stay as the bank statement has them. A new number is a new account: add it, then retire this one. | Saving… | Save account | Add account | Cancel | LABEL: {t(locale, "Why is it being retired?")} | LABEL: {t(locale, "Label the customer sees")} | LABEL: {t(locale, "Number")} | LABEL: {t(locale, "Account name")} | LABEL: {t(locale, "Branch")} | LABEL: {t(locale, "Order on the invoice")}
+
+### components/app/collections-header.tsx (4)
+Payment follow-up | Who owes us money, what has gone to Finance, and what has come back. | Merge Payment | Release on credit
+
+### components/app/command-centre.tsx (120)
+never checked | moved since the check | checked | overdrawn | Receive cargo | Scan & release | Control room | Needs your attention | The money | What was billed, what arrived, and what is left of it. | Full position | Collected today | on the invoice | What customers actually handed over, verified by Finance. | Billed today | Invoiced today, not yet money. | Spent today | Every cost dated today, at the rate it was recorded at. | Credit outstanding | no rate, kept apart | Cargo released on a promise, never cash. | Owed to us | Billed, confirmed, and still not paid. Verified payments only. | Nothing has been billed this month yet, so there is no margin to show. | Costs came in above everything billed. | Billed | Cost | Margin | of everything billed this month survives its costs | Billed this month | What it cost | Money in and out | Payments received against costs paid, this year | In, this year | Out, this year | Where the money sits | Every company account, in its own currency, and when it was last checked | held in total, at today's rate | Check accounts | No account has been set up yet. | Collected against billed | Nothing billed | Collecting well | Half the month is out | Barely collecting | Share of this month's billing already paid | nothing billed this month yet | of this month's billing has come back | Customers using credit | carrying a live credit balance right now | Accounts to check | every account has been checked since it last moved | never checked, or moved since the last check | What each container is making | The company earns per sailing. A month-level profit cannot tell you which box paid for itself. | Every container | The briefing | Short readings, hardest-hitting first. A figure says how much; only a comparison says whether that is good. | Cargo in motion | Everything the business is carrying, Guangzhou to the counter. | Every consignment | Volume on the floor | measured at Dar and not yet handed over | Held, no pickup note | at Dar with nothing yet allowing it to go | Handed over this month | released to the receiver since the 1st | Registered this year | Consignments registered, month by month | month by month | one month in — there is no shape to draw yet | The containers themselves | Containers, not consignments — the boxes, not what is in them | Loading in Guangzhou | open, loading or sealed | At sea | departed, not yet arrived | Arrived, not finished | landed and not yet closed | Where the cargo is | Mutually exclusive, and they add up to everything | consignments in the business | The business is carrying nothing right now — everything received has been handed over. | Shares, not counts: each desk states its own count on the cards at the foot of this page. | In Guangzhou, waiting to ship | On the Dar floor | Cleared, not collected | Under investigation | Received in the last | days | Not classified | What each container carried | Volume loaded, the last eight containers, oldest first | No container has sailed yet, so there is nothing to compare. | The company | What is standing still until you decide, and who it is standing on. | Every queue | Waiting on you | Nothing below moves until somebody decides | Decisions queued | nothing is sitting | oldest | Containers to sign off | every landed container is closed | Payroll to agree | no run has been built yet | Customers on the books | New this month | Waiting on our reply | Overdue on credit | Signing in and working | Opened the app today | Suspended | Attendance is not tracked. Opened the app today means exactly that, and nothing more. | Every desk, right now | Each desk's own standing count, and the one thing wrong on it. | Every desk in full | Company activity | Every privileged action, newest first | Nothing has moved enough to be worth a sentence. The figures below are the whole story.
+
+### components/app/company-settings-form.tsx (42)
+The company | The name on every invoice, receipt, delivery note and packing list, the two companies behind it at each end, and the tax numbers printed on bills. | Trading name | Tagline | Tanzania company | The legal company in Dar es Salaam, which the bank accounts are held in. | Guangzhou company | The legal company that receives in Guangzhou. | TIN | Printed under the name on every invoice. | VRN | Tanzania office | Where customers collect, as it is printed on the invoice. | Address | Postal address | The P.O. Box, kept with the office address. | China office | Customers forward this to their supplier, so keep it in the script a driver in Baiyun can read. | Contact | On the invoice, the public site and the footer of every page customers see. | Phone | Second phone | WhatsApp (digits only) | Email | Tax and storage | The figures bills are worked out with. Bills already issued keep the VAT they were raised at; storage is offered on a bill, never added by itself. | VAT (%) | Applied to invoices raised from now on. | Our prices already include VAT — do not add it on top | Free storage days | How long cargo sits in Dar before storage starts to count. | Storage per day (USD) | Per consignment, after the free days. Zero means storage is not charged. | Invoice terms | Printed under every invoice, one line each. While a daily storage rate is set the bill carries its own storage box, so a terms line about the storage fee is left off. | The terms still say | Change the wording too, or the bill will contradict itself. | Saving… | Save settings | Undo my changes | Bills already issued keep their VAT and exchange rate — this changes what goes out from now on. | LABEL: {label}
+
+### components/app/container-cargo-tabs.tsx (24)
+Tracking number, customer, phone or goods… | Search this container | Category | All categories | Sort | Date received | Tracking | Customer | Goods | Volume | Counted as | Price | Proof | Nothing matches. Try the tracking number, the customer or the goods. | Nothing filed against this container yet. | Open | It came off a different box, or off none | Move | View | Download the photo | Record a payment on | Record a payment | Cargo type for | Choose a type…
+
+### components/app/container-controls.tsx (39)
+Nothing is waiting for a container in Guangzhou. | Select everything waiting | Customer | Cargo | Goods | Pkgs | selected | of | over capacity | Capacity is a guide, not a gate — a loader on the floor can see what fits better than a number in a database. Nothing is blocked. | Load | consignment(s) | Seal container | Sealing closes the box for good | Container number | Seal number | Seal | Cancel | Recording… | Today's date and time are recorded with your name. | Capacity (CBM) | What the loading bar is measured against. A guide, never a gate. | Cargo deadline | The day Guangzhou stops taking cargo for this sailing. It is published, so moving it goes on the box's timeline. | Notes | Save container | Shipping line | Vessel | Voyage | Bill of lading | Departure | Line moved us to the next sailing | Save voyage | Select every consignment in this container | Tick a row to take it back off. | Taking off… | Take off | Mark as arrived | LABEL: ETA
+
+### components/app/container-expenses.tsx (17)
+Expenses on this container | Nothing recorded against this container yet, so its profit has nothing taken off it. | Expense | Something else | Amount | Currency | Paid from | Not paid yet | Add | Why is it being cancelled? | Cancel it | Keep it | Cancel | LABEL: {tx("Expense")} | LABEL: {tx("Amount")} | LABEL: {tx("Currency")} | LABEL: {tx("Paid from")}
+
+### components/app/container-form.tsx (7)
+It will be called | Container type | Usable capacity (CBM) | Origin port | Destination port | Notes | Open container
+
+### components/app/container-money.tsx (3)
+Financial overview | Collected and Expenses are money that has actually moved. The rest is what this container is expected to be worth once everyone pays. | Chase them
+
+### components/app/container-profit-table.tsx (16)
+Containers | No container has sailed yet. | no costs recorded | still a draft | What each container is making | Billed against what it cost. Only Collected is money in the bank. | Container | Expected revenue | Collected | Outstanding | Expenses | Expected profit | Expected margin | scroll for | more | scroll for more
+
+### components/app/container-tabs.tsx (0)
+
+
+### components/app/conversation-reply.tsx (10)
+Reply | Write a reply… | Internal note — the customer never sees this | Open | Waiting on customer | Waiting on us | Resolved | Closed | Send | LABEL: {tx("Reply")}
+
+### components/app/copy-field.tsx (0)
+
+
+### components/app/correct-expense-dialog.tsx (1)
+LABEL: {L("Amount")} ({money(currency)})
+
+### components/app/count-up.tsx (0)
+
+
+### components/app/customer-form.tsx (10)
+Full name | Business name | Phone | Second phone | Email | Address | City | Notes | A shipping mark is generated automatically. It is what the customer gives their supplier, and it never changes afterwards. | LABEL: TIN / VRN
+
+### components/app/customer-picker.tsx (4)
+Choose somebody else | Name, phone, code or shipping mark… | Searching… | Type at least two characters.
+
+### components/app/customers-table.tsx (23)
+Customer | Phone | none recorded | City | Cargo | {n} active | Owed | Last cargo | never | Customer since | Open | Activity | Has cargo on the way | Nothing active | Never shipped | Balance | Owes money | Nothing owed | No customers match | Try a shorter piece of the name or number. | no phone | cargo | owed
+
+### components/app/damage-tag.tsx (5)
+How bad is it? | Photographs | What did you find? | Two bales soaked on the door side, seal intact… | It stays on the floor and is still billed. The tag and its case follow it to whoever prices it and whoever releases it.
+
+### components/app/dar-count-correction.tsx (10)
+Correct Dar's count | Changes the Dar column only. China's measurement stays as Guangzhou recorded it, and the old Dar figure is kept with your name and reason. | Packages | Pieces | Weight (kg) | Volume (CBM) | Why | e.g. Re-weighed on the Dar scale | Save Dar's count | Cancel
+
+### components/app/dar-receive-form.tsx (9)
+Warehouse | Choose… | Condition | Shelf / location | Saving this opens a case automatically and holds the cargo from release until somebody resolves it. | What did you find? | Two cartons missing from the pallet, seal intact… | Photos | Notes
+
+### components/app/data-table.tsx (12)
+Clear search | Filters | Columns | Close | Show columns | All | Clear all | Nothing matches | Try a different search, or clear the filters. | of | Previous page | Next page
+
+### components/app/delete-customer-button.tsx (7)
+Delete | Delete this customer? | will be removed from the customer list and search, and their portal sign-in will stop working. | A customer with cargo or bills cannot be deleted — edit their details instead. | Deleting… | Delete customer | Cancel
+
+### components/app/delivery-controls.tsx (8)
+Delivery status | Driver | Driver phone | Charge | Delivery charge | Why it failed | Why the delivery failed | Save
+
+### components/app/delivery-note-button.tsx (1)
+Issue delivery note
+
+### components/app/desk-hero.tsx (1)
+Search
+
+### components/app/desk-pulse.tsx (1)
+nothing wrong here
+
+### components/app/empty-state.tsx (0)
+
+
+### components/app/exception-cards.tsx (0)
+
+
+### components/app/exception-forms.tsx (25)
+Raise an issue | What kind of issue? | Priority | Low | Normal | High | Urgent | Whose desk? | Which consignment? (optional) | Not about one consignment | Title | Two cartons short on MSCU7741203 | What happened? | Photos or documents | Open case | Cancel | Status | Assign to | Leave as is | Add a note | Add photos or documents | Resolution | What was actually done about it. | Resolving or closing clears the warehouse flag, so the cargo can be verified and released again. | Record
+
+### components/app/exception-table.tsx (35)
+Problem | Case | Tracking | Customer | Goods | Boxes here | Cargo status | Closed | Open for | Cargo present | Not in the warehouse | of | today | Hide case detail | Show case detail | Reported issue | Evidence | The case | Reported by | Carried by | Nobody yet | no phone on file | Cargo | Not on a consignment | Container | Not in a container | Where the cargo is | Not counted at Dar yet. | packages not accounted for. | Every package is in the Dar warehouse. | Timeline | oldest first | Opened | Outcome: | Open the case
+
+### components/app/expense-form.tsx (35)
+Record a cost | Close | Container | Choose… | What kind of cost? | Uncategorised | Amount | Currency | Paid to | Shipping line, clearing agent… | Paid from | Nobody said yet | Date | Their reference | What was it for | Record | Cancel | The usual | Fuel, a repair, printer ink… | Category | Not paid yet | Who received it — a person, a company, a till | Receipt or photo | Against a container | Not one container | Leave it blank and it is dated today. Only set it for a receipt found later. | Record cost | Leave the account blank and it is recorded as still to pay. | LABEL: {tx("What was it for")} | LABEL: {tx("Category")} | LABEL: {tx("Amount")} | LABEL: {tx("Paid from")} | LABEL: {tx("Paid to")} | LABEL: {tx("Against a container")} | LABEL: {tx("Date")}
+
+### components/app/field.tsx (0)
+
+
+### components/app/finance-forms.tsx (72)
+Publish a rate | Service | Loose cargo (LCL) | Full container (FCL) | Commodity band | Blank = the general rate | Charged by | Cubic metre | Kilogram | Flat | Rate (USD) | Minimum CBM | Minimum kg | Show this on the public rates page | Publishing supersedes the current rate rather than editing it. Invoices already raised keep the rate they were raised at. | Publish | Cancel | Agree a customer rate | Customer | Choose… | Cargo type | Every cargo type | Agreed rate (USD) | Why? | Volume customer since 2024 | The standard rate stays where it is — it is what this discount is measured against, and every invoice will show both. | Record | TZS per 1 USD | Reason | CRDB bank rate, 17 Sept | Publish rate | Raise invoice | Raise invoices for this container | Payable within | On receipt | Issue to customer | Adjust | Rate | Extra charge | What for? | Transport, storage… | Save adjustment | Cancel this bill | Cancel it | Keep it | Paid in | Accept overpayment — the extra stays on the bill as a credit | Why the extra is being accepted | Paid by | Mobile money | Bank transfer | Cash | Cheque | Other | Their reference | M-Pesa code… | Proof | Date paid | Click here if you wish to change the date | Not on the statement… | Reject | Back | Verify | Reverse | Why is it being reversed? | The payment stays on the record as reversed. The receipt already issued would otherwise point at nothing. | LABEL: Cargo charge ({currency}) | LABEL: {tx("Paid in")} | LABEL: {tx("Paid by")} | LABEL: {tx("Their reference")} | LABEL: {tx("Proof")} | LABEL: {tx("Date paid")}
+
+### components/app/finance-home.tsx (28)
+Needs your attention | Containers · what each one made | What each container is making | Billed against what it cost. Only Collected is money in the bank. | The money · right now | The money, in shape | Where the cash sits | All | TZS in hand | Money in and out | What arrived against what it cost, this year | Money in | Money out | One scale | What we are owed, by age | From the day the bill became real | Cargo behind the money | Longest in the warehouse | Oldest arrivals still unpaid — storage is building on every one | Payment follow-up | Cargo | Customer | Value | Waiting | Nothing unpaid on the Dar floor. | Recent payments | What was handed over, and where it landed | No payments verified yet.
+
+### components/app/finance-tabs.tsx (0)
+
+
+### components/app/form-message.tsx (0)
+
+
+### components/app/hold-toggle.tsx (8)
+Held — this cargo cannot be released | Lift the hold | Hold this cargo | Why is it being held? | Customs query, dispute, open case… | A hold stops release regardless of whether the bill is paid. Money and operations are answered by different desks, and clearing one must not clear the other. | Hold | Cancel
+
+### components/app/intake-form.tsx (43)
+Who is it for? | Phone | The number is the customer. Names get written down differently every time; a number does not. | Name / shipping mark | As written on the boxes | Saved. | Saving… | Save this customer | Adds them to the book now. You can carry on and receive their cargo, or come back to it later. | This number is already | consignments with us | Use | Their cargo goes on this consignment. | Customer | Search by name, phone, code or shipping mark. | Pick an existing customer | New customer | What did they bring? | One row per kind of goods, as on the packing list. | Package | Remove | Receipt number | Package description | What the goods are — e.g. Shoes, Phone cases | Cargo type | Choose the category… | Packages | Pieces | CBM | Weight kg | Add package | Photos | The shipping mark, and anything damaged. The customer sees these. | Note | optional | Anything worth knowing — a torn carton, a box that came wet… | pkg | pcs | Receiving… | Confirm receiving | Confirm | Confirming creates the tracking number and the delivery note, and tells the customer their goods have arrived in Guangzhou. | LABEL: {t("Name / shipping mark")}
+
+### components/app/invoice-document.tsx (0)
+
+
+### components/app/invoice-editor.tsx (17)
+Adjust this invoice | Rate per CBM, storage, extra charges, discount, exchange rate and notes — before it is paid. | Storage | Charge storage on this bill | No storage rate is set in Settings. | Sea freight rate (USD per CBM) | Additional charge (USD) | Repacking, special handling, delivery | Discount (USD) | Exchange rate (TZS per USD) | Changes this invoice only. The dollar total does not move. | Note on the invoice | Shown to the customer on the printed invoice. | Why | Agreed with the customer, re-measured, bank rate on the day… | Save changes | Cancel
+
+### components/app/kpi-card.tsx (0)
+
+
+### components/app/language-switch.tsx (1)
+Language
+
+### components/app/ledger-filters.tsx (6)
+Customer, cargo reference, receipt, M-Pesa code, cargo, vendor, account, person… | Search the ledger | In only | Out only | When | Clear
+
+### components/app/ledger-row-actions.tsx (4)
+The reason | Keep it | View | Edit
+
+### components/app/ledger-row-fix.tsx (13)
+Not recorded — type it in | Edit | Cancel | Correct this record | Close | The figure and the account are not corrected here: a receipt was printed from them and the bill was settled by them. A wrong amount is reversed and taken again, so both stay on the books. | Taken as one across several bills — a correction is written to every one of them, and the shared reference that ties them is not offered. | How it was paid | Why? (optional) | What was wrong with the record? (optional) | Working… | Save the correction | Leave it
+
+### components/app/locale-provider.tsx (1)
+Receive Cargo
+
+### components/app/manager-bento.tsx (0)
+
+
+### components/app/mark-all-read.tsx (1)
+Mark all read
+
+### components/app/markets-admin.tsx (34)
+Edit market | Add a market | Markets | Published markets are what the support desk reads out to customers. | Close | New market | Market name | City | Kind of goods | Clothing and fashion | Markets are grouped under this on the support desk. | District | Opening hours | Roughly 09:00–17:00 daily | Best for — one line | Clothing, shoes, bags and general merchandise | Description | Products — one per line | Tips for the customer — one per line | Warning to reconfirm | optional | Opening days vary — confirm before travelling. | Position in the list | Saving… | Save changes | Add market | No markets yet | The first one you add appears on the support desk. | unpublished | products | tips | Edit | Unpublish | Publish
+
+### components/app/measurement-compare.tsx (4)
+Measure | China | Dar | Difference
+
+### components/app/merge-payment-form.tsx (4)
+LABEL: Cargo charge ({pay}) | LABEL: Transport they added | LABEL: Transport settled from | LABEL: Where did it land?
+
+### components/app/missing-cargo-button.tsx (4)
+Not here | What happened | Cancel | Report missing
+
+### components/app/mobile-tabbar.tsx (1)
+Navigation
+
+### components/app/modal.tsx (1)
+Close
+
+### components/app/money-in-shape.tsx (22)
+The money, in shape | General ledger | Money in and out | Cargo money in against costs paid, this year | Money in | Money out | One scale | What we are owed, by age | From the day the bill became real | Longest waiting | On the Dar floor, oldest first | Cargo | Customer | Waiting | Worth | Nothing unpaid on the Dar floor. | Recent payments | What was handed over, and where it landed | Receipt | Landed in | Taken | No payments verified yet.
+
+### components/app/money-tile.tsx (0)
+
+
+### components/app/move-cargo.tsx (10)
+Move it to | Move it to… | Why — e.g. came off the next box down | Move | Why it is not on this container | Take it off the manifest | Consignment to add to this container | Add a consignment that came off this box… | Why — e.g. mark not on the packing list | Add to the manifest
+
+### components/app/nav-trail.tsx (0)
+
+
+### components/app/new-user-form.tsx (27)
+Add a staff member | They sign in with this email and password. | Their dashboard is chosen by their role. | Full name | Work email | Phone | Role | Warehouse | Choose a warehouse… | Not warehouse staff | Warehouse applies to warehouse staff only. | Status | Active | Suspended | Inactive | Temporary password | At least 8 characters | Give it to them in person and change it after their first sign-in. | Creating… | Create account | LABEL: {t(locale, "Full name")} | LABEL: {t(locale, "Work email")} | LABEL: {t(locale, "Phone")} | LABEL: {t(locale, "Role")} | LABEL: {t(locale, "Warehouse")} | LABEL: {t(locale, "Status")} | LABEL: {t(locale, "Temporary password")}
+
+### components/app/new-version-notice.tsx (1)
+New update is up
+
+### components/app/notify-customer.tsx (16)
+Close | What are you telling them? | The message | Swahili first, English underneath. Edit it freely — what is in this box is what gets logged. | Logging… | Open WhatsApp and log it | Log without opening | WhatsApp opens with this text ready. You still press send there — we record that we contacted them, not that it was delivered. | Send this invoice | Open it in WhatsApp, then record it — recording marks the invoice as sent, which is what the follow-up list works from. | Message | How | Wording — edit it freely | Open in WhatsApp | Recording… | Record as sent
+
+### components/app/package-editor.tsx (32)
+Line | Cargo type | Packed as | Qty | Weight | No category | Total | Nothing measured yet. | Add a line | Choose the category… | Quantity | Measured in | Centimetres | Metres | Gross weight (kg) | Volume (CBM) | Description | Bale number | Written on the outside in China | Model no. | Pieces / sets | Net weight (kg) | Why (optional) | Cancel | Override a calculated CBM | Replace a calculated volume | The measurement being replaced is kept, along with your name and reason. Use this only when the calculation genuinely does not describe the cargo. | New CBM | Reason | Record override | LABEL: {dim} | LABEL: Chinese name 中文品名
+
+### components/app/packing-list-button.tsx (1)
+Issue packing list
+
+### components/app/packing-list-sheet.tsx (0)
+
+
+### components/app/page-header.tsx (0)
+
+
+### components/app/page-skeleton.tsx (1)
+Loading…
+
+### components/app/payroll-amount.tsx (0)
+
+
+### components/app/payroll-decision.tsx (18)
+Paying… | Accept & pay | Send it back | Accepting pays it: one salaries expense for the total leaves the named account. | Note on sending | back | Note (optional) — Finance sees only this. | Sending… | Send it back to Finance | Pay the salaries | Agreed and waiting. Nothing has left the account yet. | This is the money leaving. It books a salaries expense out of the account, the same as any other cost. The run closes on the spot and cannot be paid twice. | staff | out of | No exchange rate is set, so a dollar salary bill cannot leave a shilling account. Set one first. | Date the money left | Pay | Not now
+
+### components/app/payroll-lines.tsx (29)
+Build the salary run | Nobody on the staff register has a monthly salary set, so there is nothing to build yet. | staff have a monthly salary set. Anybody missing has none — set it on their staff record. | Month | Year | Building… | Build it from the staff register | Allowance for | Deduction for | Why | Note for | Save this line | Download payslip | Download payslip for | Staff | Salary | Allowance | Deduction | Net | Download every payslip | Paid from | Choose the account | Anything the manager should know | Optional | Sending… | Send it to the manager | leaves | Nothing on the run can be changed once it has gone up. It comes back only if the manager sends it back. | No exchange rate is set, so a dollar salary bill cannot be paid out of a shilling account. Set one before this is agreed.
+
+### components/app/payroll-run-now.tsx (12)
+Run this month yourself | staff on the register | leaves the account you choose, as one salaries expense. | Run payroll | This month already has a run from Finance — it is on this page and this press will refuse. Pick another month only if that is really what you mean. | Month | Year | Paid from | Choose an account | Paying… | Run payroll — the money leaves now | Cancel
+
+### components/app/photo-capture.tsx (6)
+Another | Camera | Gallery | Remove | No photo yet — at least one is needed. | photos ready
+
+### components/app/photo-upload.tsx (8)
+No photos yet. | What is this a photo of? | Caption | Photos | Uploading… | Upload | Cancel | Add photos
+
+### components/app/pickup-note-button.tsx (1)
+Pickup note
+
+### components/app/price-changed.tsx (1)
+Price changed:
+
+### components/app/price-list.tsx (22)
+Cargo | Cargo type | CBM | Rate per CBM | Amount | The system priced every consignment from the rate book when it was checked in — | Confirming… | Confirm 1 price | Confirm all | prices | Difference | No type | Lines differ — change them on the cargo | measured | Cannot be priced: | Draft | Priced now, raised on confirm | Cargo type for | Choose a type… | Mixed | Special rate | Book
+
+### components/app/print-button.tsx (0)
+
+
+### components/app/profile-forms.tsx (12)
+Your name | Phone | Language | English | Kiswahili | The screens are English today. Choosing here is what tells us which desk needs its own language first. | Save changes | Current password | New password | New password again | At least ten characters. Nobody in the office can read your password — if you forget it, an administrator sets a new one. | Change password
+
+### components/app/profile-header.tsx (8)
+Online now | Last seen {when} | Never signed in | Joined | Last active {when} | Has never signed in | Suspended | Inactive
+
+### components/app/rate-actions.tsx (22)
+Edit | Remove | Close | Keep it | Kind of goods | Blank = the general rate | Charged by | Cubic metre | Kilogram | Flat | Rate (USD) | Min CBM | Min kg | Show on the public rates page | New bills use the new figures. Bills already raised keep the rate they were priced at. | Save changes | Cancel | Remove rate | Save | End agreed rate | Withdraw rate | Published by mistake? Withdraw it
+
+### components/app/record-payment-button.tsx (2)
+Payment | Record Payment
+
+### components/app/record-payment-dialog.tsx (18)
+Close | Record Payment | Customer name, tracking number, invoice or phone… | Find the bill | Everyone who owes | Record payment | Transport they added | Transport settled from | Cash or the Lipa number | Paid in | Into which account | Choose the account | Proof | Give a discount | Change the rate | Open the bill | Accept overpayment — the extra stays on the bill as a credit | Why the extra is being accepted
+
+### components/app/records-queue.tsx (16)
+picked | Pick all on this page | Reconcile | Send back | Agreeing | records. Each keeps its own line in the history. | Handing | records back to Finance, with this reason on each. | Note (optional) — e.g. checked against the statement of the 18th. | What has to be corrected on all of these? | Recording… | Cancel | recorded | skipped | Pick | That is everything on this page.
+
+### components/app/release-panel.tsx (15)
+Hand it over | How is it going? | Collected from the warehouse | Delivered | Packages handed over | A driver, a relative, a clearing agent. Record who actually walked out with the boxes — not who was supposed to. | Collected by | Phone | ID number | Relationship | Driver, brother, agent… | Signature or photo of the handover | Notes | Release | Cancel
+
+### components/app/report-table.tsx (1)
+Nothing in this period.
+
+### components/app/request-controls.tsx (4)
+Request status | Note | Staff note | Save
+
+### components/app/request-desk.tsx (24)
+Assign to | Unassigned | Assign | Collection date | Set collection day | Quoted amount | Currency | What you told them | Quotation note | Record quotation | A quotation is an answer to an enquiry. Nothing is owed until cargo exists and Finance issues a bill against it. | Convert to a customer | Goods received — link the consignment | Consignment reference | Link | Cancel | Kind of file | Document | Proof | What it is | Label | Files | Attach | Attach a document or proof
+
+### components/app/restore-cargo-button.tsx (0)
+
+
+### components/app/review-actions.tsx (7)
+After this one: | Recorded. | Actual amount | optional | What the slip, statement or till shows | Recording… | Cancel
+
+### components/app/row-price-editor.tsx (47)
+per kg | per CBM | Edit | Special rate | The price for this cargo | Close | Standard rate | not recorded | Current rate | No | Yes | Change the rate book | — that price applies to every cargo, not just this one. | Category | Total CBM | Charge this cargo | Per CBM | Per kg | The rate book prices this | This changes it for this consignment only. | Freight rate | Freight rate for | Type the rate agreed | To price this cargo from the rate book again, choose | Leave it empty to price this cargo from the rate book. | against the book | Freight | Extra | Discount | Note | (optional) | e.g. agreed on the phone with the customer | VAT | Saving… | Save the price | Leave it | The measurement looks wrong — send it back to Dar | Dar's signature comes off the count and a case goes to the floor. It is priced again once they have re-checked it. | What looks wrong | The volume | The weight | The package count | Something else | e.g. 6 CBM for four cartons cannot be right | Why | Sending… | Send it back to Dar
+
+### components/app/salary-form.tsx (9)
+Monthly salary (USD) | Not on the payroll | Blank means this person is left off every salary run. | About | a month at today's rate. | Somebody else sets your own salary. | Saving… | Save salary | LABEL: {t(locale, "Monthly salary (USD)")}
+
+### components/app/scan-lookup.tsx (3)
+Scan a label, or type SC0125 or a name | Cargo reference | Find
+
+### components/app/search-box.tsx (1)
+Search
+
+### components/app/section-label.tsx (0)
+
+
+### components/app/section-tabs.tsx (0)
+
+
+### components/app/shortfall-notice.tsx (3)
+Undo | Clear it | That is a large difference — check the figure before clearing it.
+
+### components/app/smart-back.tsx (0)
+
+
+### components/app/sourcing-forms.tsx (27)
+optional | Open it | Customer | Not registered yet? Leave this and take a name and number below. | Contact name | Contact phone | Product | e.g. LED shop signs, 1.2 m | Priority | Quantity | e.g. 200 pieces | Budget | e.g. USD 1,500 | Market | Where it is likely to be found | Details | Colours, quality, sizes, any sample photos they sent. | Opening… | Open request | Status | Handled by | Unassigned | What we found | required | Supplier, market stall, unit price, minimum order, lead time. | Saving… | Save request
+
+### components/app/stat-strip.tsx (0)
+
+
+### components/app/status-badge.tsx (0)
+
+
+### components/app/storage-card.tsx (3)
+Storage | Day | Waive storage fee
+
+### components/app/submit-button.tsx (4)
+Saving… | The app was updated while this page was open. | Still working… | Reload
+
+### components/app/supplier-address-card.tsx (0)
+
+
+### components/app/tab-pills.tsx (0)
+
+
+### components/app/take-payment-panel.tsx (27)
+Actions | Take a payment | Amount received | Paid in | Accept overpayment — the extra stays on the bill as a credit | Why the extra is being accepted | Tick another bill or correct the figure. | Use this rate | Change the rate for this payment | This payment only. The bill does not move — only what these shillings are worth against it. | Delivery they added | Settled from | Cash or the till | Recorded beside the payment, never added to it. It does not settle any part of the freight. | They added delivery to this transfer | How it was paid | Their reference | M-Pesa code, slip number… | When | Leave blank for today. | Proof | Landed in | Choose the account | No accounts are set up yet. An administrator adds the banks and tills in Settings. | Note | Optional | LABEL: USD 1 =
+
+### components/app/ticket-forms.tsx (15)
+Support tickets | Close | New ticket | Customer | Leave empty when the cargo reference below says who it is. | Priority | Summary | e.g. Carton arrived open, two pairs of shoes missing | What the customer said | Kept on the thread as an internal note. The customer never sees it. | Open ticket | Status | Handled by | Unassigned | Save ticket
+
+### components/app/tx.tsx (0)
+
+
+### components/app/undo-arrival-button.tsx (5)
+Undo arrived | The container and its cargo go back to in transit, and customers who were told it reached the port are told that was too soon. | Why | Pressed on the wrong container | Leave it
+
+### components/app/user-row.tsx (10)
+you | Save | Never | Reset password | Deactivate | Reactivate | New password for {name} | At least 8 characters | Saving… | Set password
+
+### components/app/valuation-panel.tsx (4)
+Goods | Cargo type | Rate | Amount
+
+### components/app/verify-buttons.tsx (1)
+Verify
+
+### components/app/whatsapp-button.tsx (0)
+
+
+### components/brand-mark.tsx (0)
+
+
+### components/charts/ageing-bar.tsx (0)
+
+
+### components/charts/area-chart.tsx (0)
+
+
+### components/charts/bar-chart.tsx (0)
+
+
+### components/charts/donut.tsx (0)
+
+
+### components/charts/flow-bars.tsx (0)
+
+
+### components/charts/ring.tsx (0)
+
+
+### components/charts/sparkline.tsx (0)
+
+
+### components/install-app.tsx (0)
+
+
+### components/login-form.tsx (2)
+LABEL: Phone number or email | LABEL: Password
+
+### components/portal/cargo-status.tsx (10)
+Storage | Free storage period ended | Storage fee | day | Storage charges may now apply. | days free | Last free day | then | Counted from | the day it arrived at our Dar warehouse
+
+### components/portal/delivery-request-form.tsx (5)
+LABEL: Deliver to | LABEL: Who receives it? | LABEL: Their phone | LABEL: Preferred date | LABEL: Notes
+
+### components/portal/message-forms.tsx (3)
+LABEL: What is it about? | LABEL: Which consignment? | LABEL: Your message
+
+### components/portal/pay-form.tsx (8)
+LABEL: Amount paid | LABEL: Currency | LABEL: How did you pay? | LABEL: Transaction reference | LABEL: Date paid | LABEL: Paid by | LABEL: Proof of payment | LABEL: Anything we should know?
+
+### components/portal/portal-shell.tsx (0)
+
+
+### components/portal/profile-forms.tsx (0)
+
+
+### components/portal/share-link.tsx (0)
+
+
+### components/site/auth-scene.tsx (0)
+
+
+### components/site/cargo-photos.tsx (0)
+
+
+### components/site/china-explorer.tsx (14)
+What do you want to buy? | What do you want to buy? Shoes, phones, tiles… | Clear | Trading cities | Markets and fairs | Tap a card to explore it | Nothing in the guide matches that yet — ask us, we probably know where it is made. | Contact us | Close | from Guangzhou | What people buy here | We collect from your supplier | Book space on a sailing | Ask us about buying here
+
+### components/site/form-shell.tsx (4)
+Prefer to talk? | Call or message us — we are happy to help. | Call us | Message us
+
+### components/site/kit.tsx (0)
+
+
+### components/site/motion.tsx (0)
+
+
+### components/site/network-map.tsx (0)
+
+
+### components/site/price-calculator.tsx (29)
+What are you shipping? | Choose your goods | How much is there? | Less | More | Box size | Remove | Boxes | Another box size | Which container? | A full container is one price, whatever you fill it with. | Measure one box — length, width and height in centimetres — then count how many boxes are that size. | Estimated price | Enter how much you have | Details | The whole container, Guangzhou to Dar es Salaam. | Book this container | More than a 20ft container | of a 20ft container | Your price | Choose your goods and it appears here. | Enter how much you have. | We will price this for you | Get a quote | Rate for | Volume charged | minimum | Book this shipment | An estimate. The bill is worked out from what our warehouse measures.
+
+### components/site/register-form.tsx (5)
+LABEL: Full name | LABEL: Phone number | LABEL: Email | LABEL: Password | LABEL: Confirm password
+
+### components/site/request-forms.tsx (82)
+optional | Back to the home page | Track cargo | Sending… | Request a quote | Your name | Phone | Email | Service | Loose cargo (shared container) | Full container | What are you shipping? | Shoes, electronics… | Collecting from | Estimated volume (CBM) | Estimated weight (kg) | Dangerous or restricted goods | Fragile | Anything else? | Request a pickup | Who we are collecting for | WhatsApp | Where in China | Supplier or factory | Who to ask for, and their number | Collection address | Building, street and district | City | Ready for collection on | Preferred time | Morning | What is waiting | Cargo category | Shoes, electronics, machinery… | Shipping mark | What is written on the boxes | Packages | Describe the cargo | Anything else we should know | Have a proforma, a packing list or photographs? Send them to us on WhatsApp with your reference once you have it — we will put them on the job. | This is a request. Nothing is scheduled until we have spoken to you and confirmed the collection, and the measurements above are yours until our counter takes the goods in. | Submit request | What do you need? | How to reach you | Route and readiness | Where the cargo is | Destination | Cargo ready on | Supplier | Loading address | Preferred sailing | The next one with space | Next available | Measurements | Cargo type | Container type | 20ft general purpose | 40ft general purpose | 40ft high cube | 45ft high cube | Countable units | Cartons, pallets, crates | Total units inside | Total estimated weight (kg) | Dimensions | (optional) | e.g. 20 cartons at 60×40×40 cm | Shipment conditions | Hazardous | Perishable | How does it have to be handled? | Lifting points, cradles, temperature, escorts | The shipment to clear | What is the cargo? | Port of discharge | Bill of lading or shipment reference | Estimated value of the goods | Currency | Additional details | Special cargo is never priced off the rate book. Our team will review what you have described and come back to you with a price. | I understand this is a request, not a confirmed booking | Space and price are confirmed by our team before anything is reserved.
+
+### components/site/route-map.tsx (0)
+
+
+### components/site/sailing-card.tsx (9)
+Sailing | Ship leaving | Departs China | Estimated arrival | days at sea | Last day to receive cargo | Container packed | Book this sailing | Closed for cargo
+
+### components/site/sea-scene.tsx (0)
+
+
+### components/site/site-footer.tsx (11)
+Get a quote | Track cargo | Sea freight from | to | Loose cargo and full containers, | days at sea. | Message us on WhatsApp | Shipping | Work with us | Reach us | Sign in
+
+### components/site/site-header.tsx (8)
+Track cargo | My desk | Back to my desk | Account | My account | Sign in | Close menu | Open menu
+
+### components/site/site-sky.tsx (0)
+
+
+### components/site/track-form.tsx (2)
+Cargo reference | Track
+
+### components/site/track-hero.tsx (8)
+Fuatilia mzigo | Track your cargo | Enter the reference on your delivery note or box label — it looks like | A package label such as | works too, and finds the whole consignment. | days at sea | Have an account? | Sign in to see all of your cargo, invoices and photos.
+
+### components/theme-provider.tsx (0)
+
+
+### components/theme-toggle.tsx (0)
+
+
+### components/tz-phone-input.tsx (0)
+
+
+### components/ui/badge.tsx (0)
+
+
+### components/ui/button.tsx (0)
+
+
+### components/ui/card.tsx (0)
+
+
+### components/ui/input.tsx (0)
+
+
+### components/ui/label.tsx (0)
+
+
+### components/ui/native-select.tsx (0)
+
+
+### components/ui/password-input.tsx (2)
+Hide password | Show password
+
+### components/ui/separator.tsx (0)
+
+
+### components/ui/table.tsx (0)
+
+
+### components/ui/textarea.tsx (0)
+
+
+### components/upload-budget.tsx (0)
+
+

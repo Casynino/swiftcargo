@@ -1,0 +1,1047 @@
+{
+ "menus": {
+  "CHINA_WAREHOUSE": [
+   {
+    "label": "Today",
+    "items": [
+     {
+      "label": "Search",
+      "href": "/app/search"
+     }
+    ]
+   },
+   {
+    "label": "Cargo",
+    "items": [
+     {
+      "label": "Receive cargo",
+      "href": "/app/receive/new"
+     },
+     {
+      "label": "Warehouse floor",
+      "href": "/app/inventory"
+     }
+    ]
+   },
+   {
+    "label": "Shipping",
+    "items": [
+     {
+      "label": "Shipments",
+      "href": "/app/containers"
+     }
+    ]
+   },
+   {
+    "label": "Containers",
+    "items": [
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Customers",
+    "items": [
+     {
+      "label": "Requests",
+      "href": "/app/support/requests"
+     },
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     },
+     {
+      "label": "Issues & claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "Oversight",
+    "items": [
+     {
+      "label": "Warehouse reports",
+      "href": "/app/reports"
+     }
+    ]
+   }
+  ],
+  "DAR_WAREHOUSE": [
+   {
+    "label": "Today",
+    "items": [
+     {
+      "label": "Scan",
+      "href": "/app/scan"
+     },
+     {
+      "label": "Search",
+      "href": "/app/search"
+     }
+    ]
+   },
+   {
+    "label": "Cargo",
+    "items": [
+     {
+      "label": "Receiving dock",
+      "href": "/app/receive/dar"
+     },
+     {
+      "label": "Warehouse floor",
+      "href": "/app/inventory"
+     }
+    ]
+   },
+   {
+    "label": "Release",
+    "items": [
+     {
+      "label": "Pickup list",
+      "href": "/app/release"
+     },
+     {
+      "label": "Collected cargo",
+      "href": "/app/release/collected"
+     }
+    ]
+   },
+   {
+    "label": "Containers",
+    "items": [
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Customers",
+    "items": [
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     },
+     {
+      "label": "Issues & claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "Oversight",
+    "items": [
+     {
+      "label": "Warehouse reports",
+      "href": "/app/reports"
+     }
+    ]
+   }
+  ],
+  "CUSTOMER_SUPPORT": [
+   {
+    "label": "",
+    "items": [
+     {
+      "label": "Search",
+      "href": "/app/search"
+     },
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     }
+    ]
+   },
+   {
+    "label": "Containers",
+    "items": [
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Billing",
+    "items": [
+     {
+      "label": "Credit",
+      "href": "/app/finance/credit"
+     },
+     {
+      "label": "Rate book",
+      "href": "/app/finance/rates"
+     },
+     {
+      "label": "Collections",
+      "href": "/app/finance/collections"
+     },
+     {
+      "label": "Pickup notes",
+      "href": "/app/finance/pickup-notes"
+     },
+     {
+      "label": "Merge Payment",
+      "href": "/app/finance/payments/new"
+     },
+     {
+      "label": "Record Payment",
+      "href": "#record-payment"
+     }
+    ]
+   },
+   {
+    "label": "Customer support",
+    "items": [
+     {
+      "label": "Tickets",
+      "href": "/app/support/tickets"
+     },
+     {
+      "label": "Requests",
+      "href": "/app/support/requests"
+     },
+     {
+      "label": "Issues & claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "China services",
+    "items": [
+     {
+      "label": "China markets",
+      "href": "/app/support/markets"
+     },
+     {
+      "label": "Sourcing requests",
+      "href": "/app/support/sourcing"
+     }
+    ]
+   }
+  ],
+  "FINANCE": [
+   {
+    "label": "Today",
+    "items": [
+     {
+      "label": "Search",
+      "href": "/app/search"
+     }
+    ]
+   },
+   {
+    "label": "Finance",
+    "items": [
+     {
+      "label": "Overview",
+      "href": "/app/finance"
+     },
+     {
+      "label": "Credit",
+      "href": "/app/finance/credit"
+     },
+     {
+      "label": "Payroll",
+      "href": "/app/finance/payroll"
+     },
+     {
+      "label": "Accounts",
+      "href": "/app/finance/accounts"
+     },
+     {
+      "label": "Expenses",
+      "href": "/app/finance/expenses"
+     },
+     {
+      "label": "Rate book",
+      "href": "/app/finance/rates"
+     },
+     {
+      "label": "Collections",
+      "href": "/app/finance/collections"
+     },
+     {
+      "label": "Profit & loss",
+      "href": "/app/finance/reports"
+     },
+     {
+      "label": "Pickup notes",
+      "href": "/app/finance/pickup-notes"
+     },
+     {
+      "label": "Reconciliation",
+      "href": "/app/manager/reconciliation"
+     },
+     {
+      "label": "General ledger",
+      "href": "/app/finance/ledger"
+     },
+     {
+      "label": "Merge Payment",
+      "href": "/app/finance/payments/new"
+     },
+     {
+      "label": "Verify payments",
+      "href": "/app/finance/collections/verify"
+     },
+     {
+      "label": "Record payment",
+      "href": "#record-payment"
+     }
+    ]
+   },
+   {
+    "label": "Containers",
+    "items": [
+     {
+      "label": "Closed containers",
+      "href": "/app/containers/closed"
+     },
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Container finances",
+      "href": "/app/finance/containers"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Customers",
+    "items": [
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     },
+     {
+      "label": "Issues & claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "Admin",
+    "items": [
+     {
+      "label": "Audit log",
+      "href": "/app/admin/audit"
+     }
+    ]
+   }
+  ],
+  "MANAGER": [
+   {
+    "label": "Operations",
+    "items": [
+     {
+      "label": "Search",
+      "href": "/app/search"
+     },
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     },
+     {
+      "label": "Closed containers",
+      "href": "/app/containers/closed"
+     },
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Container finances",
+      "href": "/app/finance/containers"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Finance",
+    "items": [
+     {
+      "label": "Overview",
+      "href": "/app/finance"
+     },
+     {
+      "label": "Collections",
+      "href": "/app/finance/collections"
+     },
+     {
+      "label": "Profit & loss",
+      "href": "/app/finance/reports"
+     },
+     {
+      "label": "Reconciliation",
+      "href": "/app/manager/reconciliation"
+     },
+     {
+      "label": "General ledger",
+      "href": "/app/finance/ledger"
+     },
+     {
+      "label": "Record Payment",
+      "href": "#record-payment"
+     }
+    ]
+   },
+   {
+    "label": "Money out",
+    "items": [
+     {
+      "label": "Credit",
+      "href": "/app/finance/credit"
+     },
+     {
+      "label": "Accounts",
+      "href": "/app/finance/accounts"
+     },
+     {
+      "label": "Expenses",
+      "href": "/app/finance/expenses"
+     }
+    ]
+   },
+   {
+    "label": "Decisions",
+    "items": [
+     {
+      "label": "Payroll",
+      "href": "/app/manager/payroll"
+     },
+     {
+      "label": "Approvals",
+      "href": "/app/manager/approvals"
+     },
+     {
+      "label": "Control room",
+      "href": "/app/manager/control"
+     }
+    ]
+   },
+   {
+    "label": "People",
+    "items": [
+     {
+      "label": "Staff",
+      "href": "/app/admin/users"
+     },
+     {
+      "label": "Tickets",
+      "href": "/app/support/tickets"
+     },
+     {
+      "label": "Issues & Claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "Oversight",
+    "items": [
+     {
+      "label": "Money audit",
+      "href": "/app/finance/audit"
+     },
+     {
+      "label": "Deleted records",
+      "href": "/app/admin/deleted"
+     },
+     {
+      "label": "Management report",
+      "href": "/app/manager/reports"
+     }
+    ]
+   }
+  ],
+  "ADMIN": [
+   {
+    "label": "Cargo operations",
+    "items": [
+     {
+      "label": "Search",
+      "href": "/app/search"
+     },
+     {
+      "label": "Requests",
+      "href": "/app/support/requests"
+     },
+     {
+      "label": "Receive cargo",
+      "href": "/app/receive/new"
+     },
+     {
+      "label": "Receiving dock",
+      "href": "/app/receive/dar"
+     }
+    ]
+   },
+   {
+    "label": "Containers",
+    "items": [
+     {
+      "label": "Scan & release",
+      "href": "/app/scan"
+     },
+     {
+      "label": "Arrived containers",
+      "href": "/app/containers/arrived"
+     },
+     {
+      "label": "Loading containers",
+      "href": "/app/containers/loading"
+     }
+    ]
+   },
+   {
+    "label": "Finance",
+    "items": [
+     {
+      "label": "Overview",
+      "href": "/app/finance"
+     },
+     {
+      "label": "Credit",
+      "href": "/app/finance/credit"
+     },
+     {
+      "label": "Payroll",
+      "href": "/app/finance/payroll"
+     },
+     {
+      "label": "Accounts",
+      "href": "/app/finance/accounts"
+     },
+     {
+      "label": "Expenses",
+      "href": "/app/finance/expenses"
+     },
+     {
+      "label": "Rate book",
+      "href": "/app/finance/rates"
+     },
+     {
+      "label": "Collections",
+      "href": "/app/finance/collections"
+     },
+     {
+      "label": "Profit & loss",
+      "href": "/app/finance/reports"
+     },
+     {
+      "label": "Pickup notes",
+      "href": "/app/finance/pickup-notes"
+     },
+     {
+      "label": "Reconciliation",
+      "href": "/app/manager/reconciliation"
+     },
+     {
+      "label": "General ledger",
+      "href": "/app/finance/ledger"
+     },
+     {
+      "label": "Record Payment",
+      "href": "#record-payment"
+     },
+     {
+      "label": "Closed containers",
+      "href": "/app/containers/closed"
+     }
+    ]
+   },
+   {
+    "label": "Support and issues",
+    "items": [
+     {
+      "label": "Tickets",
+      "href": "/app/support/tickets"
+     },
+     {
+      "label": "Support home",
+      "href": "/app/support"
+     },
+     {
+      "label": "Issues & Claims",
+      "href": "/app/exceptions"
+     }
+    ]
+   },
+   {
+    "label": "Customers",
+    "items": [
+     {
+      "label": "Customers",
+      "href": "/app/customers"
+     }
+    ]
+   },
+   {
+    "label": "Business",
+    "items": [
+     {
+      "label": "China markets",
+      "href": "/app/admin/markets"
+     },
+     {
+      "label": "Website content",
+      "href": "/app/admin/content"
+     },
+     {
+      "label": "Sourcing requests",
+      "href": "/app/support/sourcing"
+     }
+    ]
+   },
+   {
+    "label": "Administration",
+    "items": [
+     {
+      "label": "Staff",
+      "href": "/app/admin/users"
+     },
+     {
+      "label": "Warehouses",
+      "href": "/app/admin/warehouses"
+     },
+     {
+      "label": "Deleted records",
+      "href": "/app/admin/deleted"
+     },
+     {
+      "label": "Company settings",
+      "href": "/app/admin/settings"
+     }
+    ]
+   },
+   {
+    "label": "",
+    "items": [
+     {
+      "label": "Audit log",
+      "href": "/app/admin/audit"
+     },
+     {
+      "label": "Money audit",
+      "href": "/app/finance/audit"
+     }
+    ]
+   }
+  ]
+ },
+ "permissions": {
+  "ADMIN": [
+   "cargo.view",
+   "cargo.create",
+   "cargo.edit",
+   "cargo.delete",
+   "cargo.viewInternal",
+   "cargo.amendChina",
+   "cargo.hold",
+   "cargo.photo",
+   "receiving.china",
+   "deliveryNote.view",
+   "deliveryNote.issue",
+   "inventory.view",
+   "warehouse.reports",
+   "container.view",
+   "container.create",
+   "container.edit",
+   "container.load",
+   "container.seal",
+   "container.depart",
+   "packingList.view",
+   "packingList.issue",
+   "shipment.view",
+   "shipment.edit",
+   "shipment.document",
+   "exception.view",
+   "exception.raise",
+   "exception.resolve",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "request.view",
+   "request.manage",
+   "search.global",
+   "cargo.amendDar",
+   "cargo.scan",
+   "receiving.dar",
+   "receiving.verify",
+   "cargo.clear",
+   "container.arrive",
+   "container.close",
+   "container.amendArrived",
+   "release.view",
+   "release.execute",
+   "cargo.viewAll",
+   "finance.view",
+   "payment.submit",
+   "invoice.discount",
+   "invoice.priceConfirm",
+   "conversation.view",
+   "conversation.reply",
+   "conversation.assign",
+   "delivery.manage",
+   "notification.send",
+   "rate.view",
+   "accounting.view",
+   "accounting.manage",
+   "invoice.create",
+   "invoice.edit",
+   "invoice.issue",
+   "invoice.cancel",
+   "rate.manage",
+   "customerRate.manage",
+   "fx.manage",
+   "payment.record",
+   "payment.verify",
+   "receipt.issue",
+   "expense.view",
+   "expense.record",
+   "profit.view",
+   "record.reconcile",
+   "payroll.prepare",
+   "customer.delete",
+   "report.view",
+   "audit.view",
+   "cbm.override",
+   "container.confirmUnchecked",
+   "container.delete",
+   "customer.merge",
+   "exception.assign",
+   "exception.close",
+   "exception.approve",
+   "expense.approve",
+   "payroll.approve",
+   "record.review",
+   "records.viewDeleted",
+   "user.manage",
+   "settings.manage",
+   "warehouse.manage",
+   "content.manage"
+  ],
+  "MANAGER": [
+   "cargo.view",
+   "cargo.create",
+   "cargo.edit",
+   "cargo.viewInternal",
+   "cargo.amendChina",
+   "cargo.hold",
+   "cargo.photo",
+   "receiving.china",
+   "deliveryNote.view",
+   "deliveryNote.issue",
+   "inventory.view",
+   "warehouse.reports",
+   "container.view",
+   "container.create",
+   "container.edit",
+   "container.load",
+   "container.seal",
+   "container.depart",
+   "packingList.view",
+   "packingList.issue",
+   "shipment.view",
+   "shipment.edit",
+   "shipment.document",
+   "exception.view",
+   "exception.raise",
+   "exception.resolve",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "request.view",
+   "request.manage",
+   "search.global",
+   "cargo.amendDar",
+   "cargo.scan",
+   "receiving.dar",
+   "receiving.verify",
+   "cargo.clear",
+   "container.arrive",
+   "container.close",
+   "container.amendArrived",
+   "release.view",
+   "release.execute",
+   "cargo.viewAll",
+   "finance.view",
+   "payment.submit",
+   "invoice.discount",
+   "invoice.priceConfirm",
+   "conversation.view",
+   "conversation.reply",
+   "conversation.assign",
+   "delivery.manage",
+   "notification.send",
+   "rate.view",
+   "accounting.view",
+   "accounting.manage",
+   "invoice.create",
+   "invoice.edit",
+   "invoice.issue",
+   "invoice.cancel",
+   "rate.manage",
+   "customerRate.manage",
+   "payment.record",
+   "payment.verify",
+   "receipt.issue",
+   "expense.view",
+   "expense.record",
+   "profit.view",
+   "record.reconcile",
+   "payroll.prepare",
+   "customer.delete",
+   "report.view",
+   "audit.view",
+   "cbm.override",
+   "container.confirmUnchecked",
+   "customer.merge",
+   "exception.assign",
+   "exception.close",
+   "exception.approve",
+   "expense.approve",
+   "payroll.approve",
+   "record.review",
+   "records.viewDeleted",
+   "user.manage",
+   "content.manage"
+  ],
+  "CUSTOMER_SUPPORT": [
+   "cargo.view",
+   "cargo.viewAll",
+   "cargo.photo",
+   "deliveryNote.view",
+   "container.view",
+   "container.arrive",
+   "cargo.clear",
+   "container.amendArrived",
+   "packingList.view",
+   "shipment.view",
+   "finance.view",
+   "payment.submit",
+   "invoice.discount",
+   "invoice.priceConfirm",
+   "release.view",
+   "exception.view",
+   "exception.raise",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "conversation.view",
+   "conversation.reply",
+   "conversation.assign",
+   "request.view",
+   "request.manage",
+   "delivery.manage",
+   "notification.send",
+   "search.global",
+   "rate.view"
+  ],
+  "CHINA_WAREHOUSE": [
+   "cargo.view",
+   "cargo.create",
+   "cargo.edit",
+   "cargo.delete",
+   "cargo.viewInternal",
+   "cargo.amendChina",
+   "cargo.hold",
+   "cargo.photo",
+   "receiving.china",
+   "deliveryNote.view",
+   "deliveryNote.issue",
+   "inventory.view",
+   "warehouse.reports",
+   "container.view",
+   "container.create",
+   "container.edit",
+   "container.load",
+   "container.seal",
+   "container.depart",
+   "packingList.view",
+   "packingList.issue",
+   "shipment.view",
+   "shipment.edit",
+   "shipment.document",
+   "exception.view",
+   "exception.raise",
+   "exception.resolve",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "request.view",
+   "request.manage",
+   "search.global"
+  ],
+  "DAR_WAREHOUSE": [
+   "cargo.view",
+   "cargo.edit",
+   "cargo.viewInternal",
+   "cargo.amendDar",
+   "cargo.amendChina",
+   "cargo.hold",
+   "cargo.photo",
+   "cargo.scan",
+   "receiving.dar",
+   "receiving.verify",
+   "cargo.clear",
+   "deliveryNote.view",
+   "inventory.view",
+   "warehouse.reports",
+   "container.view",
+   "container.arrive",
+   "container.close",
+   "container.amendArrived",
+   "packingList.view",
+   "shipment.view",
+   "shipment.document",
+   "release.view",
+   "release.execute",
+   "exception.view",
+   "exception.raise",
+   "exception.resolve",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "search.global"
+  ],
+  "FINANCE": [
+   "cargo.view",
+   "cargo.viewAll",
+   "cargo.viewInternal",
+   "deliveryNote.view",
+   "container.view",
+   "container.arrive",
+   "cargo.clear",
+   "container.amendArrived",
+   "packingList.view",
+   "shipment.view",
+   "finance.view",
+   "accounting.view",
+   "accounting.manage",
+   "invoice.create",
+   "invoice.edit",
+   "invoice.issue",
+   "invoice.priceConfirm",
+   "invoice.discount",
+   "invoice.cancel",
+   "rate.view",
+   "rate.manage",
+   "customerRate.manage",
+   "fx.manage",
+   "payment.submit",
+   "payment.record",
+   "payment.verify",
+   "receipt.issue",
+   "expense.view",
+   "expense.record",
+   "profit.view",
+   "record.reconcile",
+   "payroll.prepare",
+   "release.view",
+   "exception.view",
+   "exception.raise",
+   "exception.resolve",
+   "customer.view",
+   "customer.create",
+   "customer.manage",
+   "customer.delete",
+   "report.view",
+   "audit.view",
+   "search.global"
+  ],
+  "CUSTOMER": []
+ },
+ "home": {
+  "CHINA_WAREHOUSE": {
+   "label": "Home",
+   "href": "/app/dashboard",
+   "icon": "LayoutDashboard",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  },
+  "DAR_WAREHOUSE": {
+   "label": "Home",
+   "href": "/app/dashboard",
+   "icon": "LayoutDashboard",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  },
+  "CUSTOMER_SUPPORT": {
+   "label": "Home",
+   "href": "/app/support",
+   "icon": "Headset",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  },
+  "FINANCE": {
+   "label": "Home",
+   "href": "/app/dashboard",
+   "icon": "LayoutDashboard",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  },
+  "MANAGER": {
+   "label": "Home",
+   "href": "/app/manager",
+   "icon": "LayoutDashboard",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  },
+  "ADMIN": {
+   "label": "Home",
+   "href": "/app/dashboard",
+   "icon": "LayoutDashboard",
+   "permissions": [
+    "cargo.view",
+    "accounting.view",
+    "conversation.view",
+    "record.review"
+   ]
+  }
+ }
+}
