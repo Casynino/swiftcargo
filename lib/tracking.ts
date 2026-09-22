@@ -111,6 +111,15 @@ export type PublicTracking = {
   pieces: number | null;
   /** "12 packages · 240 pieces" */
   countedAs: string;
+  /**
+   * PACKAGES EXPECTED AND NOT FOUND, once Dar has counted.
+   *
+   * China counted a hundred and Dar counted ninety-eight: the customer is
+   * told about the two, by us, before they discover it at the counter. Null
+   * while nothing is short — and null while nobody has counted, because a box
+   * half-way through being unloaded is not a shortage.
+   */
+  missingPackages: number | null;
   origin: string;
   destination: string;
   /** Where the boxes are standing, in the customer's words. */
@@ -451,6 +460,7 @@ function noteFor(input: {
   status: CargoStatus;
   countedAs: string;
   darPackages: number | null;
+  missingPackages: number | null;
   receivedChinaAt: Date | null;
   departedAt: Date | null;
   arrivedAt: Date | null;
@@ -491,7 +501,12 @@ function noteFor(input: {
         (input.darPackages !== null
           ? `, ${input.darPackages} ${input.darPackages === 1 ? "package" : "packages"} counted`
           : "") +
-        (input.owes ? ". Settle the balance and we will release it the same day." : "."),
+        (input.owes ? ". Settle the balance and we will release it the same day." : ".") +
+        /* Said by us, in the same breath as the count, rather than discovered
+           at the counter. */
+        (input.missingPackages
+          ? ` ${input.missingPackages} ${input.missingPackages === 1 ? "package is" : "packages are"} missing and we are tracing ${input.missingPackages === 1 ? "it" : "them"}.`
+          : ""),
     };
   }
   if (reachedIn(journey, "ARRIVED_DAR")) {
@@ -622,6 +637,14 @@ export function publicTracking(input: {
      bill is priced from. China's stands until then. */
   const cbm = cargo.darReceiving?.cbm ?? cargo.chinaReceiving?.cbm ?? null;
 
+  /* What Guangzhou counted in, less what Dar counted out. Only once Dar has
+     counted, and only when it is short: an over-count is the office's problem,
+     not something to worry a customer with. */
+  const shortfall =
+    cargo.darReceiving && cargo.chinaReceiving
+      ? Math.max(0, cargo.chinaReceiving.packagesCount - cargo.darReceiving.packagesCount) || null
+      : null;
+
   const arrivedInDar = journey.steps.find((s) => s.key === "ARRIVED_DAR")?.at ?? null;
   const handedOverAt = stamps.DELIVERED ?? stamps.COLLECTED ?? null;
   const counted = countedAs(packages, pieces);
@@ -673,6 +696,7 @@ export function publicTracking(input: {
     packages,
     pieces,
     countedAs: counted,
+    missingPackages: shortfall,
     origin: ROUTE.originCity,
     destination: ROUTE.destinationCity,
     location: locationOf(journey, cargo.status),
@@ -697,6 +721,7 @@ export function publicTracking(input: {
       status: cargo.status,
       countedAs: counted,
       darPackages: cargo.darReceiving?.packagesCount ?? null,
+      missingPackages: shortfall,
       receivedChinaAt: cargo.chinaReceiving?.receivedAt ?? stamps.RECEIVED_CHINA ?? null,
       departedAt: journey.steps.find((s) => s.key === "DEPARTED")?.at ?? null,
       arrivedAt: arrivedInDar,

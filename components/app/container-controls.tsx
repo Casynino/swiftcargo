@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCbm } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
 
 import { useLocale, useT } from "@/components/app/locale-provider";
@@ -335,7 +336,7 @@ const NEXT_STEP: Record<string, Step | null> = {
     body: "Close it once every consignment on it is checked in or reported missing. Nothing more can happen to a closed container.",
     button: "Close the container",
     icon: <Lock />,
-    waiting: "Dar closes the container once everything on it is booked in.",
+    waiting: "Finance, the manager or the owner closes the container once Dar has checked everything off it.",
   },
   CLOSED: null,
 };
@@ -605,6 +606,10 @@ export type LoadedLine = {
   shippingMark: string | null;
   customer: string;
   packages: number;
+  /** Reported as never having come off the container. It stays on the list. */
+  missingLine?: boolean;
+  /** What Dar counted off the box. Null until somebody counts it. */
+  received?: number | null;
   /** The rate bands in this consignment, as the floor would name the goods. */
   category: string | null;
   cbm: string;
@@ -731,8 +736,37 @@ export function LoadedTable({
               <TableCell className="max-w-[12rem] truncate text-sm text-muted-foreground">
                 {line.category ?? "—"}
               </TableCell>
+              {/*
+                WHAT WAS EXPECTED, AND WHAT CAME OFF.
+
+                A consignment that never arrived keeps its row and its expected
+                figure — struck through, marked missing, never deleted — because
+                the manifest is the evidence of what was supposed to be in the
+                box. A short count shows both numbers so the gap is read off
+                the row rather than worked out in somebody's head.
+              */}
               <TableCell className="tnum text-right text-sm">
-                {line.packages}
+                <span className={cn(line.missingLine && "text-muted-foreground line-through")}>
+                  {line.packages}
+                </span>
+                {line.missingLine ? (
+                  <span className="ml-1.5 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+                    {tx("Missing")}
+                  </span>
+                ) : line.received != null && line.received !== line.packages ? (
+                  <span
+                    className={cn(
+                      "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                      line.received < line.packages
+                        ? "bg-warning/15 text-warning"
+                        : "bg-brand/10 text-brand"
+                    )}
+                  >
+                    {line.received < line.packages
+                      ? `${line.packages - line.received} ${tx("missing")}`
+                      : `+${line.received - line.packages}`}
+                  </span>
+                ) : null}
               </TableCell>
               <TableCell className="tnum whitespace-nowrap text-right text-sm font-medium">
                 {formatCbm(line.cbm)}

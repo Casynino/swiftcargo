@@ -1070,7 +1070,7 @@ export async function advanceContainer(
         to === "DEPARTED"
           ? "Recording a departure is Guangzhou's to do."
           : to === "CLOSED"
-            ? "Closing a container is Dar's to do."
+            ? "Closing a container is Finance's, the manager's or the owner's to do."
             : "Your desk cannot record an arrival.",
     };
   }

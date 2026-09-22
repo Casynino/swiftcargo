@@ -280,6 +280,21 @@ function TrackingCard({
     { label: "Shipper", value: result.shipperInitials },
     { label: "Volume", value: result.cbm ? `${result.cbm} CBM` : "—" },
     { label: "Counted as", value: result.countedAs },
+    /* Only when there is something to say. A row reading "Missing 0" on every
+       consignment that arrived intact is a worry handed to people who have
+       nothing to worry about. */
+    ...(result.missingPackages
+      ? [
+          {
+            label: "Missing",
+            value: `${result.missingPackages} ${
+              result.missingPackages === 1
+                ? t(locale, "package")
+                : t(locale, "packages")
+            }`,
+          },
+        ]
+      : []),
     { label: "Route", value: `${result.origin} → ${result.destination}` },
     { label: "Now at", value: result.location },
     {

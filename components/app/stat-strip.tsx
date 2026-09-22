@@ -10,6 +10,10 @@ export type StatChip = {
   icon?: LucideIcon;
   tone?: "neutral" | "brand" | "marine" | "success" | "warning" | "danger";
   href?: string;
+  /* A few words saying what the figure counts, for a chip whose label cannot
+     say it in one word — "Expected" is the packing list, "Received" is the
+     floor, and a clerk should not have to guess which. */
+  hint?: string;
 };
 
 const TONES = {
@@ -46,6 +50,7 @@ export function StatStrip({
         const Icon = chip.icon;
         const body = (
           <span
+            title={chip.hint}
             className={cn(
               "inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border bg-card px-3 py-1.5 text-xs shadow-soft transition-colors",
               chip.href && "hover:border-brand/40 hover:bg-muted/60"

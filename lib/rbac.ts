@@ -317,7 +317,12 @@ const DAR_WAREHOUSE: Permission[] = [
   "warehouse.reports",
   "container.view",
   "container.arrive",
-  "container.close",
+  /* `container.close` IS NOT HERE, BY THE OWNER'S DECISION.
+     Dar counts the box off and signs its count; shutting the sailing for good
+     is an office act — the last word on a container is Finance's, the
+     manager's or the owner's, after the money on it is settled. The floor's
+     job ends at check-in, and a box it has finished with waits at ARRIVED
+     until the office closes it. */
   /* The floor that opens the box is the floor that discovers the manifest is
      wrong, and by the owner's decision it is the floor that corrects it. */
   "container.amendArrived",
@@ -436,6 +441,11 @@ const FINANCE: Permission[] = [
   "container.view",
   "container.arrive",
   "cargo.clear",
+  /* AND THE LAST WORD ON THE SAILING. The floor counts the box off and signs
+     its count; the office shuts it. By the owner's decision that is Finance,
+     the manager and the owner — the desks that answer for what the container
+     earned — and no warehouse. */
+  "container.close",
   /* Finance is the other desk that notices: a container whose price list does
      not add up to the cargo standing in the warehouse. */
   "container.amendArrived",

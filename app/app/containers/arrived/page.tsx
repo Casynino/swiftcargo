@@ -293,11 +293,16 @@ export default async function ArrivedContainersPage({
       owingTzs,
       collectedTzs: billedTzs - owingTzs,
       spentTzs,
-      arrived: container.shipment?.actualArrival ?? container.shipment?.eta ?? null,
+      /* The container's own status decides which date this is. A box that has
+         landed shows the day it landed — never a promise, even when its
+         shipment row never took the arrival date. */
+      arrived: ["ARRIVED", "CLOSED"].includes(container.status)
+        ? (container.shipment?.actualArrival ?? null)
+        : (container.shipment?.eta ?? null),
       /* A date with no word beside it read as the day it landed. Until it
          lands, the date is a promise — and one that has passed is a delay
          somebody has to answer for. */
-      due: container.shipment?.actualArrival === null,
+      due: !["ARRIVED", "CLOSED"].includes(container.status),
       lateDays: sailingDelay({
         eta: container.shipment?.eta ?? null,
         arrived: container.shipment?.actualArrival ?? null,

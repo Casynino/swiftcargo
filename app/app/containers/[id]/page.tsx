@@ -11,7 +11,9 @@ import {
   Layers,
   Lock,
   Package,
+  PackageX,
   Scale,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 
@@ -32,6 +34,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { ClearanceButton } from "@/components/app/clearance-button";
 import { UndoArrivalButton } from "@/components/app/undo-arrival-button";
 import { SectionLabel } from "@/components/app/section-label";
+import { StatStrip } from "@/components/app/stat-strip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +53,7 @@ import {
   SHIPMENT_STATUS_LABELS,
 } from "@/lib/constants";
 import { AT_SEA_STATUSES, sailingDelay, SEA_TRANSIT_DAYS } from "@/lib/eta";
+import { manifestTally } from "@/lib/manifest-tally";
 import {
   formatCbm,
   formatDate,
@@ -108,6 +112,11 @@ export default async function ContainerPage({
           cargo: {
             include: {
               sender: { select: { fullName: true, code: true } },
+              /* Expected against received, for the arithmetic below: China's
+                 count is the packing list's, Dar's is the floor's, and
+                 neither is allowed to overwrite the other. */
+              chinaReceiving: { select: { packagesCount: true } },
+              darReceiving: { select: { packagesCount: true } },
               /* The container's totals are added up from the goods themselves.
                  Nobody types a total anywhere, and a corrected line changes the
                  box's figures the moment it is corrected. */
@@ -238,9 +247,23 @@ export default async function ContainerPage({
 
     The same arithmetic and the same word the customer's tracking page uses.
   */
-  const due = container.shipment?.actualArrival ?? container.shipment?.eta ?? null;
+  /*
+    A BOX THAT IS HERE IS NOT "EXPECTED".
+
+    The container's own status is the truth about whether it has landed, and
+    the date comes from the shipment or, failing that, from the arrival event
+    on its timeline — a sailing whose shipment row never took the date still
+    has the moment somebody pressed the button. Nothing that has landed is
+    ever shown a future date: the promise stops mattering the day it is kept.
+  */
+  const landed = ["ARRIVED", "CLOSED"].includes(container.status);
+  const arrivedAt =
+    container.shipment?.actualArrival ??
+    [...container.events].reverse().find((e) => e.to === "ARRIVED")?.createdAt ??
+    null;
+  const due = landed ? arrivedAt : (container.shipment?.eta ?? null);
   const daysToGo =
-    !container.shipment?.actualArrival && container.shipment?.eta && !delay.late
+    !landed && container.shipment?.eta && !delay.late
       ? Math.ceil(
           (Date.UTC(
             container.shipment.eta.getUTCFullYear(),
@@ -267,15 +290,11 @@ export default async function ContainerPage({
                 delay.late ? "bg-warning/10 text-warning" : "bg-brand/10 text-brand"
               )}
             >
-              {container.shipment?.actualArrival ? (
-                <Anchor className="size-5" />
-              ) : (
-                <CalendarClock className="size-5" />
-              )}
+              {landed ? <Anchor className="size-5" /> : <CalendarClock className="size-5" />}
             </span>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {container.shipment?.actualArrival
+                {landed
                   ? T("Arrived in Dar es Salaam")
                   : T("Expected arrival in Dar es Salaam")}
               </p>
@@ -300,9 +319,7 @@ export default async function ContainerPage({
             {container.shipment?.departureDate ? (
               <p className="tnum mt-0.5 text-xs text-muted-foreground">
                 {T("Left China")} {formatDate(container.shipment.departureDate)}
-                {container.shipment.actualArrival
-                  ? null
-                  : ` · ${SEA_TRANSIT_DAYS} ${T("days at sea")}`}
+                {landed ? null : ` · ${SEA_TRANSIT_DAYS} ${T("days at sea")}`}
               </p>
             ) : null}
           </div>
@@ -388,6 +405,27 @@ export default async function ContainerPage({
       return acc;
     },
     { packages: 0, pieces: 0, weightKg: new Prisma.Decimal(0) },
+  );
+
+  /*
+    WHAT THE PAPER SAID, AND WHAT CAME OFF.
+
+    Only once the box has landed and Dar has started counting: before that,
+    "received 0 of 100" describes a container at sea, not a shortage. The
+    figures are worked out from the consignments themselves (lib/manifest-tally
+    .ts) — the same arithmetic the receiving dock shows, so the office closing
+    the sailing and the floor that counted it read one set of numbers.
+  */
+  const counted = container.cargoLines.some(
+    (l) => l.cargo.darReceiving || l.cargo.status === "MISSING_AT_DAR"
+  );
+  const tally = manifestTally(
+    container.cargoLines.map((l) => ({
+      expectedPackages:
+        l.cargo.chinaReceiving?.packagesCount ?? l.cargo.declaredPackages ?? 0,
+      receivedPackages: l.cargo.darReceiving?.packagesCount ?? null,
+      missing: l.cargo.status === "MISSING_AT_DAR",
+    }))
   );
 
   /*
@@ -621,6 +659,39 @@ export default async function ContainerPage({
         straight under the six figures, one press, for whichever desk takes
         it. It was below the manifest, and on the money view not at all.
       */}
+      {/* What the packing list said against what Dar counted off. It sits with
+          the next milestone because the office closing a sailing is entitled
+          to see, without opening the dock, that two packages never arrived. */}
+      {counted ? (
+        <StatStrip
+          chips={[
+            { label: "Expected", value: String(tally.expected), icon: ClipboardList, hint: "On the packing list" },
+            {
+              label: "Received",
+              value: String(tally.received),
+              icon: Package,
+              tone: tally.inProgress ? "neutral" : tally.missing === 0 ? "success" : "warning",
+              hint: "Counted off the box",
+            },
+            {
+              label: "Missing",
+              value: String(tally.missing),
+              icon: PackageX,
+              tone: tally.missing > 0 ? "danger" : "neutral",
+              hint: "Expected and not found",
+            },
+            { label: "Available", value: String(tally.available), icon: Boxes, hint: "Physically here" },
+            {
+              label: "Discrepancy",
+              value: String(tally.discrepancy),
+              icon: TriangleAlert,
+              tone: tally.discrepancy > 0 ? "warning" : "neutral",
+              hint: tally.over > 0 ? `${tally.over} more than the paper` : "Packing list against the floor",
+            },
+          ]}
+        />
+      ) : null}
+
       {!open ? (
         <div className="space-y-4">
           {arrival}
@@ -681,6 +752,11 @@ export default async function ContainerPage({
                       shippingMark: line.cargo.shippingMark,
                       customer: line.cargo.sender.fullName,
                       packages: line.packagesCount,
+                      /* Never came off the box, or came off short. The row
+                         stays on the manifest either way — a consignment is
+                         not removed to make a container add up. */
+                      missingLine: line.cargo.status === "MISSING_AT_DAR",
+                      received: line.cargo.darReceiving?.packagesCount ?? null,
                       category:
                         [
                           ...new Set(
@@ -748,6 +824,8 @@ export default async function ContainerPage({
                     shippingMark: line.cargo.shippingMark,
                     customer: line.cargo.sender.fullName,
                     packages: line.packagesCount,
+                    missingLine: line.cargo.status === "MISSING_AT_DAR",
+                    received: line.cargo.darReceiving?.packagesCount ?? null,
                     category:
                       [
                         ...new Set(

@@ -502,17 +502,20 @@ export async function verifyContainer(
   });
 
   /*
-    AND THE BOX IS SHUT.
+    CONFIRMING IS THE END OF THE DISCHARGE, NOT THE END OF THE SAILING.
 
-    Confirming is the end of the discharge, so the container reaches its closed
-    state here rather than waiting for somebody to find the container page —
-    through the same door and the same permission as pressing Close there, so
-    there is one set of rules about when a container may close and not two.
-    Never over an override: a box with cargo nobody counted still has work on
-    it, and it stays on the dock where that work is listed.
+    The floor's count is signed here. Shutting the box is the office's act —
+    Finance, the manager or the owner — so it only happens in this breath when
+    the person confirming is one of them, through the same door and the same
+    permission as pressing Close on the container page. Dar signing off leaves
+    the box at ARRIVED, counted and waiting for the office.
+
+    Never over an override either way: a box with cargo nobody counted still
+    has work on it, and it stays on the dock where that work is listed.
   */
   let closed = false;
-  if (!overridden && container.status === "ARRIVED") {
+  const mayClose = can(actor.role, "container.close");
+  if (!overridden && mayClose && container.status === "ARRIVED") {
     const close = new FormData();
     close.set("containerId", container.id);
     close.set("to", "CLOSED");
@@ -534,7 +537,11 @@ export async function verifyContainer(
       stranded.length
         ? `${stranded.length} unchecked, each with a case: ${stranded.join(", ")}.`
         : "",
-      closed ? "The container is closed." : "",
+      closed
+        ? "The container is closed."
+        : !overridden && container.status === "ARRIVED"
+          ? "Finance closes the container."
+          : "",
     ]
       .filter(Boolean)
       .join(" "),

@@ -577,8 +577,20 @@ describe("the Dar floor never sees a price and cannot set one", () => {
   });
 
   test("it receives, keeps and releases", () => {
-    for (const permission of ["receiving.dar", "receiving.verify", "release.execute", "container.arrive", "container.close"] as const) {
+    for (const permission of ["receiving.dar", "receiving.verify", "release.execute", "container.arrive"] as const) {
       assert.equal(rbac.can("DAR_WAREHOUSE", permission), true);
+    }
+  });
+
+  /* The floor counts the box off; the office shuts the sailing. The owner's
+     decision, and the reason Dar signing a container off leaves it at ARRIVED
+     rather than closed. */
+  test("closing the sailing is the office's, not the floor's", () => {
+    for (const role of ["DAR_WAREHOUSE", "CHINA_WAREHOUSE", "CUSTOMER_SUPPORT"] as const) {
+      assert.equal(rbac.can(role, "container.close"), false, `${role} must not close a container`);
+    }
+    for (const role of ["FINANCE", "MANAGER", "ADMIN"] as const) {
+      assert.equal(rbac.can(role, "container.close"), true, `${role} closes a container`);
     }
   });
 
