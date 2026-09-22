@@ -7,6 +7,7 @@ import { z } from "zod";
 import { authConfig } from "@/auth.config";
 import { normaliseTzPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
+import { defaultLocaleForRole } from "@/lib/locale";
 
 /* `email` is the field's historical name; it carries whichever the person
    typed — an address, or a phone number in any of its Tanzanian spellings. */
@@ -136,7 +137,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const now = new Date();
         await prisma.user.update({
           where: { id: user.id },
-          data: { lastLoginAt: now, lastActiveAt: now },
+          data: {
+            lastLoginAt: now,
+            lastActiveAt: now,
+            /* Guangzhou always opens in Chinese, by the owner's decision: an
+               English switch made yesterday — or by somebody else on a shared
+               warehouse phone — must not greet the next sign-in in a language
+               the floor does not read. English is still one press away, for
+               the rest of that session. */
+            ...(user.role === "CHINA_WAREHOUSE" ? { locale: defaultLocaleForRole(user.role) } : {}),
+          },
         });
 
         await prisma.auditLog.create({
