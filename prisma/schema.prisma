@@ -1518,6 +1518,10 @@ model ExpenseType {
   id     String  @id @default(cuid())
   name   String  @unique // Ocean freight, Clearing, Port charges, Transport, Handling
   active Boolean @default(true)
+  /// A cost of a sailing (demurrage, wharfage, THC…) rather than of the
+  /// business (rent, utilities). Inside a container only these are offered;
+  /// the general expenses list offers only the others.
+  forContainer Boolean @default(false)
 
   createdAt DateTime @default(now())
 

@@ -59,9 +59,18 @@ export async function recordExpense(
   /* Salaries leave only through an approved payroll run. Picked by hand here,
      a salary would reach the ledger with nobody having agreed it. */
   if (data.expenseTypeId) {
-    const type = await prisma.expenseType.findUnique({ where: { id: data.expenseTypeId }, select: { name: true } });
+    const type = await prisma.expenseType.findUnique({ where: { id: data.expenseTypeId }, select: { name: true, forContainer: true } });
     if (type?.name === SALARIES_CATEGORY) {
       return { error: "Salaries are paid through Payroll, where the manager approves the run." };
+    }
+    /* A container is charged only a sailing's costs, and the business only
+       its own (the owner's lists) — the form offers one list or the other. */
+    if (type && type.forContainer !== (data.scope === "CONTAINER")) {
+      return {
+        error: type.forContainer
+          ? `${type.name} is a container cost. Choose the container it belongs to.`
+          : `${type.name} is a general expense, not a container cost. Pick one of the container costs.`,
+      };
     }
   }
 

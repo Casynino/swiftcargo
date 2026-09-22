@@ -110,7 +110,8 @@ export async function ContainerMoney({
     },
     }),
     prisma.expenseType.findMany({
-      where: { active: true, name: { not: "Salaries" } },
+      /* Inside a container, only a sailing's costs (the owner's list). */
+      where: { active: true, forContainer: true, name: { not: "Salaries" } },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),

@@ -22,7 +22,8 @@ export function ExpenseForm({
   accounts = [],
 }: {
   containers: { id: string; label: string }[];
-  types: { id: string; name: string }[];
+  /** forContainer: a sailing's cost. The list shown follows what is chosen. */
+  types: { id: string; name: string; forContainer?: boolean }[];
   accounts?: { id: string; label: string }[];
 }) {
   const tx = useT();
@@ -95,7 +96,7 @@ export function ExpenseForm({
             <Label htmlFor="expenseTypeId">{tx("What kind of cost?")}</Label>
             <NativeSelect id="expenseTypeId" name="expenseTypeId" defaultValue="">
               <option value="">{tx("Uncategorised")}</option>
-              {types.map((t) => (
+              {types.filter((t) => Boolean(t.forContainer) === (scope === "CONTAINER")).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
@@ -181,7 +182,8 @@ export function RecordCostPanel({
   defaultCurrency = "TZS",
 }: {
   usual: UsualCost[];
-  types: { id: string; name: string }[];
+  /** forContainer: a sailing's cost. The list shown follows what is chosen. */
+  types: { id: string; name: string; forContainer?: boolean }[];
   accounts: { id: string; label: string }[];
   containers: { id: string; label: string }[];
   defaultAccountId?: string;
@@ -209,6 +211,15 @@ export function RecordCostPanel({
     setTypeId("");
     setContainerId("");
   }, [state]);
+
+  /* Naming a container (or clearing it) swaps the category list between a
+     sailing's costs and the business's own; a category from the other list
+     is dropped rather than sent. */
+  useEffect(() => {
+    if (typeId && !types.some((t) => t.id === typeId && Boolean(t.forContainer) === Boolean(containerId))) {
+      setTypeId("");
+    }
+  }, [containerId, typeId, types]);
 
   const pick = (item: UsualCost) => {
     setDescription(item.label);
@@ -275,7 +286,7 @@ export function RecordCostPanel({
               onChange={(e) => setTypeId(e.target.value)}
             >
               <option value="">{tx("Uncategorised")}</option>
-              {types.map((t) => (
+              {types.filter((t) => Boolean(t.forContainer) === Boolean(containerId)).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>

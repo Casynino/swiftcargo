@@ -157,7 +157,7 @@ export default async function AccountPage({
       ? prisma.expenseType.findMany({
           where: { active: true, name: { not: "Salaries" } },
           orderBy: { name: "asc" },
-          select: { id: true, name: true },
+          select: { id: true, name: true, forContainer: true },
         })
       : Promise.resolve([]),
     isCash && mayRecordCost

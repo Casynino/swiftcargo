@@ -126,7 +126,7 @@ export default async function ExpensesPage({
     prisma.expenseType.findMany({
       where: { active: true, name: { not: "Salaries" } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, forContainer: true },
     }),
     prisma.exchangeRate.findFirst({
       where: { active: true },
