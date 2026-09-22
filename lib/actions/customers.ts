@@ -35,7 +35,7 @@ export async function createCustomer(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const actor = await authorize("customer.manage");
+  const actor = await authorize("customer.create");
 
   const parsed = customerSchema.safeParse({
     fullName: formData.get("fullName"),

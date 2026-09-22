@@ -245,11 +245,11 @@ export default async function CustomersPage({
           "Created automatically the first time cargo is registered against a name or number."
         )}
         actions={
-          can(user.role, "customer.manage") ? (
+          can(user.role, "customer.create") ? (
             <Button asChild>
               <Link href="/app/customers/new">
                 <Plus />
-                {t(locale, "Register a customer")}
+                {t(locale, "Add customer")}
               </Link>
             </Button>
           ) : null

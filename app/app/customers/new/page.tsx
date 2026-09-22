@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Register a customer" };
 
 export default async function NewCustomerPage() {
   await primeLocale();
-  await requirePermission("customer.manage");
+  await requirePermission("customer.create");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

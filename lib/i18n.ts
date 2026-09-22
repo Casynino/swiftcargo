@@ -4605,6 +4605,7 @@ const ZH: Record<string, string> = {
   "shpt": "票",
   "Sign in": "登录",
   "Show password": "显示密码",
+  "Add customer": "添加客户",
   "Running later than planned": "比计划晚到",
   "Bring your ID to collect": "请携带身份证件提货",
   "Being checked in": "正在入库",
