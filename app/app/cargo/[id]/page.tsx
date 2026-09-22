@@ -155,6 +155,12 @@ export default async function CargoDetailPage({
     shippingMark: cargo.shippingMark,
     packages:
       cargo.darReceiving?.packagesCount ?? cargo.chinaReceiving?.packagesCount ?? null,
+    pieces: cargo.darReceiving?.piecesCount ?? cargo.chinaReceiving?.piecesCount ?? null,
+    weightKg:
+      (cargo.darReceiving?.weightKg ?? cargo.chinaReceiving?.weightKg)?.toString() ?? null,
+    /* The number in the counter's paper book — what a customer in Guangzhou is
+       holding when they ring. */
+    receiptNumber: cargo.paperReceiptNo,
     cbm: (cargo.darReceiving?.cbm ?? cargo.chinaReceiving?.cbm)?.toString() ?? null,
     containerNumber: container?.containerNumber ?? container?.reference ?? null,
     vessel: container?.shipment?.vessel ?? null,

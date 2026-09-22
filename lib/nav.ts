@@ -82,7 +82,11 @@ const SECTIONS: NavSection[] = [
          container off — and the floor is what those two screens fill. */
       { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", permissions: ["receiving.china"] },
       { label: "Receiving dock", href: "/app/receive/dar", icon: "PackageCheck", permissions: ["receiving.dar"] },
-      { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"] },
+      { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["FINANCE"] },
+      /* THE SAME LIST UNDER THE NAME THE OFFICE CALLS IT.
+         A desk in Dar does not think of Guangzhou as "the floor" — it asks what
+         is in China, and that is the question it opens this page with. */
+      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["CHINA_WAREHOUSE", "DAR_WAREHOUSE"] },
       /* Finance reaches cargo through its containers and its bills, and asked
          for the flat list to come out of its menu. */
       { label: "All cargo", href: "/app/cargo", icon: "Package", permissions: ["cargo.viewAll"], hiddenFor: ["FINANCE"] },
@@ -233,6 +237,9 @@ const SUPPORT_SECTIONS: NavSection[] = [
     label: "Containers",
     icon: "Container",
     items: [
+      /* Before a box exists there is cargo standing in Guangzhou, and the desk
+         answering the phone is asked about it first. */
+      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"] },
       { label: "Loading containers", href: "/app/containers/loading", icon: "Boxes", permissions: ["container.view"] },
       { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", permissions: ["container.view"] },
     ],
@@ -284,6 +291,7 @@ const MANAGER_SECTIONS: NavSection[] = [
     items: [
       { label: "Search", href: "/app/search", icon: "Search", permissions: ["search.global"] },
       { label: "Customers", href: "/app/customers", icon: "Users", permissions: ["customer.view"] },
+      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"] },
       { label: "Container finances", href: "/app/finance/containers", icon: "Container", permissions: ["finance.view"] },
       { label: "Closed containers", href: "/app/containers/closed", icon: "PackageCheck", permissions: ["accounting.view"] },
       { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", permissions: ["container.view"] },
@@ -363,6 +371,7 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Requests", href: "/app/support/requests", icon: "Inbox", permissions: ["request.view"] },
       { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", permissions: ["receiving.china"] },
       { label: "Receiving dock", href: "/app/receive/dar", icon: "ClipboardCheck", permissions: ["receiving.dar"] },
+      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"] },
     ],
   },
   {

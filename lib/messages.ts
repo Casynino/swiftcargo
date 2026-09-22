@@ -70,6 +70,10 @@ export type MessageContext = {
   description?: string | null;
   shippingMark?: string | null;
   packages?: number | null;
+  pieces?: number | null;
+  /** The warehouse receipt the counter wrote the goods in on. */
+  receiptNumber?: string | null;
+  weightKg?: string | null;
   cbm?: string | null;
   containerNumber?: string | null;
   vessel?: string | null;
@@ -123,6 +127,11 @@ function cargoBlock(context: MessageContext): string {
   if (context.invoiceNumber) lines.push(`• Invoice: ${context.invoiceNumber}`);
   if (context.description) lines.push(`• Bidhaa: ${context.description}`);
   if (context.cbm) lines.push(`• Ujazo: ${context.cbm} CBM`);
+  if (context.packages != null) lines.push(`• Mizigo: ${context.packages}`);
+  if (context.pieces != null) lines.push(`• Vipande: ${context.pieces}`);
+  if (context.weightKg) lines.push(`• Uzito: ${context.weightKg} kg`);
+  if (context.shippingMark) lines.push(`• Shipping mark: ${context.shippingMark}`);
+  if (context.receiptNumber) lines.push(`• Namba ya risiti: ${context.receiptNumber}`);
   if (context.ratePerCbm) {
     lines.push(`• Rate: ${context.currency ?? "USD"} ${context.ratePerCbm}/CBM`);
   }
@@ -263,12 +272,14 @@ export function composeMessage(
     const { details = true, storage = true, linkLabel, storageText, closing, detailsContext } = options;
     return (
       `*${COMPANY.name.toUpperCase()}*\n\n` +
-      `Habari ${name} !\n\n` +
+      `Habari ${name}!\n\n` +
       `${sentence}` +
       (details ? `\n\n${cargoBlock(detailsContext ?? context)}` : "") +
       (storageText ?? (storage ? storageBlock(context) : "")) +
-      `\n\n*${linkLabel ?? "Fuatilia mzigo wako:"}*\n${link}` +
-      (closing ? `\n\n${closing}` : "")
+      /* The closing sentence sits above the link: the link is the last thing
+         in the message, where a thumb finds it. */
+      (closing ? `\n\n${closing}` : "") +
+      `\n\n*${linkLabel ?? "Fuatilia mzigo wako:"}*\n${link}`
     );
   };
 
@@ -312,9 +323,17 @@ export function composeMessage(
   switch (kind) {
     case "cargo.received_china":
       return letter(
-        `Mzigo wako umepokelewa katika ghala letu ${ROUTE.originCity}, China, ` +
-          `na unasubiri kupakiwa kwenye kontena.`,
-        { storage: false }
+        `Mzigo wako umepokelewa salama katika warehouse yetu nchini China.`,
+        {
+          storage: false,
+          closing:
+            `Mzigo wako sasa umepokelewa na umeingia kwenye mfumo wa ${COMPANY.name}. ` +
+            `Tutakujulisha mara utakapowekwa kwenye safari kuelekea ${ROUTE.destinationCountry ?? "Tanzania"}.`,
+          /* The one line of the block this letter states rather than reads: at
+             this moment the goods are in China and nowhere else, whatever the
+             record has since become. */
+          detailsContext: { ...context, statusLine: context.statusLine ?? "Received in China" },
+        }
       );
 
     case "cargo.loaded":

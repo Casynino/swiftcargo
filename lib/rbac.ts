@@ -355,6 +355,13 @@ const CUSTOMER_SUPPORT: Permission[] = [
     The floor measures; this desk explains what the floor measured.
   */
   "deliveryNote.view",
+  /* WHAT IS STANDING IN GUANGZHOU, AND WHO HAS BEEN TOLD ABOUT IT.
+     The first thing a customer asks after handing goods to a supplier is
+     whether they reached our warehouse, and this is the desk that answers the
+     phone — and the desk that sends the message saying so. It reads the floor
+     and writes nothing on it: `receiving.china` is still absent above, for the
+     reason given there. */
+  "inventory.view",
   "container.view",
   /* By the owner's decision the port steps are anybody's who hears first: the
      customer's clearing agent often rings this desk to say the box is in, or
@@ -409,6 +416,10 @@ const FINANCE: Permission[] = [
   "cargo.viewAll",
   "cargo.viewInternal",
   "deliveryNote.view",
+  /* The floor in Guangzhou, read-only: cargo standing there is the next
+     container's price list, and the customer ringing about a bill is often
+     ringing about goods that have not sailed yet. */
+  "inventory.view",
   /* Finance carries the container through the port, by the owner's decision:
      it is the desk holding the bill of lading and paying the duty, so it is
      the desk that knows the box has landed and that the entry is through.

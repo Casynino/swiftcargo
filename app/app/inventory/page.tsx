@@ -28,7 +28,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { formatCbm, formatDate } from "@/lib/format";
+import { composeMessage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { cargoTypeOptions } from "@/lib/valuation";
@@ -247,6 +249,46 @@ export default async function InventoryPage({
      counter was offered rather than a free-text box nobody spells the same. */
   const categories = await cargoTypeOptions();
 
+  /*
+    HAS THIS CUSTOMER BEEN TOLD?
+
+    The office desks answer the phone about cargo they cannot see, so the one
+    fact the list has to carry is whether the message went out and who sent it.
+    Two people looking at the same row must not send the same message twice, and
+    a row nobody has touched must be obvious at a glance.
+
+    The floor in Guangzhou does not get this column: it measures, and the desks
+    that talk to customers talk to customers — see lib/rbac.ts.
+  */
+  const canNotify =
+    inChina &&
+    (can(user.role, "conversation.reply") || can(user.role, "payment.submit"));
+
+  const told = new Map<string, { when: string; by: string }>();
+  if (canNotify && cargo.length > 0) {
+    const contacts = await prisma.customerContact.findMany({
+      where: {
+        cargoId: { in: cargo.map((item) => item.id) },
+        kind: "cargo.received_china",
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        cargoId: true,
+        createdAt: true,
+        sentBy: { select: { name: true } },
+      },
+    });
+    /* Newest first, so the first one seen for a consignment is the last one
+       sent. */
+    for (const contact of contacts) {
+      if (!contact.cargoId || told.has(contact.cargoId)) continue;
+      told.set(contact.cargoId, {
+        when: formatDate(contact.createdAt),
+        by: contact.sentBy?.name ?? "somebody",
+      });
+    }
+  }
+
   const floorCbm = cargo.reduce((sum, item) => {
     const cbm = inChina
       ? item.chinaReceiving?.cbm
@@ -435,6 +477,7 @@ export default async function InventoryPage({
                       shelf number nobody fills in was two lines of nothing. The
                       date it came in is the fact a clerk actually wants. */}
                   <TableHead className="hidden xl:table-cell">{T("Received")}</TableHead>
+                  {canNotify ? <TableHead>{T("Customer told")}</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -544,6 +587,42 @@ export default async function InventoryPage({
                       <TableCell className="tnum hidden text-sm text-muted-foreground xl:table-cell">
                         {formatDate(receiving?.receivedAt)}
                       </TableCell>
+                      {canNotify ? (
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <WhatsAppButton
+                              cargoId={item.id}
+                              phone={whatsappNumber(item.sender.phone)}
+                              kind="cargo.received_china"
+                              label={T("Notify")}
+                              /* Written here, on the server, from the row the
+                                 clerk is looking at — a figure retyped into a
+                                 phone is a figure that can be typed wrong. */
+                              message={composeMessage("cargo.received_china", {
+                                customerName: item.sender.fullName,
+                                reference: item.reference,
+                                description: item.description,
+                                shippingMark: item.shippingMark,
+                                packages: receiving?.packagesCount ?? null,
+                                pieces: pieces > 0 ? pieces : null,
+                                weightKg: receiving?.weightKg?.toString() ?? null,
+                                cbm: receiving?.cbm ? Number(receiving.cbm).toFixed(3) : null,
+                                receiptNumber: item.paperReceiptNo,
+                              })}
+                            />
+                            {told.get(item.id) ? (
+                              <span className="text-xs text-muted-foreground">
+                                {told.get(item.id)!.when}
+                                <span className="block">
+                                  {told.get(item.id)!.by}
+                                </span>
+                              </span>
+                            ) : (
+                              <Badge tone="warn">{T("Not told")}</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   );
                 })}
