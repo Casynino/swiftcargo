@@ -83,10 +83,6 @@ const SECTIONS: NavSection[] = [
       { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", permissions: ["receiving.china"] },
       { label: "Receiving dock", href: "/app/receive/dar", icon: "PackageCheck", permissions: ["receiving.dar"] },
       { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["FINANCE"] },
-      /* THE SAME LIST UNDER THE NAME THE OFFICE CALLS IT.
-         A desk in Dar does not think of Guangzhou as "the floor" — it asks what
-         is in China, and that is the question it opens this page with. */
-      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["CHINA_WAREHOUSE", "DAR_WAREHOUSE"] },
       /* Finance reaches cargo through its containers and its bills, and asked
          for the flat list to come out of its menu. */
       { label: "All cargo", href: "/app/cargo", icon: "Package", permissions: ["cargo.viewAll"], hiddenFor: ["FINANCE"] },
@@ -162,6 +158,11 @@ const SECTIONS: NavSection[] = [
     label: "Containers",
     icon: "Container",
     items: [
+      /* THE SAME LIST UNDER THE NAME THE OFFICE CALLS IT, AND IN THE PLACE IT
+         BELONGS. A desk in Dar does not think of Guangzhou as "the floor" — it
+         asks what is in China, and it asks that while looking at the boxes,
+         because cargo standing in China is the next container's contents. */
+      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["CHINA_WAREHOUSE", "DAR_WAREHOUSE"] },
       { label: "Container finances", href: "/app/finance/containers", icon: "Container", permissions: ["finance.view"] },
       { label: "Closed containers", href: "/app/containers/closed", icon: "ClipboardCheck", permissions: ["accounting.view"] },
       { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", permissions: ["container.view"] },
