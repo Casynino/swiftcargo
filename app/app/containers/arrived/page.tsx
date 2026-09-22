@@ -29,6 +29,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { priceListForContainer, priceListWithoutContainer } from "@/lib/price-list";
+import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
 import { requirePermission } from "@/lib/session";
 import { unsailedToPrice } from "@/lib/unsailed-pricing";
 import { cn } from "@/lib/utils";
@@ -293,6 +294,15 @@ export default async function ArrivedContainersPage({
       collectedTzs: billedTzs - owingTzs,
       spentTzs,
       arrived: container.shipment?.actualArrival ?? container.shipment?.eta ?? null,
+      /* A date with no word beside it read as the day it landed. Until it
+         lands, the date is a promise — and one that has passed is a delay
+         somebody has to answer for. */
+      due: container.shipment?.actualArrival === null,
+      lateDays: sailingDelay({
+        eta: container.shipment?.eta ?? null,
+        arrived: container.shipment?.actualArrival ?? null,
+        atSea: (AT_SEA_STATUSES as readonly string[]).includes(container.status),
+      }).days,
     };
   });
 
@@ -817,6 +827,17 @@ export default async function ArrivedContainersPage({
                   </TableCell>
                   <TableCell className="tnum hidden whitespace-nowrap text-xs text-muted-foreground lg:table-cell">
                     {row.arrived ? formatDate(row.arrived) : "—"}
+                    {row.arrived && row.due ? (
+                      row.lateDays > 0 ? (
+                        <span className="mt-1 block w-fit rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
+                          {t(locale, "Delayed")} · {row.lateDays}
+                        </span>
+                      ) : (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground/70">
+                          {t(locale, "expected")}
+                        </span>
+                      )
+                    ) : null}
                   </TableCell>
                   {showMoney ? (
                     <>

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Prisma } from "@prisma/client";
 import {
+  Anchor,
   Boxes,
+  CalendarClock,
   ClipboardList,
   Container as ContainerIcon,
   Layers,
@@ -47,7 +49,7 @@ import {
   LOADABLE_CONTAINER_STATUSES,
   SHIPMENT_STATUS_LABELS,
 } from "@/lib/constants";
-import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
+import { AT_SEA_STATUSES, sailingDelay, SEA_TRANSIT_DAYS } from "@/lib/eta";
 import {
   formatCbm,
   formatDate,
@@ -131,8 +133,8 @@ export default async function ContainerPage({
 
   const open = LOADABLE_CONTAINER_STATUSES.includes(container.status);
 
-  /* Thirty days from the day it left, and late on the thirty-first — the same
-     arithmetic the customer's tracking page does, from lib/eta.ts. */
+  /* Thirty-five days from the day it left, and late on the thirty-sixth — the
+     same arithmetic the customer's tracking page does, from lib/eta.ts. */
   const delay = sailingDelay({
     eta: container.shipment?.eta ?? null,
     arrived: container.shipment?.actualArrival ?? null,
@@ -224,6 +226,90 @@ export default async function ContainerPage({
     was one of the two desks that record the arrival. The card is built here
     and placed on whichever half of the page the reader is looking at.
   */
+  /*
+    THE DAY IT IS DUE, ON THE PAGE EVERY DESK OPENS.
+
+    "Where is my cargo" is answered with a date, and until now the date lived
+    in the paperwork shelf at the foot of the page — eight rows down, beside
+    the bill of lading, where nobody looking for it thought to look. It sits
+    above the next milestone instead, and it is NOT gated on being able to
+    press that milestone: Guangzhou cannot mark a box arrived and is still
+    asked, every day, when it gets there.
+
+    The same arithmetic and the same word the customer's tracking page uses.
+  */
+  const due = container.shipment?.actualArrival ?? container.shipment?.eta ?? null;
+  const daysToGo =
+    !container.shipment?.actualArrival && container.shipment?.eta && !delay.late
+      ? Math.ceil(
+          (Date.UTC(
+            container.shipment.eta.getUTCFullYear(),
+            container.shipment.eta.getUTCMonth(),
+            container.shipment.eta.getUTCDate()
+          ) -
+            Date.UTC(
+              new Date().getUTCFullYear(),
+              new Date().getUTCMonth(),
+              new Date().getUTCDate()
+            )) /
+            86_400_000
+        )
+      : null;
+
+  const arrival =
+    sailed && due ? (
+      <Card className={delay.late ? "border-warning/40" : "border-brand/20"}>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-xl",
+                delay.late ? "bg-warning/10 text-warning" : "bg-brand/10 text-brand"
+              )}
+            >
+              {container.shipment?.actualArrival ? (
+                <Anchor className="size-5" />
+              ) : (
+                <CalendarClock className="size-5" />
+              )}
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {container.shipment?.actualArrival
+                  ? T("Arrived in Dar es Salaam")
+                  : T("Expected arrival in Dar es Salaam")}
+              </p>
+              <p className="tnum text-xl font-semibold tracking-tight">
+                {formatDate(due)}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            {delay.late ? (
+              <Badge tone="warn">
+                {T("Delayed")} · {delay.days}{" "}
+                {delay.days === 1 ? T("day") : T("days")}
+              </Badge>
+            ) : daysToGo !== null && daysToGo >= 0 ? (
+              <p className="text-sm font-medium">
+                {daysToGo === 0
+                  ? T("Arriving today")
+                  : `${daysToGo} ${daysToGo === 1 ? T("day to go") : T("days to go")}`}
+              </p>
+            ) : null}
+            {container.shipment?.departureDate ? (
+              <p className="tnum mt-0.5 text-xs text-muted-foreground">
+                {T("Left China")} {formatDate(container.shipment.departureDate)}
+                {container.shipment.actualArrival
+                  ? null
+                  : ` · ${SEA_TRANSIT_DAYS} ${T("days at sea")}`}
+              </p>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+    ) : null;
+
   const advance = nextStep ? (
     <Card className="border-brand/30">
       <CardContent className="pt-6">
@@ -535,7 +621,12 @@ export default async function ContainerPage({
         straight under the six figures, one press, for whichever desk takes
         it. It was below the manifest, and on the money view not at all.
       */}
-      {!open ? advance : null}
+      {!open ? (
+        <div className="space-y-4">
+          {arrival}
+          {advance}
+        </div>
+      ) : null}
 
       {showMoney ? <ContainerMoney id={container.id} user={user} /> : null}
 
