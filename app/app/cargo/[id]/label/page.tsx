@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Download, Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -108,6 +108,17 @@ export default async function CargoLabelPage({
               className="w-full sm:w-auto"
               label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
             />
+            {/* The file, for a label printer down the hall or a supplier
+                packing on our behalf. Separate from Print, which drives the
+                printer in front of the clerk. */}
+            <a
+              href={`/app/cargo/${cargo.id}/label/pdf${box ? `?box=${box}` : ""}`}
+              download
+              className="focus-ring inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary sm:w-auto"
+            >
+              <Download className="size-4" />
+              {T("Download PDF")}
+            </a>
             <Link
               href="/app/receive/new"
               className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
@@ -126,9 +137,20 @@ export default async function CargoLabelPage({
             {LABEL_MM.height} mm.
           </p>
         </div>
-        <PrintButton
-          label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
-        />
+        <div className="flex items-center gap-2">
+          <a
+            href={`/app/cargo/${cargo.id}/label/pdf${box ? `?box=${box}` : ""}`}
+            download
+            className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+          >
+            <Download className="size-4" />
+            {T("Download PDF")}
+          </a>
+          <PrintButton
+            primary
+            label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
+          />
+        </div>
       </div>
 
       {/* A scroll frame, not a centring one: the sheet is a fixed 100mm and

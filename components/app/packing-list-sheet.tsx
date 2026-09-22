@@ -1,8 +1,11 @@
 import Image from "next/image";
 import type { CompanySetting } from "@prisma/client";
 
-import { AutoPrint, DownloadSheetButton, PrintButton } from "@/components/app/print-button";
+import { Download } from "lucide-react";
+
+import { PrintButton } from "@/components/app/print-button";
 import { SmartBack } from "@/components/app/smart-back";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import type { PackingSnapshot } from "@/lib/packing-list";
 
@@ -155,12 +158,18 @@ export function PackingListSheet({
         }
       `}</style>
 
-      <AutoPrint />
       <div className="flex items-center justify-between print:hidden">
         <SmartBack fallbackHref={`/app/containers/${id}`} fallbackLabel={`${snap.container}`} />
+        {/* Two buttons, two jobs: one gives a file, the other opens the
+            printer. */}
         <span className="flex items-center gap-2">
-          <DownloadSheetButton label="Download PDF" />
-          <PrintButton label="Print" />
+          <Button asChild variant="outline">
+            <a href={`/app/containers/${id}/packing-list/pdf`} download>
+              <Download />
+              Download PDF
+            </a>
+          </Button>
+          <PrintButton label="Print" primary />
         </span>
       </div>
 

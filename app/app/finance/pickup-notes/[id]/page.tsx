@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Download } from "lucide-react";
 
-import { AutoPrint, DownloadSheetButton, PrintButton } from "@/components/app/print-button";
+import { PrintButton } from "@/components/app/print-button";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
@@ -81,14 +83,33 @@ export default async function PickupNotePage({
   const boxes = note.cargo.boxes;
   const packages = boxes.length || note.cargo.darReceiving?.packagesCount || 0;
 
+  /* The note's own word for itself, in both languages, in the colour of what
+     it means. Swahili sits beside the English rather than under it: the person
+     holding this reads one of the two and should not have to hunt. */
   const stamp =
     note.status === "ACTIVE"
       ? note.onCredit
-        ? { text: "Released on credit", tone: "border-amber-500 text-amber-600" }
-        : { text: "Paid · valid", tone: "border-emerald-600 text-emerald-600" }
+        ? {
+            text: "Released on credit",
+            sw: "Imetolewa kwa mkopo",
+            tone: "border-amber-400 bg-amber-50 text-amber-700",
+          }
+        : {
+            text: "Paid in full",
+            sw: "Imelipwa yote",
+            tone: "border-emerald-400 bg-emerald-50 text-emerald-700",
+          }
       : note.status === "USED"
-        ? { text: "Collected", tone: "border-neutral-500 text-neutral-500" }
-        : { text: "Withdrawn", tone: "border-red-600 text-red-600" };
+        ? {
+            text: "Collected",
+            sw: "Imechukuliwa",
+            tone: "border-neutral-300 bg-neutral-50 text-neutral-600",
+          }
+        : {
+            text: "Withdrawn",
+            sw: "Imefutwa",
+            tone: "border-red-300 bg-red-50 text-red-700",
+          };
 
   const label = "text-[8px] font-bold uppercase tracking-[0.18em] text-neutral-500";
 
@@ -103,7 +124,6 @@ export default async function PickupNotePage({
         }
       `}</style>
 
-      <AutoPrint />
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <SmartBack fallbackHref="/app/finance/pickup-notes" fallbackLabel="All pickup notes" />
         <div className="flex items-center gap-2">
@@ -118,8 +138,15 @@ export default async function PickupNotePage({
               stage: messageStage({ status: note.cargo.status, hasDarReceiving: note.cargo.darReceiving !== null, clearedAt: note.cargo.clearedAt }),
             })}
           />
-          <DownloadSheetButton label="Download PDF" />
-          <PrintButton label="Print" />
+          {/* Two buttons, two jobs: one gives a file, the other opens the
+              printer. Neither does the other's work. */}
+          <Button asChild variant="outline">
+            <a href={`/app/finance/pickup-notes/${note.id}/pdf`} download>
+              <Download />
+              Download PDF
+            </a>
+          </Button>
+          <PrintButton label="Print" primary />
         </div>
       </div>
 
@@ -194,11 +221,17 @@ export default async function PickupNotePage({
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <span className={`rotate-[-4deg] rounded-md border-2 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
-                  {stamp.text}
+                <span className={`rounded-full border px-4 py-1.5 text-sm font-extrabold uppercase tracking-[0.08em] ${stamp.tone}`}>
+                  {stamp.text}{" "}
+                  <span className="font-medium normal-case tracking-normal opacity-80">
+                    · {stamp.sw}
+                  </span>
                 </span>
-                <span className="rounded-full bg-[#0b2742] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-                  Bring photo ID · Leta kitambulisho
+                <span className="rounded-full border border-[#d6e2ee] bg-white px-4 py-1.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#0b2742]">
+                  Bring photo ID{" "}
+                  <span className="font-medium normal-case tracking-normal text-neutral-500">
+                    · Leta kitambulisho
+                  </span>
                 </span>
               </div>
             </div>
@@ -215,21 +248,18 @@ export default async function PickupNotePage({
           {/* The rest of the facts, in one band. The goods run the width of
               the sheet because a description truncated to a third of a column
               is the one line a customer disputes. */}
-          <section className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-[#d6e2ee] bg-[#d6e2ee]">
+          <section className="mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-2xl border border-[#d6e2ee] bg-[#d6e2ee]">
             {[
               ["Container", container?.reference ?? "—"],
               [note.onCredit ? "Paid so far" : "Settled", formatMoney(note.amountPaid, note.currency)],
               ["In shillings", note.amountTzs ? formatMoney(note.amountTzs, "TZS") : "—"],
+              ["Goods", note.cargo.description],
             ].map(([k, v]) => (
               <div key={k} className="bg-white px-4 py-3">
                 <p className={label}>{k}</p>
                 <p className="tnum mt-0.5 truncate text-sm font-bold">{v}</p>
               </div>
             ))}
-            <div className="col-span-3 bg-white px-4 py-3">
-              <p className={label}>Goods · Bidhaa</p>
-              <p className="mt-0.5 text-sm font-bold">{note.cargo.description}</p>
-            </div>
           </section>
 
           {note.onCredit ? (
