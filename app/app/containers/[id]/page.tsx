@@ -33,7 +33,7 @@ import { ContainerMoney } from "@/components/app/container-money";
 import { PageHeader } from "@/components/app/page-header";
 import { ClearanceButton } from "@/components/app/clearance-button";
 import { UndoArrivalButton } from "@/components/app/undo-arrival-button";
-import { ClosePanel } from "@/components/app/close-panel";
+import { CloseContainerButton } from "@/components/app/close-panel";
 import { SectionLabel } from "@/components/app/section-label";
 import { StatStrip } from "@/components/app/stat-strip";
 import { Badge } from "@/components/ui/badge";
@@ -224,9 +224,10 @@ export default async function ContainerPage({
       ? can(user.role, "container.depart")
       : container.status === "DEPARTED" || container.status === "IN_TRANSIT"
         ? can(user.role, "container.arrive")
-        : container.status === "ARRIVED"
-          ? can(user.role, "container.close")
-          : false;
+        : /* A landed box has its close button up in the header, with the
+           container's other actions. A card saying the same thing again was
+           the largest thing on a page opened for everything else. */
+        false;
 
   /*
     THE NEXT MILESTONE, WHEREVER THE READER IS STANDING.
@@ -365,25 +366,31 @@ export default async function ContainerPage({
       cargoId: l.cargoId,
       reference: l.cargo.reference,
       customer: l.cargo.sender.fullName,
+      shippingMark: l.cargo.shippingMark,
       packages: l.cargo.chinaReceiving?.packagesCount ?? l.packagesCount,
+      cbm: formatCbm(l.cbm),
     }));
 
   /* The other sailings one of them could have travelled on: a box that is shut
      — at sea or landed — because cargo cannot be moved into a container still
      taking cargo in Guangzhou. */
-  const closing = container.status === "ARRIVED" && remaining.length > 0;
-  const moveTargets = closing
-    ? await prisma.container.findMany({
-        where: {
-          deletedAt: null,
-          id: { not: container.id },
-          status: { in: ["SEALED", "DEPARTED", "IN_TRANSIT", "ARRIVED", "CLOSED"] },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 25,
-        select: { id: true, reference: true, containerNumber: true, status: true },
-      })
-    : [];
+  const moveTargets =
+    container.status === "ARRIVED" && remaining.length > 0
+      ? await prisma.container.findMany({
+          where: { deletedAt: null, id: { not: container.id } },
+          orderBy: { createdAt: "desc" },
+          take: 30,
+          select: { id: true, reference: true, containerNumber: true, status: true },
+        })
+      : [];
+
+  /* A box still taking cargo is the usual answer — goods that never came off
+     in Dar are most often still in Guangzhou, waiting for the next sailing —
+     so those are offered first. */
+  const targetOrder: Record<string, number> = { OPEN: 0, LOADING: 0, LOADED: 1, SEALED: 1 };
+  moveTargets.sort(
+    (a, b) => (targetOrder[a.status] ?? 2) - (targetOrder[b.status] ?? 2)
+  );
 
   const advance = nextStep ? (
     <Card className="border-brand/30">
@@ -393,32 +400,13 @@ export default async function ContainerPage({
             and Dar closes the box once everything on it is booked in. Showing
             a clerk a button their desk cannot press only teaches them the
             system is broken. */}
-        {container.status === "ARRIVED" ? (
-          <ClosePanel
-            containerId={container.id}
-            remaining={remaining}
-            targets={moveTargets.map((c) => ({
-              id: c.id,
-              label: `${c.reference}${c.containerNumber ? ` · ${c.containerNumber}` : ""} · ${CONTAINER_STATUS_LABELS[c.status]}`,
-            }))}
-            canClose={can(user.role, "container.close")}
-            canMove={can(user.role, "container.amendArrived")}
-            canReportMissing={can(user.role, "receiving.dar")}
-            summary={{
-              expected: tally.expected,
-              received: tally.received,
-              missing: tally.missing,
-            }}
-          />
-        ) : (
-          <AdvancePanel
-            containerId={container.id}
-            status={container.status}
-            canDepart={can(user.role, "container.depart")}
-            canArrive={can(user.role, "container.arrive")}
-            canClose={can(user.role, "container.close")}
-          />
-        )}
+        <AdvancePanel
+          containerId={container.id}
+          status={container.status}
+          canDepart={can(user.role, "container.depart")}
+          canArrive={can(user.role, "container.arrive")}
+          canClose={can(user.role, "container.close")}
+        />
         {container.status === "CLOSED" ? (
           <p className="text-sm text-muted-foreground">
             {T("This container is closed. Everything on it has been received in Dar.")}
@@ -600,6 +588,27 @@ export default async function ContainerPage({
             ) : null}
             {can(user.role, "cargo.clear") && inClearance > 0 ? (
               <ClearanceButton containerId={container.id} waiting={inClearance} />
+            ) : null}
+            {/* Closing is one press on a box that is finished with, so it is a
+                button beside the others and not a panel across the page. What
+                it asks about — the cargo nobody counted — is inside it. */}
+            {container.status === "ARRIVED" ? (
+              <CloseContainerButton
+                containerId={container.id}
+                reference={container.reference}
+                remaining={remaining}
+                targets={moveTargets.map((c) => ({
+                  id: c.id,
+                  label: `${c.reference}${c.containerNumber ? ` · ${c.containerNumber}` : ""} · ${CONTAINER_STATUS_LABELS[c.status]}`,
+                }))}
+                canClose={can(user.role, "container.close")}
+                canReportMissing={can(user.role, "receiving.dar")}
+                summary={{
+                  expected: tally.expected,
+                  received: tally.received,
+                  missing: tally.missing,
+                }}
+              />
             ) : null}
             {can(user.role, "container.arrive") && container.status === "ARRIVED" && arrivalUndoable ? (
               <UndoArrivalButton containerId={container.id} reference={container.reference} />

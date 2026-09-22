@@ -22,7 +22,7 @@ import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { nextOpenSailing, publicSailings } from "@/lib/sailing-schedule";
 import { formMessage } from "@/lib/safe-error";
-import { authorize } from "@/lib/session";
+import { authorize, type SessionUser } from "@/lib/session";
 
 export type ActionState = { error?: string; ok?: string; id?: string };
 
@@ -1077,6 +1077,8 @@ export async function advanceContainer(
 
   const containerId = String(formData.get("containerId") ?? "");
   const when = String(formData.get("when") ?? "").trim();
+  /* Why now, in the words of whoever pressed it. Closing asks for one. */
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300) || null;
 
   const container = await prisma.container.findFirst({
     where: { id: containerId, deletedAt: null },
@@ -1148,6 +1150,7 @@ export async function advanceContainer(
           containerId: container.id,
           from: container.status,
           to: to as ContainerStatus,
+          note,
           actorId: actor.id,
         },
       });
@@ -1617,7 +1620,20 @@ export async function putOnArrivedContainer(
   const actor = await authorize("container.amendArrived");
 
   const containerId = String(formData.get("containerId") ?? "");
-  const cargoId = String(formData.get("cargoId") ?? "");
+  /*
+    ONE CONSIGNMENT OR TWENTY, THROUGH THE SAME DOOR.
+
+    Closing a container asks about everything nobody counted at once, and a
+    clerk ticking six boxes should press Move once. Each consignment is still
+    moved on its own terms — its own FieldChange, its own case, its own
+    refusal when it carries a live bill — so a box that cannot move does not
+    take the other five down with it.
+  */
+  const cargoIds = formData
+    .getAll("cargoId")
+    .map(String)
+    .map((v) => v.trim())
+    .filter(Boolean);
   const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
 
   const container = await prisma.container.findFirst({
@@ -1625,11 +1641,54 @@ export async function putOnArrivedContainer(
     select: { id: true, reference: true, status: true },
   });
   if (!container) return { error: "That container no longer exists." };
-  if (!SHUT_CONTAINER_STATUSES.includes(container.status)) {
-    return {
-      error: `${container.reference} is still open. Load cargo into it from the floor list.`,
-    };
+  if (cargoIds.length === 0) return { error: "Choose at least one consignment." };
+  if (
+    !SHUT_CONTAINER_STATUSES.includes(container.status) &&
+    !LOADABLE_CONTAINER_STATUSES.includes(container.status)
+  ) {
+    return { error: `${container.reference} cannot take cargo.` };
   }
+
+  const done: string[] = [];
+  const refused: string[] = [];
+  for (const id of cargoIds) {
+    const result = await moveOntoContainer(actor, container, id, reason);
+    if (result.error) refused.push(result.error);
+    else if (result.ok) done.push(result.ok);
+  }
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath(`/app/containers/${container.id}/edit`);
+  revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/exceptions");
+  revalidatePath("/app/inventory");
+
+  if (done.length === 0) return { error: refused[0] ?? "Nothing moved." };
+  return {
+    ok:
+      done.length === 1
+        ? done[0]
+        : `${done.length} consignments moved to ${container.reference}.` +
+          (refused.length ? ` ${refused.length} refused: ${refused[0]}` : ""),
+  };
+}
+
+/**
+ * ONE CONSIGNMENT ONTO ONE CONTAINER, WITH THE REASON IT MOVED.
+ *
+ * The box it is going to decides what the consignment then IS. A box still
+ * loading in Guangzhou takes it back onto a manifest that has not sailed; one
+ * at sea takes it to sea; one that has landed leaves it standing at the port
+ * for Dar to count. Nothing about the cargo itself is retyped or recalculated —
+ * its measurements, its bill and its storage clock are its own and are not
+ * touched here.
+ */
+async function moveOntoContainer(
+  actor: SessionUser,
+  container: { id: string; reference: string; status: ContainerStatus },
+  cargoId: string,
+  reason: string
+): Promise<ActionState> {
 
   const cargo = await prisma.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },
@@ -1693,9 +1752,11 @@ export async function putOnArrivedContainer(
 
   /* A box at sea is corrected from Guangzhou's side of the story — the bale
      went in and nobody wrote it down — and a landed one from Dar's, where it
-     came off. What differs is what the consignment then IS: at sea with the
-     box, or standing at the port waiting to be counted. */
+     came off. What differs is what the consignment then IS: back on a manifest
+     that has not sailed, at sea with the box, or standing at the port waiting
+     to be counted. */
   const landed = LANDED_CONTAINER_STATUSES.includes(container.status);
+  const loading = LOADABLE_CONTAINER_STATUSES.includes(container.status);
 
   const measured = cargo.darReceiving ?? cargo.chinaReceiving;
   const fromLines = cargo.packages.length > 0;
@@ -1743,6 +1804,15 @@ export async function putOnArrivedContainer(
       },
     });
 
+    /* An empty box that has just taken its first consignment is being loaded,
+       the same as if it had been picked off the floor list. */
+    if (loading) {
+      await tx.container.updateMany({
+        where: { id: container.id, status: "OPEN" },
+        data: { status: "LOADING", loadingStartedAt: new Date() },
+      });
+    }
+
     /* Landed, not received: putting it on the manifest says the box it came
        off, not that anybody has counted it. Dar checks it in from the same
        screen as the rest, and a consignment already booked in keeps the state
@@ -1751,11 +1821,13 @@ export async function putOnArrivedContainer(
       await setCargoStatus(
         tx,
         cargo.id,
-        landed ? "ARRIVED_TANZANIA" : "IN_TRANSIT",
+        loading ? "ASSIGNED_TO_CONTAINER" : landed ? "ARRIVED_TANZANIA" : "IN_TRANSIT",
         actor,
-        landed
-          ? `Came off ${container.reference}: ${reason}`
-          : `Shipped on ${container.reference}: ${reason}`
+        loading
+          ? `Moved onto ${container.reference}, still loading: ${reason}`
+          : landed
+            ? `Came off ${container.reference}: ${reason}`
+            : `Shipped on ${container.reference}: ${reason}`
       );
     }
     if (cargo.darReceiving) {
@@ -1818,9 +1890,118 @@ export async function putOnArrivedContainer(
   revalidatePath("/app/exceptions");
   revalidatePath(`/app/cargo/${cargo.id}`);
   return {
-    ok: landed
-      ? `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`
-      : `${cargo.reference} is on ${container.reference} and at sea with it. Dar will check it in off the box — case ${caseRef} names how it got there.`,
+    ok: loading
+      ? `${cargo.reference} is on ${container.reference}, which is still loading — case ${caseRef} names how it got there.`
+      : landed
+        ? `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`
+        : `${cargo.reference} is on ${container.reference} and at sea with it. Dar will check it in off the box — case ${caseRef} names how it got there.`,
+  };
+}
+
+/**
+ * CLOSING A SAILING, AND THE CARGO NOBODY COUNTED, IN ONE PRESS.
+ *
+ * A container is closed when its manifest has been answered for. Anything
+ * still open at that moment has exactly two honest answers — it is really on
+ * another box, or it never came off — and both are given here, ticked, before
+ * the box is shut. It is one act, not three screens: the moves, then the
+ * close, with the reason on the closing event so the history says why the
+ * sailing was ended on that day.
+ *
+ * A move that is refused stops the close. A box shut over a consignment whose
+ * move failed is a consignment nobody can find again, which is the whole
+ * reason this asks first.
+ */
+export async function closeSailing(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("container.close");
+
+  const containerId = String(formData.get("containerId") ?? "");
+  const destination = String(formData.get("destination") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
+  const cargoIds = formData
+    .getAll("cargoId")
+    .map(String)
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, deletedAt: null },
+    select: { id: true, reference: true, status: true },
+  });
+  if (!container) return { error: "That container no longer exists." };
+
+  const moved: string[] = [];
+  if (cargoIds.length > 0) {
+    if (!destination) {
+      return { error: "Say where the ticked consignments go." };
+    }
+
+    if (destination === "MISSING") {
+      /* Reported one at a time, on its own authority: the desk that looked in
+         the box is the desk that may say a thing was not in it, and
+         reportMissingAtDar asks that question itself. */
+      /* Imported here rather than at the top: lib/actions/dar.ts already
+         reaches into this file for the milestones, and two modules importing
+         each other as they load is a cycle waiting to hand somebody an
+         undefined function. */
+      const { reportMissingAtDar } = await import("@/lib/actions/dar");
+      for (const cargoId of cargoIds) {
+        const fd = new FormData();
+        fd.set("cargoId", cargoId);
+        fd.set(
+          "note",
+          reason || `Not found when ${container.reference} was closed.`
+        );
+        const result = await reportMissingAtDar({}, fd);
+        if (result.error) return { error: result.error };
+        moved.push(cargoId);
+      }
+    } else {
+      const target = await prisma.container.findFirst({
+        where: { id: destination, deletedAt: null },
+        select: { id: true, reference: true, status: true },
+      });
+      if (!target) return { error: "That container no longer exists." };
+      if (target.id === container.id) {
+        return { error: "Choose a different container to move them to." };
+      }
+      for (const cargoId of cargoIds) {
+        const result = await moveOntoContainer(
+          actor,
+          target,
+          cargoId,
+          reason || `Moved when ${container.reference} was closed`
+        );
+        if (result.error) return { error: result.error };
+        moved.push(cargoId);
+      }
+    }
+  }
+
+  const close = new FormData();
+  close.set("containerId", container.id);
+  close.set("to", "CLOSED");
+  if (reason) close.set("note", reason);
+  const closed = await advanceContainer({}, close);
+  if (closed.error) {
+    return {
+      error: moved.length
+        ? `${moved.length} moved, but the container did not close: ${closed.error}`
+        : closed.error,
+    };
+  }
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/inventory");
+
+  return {
+    ok: moved.length
+      ? `${container.reference} is closed. ${moved.length} consignment${moved.length === 1 ? "" : "s"} dealt with first.`
+      : `${container.reference} is closed.`,
   };
 }
 

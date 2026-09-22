@@ -1,277 +1,278 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ArrowRightLeft, Lock, PackageX, TriangleAlert } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Lock, X } from "lucide-react";
 
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
+import { useEscape } from "@/components/app/use-escape";
 import { useT } from "@/components/app/locale-provider";
+import { distinctMark } from "@/lib/customer-name";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import {
-  advanceContainer,
-  putOnArrivedContainer,
-  type ActionState,
-} from "@/lib/actions/containers";
-import { reportMissingAtDar } from "@/lib/actions/dar";
+import { closeSailing, type ActionState } from "@/lib/actions/containers";
 
 export type RemainingLine = {
   cargoId: string;
   reference: string;
   customer: string;
+  shippingMark: string | null;
   /** What the packing list says should have come off. */
   packages: number;
+  cbm: string;
 };
 
 /**
- * SHUTTING THE BOX, AND THE QUESTION THAT COMES FIRST.
+ * CLOSING A CONTAINER: ONE SMALL BUTTON, AND ONE QUESTION BEHIND IT.
  *
- * A container is closed when everything on its manifest has been accounted
- * for. Anything nobody has counted is a question, not a rounding error, and
- * this panel asks it by name: for each consignment still open, either it
- * travelled on another box and moves there, or it did not come off at all and
- * is reported missing with a case.
+ * The button sits with the container's other actions and says nothing until it
+ * is pressed — a sailing is closed once, and a panel explaining that took the
+ * top off a page people open twenty times a day for everything else.
  *
- * MOVING CARRIES THE CONSIGNMENT ACROSS UNCHANGED. Its measurements are the
- * ones the warehouse recorded, its bill is its own, and its storage clock runs
- * from the day Dar booked it in — none of which this touches. What moves is
- * which box it is listed against, written down with the old value and a
- * reason. A consignment with a bill already issued is refused: the invoice
- * names the sailing, so Finance unpicks that first.
+ * Behind it is the only question closing asks: what became of the cargo nobody
+ * counted? Tick them, say where they go, say why the sailing is ending, press
+ * once. The moves and the close happen together, because a consignment left on
+ * a closed box is one nobody can find again.
  *
- * Nothing is deleted to make a container add up, here or anywhere else.
+ * MOVING CARRIES A CONSIGNMENT ACROSS UNCHANGED. Its measurements are the
+ * warehouse's, its bill is its own and its storage clock runs from the day Dar
+ * booked it in — none of which this touches. What moves is which box it is
+ * listed against, written down with the old value, a reason and a case.
  */
-export function ClosePanel({
+export function CloseContainerButton({
   containerId,
+  reference,
   remaining,
   targets,
   canClose,
-  canMove,
   canReportMissing,
   summary,
 }: {
   containerId: string;
+  reference: string;
   remaining: RemainingLine[];
-  /** Other sailings a consignment could have travelled on. */
+  /** Where a consignment could go instead: boxes still loading, then the other sailings. */
   targets: { id: string; label: string }[];
   canClose: boolean;
-  canMove: boolean;
   canReportMissing: boolean;
-  /** Expected, received and missing packages, already counted. */
   summary: { expected: number; received: number; missing: number };
 }) {
   const tx = useT();
-  const [state, action] = useActionState<ActionState, FormData>(
-    advanceContainer,
-    {}
-  );
+  const [open, setOpen] = useState(false);
+  useEscape(open, () => setOpen(false));
 
-  const open = remaining.length > 0;
+  if (!canClose) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-lg font-semibold tracking-tight">
-            {tx("Close the container")}
-          </p>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            {open
-              ? tx("Every consignment on the manifest has to be accounted for first. Move the ones that travelled on another box, and report the ones that never came off.")
-              : tx("Everything on the manifest is accounted for. Closing is the last word on this sailing — nothing more can happen to a closed container.")}
-          </p>
-        </div>
-        {/* The box's own arithmetic, so whoever shuts it sees what they are
-            signing for without opening the dock. */}
-        <dl className="flex gap-5 text-sm">
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {tx("Expected")}
-            </dt>
-            <dd className="tnum font-semibold">{summary.expected}</dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {tx("Received")}
-            </dt>
-            <dd className="tnum font-semibold">{summary.received}</dd>
-          </div>
-          <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {tx("Missing")}
-            </dt>
-            <dd
-              className={
-                summary.missing > 0
-                  ? "tnum font-semibold text-destructive"
-                  : "tnum font-semibold"
-              }
-            >
-              {summary.missing}
-            </dd>
-          </div>
-        </dl>
-      </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium hover:bg-secondary"
+      >
+        <Lock className="size-4" />
+        {tx("Close the container")}
+        {remaining.length > 0 ? (
+          <span className="tnum rounded-full bg-warning/20 px-1.5 text-xs font-semibold text-warning">
+            {remaining.length}
+          </span>
+        ) : null}
+      </button>
 
-      {open ? (
-        <div className="rounded-xl border border-warning/40 bg-warning/5">
-          <p className="flex items-center gap-2 border-b border-warning/30 px-4 py-2.5 text-sm font-medium">
-            <TriangleAlert className="size-4 text-warning" />
-            {remaining.length}{" "}
-            {remaining.length === 1
-              ? tx("consignment is still not accounted for")
-              : tx("consignments are still not accounted for")}
-          </p>
-          {!canReportMissing ? (
-            /* The desk that looked in the box is the desk that can say a thing
-               was not in it. Finance shuts the sailing; it does not declare a
-               consignment missing on the floor's behalf. */
-            <p className="border-b border-warning/20 px-4 py-2 text-xs text-muted-foreground">
-              {tx("Dar reports what never came off. Move a consignment that sailed on another box, or ask the floor to finish this one on the receiving dock.")}
-            </p>
-          ) : null}
-          <ul className="divide-y divide-warning/20">
-            {remaining.map((line) => (
-              <RemainingRow
-                key={line.cargoId}
-                containerId={containerId}
-                line={line}
-                targets={targets}
-                canMove={canMove}
-                canReportMissing={canReportMissing}
-              />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {canClose ? (
-        <form action={action} className="space-y-3">
-          <input type="hidden" name="containerId" value={containerId} />
-          <input type="hidden" name="to" value="CLOSED" />
-          <FormMessage error={state.error} ok={state.ok} />
-          <SubmitButton
-            size="lg"
-            disabled={open}
-            className="h-12 w-full gap-2 text-base sm:w-auto sm:px-6"
-            pendingLabel={tx("Closing the container…")}
-          >
-            <Lock />
-            {tx("Close the container")}
-          </SubmitButton>
-          <p className="text-xs text-muted-foreground">
-            {open
-              ? tx("Deal with the consignments above first.")
-              : tx("Today's date and time are recorded with your name.")}
-          </p>
-        </form>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          {tx("Finance, the manager or the owner closes the container once Dar has checked everything off it.")}
-        </p>
-      )}
-    </div>
+      {open
+        ? createPortal(
+            /* Portalled to the body: the page's panels scroll and clip, and a
+               dialog confined to one of them is a dialog nobody can read. */
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+              <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-card p-5 shadow-raised">
+                <CloseDialog
+                  containerId={containerId}
+                  reference={reference}
+                  remaining={remaining}
+                  targets={targets}
+                  canReportMissing={canReportMissing}
+                  summary={summary}
+                  onDone={() => setOpen(false)}
+                />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
 
-/**
- * One consignment nobody has counted, and the two honest answers.
- *
- * "It sailed on another box" moves it there as it stands. "It never came off"
- * opens a case and leaves it on this manifest, marked missing — which is what
- * keeps a container's received count honest instead of quietly shrinking the
- * list until the arithmetic works.
- */
-function RemainingRow({
+function CloseDialog({
   containerId,
-  line,
+  reference,
+  remaining,
   targets,
-  canMove,
   canReportMissing,
+  summary,
+  onDone,
 }: {
   containerId: string;
-  line: RemainingLine;
+  reference: string;
+  remaining: RemainingLine[];
   targets: { id: string; label: string }[];
-  canMove: boolean;
   canReportMissing: boolean;
+  summary: { expected: number; received: number; missing: number };
+  onDone: () => void;
 }) {
   const tx = useT();
-  const [moveState, move] = useActionState<ActionState, FormData>(
-    putOnArrivedContainer,
+  const [state, action] = useActionState<ActionState, FormData>(
+    closeSailing,
     {}
   );
-  const [missingState, missing] = useActionState<ActionState, FormData>(
-    reportMissingAtDar,
-    {}
+  /* Everything starts ticked: the common case is one answer for the whole
+     remainder, and unticking two is less work than ticking eight. */
+  const [picked, setPicked] = useState<Set<string>>(
+    () => new Set(remaining.map((r) => r.cargoId))
   );
-  const [target, setTarget] = useState("");
+
+  const outstanding = remaining.length > 0;
+  const none = picked.size === 0;
 
   return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <div className="min-w-[12rem] flex-1">
-        <p className="tnum text-sm font-semibold">{line.reference}</p>
-        <p className="text-xs text-muted-foreground">
-          {line.customer} · {line.packages}{" "}
-          {line.packages === 1 ? tx("package") : tx("packages")}{" "}
-          {tx("expected")}
-        </p>
+    <form action={action} className="space-y-4">
+      <input type="hidden" name="containerId" value={containerId} />
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-base font-semibold">
+            {tx("Close")} {reference}
+          </p>
+          <p className="tnum mt-0.5 text-xs text-muted-foreground">
+            {tx("Expected")} {summary.expected} · {tx("Received")}{" "}
+            {summary.received} · {tx("Missing")} {summary.missing}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDone}
+          aria-label={tx("Close this window")}
+          className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+        >
+          <X className="size-4" />
+        </button>
       </div>
 
-      {canMove && targets.length > 0 ? (
-        <form action={move} className="flex flex-wrap items-center gap-2">
-          <input type="hidden" name="cargoId" value={line.cargoId} />
-          {/* The box it is moving TO. The one it is leaving is recorded from
-              the consignment itself, old value first. */}
-          <input type="hidden" name="containerId" value={target} />
-          <input
-            type="hidden"
-            name="reason"
-            value={`Moved while the container was being closed`}
-          />
-          <NativeSelect
-            aria-label={tx("Move to another container")}
-            className="w-64"
-            value={target}
-            onChange={(e) => setTarget(e.target.value)}
-          >
-            <option value="">{tx("Sailed on another box…")}</option>
-            {targets
-              .filter((t) => t.id !== containerId)
-              .map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
+      {outstanding ? (
+        <>
+          <p className="text-sm text-muted-foreground">
+            {tx("Still open on this container. Tick the ones to deal with and say where they go — a consignment left on a closed box is one nobody can find again.")}
+          </p>
+
+          <div className="overflow-hidden rounded-xl border">
+            <ul className="max-h-60 divide-y overflow-y-auto">
+              {remaining.map((line) => (
+                <li key={line.cargoId}>
+                  <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted/40">
+                    <input
+                      type="checkbox"
+                      className="size-4 shrink-0"
+                      checked={picked.has(line.cargoId)}
+                      onChange={() =>
+                        setPicked((current) => {
+                          const next = new Set(current);
+                          if (next.has(line.cargoId)) next.delete(line.cargoId);
+                          else next.add(line.cargoId);
+                          return next;
+                        })
+                      }
+                    />
+                    {/* Only the ticked ones are submitted: one value per
+                        consignment is what lets one press move six. */}
+                    {picked.has(line.cargoId) ? (
+                      <input type="hidden" name="cargoId" value={line.cargoId} />
+                    ) : null}
+                    <span className="min-w-0 flex-1">
+                      <span className="tnum block font-medium">
+                        {line.reference}
+                      </span>
+                      {/* The mark only when it is not the name again. */}
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {line.customer}
+                        {distinctMark(line.customer, line.shippingMark)
+                          ? ` · ${distinctMark(line.customer, line.shippingMark)}`
+                          : ""}
+                      </span>
+                    </span>
+                    <span className="tnum shrink-0 text-xs text-muted-foreground">
+                      {line.packages} {tx("pkg")} · {line.cbm}
+                    </span>
+                  </label>
+                </li>
               ))}
-          </NativeSelect>
-          <SubmitButton size="sm" variant="outline" disabled={!target} pendingLabel={tx("Moving it…")}>
-            <ArrowRightLeft />
-            {tx("Move")}
-          </SubmitButton>
-        </form>
-      ) : null}
+            </ul>
+          </div>
 
-      {canReportMissing ? (
-        <form action={missing}>
-          <input type="hidden" name="cargoId" value={line.cargoId} />
-          <input
-            type="hidden"
-            name="note"
-            value={`Not found when the container was closed.`}
-          />
-          <SubmitButton
-            size="sm"
-            variant="outline"
-            className="border-destructive/40 text-destructive hover:bg-destructive/10"
-            pendingLabel={tx("Reporting…")}
+          <div className="flex items-center gap-3 text-xs">
+            <button
+              type="button"
+              className="font-medium text-brand hover:underline"
+              onClick={() =>
+                setPicked(
+                  none ? new Set(remaining.map((r) => r.cargoId)) : new Set()
+                )
+              }
+            >
+              {none ? tx("Tick all") : tx("Tick none")}
+            </button>
+            <span className="tnum text-muted-foreground">
+              {picked.size} {tx("of")} {remaining.length}
+            </span>
+          </div>
+
+          <NativeSelect
+            name="destination"
+            aria-label={tx("Where do they go?")}
+            required={picked.size > 0}
+            className="w-full"
           >
-            <PackageX />
-            {tx("Never came off")}
-          </SubmitButton>
-        </form>
-      ) : null}
+            <option value="">{tx("Where do they go?")}</option>
+            {targets.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+            {/* The other honest answer, for the desk that looked in the box. */}
+            {canReportMissing ? (
+              <option value="MISSING">
+                {tx("They never came off — report missing")}
+              </option>
+            ) : null}
+          </NativeSelect>
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {tx("Everything on the manifest is accounted for. Closing is the last word on this sailing — nothing more can happen to a closed container.")}
+        </p>
+      )}
 
-      <div className="w-full">
-        <FormMessage error={moveState.error ?? missingState.error} ok={moveState.ok ?? missingState.ok} />
+      <Input
+        name="reason"
+        placeholder={tx("Why the sailing is being closed now")}
+        maxLength={300}
+      />
+
+      <FormMessage error={state.error} ok={state.ok} />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <SubmitButton pendingLabel={tx("Closing the container…")}>
+          <Lock />
+          {tx("Close the container")}
+        </SubmitButton>
+        <button
+          type="button"
+          onClick={onDone}
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
+          {tx("Cancel")}
+        </button>
       </div>
-    </li>
+    </form>
   );
 }
