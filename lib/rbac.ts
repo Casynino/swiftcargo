@@ -246,6 +246,13 @@ const CHINA_WAREHOUSE: Permission[] = [
   "container.load",
   "container.seal",
   "container.depart",
+  /* THE BALE THAT WENT IN AND WAS NOT WRITTEN DOWN.
+     Guangzhou packed the box, so Guangzhou is who finds out a week later that
+     a consignment travelled on it and is still standing on their own floor
+     list. Correcting a shut manifest asks for a reason, writes the old value
+     first and opens a case — see putOnArrivedContainer. It never rewrites the
+     packing list the box sailed with. */
+  "container.amendArrived",
   "packingList.view",
   "packingList.issue",
   "shipment.view",

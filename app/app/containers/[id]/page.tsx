@@ -705,7 +705,18 @@ export default async function ContainerPage({
                   label: "Done",
                   keepScroll: true,
                 }
-              : can(user.role, "shipment.edit") && container.shipment
+              : /* A box that has sailed is corrected on a page of its own:
+                   the dates and the bale that went in without being written
+                   down are the whole job by then, and a card wedged under the
+                   loading screen was not room enough for either. */
+                sailed &&
+                  (can(user.role, "shipment.edit") ||
+                    can(user.role, "container.amendArrived"))
+                ? {
+                    href: `/app/containers/${container.id}/edit`,
+                    label: "Edit this sailing",
+                  }
+                : can(user.role, "shipment.edit") && container.shipment
                 ? { href: `?edit=voyage`, label: "Edit the voyage", keepScroll: true }
                 : /* While the doors are open the box's own particulars are the
                      thing worth correcting; once it has sailed, only the

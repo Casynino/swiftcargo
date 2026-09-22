@@ -1586,8 +1586,10 @@ export async function takeOffArrivedContainer(
   });
 
   revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath(`/app/containers/${container.id}/edit`);
   revalidatePath(`/app/receive/dar/${container.id}`);
   revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/inventory");
   revalidatePath("/app/exceptions");
   revalidatePath(`/app/cargo/${cargo.id}`);
   return {
@@ -1623,9 +1625,9 @@ export async function putOnArrivedContainer(
     select: { id: true, reference: true, status: true },
   });
   if (!container) return { error: "That container no longer exists." };
-  if (!LANDED_CONTAINER_STATUSES.includes(container.status)) {
+  if (!SHUT_CONTAINER_STATUSES.includes(container.status)) {
     return {
-      error: `${container.reference} has not landed yet. While a box is open, load cargo into it from the floor list.`,
+      error: `${container.reference} is still open. Load cargo into it from the floor list.`,
     };
   }
 
@@ -1689,6 +1691,12 @@ export async function putOnArrivedContainer(
     };
   }
 
+  /* A box at sea is corrected from Guangzhou's side of the story — the bale
+     went in and nobody wrote it down — and a landed one from Dar's, where it
+     came off. What differs is what the consignment then IS: at sea with the
+     box, or standing at the port waiting to be counted. */
+  const landed = LANDED_CONTAINER_STATUSES.includes(container.status);
+
   const measured = cargo.darReceiving ?? cargo.chinaReceiving;
   const fromLines = cargo.packages.length > 0;
   const cbm = fromLines
@@ -1743,9 +1751,11 @@ export async function putOnArrivedContainer(
       await setCargoStatus(
         tx,
         cargo.id,
-        "ARRIVED_TANZANIA",
+        landed ? "ARRIVED_TANZANIA" : "IN_TRANSIT",
         actor,
-        `Came off ${container.reference}: ${reason}`
+        landed
+          ? `Came off ${container.reference}: ${reason}`
+          : `Shipped on ${container.reference}: ${reason}`
       );
     }
     if (cargo.darReceiving) {
@@ -1775,13 +1785,19 @@ export async function putOnArrivedContainer(
       cargo,
       containerId: container.id,
       title: was
-        ? `${cargo.reference} came off ${container.reference}, not ${was}`
-        : `${cargo.reference} came off ${container.reference} and is on no packing list`,
+        ? landed
+          ? `${cargo.reference} came off ${container.reference}, not ${was}`
+          : `${cargo.reference} sailed on ${container.reference}, not ${was}`
+        : landed
+          ? `${cargo.reference} came off ${container.reference} and is on no packing list`
+          : `${cargo.reference} sailed on ${container.reference} and is on no packing list`,
       description: reason,
-      note: `Added to ${container.reference} at Dar: ${reason}`,
+      note: landed
+        ? `Added to ${container.reference} at Dar: ${reason}`
+        : `Added to ${container.reference} after it sailed: ${reason}`,
       body: was
-        ? `${cargo.reference} was listed on ${was} and came off ${container.reference}.`
-        : `${cargo.reference} came off ${container.reference} and the packing list does not carry it.`,
+        ? `${cargo.reference} was listed on ${was} and went with ${container.reference}.`
+        : `${cargo.reference} went with ${container.reference} and the packing list does not carry it.`,
     });
   });
 
@@ -1795,12 +1811,16 @@ export async function putOnArrivedContainer(
   });
 
   revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath(`/app/containers/${container.id}/edit`);
   revalidatePath(`/app/receive/dar/${container.id}`);
   revalidatePath("/app/containers/arrived");
+  revalidatePath("/app/inventory");
   revalidatePath("/app/exceptions");
   revalidatePath(`/app/cargo/${cargo.id}`);
   return {
-    ok: `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`,
+    ok: landed
+      ? `${cargo.reference} is on ${container.reference}. Check it in with the rest — case ${caseRef} names how it got there.`
+      : `${cargo.reference} is on ${container.reference} and at sea with it. Dar will check it in off the box — case ${caseRef} names how it got there.`,
   };
 }
 
