@@ -187,7 +187,7 @@ export async function deleteCustomer(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  const actor = await authorize("customer.manage");
+  const actor = await authorize("customer.delete");
   const id = String(formData.get("customerId") ?? "");
 
   const customer = await prisma.customer.findFirst({

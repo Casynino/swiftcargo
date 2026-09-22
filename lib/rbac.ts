@@ -181,9 +181,12 @@ export type Permission =
   | "customer.view"
   /// Adding a new customer. Every desk meets new customers — the counter in
   /// Guangzhou, the floor in Dar, the phone, Finance — so every desk may add
-  /// one. (`customer.manage` — change and delete — is every desk's too.)
+  /// one. (`customer.manage` — changing a record — is every desk's too.)
   | "customer.create"
   | "customer.manage"
+  /// Deleting a customer: Finance, the manager and the owner only, by the
+  /// owner's decision. Every other desk edits.
+  | "customer.delete"
   | "customer.merge"
   | "conversation.view"
   | "conversation.reply"
@@ -455,6 +458,7 @@ const FINANCE: Permission[] = [
   "customer.view",
   "customer.create",
   "customer.manage",
+  "customer.delete",
   "report.view",
   "audit.view",
   "search.global",

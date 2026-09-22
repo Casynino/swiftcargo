@@ -149,7 +149,9 @@ export default async function CustomerPage({
                     {T("Edit")}
                   </Link>
                 </Button>
-                <DeleteCustomerButton customerId={customer.id} name={customer.fullName} />
+                {can(user.role, "customer.delete") ? (
+                  <DeleteCustomerButton customerId={customer.id} name={customer.fullName} />
+                ) : null}
               </>
             ) : null}
           </>

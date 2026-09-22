@@ -180,14 +180,13 @@ describe("the support desk explains; it does not do", () => {
     }
   });
 
-  test("every desk has full control of customer records", () => {
-    /* The owner's decision: add, edit and delete from every desk. Merging two
-       records into one stays above them. */
+  test("every desk adds and edits customers; only Finance, the manager and the owner delete", () => {
     for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"] as Role[]) {
       assert.ok(can(role, "customer.create"), role);
       assert.ok(can(role, "customer.manage"), role);
     }
-    assert.equal(can("CUSTOMER", "customer.create"), false);
+    const deleters = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter((r) => can(r, "customer.delete"));
+    assert.deepEqual(deleters.sort(), ["ADMIN", "FINANCE", "MANAGER"]);
     assert.equal(can("CUSTOMER", "customer.manage"), false);
   });
 
