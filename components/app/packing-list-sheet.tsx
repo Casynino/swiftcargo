@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { CompanySetting } from "@prisma/client";
 
-import { PrintButton } from "@/components/app/print-button";
+import { AutoPrint, DownloadSheetButton, PrintButton } from "@/components/app/print-button";
 import { SmartBack } from "@/components/app/smart-back";
 import { formatDate } from "@/lib/format";
 import type { PackingSnapshot } from "@/lib/packing-list";
@@ -155,9 +155,13 @@ export function PackingListSheet({
         }
       `}</style>
 
+      <AutoPrint />
       <div className="flex items-center justify-between print:hidden">
         <SmartBack fallbackHref={`/app/containers/${id}`} fallbackLabel={`${snap.container}`} />
-        <PrintButton label={list ? "Download / print" : "Download / print provisional"} />
+        <span className="flex items-center gap-2">
+          <DownloadSheetButton label="Download PDF" />
+          <PrintButton label="Print" />
+        </span>
       </div>
 
       <article className="pl-sheet mx-auto bg-white p-[10mm] text-[#0b1b2b] shadow-raised ring-1 ring-black/5 print:shadow-none print:ring-0">

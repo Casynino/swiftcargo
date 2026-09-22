@@ -2,7 +2,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { PrintButton } from "@/components/app/print-button";
+import { AutoPrint, DownloadSheetButton, PrintButton } from "@/components/app/print-button";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, formatMoney } from "@/lib/format";
@@ -103,6 +103,7 @@ export default async function PickupNotePage({
         }
       `}</style>
 
+      <AutoPrint />
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <SmartBack fallbackHref="/app/finance/pickup-notes" fallbackLabel="All pickup notes" />
         <div className="flex items-center gap-2">
@@ -117,7 +118,8 @@ export default async function PickupNotePage({
               stage: messageStage({ status: note.cargo.status, hasDarReceiving: note.cargo.darReceiving !== null, clearedAt: note.cargo.clearedAt }),
             })}
           />
-          <PrintButton label="Print note" />
+          <DownloadSheetButton label="Download PDF" />
+          <PrintButton label="Print" />
         </div>
       </div>
 
@@ -157,6 +159,17 @@ export default async function PickupNotePage({
         <div className="px-8 py-6">
           {/* ------------------------------------------ Who, and the code */}
           <section className="grid grid-cols-[1fr_auto] items-stretch gap-6">
+            {/*
+              THE CARD IS AS TALL AS THE CODE BESIDE IT, SO IT CARRIES ITS OWN
+              WEIGHT.
+
+              It held a name and two pills with a hand's width of nothing
+              between them. What belongs in that space is what the counter
+              actually checks before it hands anything over — which
+              consignment, and how many boxes — so those two figures moved up
+              here out of the strip below, and the stamp sits under them
+              rather than floating.
+            */}
             <div className="flex flex-col justify-between rounded-2xl border border-[#d6e2ee] bg-[#f5f9fc] p-5">
               <div>
                 <p className={label}>Collect by · Anayechukua</p>
@@ -168,7 +181,19 @@ export default async function PickupNotePage({
                   <p className="mt-1 text-xs text-neutral-500">Sent by {note.cargo.sender.fullName}</p>
                 ) : null}
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
+
+              <div className="my-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#d6e2ee] bg-[#d6e2ee]">
+                <div className="bg-white px-3 py-2">
+                  <p className={label}>Tracking no.</p>
+                  <p className="tnum mt-0.5 text-base font-extrabold">{note.cargo.reference}</p>
+                </div>
+                <div className="bg-white px-3 py-2">
+                  <p className={label}>Boxes to collect</p>
+                  <p className="tnum mt-0.5 text-base font-extrabold">{packages || "—"}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
                 <span className={`rotate-[-4deg] rounded-md border-2 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.2em] ${stamp.tone}`}>
                   {stamp.text}
                 </span>
@@ -187,20 +212,24 @@ export default async function PickupNotePage({
           </section>
 
           {/* ------------------------------------------------ The cargo */}
+          {/* The rest of the facts, in one band. The goods run the width of
+              the sheet because a description truncated to a third of a column
+              is the one line a customer disputes. */}
           <section className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-[#d6e2ee] bg-[#d6e2ee]">
             {[
-              ["Tracking no.", note.cargo.reference],
               ["Container", container?.reference ?? "—"],
-              ["Boxes to collect", packages ? String(packages) : "—"],
               [note.onCredit ? "Paid so far" : "Settled", formatMoney(note.amountPaid, note.currency)],
               ["In shillings", note.amountTzs ? formatMoney(note.amountTzs, "TZS") : "—"],
-              ["Goods", note.cargo.description],
             ].map(([k, v]) => (
               <div key={k} className="bg-white px-4 py-3">
                 <p className={label}>{k}</p>
                 <p className="tnum mt-0.5 truncate text-sm font-bold">{v}</p>
               </div>
             ))}
+            <div className="col-span-3 bg-white px-4 py-3">
+              <p className={label}>Goods · Bidhaa</p>
+              <p className="mt-0.5 text-sm font-bold">{note.cargo.description}</p>
+            </div>
           </section>
 
           {note.onCredit ? (
