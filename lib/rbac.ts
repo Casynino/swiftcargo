@@ -181,7 +181,7 @@ export type Permission =
   | "customer.view"
   /// Adding a new customer. Every desk meets new customers — the counter in
   /// Guangzhou, the floor in Dar, the phone, Finance — so every desk may add
-  /// one; changing or merging an existing record stays `customer.manage`.
+  /// one. (`customer.manage` — change and delete — is every desk's too.)
   | "customer.create"
   | "customer.manage"
   | "customer.merge"
@@ -253,6 +253,9 @@ const CHINA_WAREHOUSE: Permission[] = [
   "exception.resolve",
   "customer.view",
   "customer.create",
+  /* By the owner's decision every desk has full control of customer
+     records: edit, add a phone or email, delete one with no cargo. */
+  "customer.manage",
   /* A COLLECTION IN CHINA IS A CHINA JOB.
      The van goes out of Guangzhou, so the queue of people asking for one has to
      be openable by the floor that answers it. Support still sees the same rows;
@@ -318,6 +321,9 @@ const DAR_WAREHOUSE: Permission[] = [
   "exception.resolve",
   "customer.view",
   "customer.create",
+  /* By the owner's decision every desk has full control of customer
+     records: edit, add a phone or email, delete one with no cargo. */
+  "customer.manage",
   "search.global",
 ];
 

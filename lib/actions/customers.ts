@@ -173,6 +173,67 @@ export async function updateCustomer(
 }
 
 /**
+ * TAKE A CUSTOMER OFF THE BOOKS — archived, not erased.
+ *
+ * For the duplicate registered twice, the test entry, the number typed wrong.
+ * The row keeps its deletedAt and every history line that names it; lists and
+ * search stop showing it, and a portal login it had stops opening.
+ *
+ * Refused while anything hangs off the customer: a consignment sent or
+ * received, or a bill. Deleting one of those would hide boxes on a floor and
+ * money owed — that is a correction on the cargo or the bill, not here.
+ */
+export async function deleteCustomer(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("customer.manage");
+  const id = String(formData.get("customerId") ?? "");
+
+  const customer = await prisma.customer.findFirst({
+    where: { id, deletedAt: null },
+    select: {
+      id: true,
+      code: true,
+      fullName: true,
+      _count: { select: { cargoSent: { where: { deletedAt: null } }, cargoReceived: { where: { deletedAt: null } }, invoices: true } },
+    },
+  });
+  if (!customer) return { error: "That customer is already gone." };
+
+  const cargo = customer._count.cargoSent + customer._count.cargoReceived;
+  if (cargo > 0 || customer._count.invoices > 0) {
+    return {
+      error:
+        cargo > 0
+          ? `${customer.fullName} has ${cargo} consignment${cargo === 1 ? "" : "s"} on record, so the customer cannot be deleted. Edit the details instead.`
+          : `${customer.fullName} has bills on record, so the customer cannot be deleted. Edit the details instead.`,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const claim = await tx.customer.updateMany({
+      where: { id: customer.id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (claim.count === 0) throw new Error("That customer is already gone.");
+    /* Their portal sign-in stops with them. */
+    await tx.user.updateMany({ where: { customerId: customer.id }, data: { active: false } });
+  });
+
+  await recordAudit({
+    actor,
+    action: "customer.delete",
+    entity: "Customer",
+    entityId: customer.id,
+    summary: `Deleted customer ${customer.fullName} (${customer.code})`,
+  });
+
+  revalidatePath("/app/customers");
+  return { ok: `${customer.fullName} was deleted.`, customerId: customer.id };
+}
+
+/**
  * Type-ahead for the cargo form.
  *
  * Searches the four things a clerk actually has in front of them: the name, the

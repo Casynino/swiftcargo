@@ -180,16 +180,15 @@ describe("the support desk explains; it does not do", () => {
     }
   });
 
-  test("every desk may add a customer; changing one stays with the desks that do", () => {
-    /* The counter in Guangzhou, the floor in Dar, the phone and Finance all
-       meet new customers. Editing or merging an existing record is not the
-       same act and is not handed out with it. */
+  test("every desk has full control of customer records", () => {
+    /* The owner's decision: add, edit and delete from every desk. Merging two
+       records into one stays above them. */
     for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"] as Role[]) {
       assert.ok(can(role, "customer.create"), role);
+      assert.ok(can(role, "customer.manage"), role);
     }
     assert.equal(can("CUSTOMER", "customer.create"), false);
-    assert.equal(can("CHINA_WAREHOUSE", "customer.manage"), false);
-    assert.equal(can("DAR_WAREHOUSE", "customer.manage"), false);
+    assert.equal(can("CUSTOMER", "customer.manage"), false);
   });
 
   test("payment.verify is Finance's and nobody else's", () => {

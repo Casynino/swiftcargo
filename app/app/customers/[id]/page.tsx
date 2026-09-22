@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Copy, Package, Plus } from "lucide-react";
+import { Copy, Package, Pencil, Plus } from "lucide-react";
 
 import { CargoStatusBadge } from "@/components/app/status-badge";
 import { CopyField } from "@/components/app/copy-field";
@@ -9,6 +9,7 @@ import { SupplierAddressCard } from "@/components/app/supplier-address-card";
 import { supplierAddress } from "@/lib/supplier-address";
 import { EmptyState } from "@/components/app/empty-state";
 import { Field } from "@/components/app/field";
+import { DeleteCustomerButton } from "@/components/app/delete-customer-button";
 import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -141,9 +142,15 @@ export default async function CustomerPage({
               </Button>
             ) : null}
             {can(user.role, "customer.manage") ? (
-              <Button asChild variant="outline">
-                <Link href={`/app/customers/${customer.id}/edit`}>{T("Edit")}</Link>
-              </Button>
+              <>
+                <Button asChild variant="outline">
+                  <Link href={`/app/customers/${customer.id}/edit`}>
+                    <Pencil />
+                    {T("Edit")}
+                  </Link>
+                </Button>
+                <DeleteCustomerButton customerId={customer.id} name={customer.fullName} />
+              </>
             ) : null}
           </>
         }
