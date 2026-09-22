@@ -33,6 +33,7 @@ import { ContainerMoney } from "@/components/app/container-money";
 import { PageHeader } from "@/components/app/page-header";
 import { ClearanceButton } from "@/components/app/clearance-button";
 import { UndoArrivalButton } from "@/components/app/undo-arrival-button";
+import { ClosePanel } from "@/components/app/close-panel";
 import { SectionLabel } from "@/components/app/section-label";
 import { StatStrip } from "@/components/app/stat-strip";
 import { Badge } from "@/components/ui/badge";
@@ -327,6 +328,63 @@ export default async function ContainerPage({
       </Card>
     ) : null;
 
+  /*
+    WHAT THE PAPER SAID, AND WHAT CAME OFF.
+
+    Only once the box has landed and Dar has started counting: before that,
+    "received 0 of 100" describes a container at sea, not a shortage. The
+    figures are worked out from the consignments themselves (lib/manifest-tally
+    .ts) — the same arithmetic the receiving dock shows, so the office closing
+    the sailing and the floor that counted it read one set of numbers.
+  */
+  const counted = container.cargoLines.some(
+    (l) => l.cargo.darReceiving || l.cargo.status === "MISSING_AT_DAR"
+  );
+  const tally = manifestTally(
+    container.cargoLines.map((l) => ({
+      expectedPackages:
+        l.cargo.chinaReceiving?.packagesCount ?? l.cargo.declaredPackages ?? 0,
+      receivedPackages: l.cargo.darReceiving?.packagesCount ?? null,
+      missing: l.cargo.status === "MISSING_AT_DAR",
+    }))
+  );
+
+  /*
+    CLOSING ASKS ABOUT WHAT IS LEFT, BEFORE IT SHUTS ANYTHING.
+
+    A consignment on the manifest that nobody has counted is a question with
+    exactly two honest answers: it travelled on another box, or it never came
+    off this one. The close panel puts both in front of whoever is shutting the
+    sailing — and moving one carries it across exactly as it stands, since its
+    measurements, its bill and its storage clock belong to the consignment and
+    not to the container.
+  */
+  const remaining = container.cargoLines
+    .filter((l) => !l.cargo.darReceiving && l.cargo.status !== "MISSING_AT_DAR")
+    .map((l) => ({
+      cargoId: l.cargoId,
+      reference: l.cargo.reference,
+      customer: l.cargo.sender.fullName,
+      packages: l.cargo.chinaReceiving?.packagesCount ?? l.packagesCount,
+    }));
+
+  /* The other sailings one of them could have travelled on: a box that is shut
+     — at sea or landed — because cargo cannot be moved into a container still
+     taking cargo in Guangzhou. */
+  const closing = container.status === "ARRIVED" && remaining.length > 0;
+  const moveTargets = closing
+    ? await prisma.container.findMany({
+        where: {
+          deletedAt: null,
+          id: { not: container.id },
+          status: { in: ["SEALED", "DEPARTED", "IN_TRANSIT", "ARRIVED", "CLOSED"] },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+        select: { id: true, reference: true, containerNumber: true, status: true },
+      })
+    : [];
+
   const advance = nextStep ? (
     <Card className="border-brand/30">
       <CardContent className="pt-6">
@@ -335,13 +393,32 @@ export default async function ContainerPage({
             and Dar closes the box once everything on it is booked in. Showing
             a clerk a button their desk cannot press only teaches them the
             system is broken. */}
-        <AdvancePanel
-          containerId={container.id}
-          status={container.status}
-          canDepart={can(user.role, "container.depart")}
-          canArrive={can(user.role, "container.arrive")}
-          canClose={can(user.role, "container.close")}
-        />
+        {container.status === "ARRIVED" ? (
+          <ClosePanel
+            containerId={container.id}
+            remaining={remaining}
+            targets={moveTargets.map((c) => ({
+              id: c.id,
+              label: `${c.reference}${c.containerNumber ? ` · ${c.containerNumber}` : ""} · ${CONTAINER_STATUS_LABELS[c.status]}`,
+            }))}
+            canClose={can(user.role, "container.close")}
+            canMove={can(user.role, "container.amendArrived")}
+            canReportMissing={can(user.role, "receiving.dar")}
+            summary={{
+              expected: tally.expected,
+              received: tally.received,
+              missing: tally.missing,
+            }}
+          />
+        ) : (
+          <AdvancePanel
+            containerId={container.id}
+            status={container.status}
+            canDepart={can(user.role, "container.depart")}
+            canArrive={can(user.role, "container.arrive")}
+            canClose={can(user.role, "container.close")}
+          />
+        )}
         {container.status === "CLOSED" ? (
           <p className="text-sm text-muted-foreground">
             {T("This container is closed. Everything on it has been received in Dar.")}
@@ -405,27 +482,6 @@ export default async function ContainerPage({
       return acc;
     },
     { packages: 0, pieces: 0, weightKg: new Prisma.Decimal(0) },
-  );
-
-  /*
-    WHAT THE PAPER SAID, AND WHAT CAME OFF.
-
-    Only once the box has landed and Dar has started counting: before that,
-    "received 0 of 100" describes a container at sea, not a shortage. The
-    figures are worked out from the consignments themselves (lib/manifest-tally
-    .ts) — the same arithmetic the receiving dock shows, so the office closing
-    the sailing and the floor that counted it read one set of numbers.
-  */
-  const counted = container.cargoLines.some(
-    (l) => l.cargo.darReceiving || l.cargo.status === "MISSING_AT_DAR"
-  );
-  const tally = manifestTally(
-    container.cargoLines.map((l) => ({
-      expectedPackages:
-        l.cargo.chinaReceiving?.packagesCount ?? l.cargo.declaredPackages ?? 0,
-      receivedPackages: l.cargo.darReceiving?.packagesCount ?? null,
-      missing: l.cargo.status === "MISSING_AT_DAR",
-    }))
   );
 
   /*
