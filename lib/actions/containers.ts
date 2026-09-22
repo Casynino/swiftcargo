@@ -11,6 +11,7 @@ import { setCargoStatus, setCargoStatusBulk } from "@/lib/cargo";
 import { announcePortArrival } from "@/lib/clearance";
 import { priceOnCheckIn } from "@/lib/price-confirmation";
 import { LOADABLE_CONTAINER_STATUSES } from "@/lib/constants";
+import { expectedArrival, SEA_TRANSIT_DAYS } from "@/lib/eta";
 import {
   nextContainerReference,
   nextExceptionReference,
@@ -1079,7 +1080,10 @@ export async function advanceContainer(
 
   const container = await prisma.container.findFirst({
     where: { id: containerId, deletedAt: null },
-    include: { cargoLines: { select: { cargoId: true, cargo: { select: { senderId: true, receiverId: true } } } } },
+    include: {
+      cargoLines: { select: { cargoId: true, cargo: { select: { senderId: true, receiverId: true } } } },
+      shipment: { select: { id: true, eta: true } },
+    },
   });
   if (!container) return { error: "That container no longer exists." };
 
@@ -1114,6 +1118,17 @@ export async function advanceContainer(
     if (error instanceof DateOutOfRange) return { error: error.message };
     throw error;
   }
+
+  /*
+    THE PROMISE IS MADE THE DAY THE BOX LEAVES.
+
+    Thirty-five days at sea on this lane, counted from the departure that was
+    just recorded — not from the day somebody opened the container, and not
+    from a date typed into a box weeks earlier. Anything a shipping line says
+    afterwards is corrected on the voyage form, and the correction is written
+    down like every other.
+  */
+  const due = to === "DEPARTED" ? expectedArrival(at) : null;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -1151,10 +1166,40 @@ export async function advanceContainer(
         where: { containerId: container.id },
         data: {
           status: step.shipment,
-          ...(to === "DEPARTED" ? { departureDate: at } : {}),
+          ...(to === "DEPARTED" ? { departureDate: at, eta: due } : {}),
           ...(to === "ARRIVED" ? { actualArrival: at } : {}),
         },
       });
+
+      /* An arrival date a customer has already been quoted does not move in
+         silence, even when what moves it is the rule. */
+      if (
+        due &&
+        container.shipment &&
+        dayOf(container.shipment.eta) !== dayOf(due)
+      ) {
+        await recordFieldChange(
+          {
+            actor,
+            entity: "Shipment",
+            entityId: container.shipment.id,
+            field: "eta",
+            oldValue: dayOf(container.shipment.eta),
+            newValue: dayOf(due),
+            reason: `${SEA_TRANSIT_DAYS} days at sea from departure`,
+          },
+          tx
+        );
+        await tx.containerEvent.create({
+          data: {
+            containerId: container.id,
+            from: lands,
+            to: lands,
+            note: `Expected in ${container.destinationPort ?? "Dar es Salaam"} on ${dayOf(due)}`,
+            actorId: actor.id,
+          },
+        });
+      }
 
       if (step.cargo) {
         /* The consignments keep the day they left China in their own history,
@@ -1273,6 +1318,29 @@ export async function issuePackingList(
 
 /** Containers whose cargo is on the Dar floor rather than in Guangzhou or at sea. */
 const LANDED_CONTAINER_STATUSES: ContainerStatus[] = ["ARRIVED", "CLOSED"];
+
+/**
+ * THE MANIFEST OF A BOX THAT IS SHUT.
+ *
+ * Loading ends at the seal, and after that a consignment joins or leaves this
+ * container only as a correction: with a reason, a FieldChange and a case, and
+ * never by picking it off a floor list. The owner asked for it to reach a box
+ * still at sea as well as one that has landed, because the bale that was in the
+ * container and not on the paper is discovered the week after it sails, not the
+ * month after — and until it is corrected the consignment stands in Guangzhou
+ * on a floor that does not have it.
+ *
+ * The packing list stays as it was issued. It is the document that went with
+ * the box, and a frozen paper that no longer matches the manifest is a fact
+ * about the sailing, not a bug to be tidied away.
+ */
+const SHUT_CONTAINER_STATUSES: ContainerStatus[] = [
+  "SEALED",
+  "DEPARTED",
+  "IN_TRANSIT",
+  "ARRIVED",
+  "CLOSED",
+];
 
 /** Where a consignment goes back to when it turns out it was never in the box. */
 const STILL_AT_SEA: CargoStatus[] = [

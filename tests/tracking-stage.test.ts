@@ -160,7 +160,7 @@ describe("public journey", () => {
     assert.equal(state(j, "RECEIVED_CHINA"), "done");
   });
 
-  test("a passed ETA is admitted rather than shown as a date in the past", () => {
+  test("a passed ETA is admitted, in the word the owner uses", () => {
     const j = publicJourney(
       input({
         status: "IN_TRANSIT",
@@ -168,7 +168,21 @@ describe("public journey", () => {
       })
     );
     assert.equal(j.etaPassed, true);
-    assert.match(detail(j, "AT_SEA") ?? "", /later than planned/);
+    assert.equal(j.lateByDays, 2);
+    assert.match(detail(j, "AT_SEA") ?? "", /Delayed/);
+  });
+
+  /* The promised day itself is not a delay. tests/eta.test.ts pins the
+     arithmetic down; this is the customer's view of it. */
+  test("the promised day itself is not delayed", () => {
+    const j = publicJourney(
+      input({
+        status: "IN_TRANSIT",
+        container: box({ status: "IN_TRANSIT", departedAt: day(-30), eta: day(0) }),
+      })
+    );
+    assert.equal(j.etaPassed, false);
+    assert.equal(detail(j, "AT_SEA"), null);
   });
 
   test("the container moving ahead of the cargo row still moves the customer's view", () => {

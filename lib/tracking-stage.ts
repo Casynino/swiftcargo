@@ -1,5 +1,7 @@
 import type { CargoStatus, ContainerStatus } from "@prisma/client";
 
+import { sailingDelay } from "@/lib/eta";
+
 /**
  * WHERE THE CARGO IS, IN THE CUSTOMER'S WORDS.
  *
@@ -166,6 +168,8 @@ export type Journey = {
   eta: Date | null;
   /** The promise has passed and the box is still at sea. */
   etaPassed: boolean;
+  /** Whole days past the promised arrival. Zero unless `etaPassed`. */
+  lateByDays: number;
   /** Null while nothing stops the cargo moving. */
   notice: string | null;
 };
@@ -502,6 +506,23 @@ export function publicJourney(input: JourneyInput): Journey {
   const etaOpen = container?.eta && !reached.ARRIVED_DAR ? container.eta : null;
 
   /*
+    THIRTY DAYS IS THE PROMISE; THE THIRTY-FIRST IS A DELAY.
+
+    Whole days, so a box due on the 22nd reads "expected" all that day and
+    "delayed" on the 23rd — a customer told at ten in the morning that their
+    cargo is late, on the very day they were promised it, is being told
+    something untrue by a clock. The word is the owner's: not "running later
+    than planned", which is what a company says when it does not want to say
+    delayed.
+  */
+  const delay = sailingDelay({
+    eta: etaOpen,
+    arrived: container?.arrivedAt ?? null,
+    atSea: !reached.ARRIVED_DAR,
+    now,
+  });
+
+  /*
     THE FIVE STEPS A CUSTOMER FOLLOWS — the owner's list.
 
     Received in Guangzhou, in transit, arrived in Dar and in clearance,
@@ -525,10 +546,7 @@ export function publicJourney(input: JourneyInput): Journey {
       label: "In transit",
       /* The expected day is printed by the page beside this step; only a date
          that has already gone by needs words. */
-      detail:
-        !reached.ARRIVED_DAR && etaOpen && etaOpen.getTime() < now.getTime()
-          ? "Running later than planned"
-          : null,
+      detail: delay.late ? "Delayed" : null,
       at: departedAt,
       atLabel: "Left China",
     },
@@ -616,7 +634,8 @@ export function publicJourney(input: JourneyInput): Journey {
     issue,
     ready,
     eta: etaOpen,
-    etaPassed: Boolean(etaOpen && etaOpen.getTime() < now.getTime()),
+    etaPassed: delay.late,
+    lateByDays: delay.days,
     notice,
   };
 }

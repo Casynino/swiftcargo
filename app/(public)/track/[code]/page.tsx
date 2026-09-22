@@ -788,13 +788,31 @@ function Timeline({ result }: { result: PublicTracking }) {
                   {step.key === "AT_SEA" ? formatDate(step.at) : formatDateTime(step.at)}
                 </p>
               ) : null}
-              {step.key === "AT_SEA" && step.state === "current" && result.journey.eta && !result.journey.etaPassed ? (
+              {/* The day we promised, kept in front of the customer whether or
+                  not it has passed. Hiding it the moment it slipped left the
+                  one person entitled to ask "you said when?" unable to. */}
+              {step.key === "AT_SEA" && step.state === "current" && result.journey.eta ? (
                 <p className="tnum mt-0.5 text-xs text-muted-foreground/80">
                   {t(locale, "Expected")} {formatDate(result.journey.eta)}
                 </p>
               ) : null}
               {step.detail ? (
-                <p className="mt-0.5 text-xs font-medium text-brand">{t(locale, step.detail)}</p>
+                <p
+                  className={cn(
+                    "mt-0.5 text-xs font-medium",
+                    step.key === "AT_SEA" && result.journey.etaPassed
+                      ? "text-warning"
+                      : "text-brand"
+                  )}
+                >
+                  {t(locale, step.detail)}
+                  {step.key === "AT_SEA" && result.journey.lateByDays > 0
+                    ? ` — ${result.journey.lateByDays} ${t(
+                        locale,
+                        result.journey.lateByDays === 1 ? "day" : "days"
+                      )}`
+                    : null}
+                </p>
               ) : null}
             </div>
           </li>

@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CONTAINER_STATUS_LABELS, ROUTE } from "@/lib/constants";
+import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
 import { formatCbm, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
@@ -60,6 +61,17 @@ const TONE: Record<ContainerStatus, "neutral" | "progress" | "good" | "warn"> = 
   ARRIVED: "good",
   CLOSED: "neutral",
 };
+
+/** Whole days past the promised arrival, for a box still on the water. */
+const lateDays = (c: {
+  status: ContainerStatus;
+  shipment: { eta: Date | null; actualArrival: Date | null } | null;
+}) =>
+  sailingDelay({
+    eta: c.shipment?.eta ?? null,
+    arrived: c.shipment?.actualArrival ?? null,
+    atSea: (AT_SEA_STATUSES as readonly string[]).includes(c.status),
+  }).days;
 
 /*
   THE VIEWS A SHIPPING DESK ACTUALLY ASKS FOR.
@@ -425,6 +437,13 @@ export default async function ContainersPage({
                       <Badge tone={TONE[c.status]}>
                         {CONTAINER_STATUS_LABELS[c.status]}
                       </Badge>
+                      {/* A list of sailings is where somebody notices one has
+                          slipped. The box itself is where they go next. */}
+                      {lateDays(c) > 0 ? (
+                        <Badge tone="warn" className="ml-1.5">
+                          {T("Delayed")} · {lateDays(c)}
+                        </Badge>
+                      ) : null}
                     </TableCell>
                     {/* The way in. The reference is a link too, but it is four
                         characters wide and people were not finding it — the

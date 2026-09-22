@@ -47,6 +47,7 @@ import {
   LOADABLE_CONTAINER_STATUSES,
   SHIPMENT_STATUS_LABELS,
 } from "@/lib/constants";
+import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
 import {
   formatCbm,
   formatDate,
@@ -129,6 +130,14 @@ export default async function ContainerPage({
   if (!container) notFound();
 
   const open = LOADABLE_CONTAINER_STATUSES.includes(container.status);
+
+  /* Thirty days from the day it left, and late on the thirty-first — the same
+     arithmetic the customer's tracking page does, from lib/eta.ts. */
+  const delay = sailingDelay({
+    eta: container.shipment?.eta ?? null,
+    arrived: container.shipment?.actualArrival ?? null,
+    atSea: (AT_SEA_STATUSES as readonly string[]).includes(container.status),
+  });
 
   /* The money half appears once the box has left China. A container still
      taking cargo has nothing billed against it, so an overview of zeros would
@@ -390,6 +399,15 @@ export default async function ContainerPage({
             <Badge tone={container.status === "ARRIVED" ? "good" : "progress"}>
               {T(CONTAINER_STATUS_LABELS[container.status])}
             </Badge>
+            {/* The customer reading the tracking link sees this same word on
+                the same day. An office that believes a box is on time while
+                its owner has been told it is late is how an argument starts. */}
+            {delay.late ? (
+              <Badge tone="warn">
+                {T("Delayed")} · {delay.days}{" "}
+                {delay.days === 1 ? T("day") : T("days")}
+              </Badge>
+            ) : null}
             {can(user.role, "packingList.view") ? (
               <PackingListButton
                 containerId={container.id}
