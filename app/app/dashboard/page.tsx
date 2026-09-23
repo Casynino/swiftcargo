@@ -263,12 +263,7 @@ export default async function DashboardPage() {
         department={ROLE_LABELS[user.role]}
         subtitle={subtitleFor(user.role)}
         action={
-          chinaDesk
-            ? { href: "/app/receive/new", label: "Receive cargo" }
-            : /* Dar's one most-pressed button: a customer is standing at the
-                 counter, and the fastest way to them is the camera, not a
-                 list. See app/app/scan/page.tsx. */
-              { href: "/app/scan", label: "Scan & release" }
+          chinaDesk ? { href: "/app/receive/new", label: "Receive cargo" } : undefined
         }
       />
 

@@ -299,6 +299,11 @@ const CHINA_WAREHOUSE: Permission[] = [
  */
 const DAR_WAREHOUSE: Permission[] = [
   "cargo.view",
+  /* By the owner's decision, the same reach Support has: a customer standing
+     at the Dar counter asks about a consignment that has not sailed yet, and
+     sending them to another desk for an answer this screen could already
+     give is the wrong habit to build. */
+  "cargo.viewAll",
   "cargo.edit",
   "cargo.viewInternal",
   "cargo.amendDar",
@@ -339,6 +344,14 @@ const DAR_WAREHOUSE: Permission[] = [
   /* By the owner's decision every desk has full control of customer
      records: edit, add a phone or email, delete one with no cargo. */
   "customer.manage",
+  /* THE FLOOR CAN SAY SO ITSELF.
+     Dar is the desk that just counted the box, cleared it, or released it —
+     the customer standing in front of that fact should hear it from whoever
+     is holding it, not be sent to ring Support for news Dar already has.
+     `conversation.reply` alone, without `conversation.view`, opens the
+     WhatsApp button on the cargo record and nothing of the Inbox itself —
+     Support's ticket queue stays Support's. */
+  "conversation.reply",
   "search.global",
 ];
 
