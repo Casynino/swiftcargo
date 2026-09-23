@@ -156,7 +156,6 @@ export default async function InvoicePage({
               message={composeMessage(stage === "clearance" ? "cargo.arrived" : Number(owing) > 0 ? "payment.reminder" : "cargo.ready", {
                 customerName: invoice.customer.fullName,
                 reference: invoice.cargo.reference,
-                invoiceNumber: invoice.number,
                 currency: invoice.currency,
                 amount: owing.toFixed(2),
                 amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,
@@ -286,7 +285,6 @@ export default async function InvoicePage({
               body: composeMessage(kind, {
                 customerName: invoice.customer.fullName,
                 reference: invoice.cargo.reference,
-                invoiceNumber: invoice.number,
                 currency: invoice.currency,
                 amount: owing.toFixed(2),
                 amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,

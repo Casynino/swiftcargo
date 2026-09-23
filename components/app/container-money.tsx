@@ -374,7 +374,6 @@ export async function ContainerMoney({
             customerName: c.receiver.fullName,
             reference: c.reference,
             description: c.description,
-            invoiceNumber: bill.number,
             stage,
             packages: measured?.packagesCount ?? null,
             cbm: bill.billableCbm

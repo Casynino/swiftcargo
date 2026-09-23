@@ -78,7 +78,6 @@ export type MessageContext = {
   containerNumber?: string | null;
   vessel?: string | null;
   eta?: Date | null;
-  invoiceNumber?: string | null;
   amount?: string | null;
   currency?: string | null;
   amountTzs?: string | null;
@@ -122,9 +121,14 @@ function cargoBlock(context: MessageContext): string {
   if (!context.statusLine && context.stage === "clearance") {
     context = { ...context, statusLine: "Clearance in Progress" };
   }
+  /* THE TRACKING NUMBER IS THE ONLY REFERENCE ON A MESSAGE.
+
+     The bill's own number is printed on the bill, which the link hands over as
+     a PDF. Two numbers in one message is one number too many for somebody
+     reading it on a phone at a counter, and the one they can act on is the one
+     that opens their cargo. */
   const lines: string[] = ["*MAELEZO YA MZIGO*"];
   if (context.reference) lines.push(`• Tracking: ${context.reference}`);
-  if (context.invoiceNumber) lines.push(`• Invoice: ${context.invoiceNumber}`);
   if (context.description) lines.push(`• Bidhaa: ${context.description}`);
   if (context.cbm) lines.push(`• Ujazo: ${context.cbm} CBM`);
   if (context.packages != null) lines.push(`• Mizigo: ${context.packages}`);
@@ -399,9 +403,6 @@ export function composeMessage(
       {
         storageText: `\n\n*STORAGE:* Siku ${days} bure ${start}.${fee}`,
         linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Angalia taarifa za mzigo wako:",
-        /* The bill's number stays on the letter. A customer paying at a bank
-           counter is asked what the payment is for, and "the cargo one" is not
-           an answer either side can reconcile afterwards. */
         detailsContext: { ...context, statusLine: "Cleared — Ready for Pickup" },
       }
     );

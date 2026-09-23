@@ -308,9 +308,8 @@ export default async function InventoryPage({
     if (!bill) return {};
     const balance = balanceOf(bill as never);
     const owing = Number(outstandingOf(bill as never));
-    if (owing <= 0) return { invoiceNumber: bill.number };
+    if (owing <= 0) return {};
     return {
-      invoiceNumber: bill.number,
       currency: bill.currency,
       amount: owing.toFixed(2),
       amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,

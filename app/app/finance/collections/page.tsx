@@ -671,7 +671,6 @@ export default async function CollectionsPage({
                           customerName: row.invoice.customer.fullName,
                           reference: row.invoice.cargo.reference,
                           description: row.invoice.cargo.description,
-                          invoiceNumber: row.invoice.number,
                           stage: messageStage({
                             status: row.invoice.cargo.status,
                             hasDarReceiving: row.invoice.cargo.darReceiving !== null,
