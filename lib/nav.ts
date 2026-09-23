@@ -83,21 +83,11 @@ const SECTIONS: NavSection[] = [
       { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", permissions: ["receiving.china"] },
       { label: "Receiving dock", href: "/app/receive/dar", icon: "PackageCheck", permissions: ["receiving.dar"] },
       { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["FINANCE"] },
-      /* Dar's own link to the other end of the route — the same Guangzhou
-         floor Support already has, reached through `?floor=china` rather
-         than a second page. Every other desk already has this floor under
-         "Warehouse floor" or its own "Cargo in China" further down, so this
-         entry is Dar's alone. */
-      {
-        label: "Cargo in China",
-        href: "/app/inventory?floor=china",
-        icon: "Warehouse",
-        permissions: ["inventory.view"],
-        hiddenFor: ["CHINA_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"],
-      },
       /* Finance reaches cargo through its containers and its bills, and asked
-         for the flat list to come out of its menu. */
-      { label: "All cargo", href: "/app/cargo", icon: "Package", permissions: ["cargo.viewAll"], hiddenFor: ["FINANCE"] },
+         for the flat list to come out of its menu. Dar reaches it through its
+         containers too — the Containers section below has its own "Cargo in
+         China", the door back to the other end of the route. */
+      { label: "All cargo", href: "/app/cargo", icon: "Package", permissions: ["cargo.viewAll"], hiddenFor: ["FINANCE", "DAR_WAREHOUSE"] },
     ],
   },
   {
@@ -173,8 +163,12 @@ const SECTIONS: NavSection[] = [
       /* THE SAME LIST UNDER THE NAME THE OFFICE CALLS IT, AND IN THE PLACE IT
          BELONGS. A desk in Dar does not think of Guangzhou as "the floor" — it
          asks what is in China, and it asks that while looking at the boxes,
-         because cargo standing in China is the next container's contents. */
-      { label: "Cargo in China", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["CHINA_WAREHOUSE", "DAR_WAREHOUSE"] },
+         because cargo standing in China is the next container's contents.
+         `?floor=china` is Dar's own request for the other end of the route —
+         see app/app/inventory/page.tsx — and a no-op for everyone else here,
+         who gets Guangzhou by default already. China itself stays off this
+         row: its own "Warehouse floor" already is this list. */
+      { label: "Cargo in China", href: "/app/inventory?floor=china", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["CHINA_WAREHOUSE"] },
       { label: "Container finances", href: "/app/finance/containers", icon: "Container", permissions: ["finance.view"] },
       { label: "Closed containers", href: "/app/containers/closed", icon: "ClipboardCheck", permissions: ["accounting.view"] },
       { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", permissions: ["container.view"] },
