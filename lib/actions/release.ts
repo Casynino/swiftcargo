@@ -63,12 +63,15 @@ export async function releaseCargo(
   }
   const data = parsed.data;
 
+  /* Expected, never required — see components/app/release-panel.tsx. Up to
+     two shots: the cargo, and the person collecting it, if they agree. */
   const files = formData
-    .getAll("signature")
-    .filter((f): f is File => f instanceof File && f.size > 0);
-  let signatureUrl: string | null = null;
+    .getAll("photos")
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 2);
+  let photoUrls: string[] = [];
   try {
-    if (files[0]) signatureUrl = await store(files[0], "releases");
+    for (const file of files) photoUrls.push(await store(file, "releases"));
   } catch (error) {
     return {
       error: error instanceof UploadError ? error.message : "That upload failed.",
@@ -126,7 +129,7 @@ export async function releaseCargo(
           collectedByPhone: data.collectedByPhone || null,
           collectedByIdNo: data.collectedByIdNo || null,
           relationship: data.relationship || null,
-          signatureUrl,
+          photoUrls,
           notes: data.notes || null,
           releasedById: actor.id,
         },

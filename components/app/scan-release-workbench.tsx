@@ -6,7 +6,7 @@ import { Loader2, Package, ScanLine, Search } from "lucide-react";
 import { BoxScanner } from "@/components/app/box-scanner";
 import { CargoStatusBadge } from "@/components/app/status-badge";
 import { QrScanner } from "@/components/app/qr-scanner";
-import { ReleaseChecklist, ReleaseForm } from "@/components/app/release-panel";
+import { ReleaseChecklist, ReleaseForm, UnableToLocateCargo } from "@/components/app/release-panel";
 import { ScanVerdict } from "@/components/app/scan-verdict";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -236,6 +236,11 @@ function ScanPrompt({
 
 function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => void }) {
   const tx = useT();
+  /* Lifted out of BoxScanner so the release form's armed state follows every
+     scan live, rather than only what the door-open response already knew. */
+  const [boxes, setBoxes] = useState(target.boxes);
+  const armed = boxes.total === 0 || boxes.done >= boxes.total;
+
   const verdict = target.check.ok
     ? {
         tone: "ok" as const,
@@ -284,6 +289,9 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
             value={target.measured.weightKg ? `${target.measured.weightKg} kg` : "—"}
           />
           <Fact label={tx("Volume")} value={target.measured.cbm ? `${target.measured.cbm} CBM` : "—"} />
+          <Fact label={tx("Packing carton")} value={target.carton ?? "—"} />
+          <Fact label={tx("Container")} value={target.container ?? "—"} />
+          <Fact label={tx("Arrived in Dar")} value={target.arrivedInDar} />
           <Fact
             label={tx("Pickup note")}
             value={target.pickupNote ? target.pickupNote.noteNumber : tx("Not issued")}
@@ -344,21 +352,54 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
               </dl>
             </div>
           ) : null}
+
+          {/* The payment fact, without the figure. What the counter needs to
+              hand a box over — the amount is finance's, above, for whoever
+              holds finance.view. Only while the note is live: a collected or
+              cancelled consignment gets no green "settled" panel. */}
+          {target.payment ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-success/50 bg-success/10 px-4 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-success/80">
+                  {tx("Payment")}
+                </p>
+                <p className="text-lg font-bold leading-tight text-success">
+                  {target.payment.amountPaid ?? tx("Settled in full")}
+                </p>
+              </div>
+              <p className="text-right text-xs text-success/80">
+                {target.payment.noteNumber}
+                <span className="block">
+                  {tx("issued")} {target.payment.issuedAt}
+                </span>
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 
       {/* 3. The handover itself, or exactly what is missing. */}
       {target.check.ok ? (
-        <div className="space-y-4 rounded-xl border bg-card p-4 shadow-soft sm:p-6">
-          {target.boxes.total > 0 ? (
-            <BoxScanner mode="release" cargoId={target.cargoId} initial={target.boxes} />
-          ) : null}
-          <ReleaseForm
-            cargoId={target.cargoId}
-            packages={target.boxes.total || target.measured.packages || 1}
-            receiverName={target.customerName}
-            receiverPhone={target.customerPhone ?? ""}
-          />
+        <div className="space-y-4">
+          <div className="space-y-4 rounded-xl border bg-card p-4 shadow-soft sm:p-6">
+            {target.boxes.total > 0 ? (
+              <BoxScanner
+                mode="release"
+                cargoId={target.cargoId}
+                initial={target.boxes}
+                onProgress={setBoxes}
+              />
+            ) : null}
+            <ReleaseForm
+              cargoId={target.cargoId}
+              reference={target.reference}
+              packages={boxes.total || target.measured.packages || 1}
+              receiverName={target.customerName}
+              receiverPhone={target.customerPhone ?? ""}
+              armed={armed}
+            />
+          </div>
+          <UnableToLocateCargo cargoId={target.cargoId} reference={target.reference} onDone={onDone} />
         </div>
       ) : (
         <div className="rounded-xl border bg-card p-4 shadow-soft sm:p-6">

@@ -3,7 +3,7 @@
 import { Prisma } from "@prisma/client";
 
 import { outstandingOf } from "@/lib/invoice-balance";
-import { formatMoney, normaliseCode } from "@/lib/format";
+import { formatDate, formatMoney, normaliseCode } from "@/lib/format";
 import { parseScan } from "@/lib/qr";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
@@ -39,6 +39,16 @@ export type ScanTarget = {
   /** The one box a real scan named, when it named one — not a queue pick. */
   scannedBox: { sequence: number; of: number } | null;
   pickupNote: { noteNumber: string; status: string } | null;
+  /** The bale number Guangzhou wrote on the outside, when there is one. */
+  carton: string | null;
+  /** The container this consignment sailed or is waiting on. */
+  container: string | null;
+  /** When Dar counted the boxes in — the date on the paper, not a status word. */
+  arrivedInDar: string;
+  /* The payment fact, without the figure — what the counter needs to hand a
+     box over, present only while the note is still live. The amount itself
+     is `finance` below, gated the same way it is everywhere else. */
+  payment: { noteNumber: string; issuedAt: string; amountPaid: string | null } | null;
   finance: {
     invoiceNumber: string;
     total: string;
@@ -108,10 +118,32 @@ export async function resolveForRelease(raw: string): Promise<ScanResult> {
     where: { id: cargoId, deletedAt: null },
     include: {
       ...RELEASE_INCLUDE,
+      /* issuedAt/amountPaid/currency: the payment panel's own facts, kept off
+         RELEASE_INCLUDE because checkRelease has no use for them. */
+      pickupNote: {
+        select: { status: true, onCredit: true, noteNumber: true, issuedAt: true, amountPaid: true, currency: true },
+      },
       receiver: { select: { fullName: true, phone: true } },
       chinaReceiving: { select: { packagesCount: true, weightKg: true, cbm: true } },
       darReceiving: {
-        select: { verified: true, discrepancy: true, packagesCount: true, weightKg: true, cbm: true },
+        select: {
+          verified: true,
+          discrepancy: true,
+          packagesCount: true,
+          weightKg: true,
+          cbm: true,
+          receivedAt: true,
+        },
+      },
+      packages: {
+        where: { deletedAt: null, balerNumber: { not: null } },
+        select: { balerNumber: true },
+        take: 1,
+      },
+      containerLines: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { container: { select: { reference: true } } },
       },
     },
   });
@@ -153,6 +185,20 @@ export async function resolveForRelease(raw: string): Promise<ScanResult> {
     };
   }
 
+  /* Only while the note is live — a collected or cancelled consignment gets
+     no green "settled" panel, the same rule the fuller invoice card follows. */
+  const note = cargo.pickupNote;
+  const payment: ScanTarget["payment"] =
+    note && note.status === "ACTIVE"
+      ? {
+          noteNumber: note.noteNumber,
+          issuedAt: formatDate(note.issuedAt),
+          amountPaid: can(actor.role, "finance.view")
+            ? formatMoney(note.amountPaid, note.currency)
+            : null,
+        }
+      : null;
+
   await recordScan({
     token: logToken,
     user: actor,
@@ -183,6 +229,10 @@ export async function resolveForRelease(raw: string): Promise<ScanResult> {
       pickupNote: cargo.pickupNote
         ? { noteNumber: cargo.pickupNote.noteNumber, status: cargo.pickupNote.status }
         : null,
+      carton: cargo.packages[0]?.balerNumber ?? null,
+      container: cargo.containerLines[0]?.container.reference ?? null,
+      arrivedInDar: formatDate(cargo.darReceiving?.receivedAt ?? null),
+      payment,
       finance,
     },
   };

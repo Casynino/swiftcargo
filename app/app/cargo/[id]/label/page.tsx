@@ -100,44 +100,27 @@ export default async function CargoLabelPage({
             Received · {cargo.reference}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Print the labels and stick one on each box — {stickers.length} box
-            {stickers.length === 1 ? "" : "es"}.
+            {stickers.length} box{stickers.length === 1 ? "" : "es"}
+            {cargo.deliveryNote ? ` · ${T("delivery note")} ${cargo.deliveryNote.number}` : ""}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:flex">
-            <PrintButton
-              primary
-              className="w-full sm:w-auto"
-              label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
-            />
-            {/* The file, for a label printer down the hall or a supplier
-                packing on our behalf. Separate from Print, which drives the
-                printer in front of the clerk. */}
-            <a
-              href={`/app/cargo/${cargo.id}/label/pdf${box ? `?box=${box}` : ""}`}
-              download
-              className="focus-ring inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary sm:w-auto"
-            >
-              <Download className="size-4" />
-              {T("Download PDF")}
-            </a>
-            {/* The other document the same save just created — the paper the
-                customer takes with them, not the sticker that stays on the
-                box. Both exist the moment receiving succeeds; neither should
-                need a detour through the cargo record to find. */}
+          {/* Just the two doors this save opened, small — the sticker sheet
+              and the file it printed with are already the row below, and a
+              banner is not the place to say everything twice. */}
+          <div className="mt-3 flex flex-wrap gap-2">
             {cargo.deliveryNote ? (
               <Link
                 href={`/app/cargo/${cargo.id}/delivery-note`}
-                className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+                className="focus-ring inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-foreground/90 px-3 text-xs font-medium text-background hover:bg-foreground"
               >
-                <FileText className="size-4" />
+                <FileText className="size-3.5" />
                 {T("Delivery note")}
               </Link>
             ) : null}
             <Link
               href="/app/receive/new"
-              className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+              className="focus-ring inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-foreground/90 px-3 text-xs font-medium text-background hover:bg-foreground"
             >
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               {T("Receive next")}
             </Link>
           </div>
@@ -152,6 +135,10 @@ export default async function CargoLabelPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <PrintButton
+            primary
+            label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
+          />
           <a
             href={`/app/cargo/${cargo.id}/label/pdf${box ? `?box=${box}` : ""}`}
             download
@@ -160,10 +147,6 @@ export default async function CargoLabelPage({
             <Download className="size-4" />
             {T("Download PDF")}
           </a>
-          <PrintButton
-            primary
-            label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
-          />
         </div>
       </div>
 

@@ -19,7 +19,15 @@ import { Camera, ImagePlus, X } from "lucide-react";
  * no longer on the form. Every file is kept in this list and written back into
  * the one input the form posts whenever that input loses them.
  */
-export function PhotoCapture({ name = "photos" }: { name?: string }) {
+export function PhotoCapture({
+  name = "photos",
+  required = true,
+}: {
+  name?: string;
+  /** Whether the empty-state hint says a photo is needed, or merely welcome —
+      the release counter's photograph is evidence, not a gate. */
+  required?: boolean;
+}) {
   const t = useT();
   const posted = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
@@ -109,7 +117,9 @@ export function PhotoCapture({ name = "photos" }: { name?: string }) {
 
       <p className="mt-2 text-xs text-muted-foreground">
         {shots.length === 0
-          ? t("No photo yet — at least one is needed.")
+          ? required
+            ? t("No photo yet — at least one is needed.")
+            : t("No photo yet.")
           : `${shots.length} ${t("photos ready")}`}
       </p>
 

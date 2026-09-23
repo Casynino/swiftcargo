@@ -23,11 +23,15 @@ export function BoxScanner({
   containerId,
   cargoId,
   initial,
+  onProgress,
 }: {
   mode: "dar" | "release";
   containerId?: string;
   cargoId?: string;
   initial?: { done: number; total: number };
+  /** Told every time a scan moves the count, so a sibling (the release form's
+      armed state) can follow along without its own copy of this action. */
+  onProgress?: (progress: { done: number; total: number }) => void;
 }) {
   const action = mode === "dar" ? scanBoxAtDar : scanBoxForRelease;
   const [state, submit, pending] = useActionState<BoxScanState, FormData>(action, {});
@@ -45,6 +49,11 @@ export function BoxScanner({
     input.current?.focus();
     if (tone !== "ok" && typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(200);
   }, [state.at, state.error, state.warning, state.ok]);
+
+  useEffect(() => {
+    if (state.progress) onProgress?.(state.progress);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.progress]);
 
   const tone = state.error ? "error" : state.warning ? "warning" : state.ok ? "ok" : null;
   const Icon = tone === "error" ? XCircle : tone === "warning" ? CircleAlert : CheckCircle2;

@@ -71,7 +71,7 @@ export async function fileAccess(
         take: 5,
       }),
       prisma.containerExpense.count({ where: { receiptUrl: url } }),
-      prisma.release.count({ where: { signatureUrl: url } }),
+      prisma.release.count({ where: { OR: [{ signatureUrl: url }, { photoUrls: { has: url } }] } }),
       prisma.shipmentDocument.count({ where: { url } }),
       prisma.marketInformation.count({ where: { imageUrl: url, published: true } }),
       prisma.requestDocument.count({ where: { url } }),

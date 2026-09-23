@@ -1,12 +1,13 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, DoorOpen, X } from "lucide-react";
+import { Check, DoorOpen, Search, X } from "lucide-react";
 
 import { releaseCargo, type ActionState } from "@/lib/actions/release";
+import { raiseException, type ActionState as ExceptionState } from "@/lib/actions/exceptions";
 import { FormMessage } from "@/components/app/form-message";
+import { PhotoCapture } from "@/components/app/photo-capture";
 import { SubmitButton } from "@/components/app/submit-button";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -15,6 +16,14 @@ import { cn } from "@/lib/utils";
 
 import { useT } from "@/components/app/locale-provider";
 import { Tx } from "@/components/app/tx";
+/** How the receiver is described back to the clerk, once collecting-as is
+    anything but the customer themselves. */
+const RELATIONSHIP_WORDS: Record<string, string> = {
+  SELF: "the customer",
+  AGENT: "agent / transporter",
+  EMPLOYEE: "their employee",
+  FAMILY: "family member",
+};
 /**
  * The seven conditions, spelled out.
  *
@@ -55,136 +64,203 @@ export function ReleaseChecklist({
 
 export function ReleaseForm({
   cargoId,
+  reference,
   packages,
   receiverName,
   receiverPhone,
+  armed,
 }: {
   cargoId: string;
+  reference: string;
   packages: number;
   receiverName: string;
   receiverPhone: string;
+  /** Every box scanned out — the counter's own proof, not a checkbox. */
+  armed: boolean;
 }) {
   const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
     releaseCargo,
     {}
   );
-  const [open, setOpen] = useState(false);
-  const [somebodyElse, setSomebodyElse] = useState(false);
-
-  if (!open) {
-    return (
-      <Button onClick={() => setOpen(true)}>
-        <DoorOpen />
-        {tx("Hand it over")}
-      </Button>
-    );
-  }
+  const [receiver, setReceiver] = useState(receiverName);
+  const [relationship, setRelationship] = useState<keyof typeof RELATIONSHIP_WORDS>("SELF");
 
   return (
-    <form action={action} className="space-y-4 rounded-lg border p-4">
+    <form action={action} className="space-y-6">
       <input type="hidden" name="cargoId" value={cargoId} />
+      {/* This screen is the in-person counter; a home delivery is arranged
+          and tracked from /app/deliveries, a different job with its own
+          form. */}
+      <input type="hidden" name="method" value="COLLECTION" />
+      <input type="hidden" name="packagesReleased" value={packages} />
+      <input
+        type="hidden"
+        name="relationship"
+        value={relationship === "SELF" ? "" : RELATIONSHIP_WORDS[relationship]}
+      />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="method">{tx("How is it going?")}</Label>
-          <NativeSelect id="method" name="method" defaultValue="COLLECTION">
-            <option value="COLLECTION">{tx("Collected from the warehouse")}</option>
-            <option value="DELIVERY">{tx("Delivered")}</option>
-          </NativeSelect>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="packagesReleased">{tx("Packages handed over")}</Label>
-          <Input
-            id="packagesReleased"
-            name="packagesReleased"
-            type="number"
-            min={1}
-            required
-            defaultValue={packages}
-            inputMode="numeric"
-          />
-        </div>
-      </div>
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">{tx("Who is collecting?")}</h3>
 
-      <label className="flex items-start gap-2.5 rounded-md border p-3 text-sm">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={somebodyElse}
-          onChange={(e) => setSomebodyElse(e.target.checked)}
-        />
-        <span>
-          Somebody other than {receiverName} is collecting
-          <span className="mt-0.5 block text-xs text-muted-foreground">
-            {tx("A driver, a relative, a clearing agent. Record who actually walked out with the boxes — not who was supposed to.")}
-          </span>
-        </span>
-      </label>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="collectedByName">{tx("Collected by")}</Label>
+          <Label htmlFor="collectedByName">{tx("Receiver name")}</Label>
           <Input
             id="collectedByName"
             name="collectedByName"
             required
-            key={somebodyElse ? "other" : "receiver"}
-            defaultValue={somebodyElse ? "" : receiverName}
+            value={receiver}
+            onChange={(e) => setReceiver(e.target.value)}
           />
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="collectedByPhone">{tx("Phone")}</Label>
+          <Label htmlFor="collectedByPhone">{tx("Receiver phone")}</Label>
           <Input
             id="collectedByPhone"
             name="collectedByPhone"
-            key={somebodyElse ? "other-p" : "receiver-p"}
-            defaultValue={somebodyElse ? "" : receiverPhone}
+            defaultValue={receiverPhone}
+            inputMode="tel"
           />
         </div>
-        {somebodyElse ? (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="collectedByIdNo">{tx("ID number")}</Label>
-              <Input id="collectedByIdNo" name="collectedByIdNo" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="relationship">{tx("Relationship")}</Label>
-              <Input
-                id="relationship"
-                name="relationship"
-                placeholder={tx("Driver, brother, agent…")}
-              />
-            </div>
-          </>
-        ) : null}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="relationship-select">{tx("Collecting as")}</Label>
+            <NativeSelect
+              id="relationship-select"
+              value={relationship}
+              onChange={(e) =>
+                setRelationship(e.target.value as keyof typeof RELATIONSHIP_WORDS)
+              }
+            >
+              <option value="SELF">{tx("The customer")}</option>
+              <option value="AGENT">{tx("Agent / transporter")}</option>
+              <option value="EMPLOYEE">{tx("Their employee")}</option>
+              <option value="FAMILY">{tx("Family member")}</option>
+            </NativeSelect>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="collectedByIdNo">
+              {tx("ID number")}{" "}
+              <span className="text-muted-foreground">
+                {relationship === "SELF"
+                  ? tx("if you checked one")
+                  : tx("required — someone else is collecting")}
+              </span>
+            </Label>
+            <Input id="collectedByIdNo" name="collectedByIdNo" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="rel-notes">{tx("Note")}</Label>
+          <Textarea id="rel-notes" name="notes" rows={2} />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="signature">{tx("Signature or photo of the handover")}</Label>
-        <Input
-          id="signature"
-          name="signature"
-          type="file"
-          accept="image/*"
-          capture="environment"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="rel-notes">{tx("Notes")}</Label>
-        <Textarea id="rel-notes" name="notes" />
+      <div className="border-t pt-5">
+        {/* "Expected", not "Required" — releaseCargo will not block a
+            handover on a flat battery. A paying customer sent away from the
+            counter is worse than a consignment recorded without a picture. */}
+        <h3 className="mb-1 text-sm font-semibold">{tx("Photograph the handover")}</h3>
+        <p className="mb-4 text-xs text-muted-foreground">
+          {tx(
+            "Expected. This is your proof the cargo was collected, and what settles a dispute later — you can still save without one."
+          )}
+        </p>
+        <PhotoCapture name="photos" required={false} />
       </div>
 
       <FormMessage error={state.error} ok={state.ok} />
-      <div className="flex gap-2">
-        <SubmitButton>
+
+      <div className="space-y-3 border-t pt-4">
+        {armed ? (
+          <p className="text-sm">
+            {tx("Handing")} <span className="tnum font-semibold">{reference}</span>{" "}
+            {tx("to")} <span className="font-semibold">{receiver || "—"}</span>
+            {relationship !== "SELF" ? (
+              <span className="text-muted-foreground"> ({tx(RELATIONSHIP_WORDS[relationship])})</span>
+            ) : null}
+            .
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">{tx("Scan the box before releasing it.")}</p>
+        )}
+        <SubmitButton disabled={!armed} pendingLabel={tx("Releasing…")} className="w-full sm:w-auto">
           <DoorOpen />
-          {tx("Release")}
+          {tx("Release cargo")}
         </SubmitButton>
-        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          {tx("Cancel")}
-        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * THE OTHER OUTCOME.
+ *
+ * Sometimes the record says the cargo is here and the shelf says otherwise,
+ * and the wrong thing to do then is release it anyway and sort it out later.
+ * Sits outside the release form on purpose — a form inside a form is invalid,
+ * and this must never be submitted by the same tap as a handover. Raises the
+ * same case the rest of the business already uses (`raiseException`), rather
+ * than a parallel "cannot find it" record of its own.
+ */
+export function UnableToLocateCargo({
+  cargoId,
+  reference,
+  onDone,
+}: {
+  cargoId: string;
+  reference: string;
+  onDone: () => void;
+}) {
+  const tx = useT();
+  const [state, action] = useActionState<ExceptionState, FormData>(raiseException, {});
+  const [open, setOpen] = useState(false);
+
+  if (state.ok && !open) {
+    onDone();
+    return null;
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="focus-ring min-h-11 text-sm font-medium text-destructive underline underline-offset-2"
+      >
+        {tx("Unable to locate cargo")}
+      </button>
+    );
+  }
+
+  return (
+    <form action={action} className="space-y-3 rounded-xl border-2 border-destructive/40 bg-destructive/5 p-4">
+      <input type="hidden" name="type" value="MISSING_CARGO" />
+      <input type="hidden" name="priority" value="URGENT" />
+      <input type="hidden" name="department" value="DAR_WAREHOUSE" />
+      <input type="hidden" name="cargoId" value={cargoId} />
+      <input type="hidden" name="title" value={`Cannot find ${reference} at the counter`} />
+      <div className="space-y-2">
+        <Label htmlFor="unable-description" className="text-destructive">
+          {tx("What happened")}
+        </Label>
+        <Textarea
+          id="unable-description"
+          name="description"
+          rows={2}
+          required
+          placeholder={tx("Cleared and paid, but the boxes are not on the shelf where they should be.")}
+        />
+      </div>
+      <FormMessage error={state.error} ok={state.ok} />
+      <div className="flex gap-2">
+        <SubmitButton variant="outline" className={cn("border-destructive/50 text-destructive")}>
+          <Search className="size-4" />
+          {tx("Report it")}
+        </SubmitButton>
       </div>
     </form>
   );

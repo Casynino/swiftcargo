@@ -1756,6 +1756,11 @@ model Release {
 
   signatureUrl String?
 
+  /// The handover itself, photographed — the cargo with whoever is taking it,
+  /// if they agree. Expected, never required: a flat battery at the counter is
+  /// strictly less bad than turning a paid customer away.
+  photoUrls String[] @default([])
+
   releasedAt   DateTime @default(now())
   releasedById String?
   releasedBy   User?    @relation(fields: [releasedById], references: [id], onDelete: SetNull)
