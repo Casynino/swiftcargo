@@ -9,13 +9,9 @@ import {
   type WaitingBill,
 } from "@/components/app/merge-payment-form";
 import { PageHeader } from "@/components/app/page-header";
-import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { formatMoney } from "@/lib/format";
-import { Prisma } from "@prisma/client";
 
-import { formatCurrency } from "@/lib/currency";
 import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
-import { whatsappNumber } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -150,16 +146,6 @@ export default async function MergePaymentForCustomer({
     });
   }
 
-  /* Summed in shillings; a bill with no rate cannot join that sum and is named
-     in its own currency instead of being added to it. */
-  const balances = open.map(balanceOf);
-  const owedTzs = balances.reduce((s, b) => (b.outstandingTzs ? s.add(b.outstandingTzs) : s), new Prisma.Decimal(0));
-  const rateless = balances.filter((b) => !b.outstandingTzs);
-  const owedLine = [
-    owedTzs.greaterThan(0) ? formatCurrency(owedTzs, "TZS") : null,
-    ...rateless.map((b) => formatCurrency(b.outstanding, b.currency)),
-  ].filter(Boolean).join(" + ");
-
   return (
     <div className="space-y-5">
       <SmartBack fallbackHref="/app/finance/payments/new" fallbackLabel={T("Another customer")} />
@@ -167,16 +153,6 @@ export default async function MergePaymentForCustomer({
       <PageHeader
         title={name}
         description={T("One payment, against as many of their bills as it covers. The account moves once.")}
-        actions={
-          customer.phone ? (
-            <WhatsAppButton
-              phone={whatsappNumber(customer.phone)}
-              kind="payment.reminder"
-              label={T("Notify on WhatsApp")}
-              message={`Habari ${name}, una bili ${open.length} zinazodaiwa Swift Cargo, jumla ${owedLine}.`}
-            />
-          ) : null
-        }
       />
 
       <MergePaymentForm

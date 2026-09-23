@@ -3,7 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 
 import { COMPANY } from "@/lib/constants";
-import { formatDate } from "@/lib/format";
+import { BUSINESS_TZ } from "@/lib/format";
 import { balanceOf, invoiceRate } from "@/lib/invoice-balance";
 import { messageStage, trackUrl } from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
@@ -239,6 +239,25 @@ const money = (n: Prisma.Decimal.Value) => Number(n).toLocaleString("en-US");
 const usd = (n: Prisma.Decimal.Value) =>
   Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const SW_MONTHS = [
+  "Januari", "Februari", "Machi", "Aprili", "Mei", "Juni",
+  "Julai", "Agosti", "Septemba", "Oktoba", "Novemba", "Desemba",
+];
+
+/** "28 Septemba 2026" — on the Dar calendar, whatever timezone this runs in. */
+function swahiliDate(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: BUSINESS_TZ,
+    day: "2-digit",
+    month: "numeric",
+    year: "numeric",
+  }).formatToParts(date);
+  const day = parts.find((p) => p.type === "day")!.value;
+  const month = Number(parts.find((p) => p.type === "month")!.value) - 1;
+  const year = parts.find((p) => p.type === "year")!.value;
+  return `${day} ${SW_MONTHS[month]} ${year}`;
+}
+
 /**
  * THE NOTICE, BEFORE THE MONEY MOVES.
  *
@@ -255,31 +274,36 @@ export function composeMergedMessage(group: MergedGroup): string {
   const trackLink = mergedTrackLink(group.key);
   const invoiceLink = mergedInvoiceLink(group.key);
   const status = group.settled ? "Imelipwa" : group.partlyPaid ? "Malipo sehemu" : "Haijalipwa";
-  const deadline = group.storageDeadline
-    ? `, hadi ${formatDate(group.storageDeadline)}`
-    : "";
+  const storageLine = group.storageDeadline
+    ? `Una siku ${group.freeStorageDays} bure za kuhifadhi mizigo yako kwenye warehouse yetu ` +
+      `Dar es Salaam, hadi ${swahiliDate(group.storageDeadline)}. Baada ya hapo, storage charges ` +
+      `zinaweza kutozwa.`
+    : `Una siku ${group.freeStorageDays} bure za kuhifadhi mizigo yako kwenye warehouse yetu ` +
+      `Dar es Salaam. Baada ya hapo, storage charges zinaweza kutozwa.`;
 
   return (
     `*${COMPANY.name.toUpperCase()}*\n\n` +
-    `Habari ${name}!\n\n` +
-    `Mizigo yako ${group.totalCargo} yamewekwa kwenye bili moja ya malipo ili ulipe kwa muamala mmoja. ` +
-    `Kila mzigo unabaki na namba yake ya kufuatilia.\n\n` +
-    `*MIZIGO ILIYOMO (${group.totalCargo})*\n` +
+    `Habari ${name},\n\n` +
+    `Invoice zako ${group.totalCargo} zimeunganishwa kuwa Invoice ya Pamoja, ili uweze kufanya ` +
+    `malipo yote kwa muamala mmoja.\n\n` +
+    `Kila mzigo bado una Tracking Number yake na unaweza kuufuatilia kivyake.\n\n` +
+    `📦 *MIZIGO ILIYOJUMUISHWA (${group.totalCargo})*\n` +
     `${lines.join("\n")}\n\n` +
-    `*MAELEZO YA MZIGO*\n` +
+    `*MAELEZO YA JUMLA*\n` +
     `• Mizigo: ${group.totalCargo}\n` +
     `• Vipande: ${group.totalPieces}\n` +
     `• Ujazo: ${group.totalCbm} CBM\n` +
     `• Kontena: ${group.containers.length > 0 ? group.containers.join(", ") : "—"}\n` +
     `• Status: ${group.statusLine}\n\n` +
-    `*MALIPO*\n` +
+    `💰 *TAARIFA ZA MALIPO*\n` +
     `• Kiasi cha kulipa: TZS ${money(group.totalOutstandingTzs)}\n` +
     (group.totalOutstandingUsd ? `• Sawa na: USD ${usd(group.totalOutstandingUsd)}\n` : "") +
-    (group.fxRate ? `• Exchange Rate: 1 USD = ${money(group.fxRate)} TZS\n` : "") +
+    (group.fxRate ? `• Exchange Rate: 1 USD = TZS ${money(group.fxRate)}\n` : "") +
     `• Hali ya malipo: ${status}\n\n` +
-    `*STORAGE:* Una siku ${group.freeStorageDays} bure za kuhifadhiwa kwenye warehouse yetu ` +
-    `Dar es Salaam${deadline}. Baada ya hapo storage charges zinaweza kutozwa.\n\n` +
-    `*Fuatilia mizigo yako yote:*\n${trackLink}\n\n` +
-    `*Pakua invoice ya pamoja (PDF):*\n${invoiceLink}`
+    `📦 *STORAGE*\n${storageLine}\n\n` +
+    `🔎 *FUATILIA MIZIGO YAKO*\n` +
+    `Fuatilia mizigo yote iliyopo kwenye Invoice ya Pamoja:\n${trackLink}\n\n` +
+    `📄 *PAKUA INVOICE YA PAMOJA*\n` +
+    `Hii ni Invoice ya Pamoja yenye mizigo yote iliyounganishwa:\n${invoiceLink}`
   );
 }

@@ -245,6 +245,15 @@ export function MergePaymentForm({
         <input key={id} type="hidden" name="invoiceIds" value={id} />
       ))}
 
+      {/* Same spot the reminder button always sat in — now it composes the
+          merged notice instead of the flat "you owe X" one, once there is a
+          merged notice to send. */}
+      {ticked.length >= 2 ? (
+        <div className="col-span-full -mt-2 flex justify-end">
+          <MergedNotifyButton invoiceIds={ticked.map((b) => b.invoiceId)} />
+        </div>
+      ) : null}
+
       {/* LEFT: the job. Which cargo is this customer paying for. */}
       <section className="overflow-hidden rounded-xl border bg-card shadow-soft">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
@@ -254,25 +263,20 @@ export function MergePaymentForm({
               Tick everything this payment covers.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {ticked.length >= 2 ? (
-              <MergedNotifyButton invoiceIds={ticked.map((b) => b.invoiceId)} />
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                setPicked(
-                  picked.size === bills.length
-                    ? new Set()
-                    : new Set(bills.map((b) => b.invoiceId))
-                );
-                setTyped(null);
-              }}
-              className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
-            >
-              {picked.size === bills.length && bills.length > 0 ? "Clear" : "Select all"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setPicked(
+                picked.size === bills.length
+                  ? new Set()
+                  : new Set(bills.map((b) => b.invoiceId))
+              );
+              setTyped(null);
+            }}
+            className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
+          >
+            {picked.size === bills.length && bills.length > 0 ? "Clear" : "Select all"}
+          </button>
         </header>
 
         {bills.length === 0 ? (
