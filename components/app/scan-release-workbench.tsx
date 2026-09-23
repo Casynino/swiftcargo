@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState, useTransition } from "react";
-import { Loader2, Package, ScanLine, Search } from "lucide-react";
+import { Loader2, ScanLine, Search } from "lucide-react";
 
 import { BoxScanner } from "@/components/app/box-scanner";
 import { CargoStatusBadge } from "@/components/app/status-badge";
 import { QrScanner } from "@/components/app/qr-scanner";
-import { ReleaseChecklist, ReleaseForm, UnableToLocateCargo } from "@/components/app/release-panel";
+import { ReleaseForm, UnableToLocateCargo } from "@/components/app/release-panel";
 import { ScanVerdict } from "@/components/app/scan-verdict";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -422,14 +423,44 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
           <UnableToLocateCargo cargoId={target.cargoId} reference={target.reference} onDone={onDone} />
         </div>
       ) : (
-        <div className="rounded-xl border bg-card p-4 shadow-soft sm:p-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Package className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">{tx("What is standing in the way")}</h3>
-          </div>
-          <ReleaseChecklist conditions={target.check.conditions} />
-        </div>
+        <BlockedActions target={target} onDone={onDone} />
       )}
+    </div>
+  );
+}
+
+/**
+ * WHAT TO DO INSTEAD, FOR CARGO THAT CANNOT GO.
+ *
+ * The reason is already said once, in the verdict banner above — this is not
+ * a second explanation of it, only the way out. Dar holds `receiving.dar`, so
+ * in the one state it can actually fix from here — the boxes never booked
+ * in — the fix is one tap away.
+ */
+function BlockedActions({ target, onDone }: { target: ScanTarget; onDone: () => void }) {
+  const tx = useT();
+  const notReceived = target.check.conditions.find(
+    (c) => c.label === "Received at the Dar warehouse"
+  );
+
+  return (
+    <div className="rounded-xl border bg-card p-4 shadow-soft sm:p-6">
+      <p className="text-sm text-muted-foreground">
+        {tx("This cargo cannot be released from here. Nothing has been changed.")}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {notReceived && !notReceived.passed ? (
+          <Button asChild className="h-11">
+            <Link href="/app/receive/dar">{tx("Check the cargo in")}</Link>
+          </Button>
+        ) : null}
+        <Button asChild variant="outline" className="h-11">
+          <Link href={`/app/cargo/${target.cargoId}`}>{tx("Open the cargo")}</Link>
+        </Button>
+        <Button className="h-11" onClick={onDone}>
+          {tx("Scan another box")}
+        </Button>
+      </div>
     </div>
   );
 }
