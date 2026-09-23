@@ -2,170 +2,284 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 
-import { formatCurrency, formatRate } from "@/lib/currency";
-import { formatCbm, formatDate } from "@/lib/format";
-import { prisma } from "@/lib/prisma";
 import { COMPANY } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
+import { balanceOf, invoiceRate } from "@/lib/invoice-balance";
+import { messageStage, trackUrl } from "@/lib/messages";
+import { prisma } from "@/lib/prisma";
+import { storageStart, storageState } from "@/lib/storage-clock";
 import { trackKey } from "@/lib/track-key";
-import { trackUrl } from "@/lib/messages";
 
 /**
- * ONE HANDOVER, READ BACK AS THE GROUP IT WAS.
+ * A GROUP OF BILLS A CUSTOMER IS ABOUT TO PAY TOGETHER, READ LIVE.
  *
- * A merged payment is not a row anywhere — CLAUDE.md is explicit that money is
- * derived, never stored, and a second total sitting beside the real invoices
- * is exactly the kind of figure that drifts. What ties the slices of one
- * transfer together is `Payment.transactionRef`, written once by
- * `recordCombinedPayment` / `recordMergedPayment` onto every `Payment` row the
- * handover created. This reads that group back and adds it up live, every
- * time — it can never disagree with the invoices, because it is nothing but
- * the invoices.
+ * There is no row for "this merge" anywhere — CLAUDE.md is explicit that money
+ * is derived, never stored. What names the group is the set of invoice ids a
+ * clerk ticked on the Merge Payment screen; this reads those invoices back and
+ * works out what to tell the customer about them, every time, from what is
+ * true right now. Called before any payment exists (the ordinary case — this
+ * is the "please pay" notice) and it reads exactly as truly after one does,
+ * because "outstanding" and "settled" are derived, not remembered.
  */
-export type MergedPaymentLine = {
+export type MergedGroupLine = {
   cargoId: string;
   reference: string;
   description: string;
-  cbm: string | null;
   invoiceId: string;
-  invoiceNumber: string;
+  outstandingTzs: string | null;
+  outstanding: string;
+  currency: string;
 };
 
-export type MergedPayment = {
-  transactionRef: string;
+export type MergedGroup = {
+  /** Sorted, joined invoice ids — the identity of this group and what is signed. */
+  key: string;
   customerId: string;
   customerName: string;
   customerPhone: string | null;
-  lines: MergedPaymentLine[];
-  /** Sum of each cargo's own measured CBM — Dar's once it exists. */
+  lines: MergedGroupLine[];
+  totalCargo: number;
+  totalPieces: number;
   totalCbm: string;
-  /** What was actually taken, in shillings — the authoritative figure. */
-  totalTzs: string;
-  /** The same amount in dollars, at the rate this transfer was valued at. */
-  totalUsd: string | null;
-  /** The rate applied, when every slice shares one — null if they disagree. */
+  containers: string[];
+  statusLine: string;
+  totalOutstandingTzs: string;
+  totalOutstandingUsd: string | null;
   fxRate: string | null;
-  paidAt: Date;
-  /** Every slice verified, none still waiting on Finance. */
-  allVerified: boolean;
-  anyRejected: boolean;
+  /** Every line's own bill fully covered by verified money. */
+  settled: boolean;
+  /** Something has landed, but not enough to settle every line. */
+  partlyPaid: boolean;
+  freeStorageDays: number;
+  /** The soonest free-storage deadline among the lines whose clock is running. */
+  storageDeadline: Date | null;
 };
 
+const STAGE_ORDER = ["china", "transit", "clearance", "cleared", "ready"] as const;
+const STAGE_LABEL: Record<(typeof STAGE_ORDER)[number], string> = {
+  china: "Received in China",
+  transit: "In transit",
+  clearance: "Clearance in Progress",
+  cleared: "Cleared — Ready for Pickup",
+  ready: "Cleared — Ready for Pickup",
+};
+
+/** The identity of a group, from the invoice ids a clerk ticked. */
+export function mergedGroupKey(invoiceIds: string[]): string {
+  return [...new Set(invoiceIds)].sort().join(",");
+}
+
 /**
- * Reads every `Payment` row sharing this reference, the cargo and invoice each
- * one belongs to, and totals them. Returns null for a reference that names no
- * payment, or one that turns out to cover a single bill — a "merged" view of
- * one invoice is just that invoice.
+ * Reads the ticked invoices back, with the cargo and customer each one
+ * belongs to, and works out one story to tell about all of them. Returns null
+ * for fewer than two invoices (a "group" of one is just that invoice), or one
+ * spanning more than one customer (never true from the form, checked anyway
+ * because this is also read from a link nobody has to have clicked honestly).
  */
-export async function mergedPaymentByRef(
-  transactionRef: string
-): Promise<MergedPayment | null> {
-  const payments = await prisma.payment.findMany({
-    where: { transactionRef },
-    orderBy: { paidAt: "asc" },
-    include: {
-      customer: { select: { id: true, fullName: true, phone: true } },
-      invoice: {
-        select: {
-          id: true,
-          number: true,
-          cargo: {
-            select: {
-              id: true,
-              reference: true,
-              description: true,
-              darReceiving: { select: { cbm: true } },
-              chinaReceiving: { select: { cbm: true } },
+export async function mergedGroupByInvoiceIds(
+  invoiceIds: string[]
+): Promise<MergedGroup | null> {
+  const ids = [...new Set(invoiceIds)];
+  if (ids.length < 2) return null;
+
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { id: { in: ids } },
+      include: {
+        customer: { select: { id: true, fullName: true, phone: true } },
+        payments: {
+          select: {
+            status: true,
+            amount: true,
+            currency: true,
+            fxRate: true,
+            baseCurrencyAmount: true,
+            creditedAmount: true,
+          },
+        },
+        cargo: {
+          select: {
+            id: true,
+            reference: true,
+            description: true,
+            status: true,
+            clearedAt: true,
+            darReceiving: {
+              select: { piecesCount: true, cbm: true, receivedAt: true },
+            },
+            chinaReceiving: { select: { piecesCount: true, cbm: true } },
+            containerLines: {
+              take: 1,
+              orderBy: { createdAt: "desc" },
+              select: { container: { select: { reference: true } } },
             },
           },
         },
       },
-    },
-  });
-  if (payments.length < 2) return null;
+    }),
+    prisma.companySetting.findUnique({
+      where: { id: "singleton" },
+      select: { freeStorageDays: true },
+    }),
+  ]);
+  if (invoices.length < 2) return null;
+  if (new Set(invoices.map((i) => i.customerId)).size !== 1) return null;
 
-  const first = payments[0];
-  const totalTzs = payments.reduce(
-    (sum, p) => sum.add(p.baseCurrencyAmount ?? new Prisma.Decimal(0)),
-    new Prisma.Decimal(0)
-  );
+  const freeStorageDays = settings?.freeStorageDays ?? 7;
+  const first = invoices[0]!;
 
-  /* One rate for the message's USD line, only when every slice actually
-     shared it — a merge across bills pinned at different rates has no single
-     dollar figure that means anything. */
-  const rates = new Set(payments.map((p) => p.fxRate?.toString() ?? null));
-  const oneRate = rates.size === 1 ? payments[0].fxRate : null;
-  const totalUsd = oneRate
-    ? totalTzs.div(oneRate).toDecimalPlaces(2).toString()
-    : null;
-
-  const lines: MergedPaymentLine[] = payments.map((p) => {
-    const cargo = p.invoice.cargo;
-    const cbm = cargo.darReceiving?.cbm ?? cargo.chinaReceiving?.cbm ?? null;
+  const lines: MergedGroupLine[] = invoices.map((invoice) => {
+    const bal = balanceOf(invoice);
     return {
-      cargoId: cargo.id,
-      reference: cargo.reference,
-      description: cargo.description,
-      cbm: cbm ? formatCbm(cbm).replace(" CBM", "") : null,
-      invoiceId: p.invoice.id,
-      invoiceNumber: p.invoice.number,
+      cargoId: invoice.cargo.id,
+      reference: invoice.cargo.reference,
+      description: invoice.cargo.description ?? "",
+      invoiceId: invoice.id,
+      outstandingTzs: bal.outstandingTzs?.toFixed(0) ?? null,
+      outstanding: bal.outstanding.toFixed(2),
+      currency: invoice.currency,
     };
   });
-  const totalCbm = lines
-    .reduce((sum, l) => sum.add(new Prisma.Decimal(l.cbm ?? 0)), new Prisma.Decimal(0))
+
+  const totalOutstandingTzs = invoices
+    .map((i) => balanceOf(i).outstandingTzs)
+    .reduce<Prisma.Decimal>(
+      (sum, tzs) => (tzs ? sum.add(tzs) : sum),
+      new Prisma.Decimal(0)
+    );
+  const rateStrings = new Set(
+    invoices.map((i) => invoiceRate(i)?.toString() ?? null).filter(Boolean)
+  );
+  const oneRate = rateStrings.size === 1 ? [...rateStrings][0]! : null;
+  const totalOutstandingUsd = oneRate
+    ? totalOutstandingTzs.div(oneRate).toDecimalPlaces(2).toString()
+    : null;
+
+  const settled = invoices.every((i) => balanceOf(i).settled);
+  const paidSomething = invoices.some((i) => balanceOf(i).paid.greaterThan(0));
+
+  const totalPieces = invoices.reduce(
+    (sum, i) =>
+      sum + (i.cargo.darReceiving?.piecesCount ?? i.cargo.chinaReceiving?.piecesCount ?? 0),
+    0
+  );
+  const totalCbm = invoices
+    .reduce((sum, i) => {
+      const cbm = i.cargo.darReceiving?.cbm ?? i.cargo.chinaReceiving?.cbm ?? null;
+      return cbm ? sum.add(cbm) : sum;
+    }, new Prisma.Decimal(0))
     .toFixed(3);
+  const containers = [
+    ...new Set(
+      invoices
+        .map((i) => i.cargo.containerLines[0]?.container.reference)
+        .filter((ref): ref is string => Boolean(ref))
+    ),
+  ];
+
+  const stages = invoices.map((i) =>
+    messageStage({
+      status: i.cargo.status,
+      hasDarReceiving: Boolean(i.cargo.darReceiving),
+      clearedAt: i.cargo.clearedAt,
+    })
+  );
+  const worst = STAGE_ORDER.find((s) => stages.includes(s)) ?? "transit";
+
+  const deadlines = invoices
+    .map((i) => {
+      const from = storageStart(i.cargo.darReceiving?.receivedAt ?? null, i.cargo.clearedAt);
+      if (!from) return null;
+      return storageState({
+        arrivedAt: from,
+        freeDays: freeStorageDays,
+        perDay: null,
+        currency: "USD",
+        now: new Date(),
+      }).lastFreeDay;
+    })
+    .filter((d): d is Date => d !== null);
+  const storageDeadline =
+    deadlines.length > 0
+      ? new Date(Math.min(...deadlines.map((d) => d.getTime())))
+      : null;
 
   return {
-    transactionRef,
+    key: mergedGroupKey(ids),
     customerId: first.customer.id,
     customerName: first.customer.fullName,
     customerPhone: first.customer.phone,
     lines,
+    totalCargo: invoices.length,
+    totalPieces,
     totalCbm,
-    totalTzs: totalTzs.toFixed(0),
-    totalUsd,
-    fxRate: oneRate?.toString() ?? null,
-    paidAt: first.paidAt ?? first.createdAt,
-    allVerified: payments.every((p) => p.status === "VERIFIED"),
-    anyRejected: payments.some((p) => p.status === "REJECTED"),
+    containers,
+    statusLine: STAGE_LABEL[worst],
+    totalOutstandingTzs: totalOutstandingTzs.toFixed(0),
+    totalOutstandingUsd,
+    fxRate: oneRate,
+    settled,
+    partlyPaid: !settled && paidSomething,
+    freeStorageDays,
+    storageDeadline,
   };
 }
 
-/** The signed link a customer's merged-payment notification carries. */
-export function mergedTrackLink(transactionRef: string): string {
-  return `${trackUrl()}/merged/${transactionRef}?k=${trackKey(transactionRef)}`;
+/** The signed link a customer's merged notification carries. */
+export function mergedTrackLink(key: string): string {
+  return `${trackUrl()}/merged/${encodeURIComponent(key)}?k=${trackKey(key)}`;
 }
 
+/** The signed link to the combined PDF for the same group. */
+export function mergedInvoiceLink(key: string): string {
+  return `${trackUrl()}/merged/${encodeURIComponent(key)}/invoice?k=${trackKey(key)}`;
+}
+
+const money = (n: Prisma.Decimal.Value) => Number(n).toLocaleString("en-US");
+const usd = (n: Prisma.Decimal.Value) =>
+  Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 /**
- * THE NOTIFICATION, IN ONE MESSAGE.
+ * THE NOTICE, BEFORE THE MONEY MOVES.
  *
- * Same shape as every other letter this company sends — company name,
- * greeting, one sentence, the details, the link — but the details are a line
- * per consignment rather than one, because this transfer paid for all of them
- * at once and the customer should be able to tell that from the message
- * alone, not by opening the link first.
+ * Every bill a customer ticked, in one message: what each cargo is, what the
+ * whole group comes to, and the two links — one to track all of it, one to
+ * download it as a single PDF. "Hali ya malipo" reads straight off the
+ * invoices, so a message sent after the payment lands still tells the truth.
  */
-export function composeMergedMessage(group: MergedPayment): string {
+export function composeMergedMessage(group: MergedGroup): string {
   const name = group.customerName.split(" ")[0] ?? group.customerName;
   const lines = group.lines.map(
-    (l) =>
-      `• Tracking: ${l.reference} — ${l.description}${l.cbm ? ` — ${l.cbm} CBM` : ""}`
+    (l) => `• ${l.reference} — ${l.description}: TZS ${money(l.outstandingTzs ?? l.outstanding)}`
   );
-  const link = mergedTrackLink(group.transactionRef);
+  const trackLink = mergedTrackLink(group.key);
+  const invoiceLink = mergedInvoiceLink(group.key);
+  const status = group.settled ? "Imelipwa" : group.partlyPaid ? "Malipo sehemu" : "Haijalipwa";
+  const deadline = group.storageDeadline
+    ? `, hadi ${formatDate(group.storageDeadline)}`
+    : "";
 
   return (
     `*${COMPANY.name.toUpperCase()}*\n\n` +
     `Habari ${name}!\n\n` +
-    `Mzigo wako umefika salama Dar es Salaam na sasa uko tayari kuchukuliwa baada ya malipo kuthibitishwa.\n\n` +
-    `*MAELEZO YA MIZIGO*\n` +
+    `Mizigo yako ${group.totalCargo} yamewekwa kwenye bili moja ya malipo ili ulipe kwa muamala mmoja. ` +
+    `Kila mzigo unabaki na namba yake ya kufuatilia.\n\n` +
+    `*MIZIGO ILIYOMO (${group.totalCargo})*\n` +
     `${lines.join("\n")}\n\n` +
-    `• Total CBM: ${group.totalCbm} CBM\n` +
-    `• *Total Amount: TZS ${formatCurrency(group.totalTzs, "TZS").replace("TZS ", "")}*\n` +
-    (group.totalUsd ? `• Equivalent: USD ${group.totalUsd}\n` : "") +
-    (group.fxRate ? `• Exchange Rate: ${formatRate(group.fxRate)}\n` : "") +
-    `• Status: ${group.allVerified ? "Ready for Pickup" : "Ready for Pickup After Payment"}\n\n` +
-    `Angalia invoice yako ya merged payment na taarifa zote za mizigo yako:\n` +
-    `${link}\n\n` +
-    `Hii ni invoice yako ya merged payment yenye taarifa zote za mizigo iliyojumuishwa kwenye malipo haya. ` +
-    `Kila mzigo bado unaweza kufuatiliwa peke yake kwa namba yake ya tracking — ${formatDate(group.paidAt)}.`
+    `*MAELEZO YA MZIGO*\n` +
+    `• Mizigo: ${group.totalCargo}\n` +
+    `• Vipande: ${group.totalPieces}\n` +
+    `• Ujazo: ${group.totalCbm} CBM\n` +
+    `• Kontena: ${group.containers.length > 0 ? group.containers.join(", ") : "—"}\n` +
+    `• Status: ${group.statusLine}\n\n` +
+    `*MALIPO*\n` +
+    `• Kiasi cha kulipa: TZS ${money(group.totalOutstandingTzs)}\n` +
+    (group.totalOutstandingUsd ? `• Sawa na: USD ${usd(group.totalOutstandingUsd)}\n` : "") +
+    (group.fxRate ? `• Exchange Rate: 1 USD = ${money(group.fxRate)} TZS\n` : "") +
+    `• Hali ya malipo: ${status}\n\n` +
+    `*STORAGE:* Una siku ${group.freeStorageDays} bure za kuhifadhiwa kwenye warehouse yetu ` +
+    `Dar es Salaam${deadline}. Baada ya hapo storage charges zinaweza kutozwa.\n\n` +
+    `*Fuatilia mizigo yako yote:*\n${trackLink}\n\n` +
+    `*Pakua invoice ya pamoja (PDF):*\n${invoiceLink}`
   );
 }

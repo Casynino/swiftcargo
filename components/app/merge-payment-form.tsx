@@ -203,10 +203,10 @@ export function MergePaymentForm({
      takes the button away with it. */
   const [storageSaid, setStorageSaid] = useState<{ invoiceId: string; error?: string; ok?: string } | null>(null);
 
-  /* A merge that just cleared every bill leaves nothing left to tick — but the
-     confirmation and the notify button still have to stand, so this only
-     shows the settled state when nothing just happened. */
-  if (bills.length === 0 && waiting.length === 0 && !(state.ok && state.transactionRef)) {
+  /* A payment that just cleared every bill leaves nothing left to tick — but
+     the confirmation still has to stand, so this only shows the settled state
+     when nothing just happened. */
+  if (bills.length === 0 && waiting.length === 0 && !state.ok) {
     return (
       <div className="rounded-xl border bg-card px-5 py-12 text-center">
         <p className="font-medium">{t(null, "Every bill is settled")}</p>
@@ -218,7 +218,6 @@ export function MergePaymentForm({
   }
 
   return (
-    <>
     <form
       action={action}
       className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]"
@@ -255,20 +254,25 @@ export function MergePaymentForm({
               Tick everything this payment covers.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setPicked(
-                picked.size === bills.length
-                  ? new Set()
-                  : new Set(bills.map((b) => b.invoiceId))
-              );
-              setTyped(null);
-            }}
-            className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
-          >
-            {picked.size === bills.length && bills.length > 0 ? "Clear" : "Select all"}
-          </button>
+          <div className="flex items-center gap-2">
+            {ticked.length >= 2 ? (
+              <MergedNotifyButton invoiceIds={ticked.map((b) => b.invoiceId)} />
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setPicked(
+                  picked.size === bills.length
+                    ? new Set()
+                    : new Set(bills.map((b) => b.invoiceId))
+                );
+                setTyped(null);
+              }}
+              className="rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
+            >
+              {picked.size === bills.length && bills.length > 0 ? "Clear" : "Select all"}
+            </button>
+          </div>
         </header>
 
         {bills.length === 0 ? (
@@ -723,16 +727,5 @@ export function MergePaymentForm({
         </SubmitButton>
       </div>
     </form>
-    {/* A form of its own — WhatsAppButton is one, and a form cannot nest
-        inside the form above without the browser silently breaking both. */}
-    {state.ok && state.transactionRef ? (
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
-        <div className="hidden xl:block" aria-hidden />
-        <div className="-mt-2">
-          <MergedNotifyButton transactionRef={state.transactionRef} />
-        </div>
-      </div>
-    ) : null}
-    </>
   );
 }

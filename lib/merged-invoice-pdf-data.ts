@@ -4,51 +4,61 @@ import { accountsForInvoice } from "@/lib/invoice-accounts";
 import type { InvoicePdfInput, PdfTone } from "@/lib/invoice-pdf";
 import { formatCurrency, formatRate } from "@/lib/currency";
 import { formatCbm, formatDate, formatDateTime } from "@/lib/format";
+import { balanceOf, invoiceRate } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 
 const money = (n: unknown, dp = 2) =>
   Number(n ?? 0).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 
 /**
- * THE MERGED INVOICE, AS A FILE — BUILT FROM THE REAL BILLS, NOT A COPY OF
- * THEM.
+ * ONE PDF FOR A GROUP OF BILLS, READ STRAIGHT OFF THE INVOICES.
  *
- * One row per consignment, read straight off the invoices this payment
- * actually covered; the total is what `Payment.baseCurrencyAmount` says was
- * taken, summed, never a second figure typed anywhere. If two bills in the
- * group disagree about the currency they were raised in, this refuses rather
- * than mix them into one wrong number.
+ * One row per consignment, the total what is actually owed across them right
+ * now — before a shilling has moved, this is the bill; once payment lands,
+ * the same file shows what it settled. Never a second figure typed anywhere.
+ * If two bills in the group disagree about the currency they were raised in,
+ * this refuses to mix them into one wrong number.
  */
-export async function loadMergedInvoicePdf(transactionRef: string) {
-  const [payments, company] = await Promise.all([
-    prisma.payment.findMany({
-      where: { transactionRef },
-      orderBy: { paidAt: "asc" },
+export async function loadMergedInvoicePdf(invoiceIds: string[]) {
+  const ids = [...new Set(invoiceIds)];
+  if (ids.length < 2) return null;
+
+  const [invoices, company] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { id: { in: ids } },
+      orderBy: { createdAt: "asc" },
       include: {
         customer: true,
-        invoice: {
-          include: {
-            cargo: {
-              select: {
-                reference: true,
-                description: true,
-                darReceiving: { select: { cbm: true } },
-                chinaReceiving: { select: { cbm: true } },
-              },
-            },
+        payments: {
+          select: {
+            status: true,
+            amount: true,
+            currency: true,
+            fxRate: true,
+            baseCurrencyAmount: true,
+            creditedAmount: true,
+          },
+        },
+        cargo: {
+          select: {
+            reference: true,
+            description: true,
+            darReceiving: { select: { cbm: true } },
+            chinaReceiving: { select: { cbm: true } },
           },
         },
       },
     }),
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),
   ]);
-  if (payments.length < 2) return null;
+  if (invoices.length < 2) return null;
+  if (new Set(invoices.map((i) => i.customerId)).size !== 1) return null;
 
-  const first = payments[0];
-  const currency = first.invoice.currency;
-  const sameCurrency = payments.every((p) => p.invoice.currency === currency);
+  const first = invoices[0]!;
+  const currency = first.currency;
+  const sameCurrency = invoices.every((i) => i.currency === currency);
 
-  const accounts = await accountsForInvoice(first.invoice.paymentSnapshot);
+  const accounts = await accountsForInvoice(first.paymentSnapshot);
   const contact = [company?.phone, company?.altPhone].filter(Boolean).join("  |  ");
   const addressLines = (company?.darAddress ?? "")
     .split(/,\s*(?=P\.?\s*O\.?\s*Box)/i)
@@ -56,18 +66,30 @@ export async function loadMergedInvoicePdf(transactionRef: string) {
     .filter(Boolean);
   const companyName = company?.name ?? "Swift Cargo";
 
-  const totalTzs = payments.reduce(
-    (sum, p) => sum.add(p.baseCurrencyAmount ?? new Prisma.Decimal(0)),
+  const totalTzs = invoices.reduce(
+    (sum, i) => {
+      const tzs = balanceOf(i).totalTzs;
+      return tzs ? sum.add(tzs) : sum;
+    },
     new Prisma.Decimal(0)
   );
-  const rates = new Set(payments.map((p) => p.fxRate?.toString() ?? null));
-  const oneRate = rates.size === 1 ? payments[0].fxRate : null;
-  const totalUsd = oneRate ? totalTzs.div(oneRate).toDecimalPlaces(2) : null;
+  const outstandingTzs = invoices.reduce(
+    (sum, i) => {
+      const tzs = balanceOf(i).outstandingTzs;
+      return tzs ? sum.add(tzs) : sum;
+    },
+    new Prisma.Decimal(0)
+  );
+  const rates = new Set(invoices.map((i) => invoiceRate(i)?.toString() ?? null).filter(Boolean));
+  const oneRate = rates.size === 1 ? [...rates][0]! : null;
 
-  const allVerified = payments.every((p) => p.status === "VERIFIED");
-  const stamp: { label: string; tone: PdfTone } = allVerified
+  const settled = invoices.every((i) => balanceOf(i).settled);
+  const paidSomething = invoices.some((i) => balanceOf(i).paid.greaterThan(0));
+  const stamp: { label: string; tone: PdfTone } = settled
     ? { label: "Paid", tone: "green" }
-    : { label: "Payment pending verification", tone: "amber" };
+    : paidSomething
+      ? { label: "Partly paid", tone: "amber" }
+      : { label: "Not paid", tone: "amber" };
 
   const input: InvoicePdfInput = {
     stamp,
@@ -79,7 +101,7 @@ export async function loadMergedInvoicePdf(transactionRef: string) {
       contact: contact || null,
       tagline: company?.tagline ?? "On time, Every time",
     },
-    issuedOn: formatDate(first.paidAt ?? first.createdAt),
+    issuedOn: formatDate(new Date()),
     dueOn: "—",
     customer: {
       headline: first.customer.businessName || first.customer.fullName,
@@ -89,13 +111,11 @@ export async function loadMergedInvoicePdf(transactionRef: string) {
       code: first.customer.code,
     },
     details: [
-      ["Merged payment ref", transactionRef],
-      ["Bills covered", String(payments.length)],
-      ["Paid on", formatDateTime(first.paidAt ?? first.createdAt)],
+      ["Bills covered", String(invoices.length)],
       ["Exchange rate", oneRate ? formatRate(oneRate) : "Varies by bill"],
     ],
-    items: payments.map((p) => {
-      const cargo = p.invoice.cargo;
+    items: invoices.map((invoice) => {
+      const cargo = invoice.cargo;
       const cbm = cargo.darReceiving?.cbm ?? cargo.chinaReceiving?.cbm ?? null;
       return {
         receiptNo: cargo.reference,
@@ -104,14 +124,14 @@ export async function loadMergedInvoicePdf(transactionRef: string) {
         pieces: "—",
         quantity: cbm ? formatCbm(cbm) : "—",
         unitPrice: "—",
-        amount: `${money(p.invoice.total)} ${p.invoice.currency}`,
+        amount: `${money(invoice.total)} ${invoice.currency}`,
         credit: false,
       };
     }),
     notes:
       sameCurrency
         ? null
-        : "Bills in this payment were raised in more than one currency — each line shows its own.",
+        : "Bills in this group were raised in more than one currency — each line shows its own.",
     banks: accounts
       .filter((a) => a.kind === "BANK")
       .map((bank) => ({
@@ -133,27 +153,27 @@ export async function loadMergedInvoicePdf(transactionRef: string) {
       subtotal: null,
       vatLabel: null,
       vat: null,
-      total: totalUsd ? `${money(totalUsd)} USD` : formatCurrency(totalTzs, "TZS"),
+      total: formatCurrency(totalTzs, "TZS"),
       totalTzs: formatCurrency(totalTzs, "TZS"),
-      paid: allVerified ? formatCurrency(totalTzs, "TZS") : null,
+      paid: settled ? formatCurrency(totalTzs, "TZS") : paidSomething ? formatCurrency(totalTzs.sub(outstandingTzs), "TZS") : null,
     },
     due: {
-      settled: allVerified,
-      headline: allVerified ? "Paid in full" : "Awaiting verification",
+      settled,
+      headline: formatCurrency(outstandingTzs, "TZS"),
       sub: null,
       credit: null,
     },
     terms: [],
     storage: null,
-    issuedLine: `Recorded ${formatDateTime(first.paidAt ?? first.createdAt)}`,
-    reference: transactionRef,
+    issuedLine: `Generated ${formatDateTime(new Date())}`,
+    reference: invoices.map((i) => i.cargo.reference).join(" + "),
   };
 
-  return { input, fileName: mergedFileName(transactionRef, first.customer.fullName) };
+  return { input, fileName: mergedFileName(invoices.map((i) => i.cargo.reference), first.customer.fullName) };
 }
 
-function mergedFileName(transactionRef: string, customerName: string) {
-  const ascii = `${transactionRef} ${customerName}`.replace(/[^\w\- ]+/g, "").trim();
-  const full = `${transactionRef} ${customerName}`.trim();
-  return { ascii: `${ascii}.pdf`, full: `${full}.pdf` };
+function mergedFileName(references: string[], customerName: string) {
+  const label = `${references.join("+")} ${customerName}`;
+  const ascii = label.replace(/[^\w\- ]+/g, "").trim();
+  return { ascii: `${ascii}.pdf`, full: `${label.trim()}.pdf` };
 }
