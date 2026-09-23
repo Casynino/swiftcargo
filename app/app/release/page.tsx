@@ -183,6 +183,61 @@ export default async function ReleasePage({
         />
       </form>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <KpiCard
+          index={0}
+          label={T("Awaiting collection")}
+          numeric={rows.length}
+          hint={longestWait > 0 ? `${T("Longest wait")} ${waitLabel(longestWait)}` : T("Nobody waiting")}
+          icon={Truck}
+          tone="brand"
+        />
+        <KpiCard
+          index={1}
+          label={T("Ready to release")}
+          numeric={ready}
+          hint={T("Every package accounted for")}
+          icon={PackageCheck}
+          tone="success"
+          ring={{ value: ready, total: rows.length }}
+        />
+        <KpiCard
+          index={2}
+          label={T("Held back")}
+          numeric={held}
+          hint={held > 0 ? T("Cannot be handed over yet") : T("Nothing blocked")}
+          icon={AlertTriangle}
+          tone={held > 0 ? "danger" : "success"}
+        />
+        <KpiCard
+          index={3}
+          label={T("Boxes on the floor")}
+          numeric={boxesWaiting}
+          hint={T("Packages held for these customers")}
+          icon={Boxes}
+          tone="marine"
+        />
+        {showMoney ? (
+          <KpiCard
+            index={4}
+            label={T("Storage accruing")}
+            numeric={charging}
+            hint={overAWeek > 0 ? `${overAWeek} ${T("waiting over a week")}` : T("Everyone still inside free storage")}
+            icon={Hourglass}
+            tone={charging > 0 ? "warning" : "success"}
+          />
+        ) : (
+          <KpiCard
+            index={4}
+            label={T("Boxes not yet scanned")}
+            numeric={notScanned}
+            hint={notScanned > 0 ? T("Still to be read out at the counter") : T("Every ready box has been scanned")}
+            icon={Hourglass}
+            tone={notScanned > 0 ? "warning" : "success"}
+          />
+        )}
+      </div>
+
       {rows.length === 0 ? (
         <Card>
           <EmptyState
@@ -192,142 +247,85 @@ export default async function ReleasePage({
           />
         </Card>
       ) : (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <KpiCard
-              index={0}
-              label={T("Awaiting collection")}
-              numeric={rows.length}
-              hint={longestWait > 0 ? `${T("Longest wait")} ${waitLabel(longestWait)}` : T("Just issued")}
-              icon={Truck}
-              tone="brand"
-            />
-            <KpiCard
-              index={1}
-              label={T("Ready to release")}
-              numeric={ready}
-              hint={T("Every package accounted for")}
-              icon={PackageCheck}
-              tone="success"
-              ring={{ value: ready, total: rows.length }}
-            />
-            <KpiCard
-              index={2}
-              label={T("Held back")}
-              numeric={held}
-              hint={held > 0 ? T("Cannot be handed over yet") : T("Nothing blocked")}
-              icon={AlertTriangle}
-              tone={held > 0 ? "danger" : "success"}
-            />
-            <KpiCard
-              index={3}
-              label={T("Boxes on the floor")}
-              numeric={boxesWaiting}
-              hint={T("Packages held for these customers")}
-              icon={Boxes}
-              tone="marine"
-            />
-            {showMoney ? (
-              <KpiCard
-                index={4}
-                label={T("Storage accruing")}
-                numeric={charging}
-                hint={overAWeek > 0 ? `${overAWeek} ${T("waiting over a week")}` : T("Everyone still inside free storage")}
-                icon={Hourglass}
-                tone={charging > 0 ? "warning" : "success"}
-              />
-            ) : (
-              <KpiCard
-                index={4}
-                label={T("Boxes not yet scanned")}
-                numeric={notScanned}
-                hint={notScanned > 0 ? T("Still to be read out at the counter") : T("Every ready box has been scanned")}
-                icon={Hourglass}
-                tone={notScanned > 0 ? "warning" : "success"}
-              />
-            )}
-          </div>
-
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{T("Customer")}</TableHead>
-                  <TableHead>{T("Tracking")}</TableHead>
-                  <TableHead className="text-right">{T("Pkgs")}</TableHead>
-                  <TableHead>{T("Waiting")}</TableHead>
-                  {showMoney ? <TableHead className="text-right">{T("Settled")}</TableHead> : null}
-                  <TableHead>{T("Status")}</TableHead>
-                  <TableHead className="w-8" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="text-sm font-semibold">
-                      {row.customerName}
-                      <span className="tnum block text-xs font-normal text-muted-foreground">
-                        {row.customerPhone}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/app/cargo/${row.cargoId}`}
-                        className="tnum font-medium tracking-wide hover:underline"
-                      >
-                        {row.reference}
-                      </Link>
-                      <span className="tnum block text-xs text-muted-foreground">
-                        {row.noteNumber}
-                      </span>
-                    </TableCell>
-                    <TableCell className="tnum text-right text-sm">{row.packages || "—"}</TableCell>
-                    <TableCell
-                      className={
-                        row.waitingMs >= 7 * DAY_MS
-                          ? "tnum text-sm font-medium text-destructive"
-                          : row.waitingMs >= 2 * DAY_MS
-                            ? "tnum text-sm font-medium text-warning"
-                            : "tnum text-sm text-muted-foreground"
-                      }
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{T("Customer")}</TableHead>
+                <TableHead>{T("Tracking")}</TableHead>
+                <TableHead className="text-right">{T("Pkgs")}</TableHead>
+                <TableHead>{T("Waiting")}</TableHead>
+                {showMoney ? <TableHead className="text-right">{T("Settled")}</TableHead> : null}
+                <TableHead>{T("Status")}</TableHead>
+                <TableHead className="w-8" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="text-sm font-semibold">
+                    {row.customerName}
+                    <span className="tnum block text-xs font-normal text-muted-foreground">
+                      {row.customerPhone}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/app/cargo/${row.cargoId}`}
+                      className="tnum font-medium tracking-wide hover:underline"
                     >
-                      {row.waitingLabel}
-                    </TableCell>
-                    {showMoney ? (
-                      <TableCell className="tnum text-right text-sm">
-                        {formatMoney(row.amountPaid, row.currency)}
-                        {row.onCredit ? (
-                          <span className="block text-xs text-warning">{T("on credit")}</span>
-                        ) : null}
-                      </TableCell>
-                    ) : null}
-                    <TableCell>
-                      {row.ready ? (
-                        <Badge tone="good">{T("cleared")}</Badge>
-                      ) : (
-                        <Badge tone="warn" title={row.check.blockedBy ?? undefined}>
-                          {T("held")}
-                        </Badge>
-                      )}
-                      {!row.ready && row.check.blockedBy ? (
-                        <span className="mt-0.5 block max-w-xs truncate text-xs text-muted-foreground">
-                          {row.check.blockedBy}
-                        </span>
+                      {row.reference}
+                    </Link>
+                    <span className="tnum block text-xs text-muted-foreground">
+                      {row.noteNumber}
+                    </span>
+                  </TableCell>
+                  <TableCell className="tnum text-right text-sm">{row.packages || "—"}</TableCell>
+                  <TableCell
+                    className={
+                      row.waitingMs >= 7 * DAY_MS
+                        ? "tnum text-sm font-medium text-destructive"
+                        : row.waitingMs >= 2 * DAY_MS
+                          ? "tnum text-sm font-medium text-warning"
+                          : "tnum text-sm text-muted-foreground"
+                    }
+                  >
+                    {row.waitingLabel}
+                  </TableCell>
+                  {showMoney ? (
+                    <TableCell className="tnum text-right text-sm">
+                      {formatMoney(row.amountPaid, row.currency)}
+                      {row.onCredit ? (
+                        <span className="block text-xs text-warning">{T("on credit")}</span>
                       ) : null}
                     </TableCell>
-                    <TableCell>
-                      <Button asChild size="sm">
-                        <Link href={`/app/scan?code=${encodeURIComponent(row.reference)}`}>
-                          {T("Release")}
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </>
+                  ) : null}
+                  <TableCell>
+                    {row.ready ? (
+                      <Badge tone="good">{T("cleared")}</Badge>
+                    ) : (
+                      <Badge tone="warn" title={row.check.blockedBy ?? undefined}>
+                        {T("held")}
+                      </Badge>
+                    )}
+                    {!row.ready && row.check.blockedBy ? (
+                      <span className="mt-0.5 block max-w-xs truncate text-xs text-muted-foreground">
+                        {row.check.blockedBy}
+                      </span>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    <Button asChild size="sm">
+                      <Link href={`/app/scan?code=${encodeURIComponent(row.reference)}`}>
+                        {T("Release")}
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

@@ -23,7 +23,8 @@ export function pillsFor(role: Role): ActionPill[] {
       return [
         { label: "Receive at Dar", href: "/app/receive/dar", icon: "PackageCheck", tone: "success" },
         { label: "Verify counts", href: "/app/receive/dar", icon: "ClipboardCheck", tone: "brand" },
-        { label: "Hand cargo over", href: "/app/release", icon: "DoorOpen", tone: "marine" },
+        { label: "Scan & release", href: "/app/scan", icon: "ScanLine", tone: "marine" },
+        { label: "Pickup list", href: "/app/release", icon: "DoorOpen" },
         { label: "Deliveries", href: "/app/deliveries", icon: "Truck" },
         { label: "Inventory", href: "/app/inventory", icon: "Warehouse" },
         { label: "Raise an issue", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },

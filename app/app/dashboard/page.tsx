@@ -265,7 +265,10 @@ export default async function DashboardPage() {
         action={
           chinaDesk
             ? { href: "/app/receive/new", label: "Receive cargo" }
-            : undefined
+            : /* Dar's one most-pressed button: a customer is standing at the
+                 counter, and the fastest way to them is the camera, not a
+                 list. See app/app/scan/page.tsx. */
+              { href: "/app/scan", label: "Scan & release" }
         }
       />
 
