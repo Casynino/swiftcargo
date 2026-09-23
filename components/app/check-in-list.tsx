@@ -161,13 +161,24 @@ export function CheckInList({
   /** May this desk sign the box off over cargo nobody counted? */
   canConfirmUnchecked: boolean;
 }) {
-  const [picked, setPicked] = useState<Set<string>>(new Set());
+  /* Everything still open starts ticked — the common case is one answer for
+     the whole container, and unticking the few that do not apply is less
+     work than ticking eighty-eight of ninety by hand. */
+  const [picked, setPicked] = useState<Set<string>>(
+    () =>
+      new Set(
+        rows
+          .filter((r) => r.arrivedPackages === null && !r.missing)
+          .map((r) => r.id)
+      )
+  );
   const [lens, setLens] = useState<Lens>("all");
 
   const checked = rows.filter((r) => r.arrivedPackages !== null || r.missing).length;
   const flagged = rows.filter((r) => r.discrepancy || r.missing || r.hasCase).length;
   const open = rows.filter((r) => r.arrivedPackages === null && !r.missing);
   const pickedOpen = open.filter((r) => picked.has(r.id));
+  const allOpenPicked = open.length > 0 && pickedOpen.length === open.length;
 
   /*
     THE SAME LIST, SEEN THROUGH ONE QUESTION AT A TIME.
@@ -202,6 +213,13 @@ export function CheckInList({
       return next;
     });
 
+  const toggleAll = () =>
+    setPicked((current) =>
+      current.size === open.length && open.every((r) => current.has(r.id))
+        ? new Set()
+        : new Set(open.map((r) => r.id))
+    );
+
   return (
     <div className="space-y-4">
       {/* Stays put while the list scrolls: the clerk needs to know how far off
@@ -222,11 +240,22 @@ export function CheckInList({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {pickedOpen.length > 0 ? (
-            <AcceptPicked
-              cargoIds={pickedOpen.map((r) => r.id)}
-              onDone={() => setPicked(new Set())}
-            />
+          {open.length > 0 ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setPicked(new Set())}
+                disabled={pickedOpen.length === 0}
+              >
+                Clear
+              </Button>
+              <AcceptPicked
+                cargoIds={pickedOpen.map((r) => r.id)}
+                onDone={() => setPicked(new Set())}
+              />
+            </>
           ) : null}
           <FinishCheckIn
             containerId={containerId}
@@ -270,7 +299,17 @@ export function CheckInList({
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-secondary text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="w-8 px-2 py-2" />
+                <th className="w-8 px-2 py-2">
+                  {open.length > 0 ? (
+                    <input
+                      type="checkbox"
+                      checked={allOpenPicked}
+                      onChange={toggleAll}
+                      aria-label="Pick every unchecked row"
+                      className="size-4 accent-[var(--brand)]"
+                    />
+                  ) : null}
+                </th>
                 <th className="px-3 py-2 font-medium">Tracking</th>
                 <th className="px-3 py-2 font-medium">Customer</th>
                 <th className="px-3 py-2 font-medium">Goods</th>
@@ -519,7 +558,7 @@ function AcceptPicked({
       {cargoIds.map((id) => (
         <input key={id} type="hidden" name="cargoIds" value={id} />
       ))}
-      <SubmitButton size="sm" pendingLabel="Checking in…">
+      <SubmitButton size="sm" pendingLabel="Checking in…" disabled={cargoIds.length === 0}>
         <CheckCheck />
         Check in {cargoIds.length} picked
       </SubmitButton>
