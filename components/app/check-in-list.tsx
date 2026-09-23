@@ -18,6 +18,7 @@ import { DarReceiveForm } from "@/components/app/dar-receive-form";
 import { FormMessage } from "@/components/app/form-message";
 import { MissingCargoButton } from "@/components/app/missing-cargo-button";
 import { AddToContainer, MoveCargo } from "@/components/app/move-cargo";
+import { RowDialog } from "@/components/app/row-dialog";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -830,63 +831,70 @@ function CheckInRowView({
       ) : null}
 
       {counting ? (
-        <tr className="border-t bg-secondary/30">
-          <td colSpan={11} className="px-6 py-4">
-            <DarReceiveForm
-              cargoId={row.id}
-              warehouses={warehouses}
-              defaultWarehouseId={defaultWarehouseId}
-              china={row.china}
-              existing={row.existing}
-            />
-          </td>
-        </tr>
+        <RowDialog
+          title={`${row.reference} — the count Dar made`}
+          subtitle={row.customer}
+          onClose={() => setCounting(false)}
+          wide
+        >
+          <DarReceiveForm
+            cargoId={row.id}
+            warehouses={warehouses}
+            defaultWarehouseId={defaultWarehouseId}
+            china={row.china}
+            existing={row.existing}
+          />
+        </RowDialog>
       ) : null}
 
       {moving ? (
-        <tr className="border-t bg-secondary/30">
-          <td colSpan={11} className="px-6 py-4">
-            <MoveCargo
-              cargoId={row.id}
-              containerId={containerId}
-              reference={row.reference}
-              containers={otherContainers}
-            />
-          </td>
-        </tr>
+        <RowDialog
+          title={`${row.reference} — move it`}
+          subtitle={row.customer}
+          onClose={() => setMoving(false)}
+        >
+          <MoveCargo
+            cargoId={row.id}
+            containerId={containerId}
+            reference={row.reference}
+            containers={otherContainers}
+          />
+        </RowDialog>
       ) : null}
 
       {flagging ? (
-        <tr className="border-t bg-secondary/30">
-          <td colSpan={11} className="px-6 py-4">
-            <p className="mb-3 text-sm text-muted-foreground">
-              It did not come off the container, or it came off damaged. Either
-              opens a case naming what was expected against what arrived — and
-              they are not the same answer: missing means it is not here, damaged
-              means it is here and hurt.
+        <RowDialog
+          title={`${row.reference} — something is wrong`}
+          subtitle={row.customer}
+          onClose={() => setFlagging(false)}
+        >
+          <p className="mb-3 text-sm text-muted-foreground">
+            It did not come off the container, or it came off damaged. Either
+            opens a case naming what was expected against what arrived — and
+            they are not the same answer: missing means it is not here, damaged
+            means it is here and hurt.
+          </p>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <MissingCargoButton cargoId={row.id} reference={row.reference} />
+            <Link
+              href={`/app/exceptions?cargo=${row.id}`}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Raise a different issue
+            </Link>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-medium">
+              <PackageOpen className="size-4 text-destructive" />
+              It is here and it is damaged
             </p>
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <MissingCargoButton cargoId={row.id} reference={row.reference} />
-              <Link
-                href={`/app/exceptions?cargo=${row.id}`}
-                className="text-sm font-medium text-primary hover:underline"
-              >
-                Raise a different issue
-              </Link>
-            </div>
-            <div className="rounded-lg border bg-card p-4">
-              <p className="mb-3 flex items-center gap-2 text-sm font-medium">
-                <PackageOpen className="size-4 text-destructive" />
-                It is here and it is damaged
-              </p>
-              <DamageTag
-                cargoId={row.id}
-                reference={row.reference}
-                condition={row.condition}
-              />
-            </div>
-          </td>
-        </tr>
+            <DamageTag
+              cargoId={row.id}
+              reference={row.reference}
+              condition={row.condition}
+            />
+          </div>
+        </RowDialog>
       ) : null}
     </>
   );
