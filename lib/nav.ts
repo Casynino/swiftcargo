@@ -83,6 +83,18 @@ const SECTIONS: NavSection[] = [
       { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", permissions: ["receiving.china"] },
       { label: "Receiving dock", href: "/app/receive/dar", icon: "PackageCheck", permissions: ["receiving.dar"] },
       { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse", permissions: ["inventory.view"], hiddenFor: ["FINANCE"] },
+      /* Dar's own link to the other end of the route — the same Guangzhou
+         floor Support already has, reached through `?floor=china` rather
+         than a second page. Every other desk already has this floor under
+         "Warehouse floor" or its own "Cargo in China" further down, so this
+         entry is Dar's alone. */
+      {
+        label: "Cargo in China",
+        href: "/app/inventory?floor=china",
+        icon: "Warehouse",
+        permissions: ["inventory.view"],
+        hiddenFor: ["CHINA_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"],
+      },
       /* Finance reaches cargo through its containers and its bills, and asked
          for the flat list to come out of its menu. */
       { label: "All cargo", href: "/app/cargo", icon: "Package", permissions: ["cargo.viewAll"], hiddenFor: ["FINANCE"] },

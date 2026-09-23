@@ -91,20 +91,32 @@ export default async function InventoryPage({
     type?: string;
     from?: string;
     to?: string;
+    /** Dar's own request to look at the other end of the route — see below. */
+    floor?: string;
   }>;
 }) {
   await primeLocale();
   const user = await requirePermission("inventory.view");
-  const { q, state, type, from, to } = await searchParams;
+  const { q, state, type, from, to, floor } = await searchParams;
   const query = q?.trim() ?? "";
   const category = type?.trim() ?? "";
 
-  /* Dar's own desk sees Dar. China, and management looking at the origin end,
-     see Guangzhou. */
+  /* Dar's own desk sees Dar by default. China, and management looking at the
+     origin end, see Guangzhou. Dar may ask for Guangzhou too — the customer
+     rings Dar as often as Support, and `?floor=china` is the same door
+     Support already walks through, not a second page to keep in step with
+     this one. It cannot be asked the other way: Guangzhou has no Dar floor
+     to correct from here, and `canAmendCargo` still gates every edit either
+     side of this toggle reaches. */
   const inChina =
-    can(user.role, "receiving.china") || !can(user.role, "receiving.dar");
+    can(user.role, "receiving.china") ||
+    !can(user.role, "receiving.dar") ||
+    (floor === "china" && can(user.role, "receiving.dar"));
 
   const statuses = inChina ? CHINA_STATUSES : DAR_STATUSES;
+  /* Carried on every link this page points at itself, so following one does
+     not quietly drop Dar back onto its own floor. */
+  const floorParam = floor === "china" ? "&floor=china" : "";
 
   /* A day typed into a date box means the whole of that day. Read as a bare
      timestamp, "to 3 March" excluded everything received on 3 March. */
@@ -418,7 +430,7 @@ export default async function InventoryPage({
           numeric={waiting}
           icon={Boxes}
           tone={waiting > 0 ? "signal" : "success"}
-          href={inChina ? "/app/inventory?state=waiting" : "/app/release"}
+          href={inChina ? `/app/inventory?state=waiting${floorParam}` : "/app/release"}
         />
         <KpiCard
           index={2}
@@ -427,7 +439,7 @@ export default async function InventoryPage({
           icon={ContainerIcon}
           tone="marine"
           hint={inChina ? T("Still in Guangzhou, in a box") : undefined}
-          href={inChina ? "/app/inventory?state=loaded" : undefined}
+          href={inChina ? `/app/inventory?state=loaded${floorParam}` : undefined}
         />
         <KpiCard
           index={3}
@@ -441,6 +453,7 @@ export default async function InventoryPage({
       </div>
 
       <form className="flex flex-wrap gap-3">
+        {floor === "china" ? <input type="hidden" name="floor" value="china" /> : null}
         <Input
           name="q"
           defaultValue={query}
