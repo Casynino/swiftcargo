@@ -137,14 +137,18 @@ export default async function CargoLabelPage({
         <div className="flex items-center gap-2">
           <PrintButton
             primary
+            className="h-8 rounded-md px-3 text-xs"
             label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
           />
+          {/* Same small pill as the banner's own Delivery note / Receive
+              next — one pattern for "a button that opens a document or the
+              next step", wherever it appears on this page. */}
           <a
             href={`/app/cargo/${cargo.id}/label/pdf${box ? `?box=${box}` : ""}`}
             download
-            className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+            className="focus-ring inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-foreground/90 px-3 text-xs font-medium text-background hover:bg-foreground"
           >
-            <Download className="size-4" />
+            <Download className="size-3.5" />
             {T("Download PDF")}
           </a>
         </div>
