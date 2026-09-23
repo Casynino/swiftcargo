@@ -307,6 +307,7 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
                   : "bad"
                 : undefined
             }
+            wide
           />
         </dl>
 
@@ -469,13 +470,17 @@ function Fact({
   label,
   value,
   tone,
+  wide,
 }: {
   label: string;
   value: string;
   tone?: "ok" | "bad";
+  /** Fills the row instead of leaving the grid's last cells empty — for
+      whichever fact lands alone at the end of it. */
+  wide?: boolean;
 }) {
   return (
-    <div className="bg-card px-4 py-3">
+    <div className={cn("bg-card px-4 py-3", wide && "col-span-2 sm:col-span-3")}>
       <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</dt>
       <dd
         className={cn(
