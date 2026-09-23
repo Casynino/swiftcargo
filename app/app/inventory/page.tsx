@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { CargoStatus } from "@prisma/client";
+import { Prisma, type CargoStatus } from "@prisma/client";
 import {
   Boxes,
   Container as ContainerIcon,
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { formatCbm, formatDate } from "@/lib/format";
+import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
 import {
   composeMessage,
   CONTACT_KIND_LABELS,
@@ -221,6 +222,17 @@ export default async function InventoryPage({
         orderBy: { createdAt: "asc" },
         take: 3,
       },
+      /* THE BILL, WHEN THERE IS ONE.
+
+         A customer told their cargo has landed and not told what it costs
+         rings the office to ask; the letter carries the figure the moment a
+         price has been issued. Drafts and cancelled bills are not money
+         anybody has agreed, so they are not here. */
+      invoices: {
+        where: { status: { notIn: ["DRAFT", "CANCELLED"] } },
+        orderBy: { createdAt: "desc" },
+        include: { payments: true },
+      },
       containerLines: {
         include: {
           container: {
@@ -278,6 +290,33 @@ export default async function InventoryPage({
   const canNotify =
     inChina &&
     (can(user.role, "conversation.reply") || can(user.role, "payment.submit"));
+
+  /*
+    WHAT IS STILL OWED ON IT, IN THE CUSTOMER'S OWN CURRENCY.
+
+    Shillings first because that is what they hand over, the dollar figure
+    under it, and the rate THE BILL WAS ISSUED AT — never today's. A customer
+    quoted 2,650 who reads 2,720 next month believes the bill changed.
+
+    Nothing is said about money until a price has been issued: a draft is a
+    figure the office has not agreed yet.
+  */
+  const billOf = (item: {
+    invoices: { number: string; currency: string; total: Prisma.Decimal; fxRate: Prisma.Decimal | null; payments: { status: string }[] }[];
+  }) => {
+    const bill = item.invoices[0];
+    if (!bill) return {};
+    const balance = balanceOf(bill as never);
+    const owing = Number(outstandingOf(bill as never));
+    if (owing <= 0) return { invoiceNumber: bill.number };
+    return {
+      invoiceNumber: bill.number,
+      currency: bill.currency,
+      amount: owing.toFixed(2),
+      amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,
+      fxRate: bill.fxRate ? Number(bill.fxRate).toLocaleString("en-US") : null,
+    };
+  };
 
   /* Which letter each row is due, read from where its boxes actually are. */
   const letterKind = (item: { status: CargoStatus; clearedAt: Date | null }): ContactKind =>
@@ -657,6 +696,7 @@ export default async function InventoryPage({
                                 freeStorageDays: storage.freeDays,
                                 storagePerDay: storage.perDay,
                                 storageCurrency: storage.currency,
+                                ...billOf(item),
                               })}
                             />
                             {told.get(item.id) ? (

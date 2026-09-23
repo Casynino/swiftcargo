@@ -273,10 +273,63 @@ export function trackUrl(): string {
   return configured ? `${configured}/track` : "https://www.swiftcargotz.com/track";
 }
 
+/**
+ * THE STATUS LINE EVERY LETTER CARRIES.
+ *
+ * The details block is the same eight bullets on every message a customer
+ * gets, and the last of them says where the goods are standing. A letter
+ * without it is the one a customer forwards to us asking "so where is it now?"
+ *
+ * Read from the letter being sent, not from the record, because the letter IS
+ * the claim: whoever pressed Notify is telling the customer this.
+ */
+function statusFor(
+  kind: ContactKind,
+  stage: MessageContext["stage"]
+): string | null {
+  switch (kind) {
+    case "cargo.received_china":
+      return "Received in China";
+    case "cargo.loaded":
+      return "Loaded into a container";
+    case "cargo.departed":
+      return "In transit";
+    case "cargo.arrived":
+      return "Clearance in Progress";
+    case "cargo.received_dar":
+    case "cargo.cleared_unpaid":
+      return "Cleared — Ready for Pickup";
+    case "cargo.ready":
+      return stage === "ready" || stage === "cleared"
+        ? "Cleared — Ready for Pickup"
+        : stage === "clearance"
+          ? "Clearance in Progress"
+          : "In transit";
+    case "storage.expired":
+      return "Free storage ended";
+    case "invoice.issued":
+    case "payment.reminder":
+      return stage === "ready" || stage === "cleared"
+        ? "Cleared — Ready for Pickup"
+        : stage === "clearance"
+          ? "Clearance in Progress"
+          : stage === "china"
+            ? "Received in China"
+            : "In transit";
+    default:
+      return null;
+  }
+}
+
 export function composeMessage(
   kind: ContactKind,
   context: MessageContext
 ): string {
+  /* Every letter has the same shape: the greeting, one sentence saying where
+     the cargo is, the details, what happens next, and the tracking link. The
+     status is part of the details on all of them. */
+  const line = statusFor(kind, context.stage);
+  if (line && !context.statusLine) context = { ...context, statusLine: line };
   const name = context.customerName.split(" ")[0] ?? context.customerName;
   const ref = context.reference ?? "";
   const track = context.trackUrl ?? trackUrl();
@@ -346,11 +399,10 @@ export function composeMessage(
       {
         storageText: `\n\n*STORAGE:* Siku ${days} bure ${start}.${fee}`,
         linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Angalia taarifa za mzigo wako:",
-        detailsContext: {
-          ...context,
-          invoiceNumber: null,
-          statusLine: "Cleared — Ready for Pickup",
-        },
+        /* The bill's number stays on the letter. A customer paying at a bank
+           counter is asked what the payment is for, and "the cargo one" is not
+           an answer either side can reconcile afterwards. */
+        detailsContext: { ...context, statusLine: "Cleared — Ready for Pickup" },
       }
     );
   };
@@ -376,7 +428,12 @@ export function composeMessage(
         `Mzigo wako umepakiwa kwenye kontena` +
           (context.containerNumber ? ` ${context.containerNumber}` : "") +
           ` tayari kwa safari kuelekea ${ROUTE.destinationCity}.`,
-        { storage: false }
+        {
+          storage: false,
+          closing: `Tutakujulisha mara meli itakapoondoka ${ROUTE.originCity}${
+            context.eta ? `, na tunatarajia kufika ${day(context.eta)}` : ""
+          }.`,
+        }
       );
 
     /*
@@ -395,14 +452,12 @@ export function composeMessage(
           ` kuelekea ${ROUTE.destinationCity}. ` +
           (context.eta
             ? `Tunatarajia kufika tarehe ${day(context.eta)}.`
-            : `Safari ya baharini huchukua siku ${ROUTE.transitDaysMin}-${ROUTE.transitDaysMax}.`) +
-          ` Tutakujulisha mara meli itakapofika bandarini.`,
+            : `Safari ya baharini huchukua siku ${ROUTE.transitDaysMin}-${ROUTE.transitDaysMax}.`),
         {
           storage: false,
-          detailsContext: {
-            ...context,
-            statusLine: context.statusLine ?? "In transit",
-          },
+          closing:
+            `Tutakujulisha mara meli itakapofika bandarini ${ROUTE.destinationCity} ` +
+            `na mzigo utakapoanza customs clearance.`,
         }
       );
 
@@ -438,7 +493,7 @@ export function composeMessage(
             `\n\n*STORAGE:* Baada ya mzigo wako kutoka kwenye clearance, utapata siku ` +
             `${days} bure za kuhifadhiwa kwenye warehouse yetu ${ROUTE.destinationCity}.${fee}`,
           linkLabel: billed ? "Angalia invoice na njia za malipo:" : "Fuatilia mzigo wako:",
-          detailsContext: { ...context, invoiceNumber: null, statusLine: "Clearance in Progress" },
+          detailsContext: { ...context, statusLine: "Clearance in Progress" },
         }
       );
     }
@@ -495,7 +550,10 @@ export function composeMessage(
           (context.storagePerDay && Number(context.storagePerDay) > 0
             ? `Storage fee ya ${context.storageCurrency ?? "USD"} ${context.storagePerDay} kwa siku inaweza kutozwa hadi mzigo utakapochukuliwa.`
             : `Gharama za storage zinaweza kuanza kutozwa.`),
-        { storage: false }
+        {
+          storage: false,
+          closing: `Tafadhali njoo kuchukua mzigo wako kwenye ${PICKUP_PLACE}.`,
+        }
       );
 
     default:
