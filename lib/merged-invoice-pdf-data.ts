@@ -80,6 +80,22 @@ export async function loadMergedInvoicePdf(invoiceIds: string[]) {
     },
     new Prisma.Decimal(0)
   );
+  /* A bill with no pinned rate contributes no TZS figure — never folded in as
+     if it were zero. Named on its own line instead of silently missing from
+     the total a customer is shown as complete. */
+  const unconvertedByCurrency = new Map<string, Prisma.Decimal>();
+  for (const invoice of invoices) {
+    const bal = balanceOf(invoice);
+    if (bal.outstandingTzs !== null || bal.outstanding.lessThanOrEqualTo(0)) continue;
+    unconvertedByCurrency.set(
+      invoice.currency,
+      (unconvertedByCurrency.get(invoice.currency) ?? new Prisma.Decimal(0)).add(bal.outstanding)
+    );
+  }
+  const unconvertedNote = [...unconvertedByCurrency.entries()]
+    .map(([cur, amt]) => `${cur} ${money(amt)}`)
+    .join(", ");
+
   const rates = new Set(invoices.map((i) => invoiceRate(i)?.toString() ?? null).filter(Boolean));
   const oneRate = rates.size === 1 ? [...rates][0]! : null;
 
@@ -129,9 +145,16 @@ export async function loadMergedInvoicePdf(invoiceIds: string[]) {
       };
     }),
     notes:
-      sameCurrency
-        ? null
-        : "Bills in this group were raised in more than one currency — each line shows its own.",
+      [
+        sameCurrency
+          ? null
+          : "Bills in this group were raised in more than one currency — each line shows its own.",
+        unconvertedNote
+          ? `Also owed, no exchange rate set yet: ${unconvertedNote} — not included in the total above.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ") || null,
     banks: accounts
       .filter((a) => a.kind === "BANK")
       .map((bank) => ({

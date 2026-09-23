@@ -33,7 +33,7 @@ export async function generateMetadata({
   searchParams: Promise<{ month?: string }>;
 }): Promise<Metadata> {
   const r = readMonth((await searchParams).month);
-  return { title: { absolute: `Swift Cargo - Financial statement - $<Tx>{r.label}</Tx>` } };
+  return { title: { absolute: `Swift Cargo - Financial statement - ${r.label}` } };
 }
 
 /**

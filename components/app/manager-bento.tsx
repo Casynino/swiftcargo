@@ -505,7 +505,7 @@ export function CorridorBar({
       <div
         className="mt-4 flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={segments.map((s, i) => `$<Tx>{s.label}</Tx> ${Math.round(shares[i])}%`).join(", ")}
+        aria-label={segments.map((s, i) => `${s.label} ${Math.round(shares[i])}%`).join(", ")}
       >
         {segments.map((segment, index) => (
           <span

@@ -475,7 +475,7 @@ export default async function AccountPage({
                       ) : null}
                       <span className="tnum block text-xs text-muted-foreground">
                         {entry.type}
-                        {entry.description ? ` · $<Tx>{entry.description}</Tx>` : ""}
+                        {entry.description ? ` · ${entry.description}` : ""}
                         {entry.cancelled && entry.cancelledReason
                           ? ` · ${entry.cancelledReason}`
                           : ""}
@@ -569,7 +569,7 @@ export default async function AccountPage({
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(c.countedAt)} · {c.countedBy?.name ?? "—"}
-                      {c.note ? ` · $<Tx>{c.note}</Tx>` : ""}
+                      {c.note ? ` · ${c.note}` : ""}
                     </p>
                   </div>
                   <Badge tone={diff === 0 ? "good" : "warn"}>

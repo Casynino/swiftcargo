@@ -258,6 +258,7 @@ export default async function InventoryPage({
             },
           },
         },
+        orderBy: { createdAt: "asc" },
       },
     },
   });

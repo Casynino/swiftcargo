@@ -492,7 +492,7 @@ export function RowPriceEditor({
                   value={box.value}
                   onChange={(event) => box.set(event.target.value)}
                   placeholder={box.placeholder}
-                  aria-label={`$<Tx>{box.label}</Tx> — ${reference}`}
+                  aria-label={`${box.label} — ${reference}`}
                 />
               </label>
             ))}

@@ -122,10 +122,16 @@ export async function scanBoxAtDar(
   }
 
   const wrongContainer = box.package.containerId !== containerId;
-  await prisma.cargoBox.update({
-    where: { id: box.id },
+  /* Guarded on darReceivedAt: null — two near-simultaneous scans of the same
+     box must not both land an "ok" for the same physical carton. */
+  const claimed = await prisma.cargoBox.updateMany({
+    where: { id: box.id, darReceivedAt: null },
     data: { darReceivedAt: new Date(), darReceivedById: actor.id, darContainerId: containerId },
   });
+  if (claimed.count === 0) {
+    await log("warning", "already-received", null);
+    return { warning: `${box.cargo.reference} box ${box.sequence} of ${scanned.box.of} was already received.`, last, progress: await progress(), at };
+  }
 
   if (wrongContainer) {
     const expected = box.package.container?.reference;
@@ -330,15 +336,28 @@ export async function scanBoxForRelease(
     where: { cargoId, status: "ACTIVE" },
     select: { id: true },
   });
-  await prisma.cargoBox.update({
-    where: { id: box.id },
+  /* Guarded on collectedAt: null so two near-simultaneous scans of the same
+     box cannot both land an "ok" — the second gets count 0 and is refused,
+     the same pattern reportMissingAtDar and releaseCargo already use. */
+  const claimed = await prisma.cargoBox.updateMany({
+    where: { id: box.id, collectedAt: null },
     data: { collectedAt: new Date(), collectedById: actor.id, pickupNoteId: note?.id ?? null },
   });
+  if (claimed.count === 0) {
+    await log("warning", "already-collected", null);
+    return { warning: `Box ${box.sequence} was already handed over.`, at, progress: await releaseProgress(cargoId) };
+  }
   await log("ok", "released", null);
   const progress = await releaseProgress(cargoId);
   revalidatePath(`/app/cargo/${cargoId}`);
+  /* Noted, never blocked — a damaged box still ships and still hands over
+     (see markBoxDamaged); the counter just has to say so out loud, once,
+     at the moment it actually hands the box to the customer. */
+  const damagedNotice = box.damagedAt
+    ? ` This box was reported damaged${box.damageNote ? ` — ${box.damageNote}` : ""}. Tell the customer before they sign.`
+    : "";
   return {
-    ok: `Box ${box.sequence} of ${scanned.box.of} handed over.${progress.done >= progress.total ? " Every box is out — complete the release." : ""}`,
+    ok: `Box ${box.sequence} of ${scanned.box.of} handed over.${damagedNotice}${progress.done >= progress.total ? " Every box is out — complete the release." : ""}`,
     progress,
     at,
   };

@@ -93,7 +93,7 @@ export function NewExceptionForm({
             <NativeSelect id="type" name="type" defaultValue="OTHER">
               {TYPES.map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {tx(label)}
                 </option>
               ))}
             </NativeSelect>
@@ -112,7 +112,7 @@ export function NewExceptionForm({
             <NativeSelect id="department" name="department" defaultValue="">
               {DEPARTMENTS.map(([value, label]) => (
                 <option key={value} value={value}>
-                  {label}
+                  {tx(label)}
                 </option>
               ))}
             </NativeSelect>
@@ -224,7 +224,7 @@ export function CaseActions({
           <NativeSelect id="status" name="status" defaultValue={status}>
             {statuses.map(([value, label]) => (
               <option key={value} value={value}>
-                {label}
+                {tx(label)}
               </option>
             ))}
           </NativeSelect>

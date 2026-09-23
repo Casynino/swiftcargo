@@ -361,7 +361,7 @@ export default async function CargoDetailPage({
     <div className="space-y-6">
       <PageHeader
         title={cargo.reference}
-        description={`${cargo.receiver.fullName} · ${CARGO_STATUS_META[cargo.status].publicLabel}`}
+        description={`${cargo.receiver.fullName} · ${T(CARGO_STATUS_META[cargo.status].publicLabel)}`}
         back={
           user.role === "FINANCE"
             ? { href: "/app/finance/collections", label: "Payment follow-up" }

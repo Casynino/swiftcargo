@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 
 import { COMPANY } from "@/lib/constants";
+import { tzsToUsd } from "@/lib/currency";
 import { BUSINESS_TZ } from "@/lib/format";
 import { balanceOf, invoiceRate } from "@/lib/invoice-balance";
 import { messageStage, trackUrl } from "@/lib/messages";
@@ -43,9 +44,16 @@ export type MergedGroup = {
   totalCbm: string;
   containers: string[];
   statusLine: string;
+  /** Sum of every line whose bill has a usable pinned rate. */
   totalOutstandingTzs: string;
   totalOutstandingUsd: string | null;
   fxRate: string | null;
+  /**
+   * What a rateless bill still owes, in its own currency — never folded into
+   * totalOutstandingTzs, because there is no honest exchange rate to fold it
+   * at. Empty in the ordinary case; a bill this old should already have one.
+   */
+  unconverted: { currency: string; amount: string }[];
   /** Every line's own bill fully covered by verified money. */
   settled: boolean;
   /** Something has landed, but not enough to settle every line. */
@@ -154,12 +162,29 @@ export async function mergedGroupByInvoiceIds(
       (sum, tzs) => (tzs ? sum.add(tzs) : sum),
       new Prisma.Decimal(0)
     );
+  /* A bill with no pinned rate has no TZS figure at all — balanceOf leaves it
+     null rather than guess one. Left out of the sum above, it is tracked here
+     instead of silently vanishing from what the customer is told is owed. */
+  const unconvertedByCurrency = new Map<string, Prisma.Decimal>();
+  for (const invoice of invoices) {
+    const bal = balanceOf(invoice);
+    if (bal.outstandingTzs !== null || bal.outstanding.lessThanOrEqualTo(0)) continue;
+    unconvertedByCurrency.set(
+      invoice.currency,
+      (unconvertedByCurrency.get(invoice.currency) ?? new Prisma.Decimal(0)).add(bal.outstanding)
+    );
+  }
+  const unconverted = [...unconvertedByCurrency.entries()].map(([currency, amount]) => ({
+    currency,
+    amount: amount.toFixed(2),
+  }));
+
   const rateStrings = new Set(
     invoices.map((i) => invoiceRate(i)?.toString() ?? null).filter(Boolean)
   );
   const oneRate = rateStrings.size === 1 ? [...rateStrings][0]! : null;
   const totalOutstandingUsd = oneRate
-    ? totalOutstandingTzs.div(oneRate).toDecimalPlaces(2).toString()
+    ? tzsToUsd(totalOutstandingTzs, oneRate).toString()
     : null;
 
   const settled = invoices.every((i) => balanceOf(i).settled);
@@ -225,6 +250,7 @@ export async function mergedGroupByInvoiceIds(
     totalOutstandingTzs: totalOutstandingTzs.toFixed(0),
     totalOutstandingUsd,
     fxRate: oneRate,
+    unconverted,
     settled,
     partlyPaid: !settled && paidSomething,
     freeStorageDays,
@@ -275,8 +301,10 @@ function swahiliDate(date: Date): string {
  */
 export function composeMergedMessage(group: MergedGroup): string {
   const name = group.customerName.split(" ")[0] ?? group.customerName;
-  const lines = group.lines.map(
-    (l) => `• ${l.reference} — ${l.description}: TZS ${money(l.outstandingTzs ?? l.outstanding)}`
+  const lines = group.lines.map((l) =>
+    l.outstandingTzs !== null
+      ? `• ${l.reference} — ${l.description}: TZS ${money(l.outstandingTzs)}`
+      : `• ${l.reference} — ${l.description}: ${l.currency} ${usd(l.outstanding)}`
   );
   const trackLink = mergedTrackLink(group.key);
   const invoiceLink = mergedInvoiceLink(group.key);
@@ -306,6 +334,9 @@ export function composeMergedMessage(group: MergedGroup): string {
     `• Kiasi cha kulipa: TZS ${money(group.totalOutstandingTzs)}\n` +
     (group.totalOutstandingUsd ? `• Sawa na: USD ${usd(group.totalOutstandingUsd)}\n` : "") +
     (group.fxRate ? `• Exchange Rate: 1 USD = TZS ${money(group.fxRate)}\n` : "") +
+    group.unconverted
+      .map((u) => `• Pia inadaiwa: ${u.currency} ${usd(u.amount)} (bei ya soko haijawekwa bado)\n`)
+      .join("") +
     `• Hali ya malipo: ${status}\n\n` +
     `📦 *STORAGE*\n${storageLine}\n\n` +
     `🔎 *FUATILIA MIZIGO YAKO*\n` +

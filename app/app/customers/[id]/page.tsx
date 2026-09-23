@@ -79,7 +79,7 @@ export default async function CustomerPage({
     orderBy: { createdAt: "desc" },
     take: 25,
     include: {
-      containerLines: { include: { container: true } },
+      containerLines: { include: { container: true }, orderBy: { createdAt: "asc" } },
       invoices: {
         where: showMoney ? undefined : { id: { in: [] } },
         include: { payments: true },

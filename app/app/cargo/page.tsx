@@ -157,6 +157,7 @@ export default async function CargoPage({
       chinaReceiving: { select: { packagesCount: true, cbm: true } },
       containerLines: {
         include: { container: { select: { reference: true, containerNumber: true } } },
+        orderBy: { createdAt: "asc" },
       },
     },
   });

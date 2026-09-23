@@ -18,7 +18,6 @@ import { t, type Locale } from "@/lib/i18n";
 import type { PayrollFigure } from "@/lib/payroll";
 import { cn } from "@/lib/utils";
 
-import { Tx } from "@/components/app/tx";
 /*
   Finance's half of the salary run: build it, edit the exceptions, send it up.
 
@@ -249,7 +248,7 @@ function ReadOnlyLine({
         <p className="truncate text-sm font-medium">{line.name}</p>
         <p className="truncate text-xs text-muted-foreground">
           {t(locale, line.roleLabel)}
-          {line.note ? ` · “$<Tx>{line.note}</Tx>”` : ""}
+          {line.note ? ` · “${line.note}”` : ""}
         </p>
       </div>
 

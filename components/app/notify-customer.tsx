@@ -88,7 +88,7 @@ export function NotifyCustomer({
             <p className="text-sm font-medium">Tell {customerName}</p>
             <p className="text-xs text-muted-foreground">
               {lastContact
-                ? `Last contacted about "$<Tx>{lastContact.label}</Tx>" on ${lastContact.when} by ${lastContact.by}.`
+                ? `Last contacted about "${lastContact.label}" on ${lastContact.when} by ${lastContact.by}.`
                 : "Nobody has messaged them about this consignment yet."}
             </p>
           </div>

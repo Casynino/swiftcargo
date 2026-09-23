@@ -198,7 +198,7 @@ export function RecordsQueue({
                     className="size-4 accent-[hsl(var(--brand))]"
                     checked={picked.has(row.key)}
                     onChange={() => toggle(row.key)}
-                    aria-label={`${t(locale, "Pick")} $<Tx>{row.title}</Tx>`}
+                    aria-label={`${t(locale, "Pick")} ${row.title}`}
                   />
                 </label>
               ) : null}

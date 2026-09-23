@@ -115,7 +115,12 @@ export const CARGO_DETAIL_INCLUDE = {
   chinaReceiving: { include: { warehouse: true, receivedBy: true } },
   darReceiving: { include: { warehouse: true, receivedBy: true, container: true } },
   deliveryNote: true,
-  containerLines: { include: { container: { include: { shipment: true } } } },
+  /* Ascending, so every screen using .at(-1) for "the current one" agrees —
+     a split shipment's second container line is always the one on top. */
+  containerLines: {
+    include: { container: { include: { shipment: true } } },
+    orderBy: { createdAt: "asc" },
+  },
   invoices: {
     include: { payments: true, receipts: true },
     orderBy: { createdAt: "desc" },

@@ -373,7 +373,7 @@ export default async function ContainerFinancePage({
                       {e.expenseType?.name ?? "Cost"}
                       <span className="tnum block text-[11px] text-muted-foreground">
                         {e.reference}
-                        {e.description ? ` · $<Tx>{e.description}</Tx>` : ""}
+                        {e.description ? ` · ${e.description}` : ""}
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">

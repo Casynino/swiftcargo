@@ -101,7 +101,7 @@ export function SearchBox({
     const seen = new Set<string>();
     return suggestions
       .filter((s) => {
-        const hay = `$<Tx>{s.label}</Tx> ${s.hint ?? ""} ${s.value}`.toLowerCase();
+        const hay = `${s.label} ${s.hint ?? ""} ${s.value}`.toLowerCase();
         if (!hay.includes(needle)) return false;
         /* One row per thing. The same customer can own six consignments, and six
            identical lines is a list nobody reads. */

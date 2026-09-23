@@ -99,7 +99,9 @@ export default async function MergedGroupPage({
                 <span className="block text-sm text-white/60">{line.description}</span>
               </span>
               <span className="tnum text-sm text-white/60">
-                TZS {Number(line.outstandingTzs ?? line.outstanding).toLocaleString("en-US")}
+                {line.outstandingTzs !== null
+                  ? `TZS ${Number(line.outstandingTzs).toLocaleString("en-US")}`
+                  : `${line.currency} ${Number(line.outstanding).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </span>
             </Link>
           ))}
@@ -127,6 +129,14 @@ export default async function MergedGroupPage({
               <span className="tnum">{formatRate(group.fxRate)}</span>
             </p>
           ) : null}
+          {group.unconverted.map((u) => (
+            <p key={u.currency} className="flex justify-between text-white/70">
+              <span>Also owed (rate not yet set)</span>
+              <span className="tnum">
+                {u.currency} {Number(u.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </p>
+          ))}
           <p className="flex items-center justify-between pt-1">
             <span className="text-white/70">Status</span>
             <span className="inline-flex items-center gap-1.5 text-success">

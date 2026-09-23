@@ -280,7 +280,7 @@ async function cargoForToken(
   return {
     kind: "Cargo",
     title: cargo.reference,
-    subtitle: `${cargo.sender.fullName} · $<Tx>{cargo.description}</Tx> · ${cargo.status.replace(/_/g, " ").toLowerCase()}`,
+    subtitle: `${cargo.sender.fullName} · ${cargo.description} · ${cargo.status.replace(/_/g, " ").toLowerCase()}`,
     href: `/app/cargo/${cargo.id}`,
     fromLabel: true,
   };

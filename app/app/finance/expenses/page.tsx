@@ -189,7 +189,7 @@ export default async function ExpensesPage({
           id: r.id,
           kind: transport ? "transport" : "transfer",
           recordId: r.recordId,
-          title: transport ? `Transport for $<Tx>{r.detail}</Tx>` : `Moved to $<Tx>{r.detail}</Tx>`,
+          title: transport ? `Transport for ${r.detail}` : `Moved to ${r.detail}`,
           reference: r.reference,
           category: transport ? "Transport out" : "Between accounts",
           groups: r.cancelled
@@ -223,7 +223,7 @@ export default async function ExpensesPage({
     .filter(
       (o) =>
         !query ||
-        `$<Tx>{o.title}</Tx> ${o.reference} ${o.category} ${o.paidFrom ?? ""}`.toLowerCase().includes(query)
+        `${o.title} ${o.reference} ${o.category} ${o.paidFrom ?? ""}`.toLowerCase().includes(query)
     )
     .sort((a, b) => b.at.getTime() - a.at.getTime());
   const correctable = mayCorrect
