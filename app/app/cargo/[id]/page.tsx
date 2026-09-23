@@ -1037,6 +1037,11 @@ export default async function CargoDetailPage({
                     currency: cargo.invoices[0]?.currency ?? "USD",
                     amountTzs: owingTzs > 0 ? owingTzs.toLocaleString("en-US") : null,
                     fxRate: billRates.length === 1 ? Number(billRates[0]).toLocaleString("en-US") : null,
+                    /* The rate beside the figure: half of the sum a customer
+                       can check against what they agreed. */
+                    ratePerCbm: cargo.invoices[0]?.appliedRate
+                      ? Number(cargo.invoices[0].appliedRate).toFixed(2)
+                      : null,
                   }),
                 })
               )}

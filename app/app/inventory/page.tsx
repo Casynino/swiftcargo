@@ -302,7 +302,14 @@ export default async function InventoryPage({
     figure the office has not agreed yet.
   */
   const billOf = (item: {
-    invoices: { number: string; currency: string; total: Prisma.Decimal; fxRate: Prisma.Decimal | null; payments: { status: string }[] }[];
+    invoices: {
+      number: string;
+      currency: string;
+      total: Prisma.Decimal;
+      fxRate: Prisma.Decimal | null;
+      appliedRate: Prisma.Decimal | null;
+      payments: { status: string }[];
+    }[];
   }) => {
     const bill = item.invoices[0];
     if (!bill) return {};
@@ -314,6 +321,10 @@ export default async function InventoryPage({
       amount: owing.toFixed(2),
       amountTzs: balance.outstandingTzs?.toNumber().toLocaleString("en-US") ?? null,
       fxRate: bill.fxRate ? Number(bill.fxRate).toLocaleString("en-US") : null,
+      /* What the cubic metre was charged at. A customer sent a figure with no
+         rate beside it has to ring to find out how it was arrived at, and the
+         rate is the half of the sum they can check against what they agreed. */
+      ratePerCbm: bill.appliedRate ? Number(bill.appliedRate).toFixed(2) : null,
     };
   };
 
