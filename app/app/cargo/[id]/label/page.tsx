@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Download, Plus } from "lucide-react";
+import { CheckCircle2, Download, FileText, Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -68,6 +68,7 @@ export default async function CargoLabelPage({
         where: { deletedAt: null },
         orderBy: { reference: "asc" },
       },
+      deliveryNote: { select: { number: true } },
     },
   });
   if (!cargo) notFound();
@@ -119,6 +120,19 @@ export default async function CargoLabelPage({
               <Download className="size-4" />
               {T("Download PDF")}
             </a>
+            {/* The other document the same save just created — the paper the
+                customer takes with them, not the sticker that stays on the
+                box. Both exist the moment receiving succeeds; neither should
+                need a detour through the cargo record to find. */}
+            {cargo.deliveryNote ? (
+              <Link
+                href={`/app/cargo/${cargo.id}/delivery-note`}
+                className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"
+              >
+                <FileText className="size-4" />
+                {T("Delivery note")}
+              </Link>
+            ) : null}
             <Link
               href="/app/receive/new"
               className="focus-ring inline-flex h-10 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium hover:bg-secondary"

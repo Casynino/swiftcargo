@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { recordAudit } from "@/lib/audit";
 import { renderDeliveryNotePdf } from "@/lib/delivery-note-pdf";
 import { formatDateTime } from "@/lib/format";
 import { attachment } from "@/lib/pdf-kit";
@@ -51,7 +52,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requirePermission("deliveryNote.view");
+  const user = await requirePermission("deliveryNote.view");
   const { id } = await params;
 
   const note = await prisma.deliveryNote.findUnique({
@@ -61,6 +62,16 @@ export async function GET(
   if (!note) {
     return NextResponse.json({ error: "Delivery note not found." }, { status: 404 });
   }
+
+  /* Taking the file is as much a print as opening the page is — see
+     cargo/[id]/label/pdf/route.ts for the same choice. */
+  await recordAudit({
+    actor: user,
+    action: "deliveryNote.print",
+    entity: "DeliveryNote",
+    entityId: note.id,
+    summary: `Downloaded delivery note ${note.number}`,
+  });
 
   const [company, cargo] = await Promise.all([
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),

@@ -5,6 +5,7 @@ import { Download } from "lucide-react";
 
 import { PrintButton } from "@/components/app/print-button";
 import { Button } from "@/components/ui/button";
+import { recordAudit } from "@/lib/audit";
 import { formatDateTime } from "@/lib/format";
 import { qrDataUrl, qrPayload } from "@/lib/qr";
 import { prisma } from "@/lib/prisma";
@@ -60,7 +61,7 @@ export default async function DeliveryNotePage({
   params: Promise<{ id: string }>;
 }) {
   await primeLocale();
-  await requirePermission("deliveryNote.view");
+  const user = await requirePermission("deliveryNote.view");
   const { id } = await params;
 
   const note = await prisma.deliveryNote.findUnique({
@@ -68,6 +69,17 @@ export default async function DeliveryNotePage({
     include: { issuedBy: { select: { name: true } } },
   });
   if (!note) notFound();
+
+  /* Same over-counting choice as the label's own view — see
+     cargo/[id]/label/page.tsx. A browser print dialog is invisible to us;
+     opening the page is the only signal there is. */
+  await recordAudit({
+    actor: user,
+    action: "deliveryNote.print",
+    entity: "DeliveryNote",
+    entityId: note.id,
+    summary: `Viewed delivery note ${note.number}`,
+  });
 
   const [company, cargo] = await Promise.all([
     prisma.companySetting.findUnique({ where: { id: "singleton" } }),
