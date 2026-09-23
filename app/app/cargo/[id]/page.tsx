@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import {
   composeMessage,
   CONTACT_KIND_LABELS,
+  letterForStage,
   whatsappNumber,
   type ContactKind,
   messageStage,
@@ -184,24 +185,14 @@ export default async function CargoDetailPage({
           : null,
   };
 
-  const suggestedKind: ContactKind =
-    cargo.status === "RECEIVED_CHINA"
-      ? "cargo.received_china"
-      : cargo.status === "ASSIGNED_TO_CONTAINER" || cargo.status === "CONTAINER_LOADED"
-        ? "cargo.loaded"
-        : cargo.status === "DEPARTED_CHINA" || cargo.status === "IN_TRANSIT"
-          ? "cargo.departed"
-          : cargo.status === "ARRIVED_TANZANIA"
-            ? cargo.clearedAt
-              ? "cargo.cleared_unpaid"
-              : "cargo.arrived"
-            : cargo.status === "RECEIVED_DAR"
-              ? cargo.clearedAt
-                ? "cargo.received_dar"
-                : "cargo.arrived"
-              : cargo.status === "READY_FOR_RELEASE"
-                ? "cargo.ready"
-                : "general";
+  /* One rule for which letter is due, shared with the floor list so the two
+     screens never offer a customer two different sentences about the same
+     boxes — see letterForStage in lib/messages.ts. */
+  const suggestedKind: ContactKind = letterForStage({
+    status: cargo.status,
+    clearedAt: cargo.clearedAt,
+    hasDarReceiving: Boolean(cargo.darReceiving),
+  });
 
   const lastContact = canNotify
     ? await prisma.customerContact.findFirst({

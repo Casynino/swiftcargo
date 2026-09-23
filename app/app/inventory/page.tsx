@@ -30,7 +30,13 @@ import {
 } from "@/components/ui/table";
 import { WhatsAppButton } from "@/components/app/whatsapp-button";
 import { formatCbm, formatDate } from "@/lib/format";
-import { composeMessage, whatsappNumber } from "@/lib/messages";
+import {
+  composeMessage,
+  CONTACT_KIND_LABELS,
+  letterForStage,
+  whatsappNumber,
+  type ContactKind,
+} from "@/lib/messages";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { cargoTypeOptions } from "@/lib/valuation";
@@ -217,7 +223,16 @@ export default async function InventoryPage({
       },
       containerLines: {
         include: {
-          container: { select: { id: true, reference: true, containerNumber: true } },
+          container: {
+            select: {
+              id: true,
+              reference: true,
+              containerNumber: true,
+              /* The sailing the letter quotes: the vessel, and the day it is
+                 due — the same date the customer's tracking page shows. */
+              shipment: { select: { vessel: true, eta: true } },
+            },
+          },
         },
       },
     },
@@ -264,16 +279,33 @@ export default async function InventoryPage({
     inChina &&
     (can(user.role, "conversation.reply") || can(user.role, "payment.submit"));
 
-  const told = new Map<string, { when: string; by: string }>();
+  /* Which letter each row is due, read from where its boxes actually are. */
+  const letterKind = (item: { status: CargoStatus; clearedAt: Date | null }): ContactKind =>
+    letterForStage({ status: item.status, clearedAt: item.clearedAt });
+
+  /* The storage terms a customer is quoted are the company's own, never a
+     figure typed into a message. */
+  const money = await prisma.companySetting.findUnique({
+    where: { id: "singleton" },
+    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+  });
+  const storage = {
+    freeDays: money?.freeStorageDays ?? 7,
+    perDay: money?.storagePerDay?.toString() ?? null,
+    currency: money?.storageCurrency ?? "USD",
+  };
+
+  /* WHAT they were last told, not merely that they were told something. A
+     consignment messaged about its arrival in China a month ago and nothing
+     since is not "told" about the sailing it is now on. */
+  const told = new Map<string, { when: string; by: string; what: string }>();
   if (canNotify && cargo.length > 0) {
     const contacts = await prisma.customerContact.findMany({
-      where: {
-        cargoId: { in: cargo.map((item) => item.id) },
-        kind: "cargo.received_china",
-      },
+      where: { cargoId: { in: cargo.map((item) => item.id) } },
       orderBy: { createdAt: "desc" },
       select: {
         cargoId: true,
+        kind: true,
         createdAt: true,
         sentBy: { select: { name: true } },
       },
@@ -285,6 +317,8 @@ export default async function InventoryPage({
       told.set(contact.cargoId, {
         when: formatDate(contact.createdAt),
         by: contact.sentBy?.name ?? "somebody",
+        what:
+          CONTACT_KIND_LABELS[contact.kind as ContactKind] ?? contact.kind,
       });
     }
   }
@@ -590,15 +624,23 @@ export default async function InventoryPage({
                       {canNotify ? (
                         <TableCell>
                           <div className="flex items-center gap-2">
+                            {/* THE LETTER THIS CONSIGNMENT IS ACTUALLY DUE.
+
+                                One button, and what it says follows the boxes:
+                                received in China, then on the way with the day
+                                it is expected, then at the port in clearance,
+                                then come and collect. Sending "received in
+                                China" about cargo already at sea is how a
+                                customer learns to ignore our messages. */}
                             <WhatsAppButton
                               cargoId={item.id}
                               phone={whatsappNumber(item.sender.phone)}
-                              kind="cargo.received_china"
+                              kind={letterKind(item)}
                               label={T("Notify")}
                               /* Written here, on the server, from the row the
                                  clerk is looking at — a figure retyped into a
                                  phone is a figure that can be typed wrong. */
-                              message={composeMessage("cargo.received_china", {
+                              message={composeMessage(letterKind(item), {
                                 customerName: item.sender.fullName,
                                 reference: item.reference,
                                 description: item.description,
@@ -608,13 +650,20 @@ export default async function InventoryPage({
                                 weightKg: receiving?.weightKg?.toString() ?? null,
                                 cbm: receiving?.cbm ? Number(receiving.cbm).toFixed(3) : null,
                                 receiptNumber: item.paperReceiptNo,
+                                containerNumber:
+                                  container?.containerNumber ?? container?.reference ?? null,
+                                vessel: item.containerLines.at(-1)?.container.shipment?.vessel ?? null,
+                                eta: item.containerLines.at(-1)?.container.shipment?.eta ?? null,
+                                freeStorageDays: storage.freeDays,
+                                storagePerDay: storage.perDay,
+                                storageCurrency: storage.currency,
                               })}
                             />
                             {told.get(item.id) ? (
                               <span className="text-xs text-muted-foreground">
-                                {told.get(item.id)!.when}
-                                <span className="block">
-                                  {told.get(item.id)!.by}
+                                {told.get(item.id)!.what}
+                                <span className="tnum block">
+                                  {told.get(item.id)!.when} · {told.get(item.id)!.by}
                                 </span>
                               </span>
                             ) : (

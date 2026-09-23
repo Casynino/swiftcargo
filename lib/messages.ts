@@ -205,6 +205,41 @@ const SHARE_TAG = "s=2";
  * the release check's answer, passed in; everything else is read off the
  * record.
  */
+/**
+ * WHICH LETTER THIS CONSIGNMENT IS DUE, FROM WHERE IT STANDS.
+ *
+ * One rule, read by every screen with a Notify button on it, so the floor
+ * list, the consignment page and anything added later all send the same
+ * sentence about the same boxes. The customer's story runs in one line:
+ * received in China, on the way, at the port in clearance, then ready to
+ * collect — and the storage clock only starts at that last one.
+ */
+export function letterForStage(cargo: {
+  status: string;
+  clearedAt?: Date | null;
+  hasDarReceiving?: boolean;
+}): ContactKind {
+  switch (cargo.status) {
+    case "REGISTERED":
+    case "RECEIVED_CHINA":
+      return "cargo.received_china";
+    case "ASSIGNED_TO_CONTAINER":
+    case "CONTAINER_LOADED":
+      return "cargo.loaded";
+    case "DEPARTED_CHINA":
+    case "IN_TRANSIT":
+      return "cargo.departed";
+    case "ARRIVED_TANZANIA":
+      return cargo.clearedAt ? "cargo.cleared_unpaid" : "cargo.arrived";
+    case "RECEIVED_DAR":
+      return cargo.clearedAt ? "cargo.received_dar" : "cargo.arrived";
+    case "READY_FOR_RELEASE":
+      return "cargo.ready";
+    default:
+      return "general";
+  }
+}
+
 export function messageStage(cargo: {
   status: string;
   hasDarReceiving: boolean;
@@ -344,15 +379,31 @@ export function composeMessage(
         { storage: false }
       );
 
+    /*
+      AT SEA, AND THE DAY IT IS DUE.
+
+      One date, not two: once the box has sailed the system knows the day it
+      is expected (the departure plus the crossing — lib/eta.ts), and that is
+      the day the customer's own tracking page shows them. A range quoted
+      beside it is this company telling one person two different things about
+      the same boat. The range is for a sailing with no date yet.
+    */
     case "cargo.departed":
       return letter(
         `Mzigo wako umeondoka ${ROUTE.originCity}` +
           (context.vessel ? ` kwa meli ${context.vessel}` : "") +
-          ` kuelekea ${ROUTE.destinationCity}. Safari ya baharini huchukua siku ` +
-          `${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax}` +
-          (context.eta ? `, tunatarajia kufika ${day(context.eta)}` : "") +
-          `.`,
-        { storage: false }
+          ` kuelekea ${ROUTE.destinationCity}. ` +
+          (context.eta
+            ? `Tunatarajia kufika tarehe ${day(context.eta)}.`
+            : `Safari ya baharini huchukua siku ${ROUTE.transitDaysMin}-${ROUTE.transitDaysMax}.`) +
+          ` Tutakujulisha mara meli itakapofika bandarini.`,
+        {
+          storage: false,
+          detailsContext: {
+            ...context,
+            statusLine: context.statusLine ?? "In transit",
+          },
+        }
       );
 
     /*
