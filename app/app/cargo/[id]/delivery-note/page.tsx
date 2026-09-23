@@ -1,8 +1,10 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Download } from "lucide-react";
 
 import { PrintButton } from "@/components/app/print-button";
+import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { qrDataUrl, qrPayload } from "@/lib/qr";
 import { prisma } from "@/lib/prisma";
@@ -103,7 +105,17 @@ export default async function DeliveryNotePage({
 
       <div className="flex items-center justify-between print:hidden">
         <SmartBack fallbackHref={`/app/cargo/${id}`} fallbackLabel={`${snap.cargoReference}`} />
-        <PrintButton label="Print delivery note" />
+        {/* Two buttons, two jobs: one gives a file, the other opens the
+            printer. */}
+        <span className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <a href={`/app/cargo/${id}/delivery-note/pdf`} download>
+              <Download />
+              Download PDF
+            </a>
+          </Button>
+          <PrintButton label="Print" primary />
+        </span>
       </div>
 
       <article className="dn-sheet mx-auto overflow-hidden bg-white text-[#0b1b2b] shadow-raised ring-1 ring-black/5 print:shadow-none print:ring-0">
@@ -155,12 +167,33 @@ export default async function DeliveryNotePage({
                   </p>
                 ) : null}
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <span className="rotate-[-4deg] rounded-md border-2 border-emerald-600 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.2em] text-emerald-600">
-                  Received · {snap.condition.toLowerCase().replace("_", " ")}
+              {/* THE CARD IS AS TALL AS THE CODE BESIDE IT, SO IT CARRIES ITS
+                  OWN WEIGHT. What belongs in the space it had spare is what
+                  the customer checks this note for: which consignment, and how
+                  much of it we took in. */}
+              <div className="my-4 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#d6e2ee] bg-[#d6e2ee]">
+                <div className="bg-white px-3 py-2">
+                  <p className={label}>Tracking no.</p>
+                  <p className="tnum mt-0.5 text-base font-extrabold">{snap.cargoReference}</p>
+                </div>
+                <div className="bg-white px-3 py-2">
+                  <p className={label}>Packages · 件数</p>
+                  <p className="tnum mt-0.5 text-base font-extrabold">{snap.packagesCount}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="rounded-full border border-emerald-400 bg-emerald-50 px-4 py-1.5 text-sm font-extrabold uppercase tracking-[0.08em] text-emerald-700">
+                  Received{" "}
+                  <span className="font-medium normal-case tracking-normal opacity-80">
+                    · {snap.condition.toLowerCase().replace("_", " ")} · Imepokelewa
+                  </span>
                 </span>
-                <span className="rounded-full bg-[#0b2742] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-                  Keep this note · Hifadhi hati hii
+                <span className="rounded-full border border-[#d6e2ee] bg-white px-4 py-1.5 text-sm font-extrabold uppercase tracking-[0.08em] text-[#0b2742]">
+                  Keep this note{" "}
+                  <span className="font-medium normal-case tracking-normal text-neutral-500">
+                    · Hifadhi hati hii
+                  </span>
                 </span>
               </div>
             </div>
@@ -176,13 +209,13 @@ export default async function DeliveryNotePage({
           </section>
 
           {/* ------------------------------------------------ The figures */}
-          <section className="mt-5 grid grid-cols-4 gap-px overflow-hidden rounded-2xl border border-[#d6e2ee] bg-[#d6e2ee]">
+          {/* The tracking number and the package count moved up into the card;
+              what is left is the rest of the receipt. */}
+          <section className="mt-5 grid grid-cols-3 gap-px overflow-hidden rounded-2xl border border-[#d6e2ee] bg-[#d6e2ee]">
             {[
-              ["Tracking no.", snap.cargoReference],
               ["Received", formatDateTime(snap.receivedAt)],
               ["At", snap.warehouse],
               ["Container", container?.reference ?? "—"],
-              ["Packages · 件数", String(snap.packagesCount)],
               ["Pieces", snap.piecesCount ? String(snap.piecesCount) : "—"],
               ["Weight · 重量", snap.weightKg ? `${snap.weightKg} kg` : "—"],
               ["Volume · 体积", `${Number(snap.cbm).toFixed(3)} CBM`],
