@@ -25,7 +25,7 @@ export default async function ContainerLabelsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await primeLocale();
+  const locale = await primeLocale();
   const user = await requireStaff();
   if (!canAny(user.role, ["receiving.china", "receiving.dar"])) redirect("/app/no-access");
   const { id } = await params;
@@ -36,7 +36,7 @@ export default async function ContainerLabelsPage({
   });
   if (!container) notFound();
 
-  const stickers = await stickersFor(container.cargoLines.map((l) => l.cargoId));
+  const stickers = await stickersFor(container.cargoLines.map((l) => l.cargoId), null, locale);
 
   await recordAudit({
     actor: user,
@@ -61,7 +61,7 @@ export default async function ContainerLabelsPage({
       <div className="-mx-4 overflow-x-auto px-4 print:mx-0 print:overflow-visible print:px-0">
         <div className="mx-auto flex w-max flex-col items-center gap-4 print:gap-0">
           {stickers.map((sticker) => (
-            <CargoSticker key={`${sticker.reference}-${sticker.sequence}`} data={sticker} />
+            <CargoSticker key={`${sticker.reference}-${sticker.sequence}`} data={sticker} locale={locale} />
           ))}
         </div>
       </div>

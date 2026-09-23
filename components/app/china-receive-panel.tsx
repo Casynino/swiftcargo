@@ -87,7 +87,7 @@ export function ChinaReceivePanel({
           >
             {CONDITIONS.map(([value, label]) => (
               <option key={value} value={value}>
-                {label}
+                {tx(label)}
               </option>
             ))}
           </NativeSelect>
@@ -147,7 +147,7 @@ export function ChinaReceivePanel({
       <div className="flex gap-2">
         <SubmitButton>
           <PackageCheck />
-          {existing ? "Save receiving record" : "Confirm received"}
+          {existing ? tx("Save receiving record") : tx("Confirm received")}
         </SubmitButton>
         {existing ? (
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

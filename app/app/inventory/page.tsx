@@ -470,7 +470,7 @@ export default async function InventoryPage({
         >
           <option value="">{T("Everything here")}</option>
           <option value="waiting">
-            {inChina ? "Waiting for a container" : "Not yet released"}
+            {inChina ? T("Waiting for a container") : T("Not yet released")}
           </option>
           {/* The other half of the building's stock. Not mixed into the default
               view, where it would double the volume on the floor, but reachable
@@ -521,7 +521,7 @@ export default async function InventoryPage({
 
       <section>
         <SectionLabel count={held}>
-          {inChina ? "Received cargo" : "Landed cargo"}
+          {T(inChina ? "Received cargo" : "Landed cargo")}
         </SectionLabel>
         <Card>
           {cargo.length === 0 ? (
@@ -595,7 +595,7 @@ export default async function InventoryPage({
                         {item.sender.fullName}
                         {item.operationalHold ? (
                           <Badge tone="bad" className="ml-1.5">
-                            held
+                            {T("held")}
                           </Badge>
                         ) : null}
                         <span className="tnum block text-xs font-normal text-muted-foreground">
@@ -611,7 +611,7 @@ export default async function InventoryPage({
                         </Link>
                         {item.paperReceiptNo ? (
                           <span className="tnum block text-xs text-muted-foreground">
-                            note {item.paperReceiptNo}
+                            {T("note")} {item.paperReceiptNo}
                           </span>
                         ) : null}
                       </TableCell>
@@ -633,7 +633,9 @@ export default async function InventoryPage({
                             <Link
                               href={`/app/cargo/${item.id}`}
                               className="flex -space-x-2"
-                              aria-label={`${item.photos.length} photo(s) of ${item.reference}`}
+                              aria-label={T("{n} photo(s) of {reference}")
+                                .replace("{n}", String(item.photos.length))
+                                .replace("{reference}", item.reference)}
                             >
                               {item.photos.map((photo) => (
                                 /* Uploads from a warehouse phone, of unknown
@@ -652,7 +654,10 @@ export default async function InventoryPage({
                               download
                               target="_blank"
                               rel="noreferrer"
-                              aria-label={`Download the photo of ${item.reference}`}
+                              aria-label={T("Download the photo of {reference}").replace(
+                                "{reference}",
+                                item.reference
+                              )}
                               className="text-muted-foreground hover:text-foreground"
                             >
                               <Download className="size-4" />

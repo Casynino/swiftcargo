@@ -3,6 +3,7 @@ import "server-only";
 import type { StickerData } from "@/components/app/cargo-sticker";
 import { syncCargoBoxes } from "@/lib/boxes";
 import { formatCbm, formatDate } from "@/lib/format";
+import { t, type Locale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { packageQrDataUrl } from "@/lib/qr";
 
@@ -14,7 +15,11 @@ import { packageQrDataUrl } from "@/lib/qr";
  * codes existed) has them drawn here first, so printing is never the moment a
  * box turns out to have no code.
  */
-export async function stickersFor(cargoIds: string[], onlyBoxId?: string | null): Promise<StickerData[]> {
+export async function stickersFor(
+  cargoIds: string[],
+  onlyBoxId?: string | null,
+  locale: Locale = "en"
+): Promise<StickerData[]> {
   for (const id of cargoIds) {
     const missing = await prisma.cargoPackage.count({
       where: { cargoId: id, deletedAt: null, boxes: { none: {} } },
@@ -52,7 +57,7 @@ export async function stickersFor(cargoIds: string[], onlyBoxId?: string | null)
         sequence: box.sequence,
         total: cargo._count.boxes,
         packageRef: pkg.reference,
-        packagesLabel: `${pkg.packageType.toLowerCase()}${pkg.pieces ? ` · ${pkg.pieces} pcs on line` : ""}`,
+        packagesLabel: `${t(locale, pkg.packageType.toLowerCase())}${pkg.pieces ? ` · ${t(locale, "{n} pcs on line").replace("{n}", String(pkg.pieces))}` : ""}`,
         weightLabel: pkg.weightKg && pkg.quantity === 1 ? `${Number(pkg.weightKg).toFixed(2)} kg` : null,
         /* The line's volume is for the whole line; on a line of one box it is
            this box's, and only then is it printed. */

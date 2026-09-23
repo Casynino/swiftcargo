@@ -7,6 +7,7 @@ import { renderLabelsPdf } from "@/lib/label-pdf";
 import { prisma } from "@/lib/prisma";
 import { canAny } from "@/lib/rbac";
 import { requireStaff } from "@/lib/session";
+import { viewerLocale } from "@/lib/viewer-locale";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -44,7 +45,8 @@ export async function GET(
   }
 
   const box = new URL(request.url).searchParams.get("box");
-  const stickers = await stickersFor([cargo.id], box);
+  const locale = await viewerLocale();
+  const stickers = await stickersFor([cargo.id], box, locale);
   if (stickers.length === 0) {
     return NextResponse.json({ error: "Nothing to label." }, { status: 404 });
   }

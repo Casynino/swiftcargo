@@ -1,5 +1,7 @@
 import Image from "next/image";
 
+import { t, type Locale } from "@/lib/i18n";
+
 export type StickerData = {
   reference: string;
   shippingMark: string | null;
@@ -42,7 +44,7 @@ export const LABEL_MM = { width: 100, height: 150 } as const;
  * somebody walking past a pallet: whose box it is, then the code, then the
  * details that settle an argument.
  */
-export function CargoSticker({ data }: { data: StickerData }) {
+export function CargoSticker({ data, locale = "en" }: { data: StickerData; locale?: Locale }) {
   return (
     <article
       className="sticker flex shrink-0 break-inside-avoid flex-col overflow-hidden border border-black/70 bg-white text-black"
@@ -80,7 +82,7 @@ export function CargoSticker({ data }: { data: StickerData }) {
             anyone bends down to pick the carton up. */}
         <div className="text-right leading-none">
           <p style={{ fontSize: "6pt" }} className="font-semibold uppercase tracking-wider">
-            Box
+            {t(locale, "Box")}
           </p>
           <p className="font-bold" style={{ fontSize: "16pt" }}>
             {data.sequence}
@@ -125,7 +127,7 @@ export function CargoSticker({ data }: { data: StickerData }) {
           {data.reference}
         </p>
         <p className="leading-none" style={{ fontSize: "7.5pt", marginTop: "1.5mm" }}>
-          {data.receiptNo ? `Receipt ${data.receiptNo} · ` : ""}
+          {data.receiptNo ? `${t(locale, "Receipt")} ${data.receiptNo} · ` : ""}
           {data.packageRef}
         </p>
       </div>

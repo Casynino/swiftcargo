@@ -1407,8 +1407,16 @@ export async function receiveNewCargo(
   revalidatePath("/app/containers/loading");
   revalidatePath("/app/dashboard");
 
+  /* THE REFERENCE IS NOT TRANSLATED, THE SENTENCE IS.
+     Tm turns every digit run in this string into a {n} slot before it looks
+     the sentence up, so a tracking number and a delivery note number sitting
+     in the same sentence as the package and CBM counts would hand back three
+     or four {n}s with no way to tell which figure was which — a translated
+     count could silently land on the wrong slot. The reference leads the
+     string on its own, outside the templated sentence, so the only digits the
+     lookup ever has to place are the two it was written for. */
   return {
-    ok: `${result.reference} received — ${totalPackages} package(s), ${totalCbm.toFixed(3)} CBM. Delivery note ${result.noteNumber} is ready and the customer has been told.`,
+    ok: `${result.reference} — ${totalPackages} package(s), ${totalCbm.toFixed(3)} CBM received. Delivery note ready and the customer has been told.`,
     id: result.id,
   };
 }

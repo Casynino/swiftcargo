@@ -61,7 +61,7 @@ import { distinctMark } from "@/lib/customer-name";
 import { storageStart } from "@/lib/storage-clock";
 
 import { P, primeLocale, T } from "@/lib/server-t";
-import { Tx } from "@/components/app/tx";
+import { Tm, Tx } from "@/components/app/tx";
 export async function generateMetadata({
   params,
 }: {
@@ -354,7 +354,7 @@ export default async function CargoDetailPage({
      anything else is the fact about these boxes, whatever else is true. */
   const damageTag =
     dar && dar.condition !== "GOOD"
-      ? CONDITION_LABEL[dar.condition] ?? "Damaged"
+      ? T(CONDITION_LABEL[dar.condition] ?? "Damaged")
       : null;
 
   return (
@@ -374,9 +374,9 @@ export default async function CargoDetailPage({
             {(dar || cargo.status === "ARRIVED_TANZANIA") &&
             !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
               cargo.clearedAt ? (
-                <Badge tone="good">Cleared {formatDate(cargo.clearedAt)}</Badge>
+                <Badge tone="good">{T("Cleared")} {formatDate(cargo.clearedAt)}</Badge>
               ) : (
-                <Badge tone="warn">In customs clearance</Badge>
+                <Badge tone="warn">{T("In customs clearance")}</Badge>
               )
             ) : null}
             {(dar || cargo.status === "ARRIVED_TANZANIA") && !cargo.clearedAt && can(user.role, "cargo.clear") &&
@@ -389,7 +389,7 @@ export default async function CargoDetailPage({
               <Button asChild variant="outline">
                 <Link href={`/app/cargo/${cargo.id}/label`}>
                   <QrCode />
-                  Print labels
+                  {T("Print labels")}
                 </Link>
               </Button>
             ) : null}
@@ -422,14 +422,14 @@ export default async function CargoDetailPage({
       damageTag ||
       cargo.exceptions.some((e) => e.status !== "RESOLVED" && e.status !== "CLOSED") ? (
         <div className="flex flex-wrap items-center gap-2">
-          {cargo.operationalHold ? <Badge tone="bad">On hold</Badge> : null}
+          {cargo.operationalHold ? <Badge tone="bad">{T("On hold")}</Badge> : null}
           {/* THE TAG TRAVELS WITH THE CARGO. The bale that came off wet is
               tagged on the check-in row, on the container's list and on the
               price list Finance reads; this page was the one place it was not,
               so a clerk opening the record saw a clean consignment. */}
           {damageTag ? <Badge tone="bad">{damageTag}</Badge> : null}
           {cargo.exceptions.some((e) => e.status !== "RESOLVED" && e.status !== "CLOSED") ? (
-            <Badge tone="warn">Open case</Badge>
+            <Badge tone="warn">{T("Open case")}</Badge>
           ) : null}
         </div>
       ) : null}
@@ -501,9 +501,9 @@ export default async function CargoDetailPage({
                   [
                     "Counted as",
                     dar || china
-                      ? `${dar?.packagesCount ?? china?.packagesCount} package${(dar?.packagesCount ?? china?.packagesCount) === 1 ? "" : "s"}`
+                      ? <Tm>{`${dar?.packagesCount ?? china?.packagesCount} package(s)`}</Tm>
                       : cargo.declaredPackages
-                        ? `${cargo.declaredPackages} declared`
+                        ? <Tm>{`${cargo.declaredPackages} declared`}</Tm>
                         : "—",
                   ],
                   ["Volume", dar?.cbm ? formatCbm(dar.cbm) : china?.cbm ? formatCbm(china.cbm) : "—"],
@@ -516,7 +516,7 @@ export default async function CargoDetailPage({
                         {container.containerNumber ?? container.reference}
                       </Link>
                     ) : (
-                      "Waiting in China"
+                      T("Waiting in China")
                     ),
                   ],
                   [
@@ -540,7 +540,7 @@ export default async function CargoDetailPage({
                     </span>,
                   ],
                   ["Booked", formatDate(cargo.createdAt)],
-                  ["Vessel", container?.shipment?.vessel ?? "Not recorded"],
+                  ["Vessel", container?.shipment?.vessel ?? T("Not recorded")],
                   [
                     container?.shipment?.actualArrival ? "Arrived" : "ETA",
                     formatDate(container?.shipment?.actualArrival ?? container?.shipment?.eta),
@@ -561,11 +561,11 @@ export default async function CargoDetailPage({
               ))}
             </dl>
             <div className="px-6 py-4">
-              <p className="text-sm text-muted-foreground">Description</p>
+              <p className="text-sm text-muted-foreground">{T("Description")}</p>
               <p className="mt-1">{P(cargo.description, cargo.descriptionZh)}</p>
               {cargo.receiverId !== cargo.senderId ? (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Sent by{" "}
+                  {T("Sent by")}{" "}
                   <Link href={`/app/customers/${cargo.senderId}`} className="hover:underline">
                     {cargo.sender.fullName}
                   </Link>
@@ -674,10 +674,10 @@ export default async function CargoDetailPage({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-3">
-                <CardTitle className="text-base">Packages</CardTitle>
+                <CardTitle className="text-base">{T("Packages")}</CardTitle>
                 <span className="text-sm text-muted-foreground">
-                  {cargo.packages.length} line{cargo.packages.length === 1 ? "" : "s"}
-                  {dar ? " · checked in at Dar" : china ? " · received in China" : ""}
+                  <Tm>{`${cargo.packages.length} line(s)`}</Tm>
+                  {dar ? ` · ${T("checked in at Dar")}` : china ? ` · ${T("received in China")}` : ""}
                 </span>
               </div>
             </CardHeader>
@@ -744,7 +744,7 @@ export default async function CargoDetailPage({
           can(user.role, "cargo.viewInternal") ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">China receiving</CardTitle>
+                <CardTitle className="text-base">{T("China receiving")}</CardTitle>
               </CardHeader>
               <CardContent>
                 {china ? (
@@ -755,7 +755,10 @@ export default async function CargoDetailPage({
                     />
                     <Field label="By" value={china.receivedBy?.name} />
                     <Field label="Warehouse" value={china.warehouse.name} />
-                    <Field label="Condition" value={china.condition} />
+                    <Field
+                      label="Condition"
+                      value={T(CONDITION_LABEL[china.condition] ?? "Good")}
+                    />
                     <Field label="Location" value={china.location} />
                     <Field label="Notes" value={china.notes} />
                   </dl>
@@ -785,7 +788,7 @@ export default async function CargoDetailPage({
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      This consignment has left China. Dar holds the record now.
+                      {T("This consignment has left China. Dar holds the record now.")}
                     </p>
                   )
                 ) : null}
@@ -795,7 +798,7 @@ export default async function CargoDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Photos</CardTitle>
+              <CardTitle className="text-base">{T("Photos")}</CardTitle>
             </CardHeader>
             <CardContent>
               <PhotoPanel
@@ -823,7 +826,7 @@ export default async function CargoDetailPage({
           */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Status history</CardTitle>
+              <CardTitle className="text-base">{T("Status history")}</CardTitle>
             </CardHeader>
             <CardContent>
               <CargoTimeline
@@ -1055,12 +1058,12 @@ export default async function CargoDetailPage({
           {cargo.internalNotes && can(user.role, "cargo.viewInternal") ? (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Internal notes</CardTitle>
+                <CardTitle className="text-base">{T("Internal notes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm">{cargo.internalNotes}</p>
                 <Badge tone="warn" className="mt-3">
-                  Never shown to the customer
+                  {T("Never shown to the customer")}
                 </Badge>
               </CardContent>
             </Card>

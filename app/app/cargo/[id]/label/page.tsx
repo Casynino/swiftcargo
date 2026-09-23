@@ -13,6 +13,7 @@ import { canAny } from "@/lib/rbac";
 import { SmartBack } from "@/components/app/smart-back";
 
 import { primeLocale, T } from "@/lib/server-t";
+import { Tm } from "@/components/app/tx";
 export async function generateMetadata({
   params,
 }: {
@@ -49,7 +50,7 @@ export default async function CargoLabelPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ box?: string; received?: string }>;
 }) {
-  await primeLocale();
+  const locale = await primeLocale();
   /* Every desk may look a box up; only a desk that handles the boxes may print
      what goes on them. The route table matches on prefixes and /app/cargo
      already resolves to cargo.view, so this guard is the whole gate. */
@@ -88,7 +89,7 @@ export default async function CargoLabelPage({
   /* ?box= reprints one sticker — the one that was torn or went missing —
      without printing the whole consignment again. */
   const { box, received } = await searchParams;
-  const stickers: StickerData[] = await stickersFor([cargo.id], box ?? null);
+  const stickers: StickerData[] = await stickersFor([cargo.id], box ?? null, locale);
   if (stickers.length === 0) notFound();
 
   return (
@@ -97,10 +98,10 @@ export default async function CargoLabelPage({
         <div className="rounded-2xl border border-success/40 bg-success/10 p-4 print:hidden">
           <p className="flex items-center gap-2 font-semibold text-success">
             <CheckCircle2 className="size-5" />
-            Received · {cargo.reference}
+            <Tm>{`Received · ${cargo.reference}`}</Tm>
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {stickers.length} box{stickers.length === 1 ? "" : "es"}
+            <Tm>{`${stickers.length} box(es)`}</Tm>
             {cargo.deliveryNote ? ` · ${T("delivery note")} ${cargo.deliveryNote.number}` : ""}
           </p>
           {/* Just the two doors this save opened, small — the sticker sheet
@@ -131,7 +132,7 @@ export default async function CargoLabelPage({
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 print:hidden">
         <p className="text-xs text-muted-foreground">
-          One code per physical box — never copy a label onto two.{" "}
+          {T("One code per physical box — never copy a label onto two.")}{" "}
           <span className="tnum">
             {LABEL_MM.width} × {LABEL_MM.height} mm
           </span>
@@ -141,7 +142,7 @@ export default async function CargoLabelPage({
           <PrintButton
             primary
             className="h-8 rounded-md px-3 text-xs"
-            label={`Print ${stickers.length} label${stickers.length === 1 ? "" : "s"}`}
+            label={`${T("Print")} ${stickers.length} ${T(stickers.length === 1 ? "label" : "labels")}`}
           />
           {/* Same small pill as the banner's own Delivery note / Receive
               next — one pattern for "a button that opens a document or the
@@ -163,7 +164,7 @@ export default async function CargoLabelPage({
       <div className="-mx-4 overflow-x-auto px-4 print:mx-0 print:overflow-visible print:px-0">
         <div className="mx-auto flex w-max flex-col items-center gap-4 print:gap-0">
           {stickers.map((sticker) => (
-            <CargoSticker key={`${sticker.reference}-${sticker.sequence}`} data={sticker} />
+            <CargoSticker key={`${sticker.reference}-${sticker.sequence}`} data={sticker} locale={locale} />
           ))}
         </div>
       </div>

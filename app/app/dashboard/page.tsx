@@ -244,11 +244,11 @@ export default async function DashboardPage() {
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const slices: DonutSlice[] = [
-    { label: "Booked", value: position.booked, tone: 6 },
-    { label: "In China", value: position.inChina, tone: 1 },
-    { label: "At sea", value: position.atSea, tone: 2 },
-    { label: "In Dar", value: position.inDar, tone: 4 },
-    { label: "Ready to collect", value: position.ready, tone: 3 },
+    { label: t(locale, "Booked"), value: position.booked, tone: 6 },
+    { label: t(locale, "In China"), value: position.inChina, tone: 1 },
+    { label: t(locale, "At sea"), value: position.atSea, tone: 2 },
+    { label: t(locale, "In Dar"), value: position.inDar, tone: 4 },
+    { label: t(locale, "Ready to collect"), value: position.ready, tone: 3 },
   ];
   const live = slices.reduce((sum, s) => sum + s.value, 0);
 
@@ -533,10 +533,10 @@ export default async function DashboardPage() {
               <Card className="lg:col-span-3">
                 <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
                   <div>
-                    <CardTitle className="text-base">Volume received</CardTitle>
+                    <CardTitle className="text-base">{t(locale, "Volume received")}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Cubic metres taken in at the Guangzhou desk,{" "}
-                      {floorVolume.thisYear.year} against {floorVolume.lastYear.year}
+                      {t(locale, "Cubic metres taken in at the Guangzhou desk,")}{" "}
+                      {floorVolume.thisYear.year} {t(locale, "against")} {floorVolume.lastYear.year}
                     </p>
                   </div>
                   <span className="tnum text-2xl font-semibold">
@@ -572,9 +572,9 @@ export default async function DashboardPage() {
               <Card className="lg:col-span-2">
                 <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
                   <div>
-                    <CardTitle className="text-base">What you are sending</CardTitle>
+                    <CardTitle className="text-base">{t(locale, "What you are sending")}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      Received in the last 30 days
+                      {t(locale, "Received in the last 30 days")}
                     </p>
                   </div>
                   <span className="tnum text-sm text-muted-foreground">
@@ -584,7 +584,7 @@ export default async function DashboardPage() {
                 <CardContent className="flex flex-col items-center gap-5">
                   {floorMix.slices.length === 0 ? (
                     <p className="py-8 text-sm text-muted-foreground">
-                      Nothing received in the last thirty days.
+                      {t(locale, "Nothing received in the last thirty days.")}
                     </p>
                   ) : (
                     <>
@@ -613,15 +613,15 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Open in Guangzhou</CardTitle>
+                  <CardTitle className="text-base">{t(locale, "Open in Guangzhou")}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Fill these, then seal and record the sailing
+                    {t(locale, "Fill these, then seal and record the sailing")}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {boxes.open.length === 0 ? (
                     <p className="py-6 text-sm text-muted-foreground">
-                      No container is open. Open one to start loading.
+                      {t(locale, "No container is open. Open one to start loading.")}
                     </p>
                   ) : (
                     boxes.open.map((box) => {
@@ -642,9 +642,8 @@ export default async function DashboardPage() {
                             </span>
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {box.consignments} consignment
-                            {box.consignments === 1 ? "" : "s"} · {box.packages}{" "}
-                            package{box.packages === 1 ? "" : "s"} ·{" "}
+                            {box.consignments} {t(locale, "consignment(s)")} · {box.packages}{" "}
+                            {t(locale, "package(s)")} ·{" "}
                             {box.cbm.toFixed(3)} CBM
                           </p>
                           {fill !== null ? (
@@ -664,15 +663,15 @@ export default async function DashboardPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Volume shipped per container</CardTitle>
+                  <CardTitle className="text-base">{t(locale, "Volume shipped per container")}</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Recent sailings, cubic metres in each box
+                    {t(locale, "Recent sailings, cubic metres in each box")}
                   </p>
                 </CardHeader>
                 <CardContent>
                   {boxes.sailed.length === 0 ? (
                     <p className="py-6 text-sm text-muted-foreground">
-                      Nothing has sailed yet.
+                      {t(locale, "Nothing has sailed yet.")}
                     </p>
                   ) : (
                     <BarChart
@@ -695,13 +694,13 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="text-base">Where the cargo is</CardTitle>
+              <CardTitle className="text-base">{t(locale, "Where the cargo is")}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Every live consignment, by where it currently sits
+                {t(locale, "Every live consignment, by where it currently sits")}
               </p>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-5">
-              <Donut slices={slices} label={String(live)} caption="consignments" />
+              <Donut slices={slices} label={String(live)} caption={t(locale, "consignments")} />
               <div className="w-full">
                 <DonutLegend slices={slices} />
               </div>
@@ -710,16 +709,16 @@ export default async function DashboardPage() {
 
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-base">The Dar floor, last fortnight</CardTitle>
+              <CardTitle className="text-base">{t(locale, "The Dar floor, last fortnight")}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                What came in against what went out
+                {t(locale, "What came in against what went out")}
               </p>
             </CardHeader>
             <CardContent>
               <FlowBars
                 data={flow}
-                inLabel="Received"
-                outLabel="Released"
+                inLabel={t(locale, "Received")}
+                outLabel={t(locale, "Released")}
                 height={180}
               />
             </CardContent>
