@@ -181,6 +181,20 @@ export function auditSentence(
       break;
     }
 
+    /* The other half of a discount: the company declining to give one a desk
+       had already agreed. Read in the same words, from the other direction. */
+    case "invoice.discount.remove": {
+      parts = m(`Put (\\w+) ${NUM} back on ${REF}: (.*)`);
+      if (parts) {
+        const [, currency, back, invoice, reason] = parts;
+        return withCargo(
+          `${t(locale, "Put")} ${formatCurrency(back, currency)} ${t(locale, "back on")} ${invoice}${said(reason)}`,
+          ctx
+        );
+      }
+      break;
+    }
+
     case "invoice.rate": {
       parts = m(`${REF}: (.+?) → (.+?)(?: — (.*))?`);
       if (parts) {
@@ -439,6 +453,7 @@ const ACTION_LABELS: Record<string, string> = {
   "invoice.adjust": "Invoice adjusted",
   "invoice.cancel": "Invoice cancelled",
   "invoice.discount": "Discount given",
+  "invoice.discount.remove": "Discount taken back",
   "invoice.reprice": "Invoice re-priced",
   "invoice.rate": "Invoice rate changed",
   "invoice.charge": "Charge added",

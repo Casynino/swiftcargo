@@ -102,6 +102,7 @@ const UNDONE_ACTIONS = [
   "payment.reverse",
   "invoice.cancel",
   "invoice.storage.waive",
+  "invoice.discount.remove",
   "pickupNote.cancel",
   "expense.cancel",
   "account.transfer.cancel",

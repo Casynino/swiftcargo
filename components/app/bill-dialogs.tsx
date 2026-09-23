@@ -12,7 +12,12 @@ import {
   Tag,
 } from "lucide-react";
 
-import { changeInvoiceRate, discountInvoice, repriceInvoice } from "@/lib/actions/invoices";
+import {
+  changeInvoiceRate,
+  discountInvoice,
+  removeDiscount,
+  repriceInvoice,
+} from "@/lib/actions/invoices";
 import { issuePickupNote } from "@/lib/actions/pickup-notes";
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
@@ -307,6 +312,70 @@ export function DiscountDialog({
         <FormMessage error={state.error} />
         <div className="flex items-center gap-2">
           <SubmitButton size="sm" pendingLabel="Saving…">{tx("Apply")}</SubmitButton>
+          <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
+            {tx("Cancel")}
+          </button>
+        </div>
+      </form>
+    </Shell>
+  );
+}
+
+/**
+ * TAKE A DISCOUNT BACK OFF THE BILL.
+ *
+ * Finance is shown what a desk gave away before it agrees the money, and this
+ * is how it declines to give it. Asking why is the point: the customer was
+ * told one figure and is about to be charged another, and the person who has
+ * to explain that on the telephone needs the sentence written down.
+ */
+export function UndiscountDialog({
+  invoiceId,
+  discount,
+  reason,
+  by,
+  onClose,
+  onSaved,
+}: {
+  invoiceId: string;
+  /** What is currently off the bill, formatted. */
+  discount: string;
+  reason: string;
+  by: string | null;
+  onClose: () => void;
+  onSaved?: () => void;
+}) {
+  const tx = useT();
+  const [state, action] = useActionState<State, FormData>(removeDiscount, {});
+  useCloseOnOk(state, onClose, onSaved);
+  return (
+    <Shell onClose={onClose}>
+      <form action={action} className="space-y-3">
+        <input type="hidden" name="invoiceId" value={invoiceId} />
+        <p className="flex items-center gap-1.5 text-sm font-semibold">
+          <Tag className="size-4 text-destructive" />
+          {tx("Take the discount back off")}
+        </p>
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
+          <p className="tnum font-semibold">{discount}</p>
+          <p className="text-muted-foreground">{reason}</p>
+          {by ? <p className="text-muted-foreground/80">{by}</p> : null}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {tx("The bill goes back up by this amount. Whoever agreed it with the customer will have to tell them.")}
+        </p>
+        <Input
+          name="reason"
+          required
+          autoFocus
+          placeholder={tx("Why the company is not giving it")}
+          className="h-9"
+        />
+        <FormMessage error={state.error} />
+        <div className="flex items-center gap-2">
+          <SubmitButton size="sm" variant="outline" pendingLabel="Saving…">
+            {tx("Put it back on the bill")}
+          </SubmitButton>
           <button type="button" onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">
             {tx("Cancel")}
           </button>

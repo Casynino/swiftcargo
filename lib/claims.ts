@@ -55,7 +55,7 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
         invoice: {
           include: {
             payments: true,
-            items: { select: { unit: true } },
+            items: { select: { unit: true, amount: true, description: true, category: true } },
             cargo: {
               select: {
                 reference: true,
@@ -81,10 +81,56 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
 
   const todayRate = today ? Number(today.rate) : 0;
 
+  /** The discount on a bill, in the words it was given in. */
+  const discountOf = (
+    invoice: {
+      discount: Prisma.Decimal;
+      currency: string;
+      items: { amount: Prisma.Decimal; description: string; category: string | null }[];
+    },
+    who: { by: string; when: string } | undefined
+  ) => {
+    if (!invoice.discount.greaterThan(0)) return null;
+    const lines = invoice.items.filter((i) => i.category === "Discount");
+    return {
+      label: formatCurrency(invoice.discount, invoice.currency),
+      /* The description carries "Discount — why", and the why is the half
+         Finance is judging. */
+      reason:
+        lines
+          .map((i) => i.description.replace(/^Discount\s*[—-]\s*/, ""))
+          .filter(Boolean)
+          .join("; ") || "No reason given",
+      by: who?.by ?? null,
+      when: who?.when ?? null,
+    };
+  };
+
   /* Each payment at the shilling value written onto it when it was taken. */
   const tzsOf = (p: (typeof payments)[number]) =>
     paymentTzs(p, p.invoice) ??
     new Prisma.Decimal(p.amount).mul(todayRate).toDecimalPlaces(0);
+
+  /* Who gave the discount and when, from the money audit — the invoice itself
+     records the figure but not the hand. One query for the whole page. */
+  const audits = new Map<string, { by: string; when: string }>();
+  const discounted = payments
+    .filter((p) => p.invoice.discount.greaterThan(0))
+    .map((p) => p.invoiceId);
+  if (discounted.length > 0) {
+    const rowsOfAudit = await prisma.auditLog.findMany({
+      where: { entity: "Invoice", entityId: { in: discounted }, action: "invoice.discount" },
+      orderBy: { createdAt: "desc" },
+      select: { entityId: true, createdAt: true, actor: { select: { name: true } } },
+    });
+    for (const row of rowsOfAudit) {
+      if (!row.entityId || audits.has(row.entityId)) continue;
+      audits.set(row.entityId, {
+        by: row.actor?.name ?? "somebody",
+        when: formatDateTime(row.createdAt) ?? "",
+      });
+    }
+  }
 
   const rows: ClaimRow[] = payments.map((p) => {
     const tzs = tzsOf(p);
@@ -129,6 +175,14 @@ export async function claimsAt(status: PaymentStatus, query?: string) {
       bill: {
         invoiceId: p.invoiceId,
         total: Number(p.invoice.total),
+        /* WHAT WAS TAKEN OFF BEFORE THIS REACHED FINANCE.
+
+           A desk may agree a discount with a customer and then send the
+           payment up. Finance is entitled to see what was given, by whom and
+           why, BEFORE it agrees the money — and to take it back off if the
+           company is not giving it. A figure quietly missing from a total is
+           the one nobody can explain a month later. */
+        discount: discountOf(p.invoice, audits.get(p.invoiceId)),
         fxRate: p.invoice.fxRate ? Number(p.invoice.fxRate) : null,
         standardRate: p.invoice.standardRate ? Number(p.invoice.standardRate) : null,
         appliedRate: p.invoice.appliedRate ? Number(p.invoice.appliedRate) : null,

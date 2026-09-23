@@ -800,6 +800,105 @@ export async function discountInvoice(
 }
 
 /**
+ * TAKE A DISCOUNT BACK OFF.
+ *
+ * Support may agree a discount with a customer on the telephone and then send
+ * the payment up; Finance sees what was agreed before it verifies anything,
+ * and may decide the company is not giving it. That decision has to be
+ * possible without cancelling the bill and writing it again.
+ *
+ * It is not an erasure. The discount lines come off, the total goes back up,
+ * and the movement is written to FieldChange with the old figure first and to
+ * the money audit with the name of whoever reversed it — the same trail a
+ * discount itself leaves. A customer who was told one figure and charged
+ * another can be shown exactly who changed it and when.
+ *
+ * A settled bill refuses, like every other change to a figure somebody has
+ * already paid.
+ */
+export async function removeDiscount(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("invoice.discount");
+
+  const invoiceId = String(formData.get("invoiceId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim() || "No reason given";
+
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { items: true, payments: true },
+  });
+  if (!invoice) return { error: "That invoice no longer exists." };
+  if (invoice.status === "CANCELLED") return { error: "That invoice is cancelled." };
+  const settled = await settledRefusal(actor, invoice);
+  if (settled) return { error: settled };
+
+  const discounts = invoice.items.filter((i) => i.category === "Discount");
+  if (discounts.length === 0 && invoice.discount.lessThanOrEqualTo(0)) {
+    return { error: "There is no discount on this bill." };
+  }
+
+  /* What actually comes off is the discount LINES: the column on the invoice
+     is their running total and is put back in step with them. */
+  const back = discounts.reduce(
+    (sum, item) => sum.add(item.amount.negated()),
+    new Prisma.Decimal(0)
+  );
+  const off = back.greaterThan(0) ? back : invoice.discount;
+  const subtotal = invoice.subtotal.add(off);
+  const { vatAmount, total } = applyVat(subtotal, invoice.vatPercent, invoice.vatInclusive);
+
+  await prisma.$transaction(async (tx) => {
+    await recordFieldChange(
+      {
+        actor,
+        entity: "Invoice",
+        entityId: invoice.id,
+        field: "total",
+        oldValue: invoice.total.toString(),
+        newValue: total.toString(),
+        reason: `Discount of ${invoice.currency} ${off} taken back: ${reason}`,
+      },
+      tx
+    );
+
+    if (discounts.length > 0) {
+      await tx.invoiceItem.deleteMany({
+        where: { id: { in: discounts.map((i) => i.id) } },
+      });
+    }
+
+    await tx.invoice.update({
+      where: { id: invoice.id },
+      data: {
+        discount: invoice.discount.sub(off).greaterThan(0)
+          ? invoice.discount.sub(off)
+          : new Prisma.Decimal(0),
+        subtotal,
+        vatAmount,
+        total,
+        totalTzs: invoice.fxRate ? usdToTzs(total, invoice.fxRate) : null,
+      },
+    });
+  });
+
+  await recordAudit({
+    actor,
+    action: "invoice.discount.remove",
+    entity: "Invoice",
+    entityId: invoice.id,
+    summary: `Put ${invoice.currency} ${off} back on ${invoice.number}: ${reason}`,
+  });
+
+  await refreshInvoiceStatus(invoice.id);
+
+  revalidatePath(`/app/finance/invoices/${invoice.id}`);
+  revalidatePath("/app/finance/collections/verify");
+  return { ok: `${invoice.currency} ${off} put back on the bill.` };
+}
+
+/**
  * RE-PRICE A BILL AT A DIFFERENT RATE PER CBM.
  *
  * Every line is re-multiplied at the new rate and the old rate is written to

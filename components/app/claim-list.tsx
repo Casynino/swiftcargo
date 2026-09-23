@@ -13,7 +13,12 @@ import {
 import { rejectPayment } from "@/lib/actions/payments";
 import { FormMessage } from "@/components/app/form-message";
 import { Modal } from "@/components/app/modal";
-import { DiscountDialog, ExchangeRateDialog, RateDialog } from "@/components/app/bill-dialogs";
+import {
+  DiscountDialog,
+  ExchangeRateDialog,
+  RateDialog,
+  UndiscountDialog,
+} from "@/components/app/bill-dialogs";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +65,13 @@ export type ClaimRow = {
   bill?: {
     invoiceId: string;
     total: number;
+    /** Taken off this bill before it reached Finance, and by whom. */
+    discount?: {
+      label: string;
+      reason: string;
+      by: string | null;
+      when: string | null;
+    } | null;
     fxRate: number | null;
     standardRate: number | null;
     appliedRate: number | null;
@@ -239,7 +251,7 @@ function ClaimRowItem({
 }) {
   const tx = useT();
   const [open, setOpen] = useState<null | "edit" | "back" | "cancel">(null);
-  const [billDialog, setBillDialog] = useState<null | "discount" | "price" | "fx">(null);
+  const [billDialog, setBillDialog] = useState<null | "discount" | "undiscount" | "price" | "fx">(null);
   const [currency, setCurrency] = useState(row.currency);
   const router = useRouter();
   const [verifyState, verify] = useActionState<ClaimState, FormData>(
@@ -332,6 +344,36 @@ function ClaimRowItem({
             <p className="mt-1 inline-block rounded-md bg-warning/15 px-2 py-0.5 text-[11px] font-semibold text-warning">
               Also clears {row.clearingAsked} short
             </p>
+          ) : null}
+          {/* WHAT CAME OFF THE BILL BEFORE THIS REACHED FINANCE.
+
+              A discount agreed on the telephone is money the company is
+              giving away, and the desk agreeing the payment is entitled to see
+              it — who gave it and why — before pressing verify, not in the
+              audit log afterwards. */}
+          {row.bill?.discount ? (
+            <div className="mt-1.5 max-w-64 rounded-md border border-brand/30 bg-brand/5 px-2 py-1.5 text-[11px]">
+              <p className="font-semibold text-brand">
+                <Tx>Discount</Tx> · {row.bill.discount.label}
+              </p>
+              <p className="text-muted-foreground">{row.bill.discount.reason}</p>
+              {row.bill.discount.by ? (
+                <p className="tnum text-muted-foreground/80">
+                  {row.bill.discount.by}
+                  {row.bill.discount.when ? ` · ${row.bill.discount.when}` : ""}
+                </p>
+              ) : null}
+              {tools.canChangeBill && mode === "verify" ? (
+                <button
+                  type="button"
+                  onClick={() => setBillDialog("undiscount")}
+                  className="mt-1 inline-flex items-center gap-1 font-medium text-destructive hover:underline"
+                >
+                  <Tag className="size-3" />
+                  {tx("Take it back off")}
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -548,6 +590,16 @@ function ClaimRowItem({
       ) : null}
       {row.bill && billDialog === "discount" ? (
         <DiscountDialog invoiceId={row.bill.invoiceId} total={row.bill.total} rate={row.bill.fxRate} onClose={() => setBillDialog(null)} onSaved={() => router.refresh()} />
+      ) : null}
+      {row.bill?.discount && billDialog === "undiscount" ? (
+        <UndiscountDialog
+          invoiceId={row.bill.invoiceId}
+          discount={row.bill.discount.label}
+          reason={row.bill.discount.reason}
+          by={row.bill.discount.by}
+          onClose={() => setBillDialog(null)}
+          onSaved={() => router.refresh()}
+        />
       ) : null}
       {row.bill && billDialog === "price" ? (
         <RateDialog
