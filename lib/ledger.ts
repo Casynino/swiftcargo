@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { accountRegister, type AccountEntry } from "@/lib/accounts";
 import { formatCurrency, toBase } from "@/lib/currency";
 import { toCorrectable, type CorrectableExpense } from "@/lib/expense-correction";
+import type { PriceChange } from "@/components/app/price-changed";
 import { t as tr, type Locale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
@@ -78,6 +79,8 @@ export type LedgerRow = {
   tzs: number;
   proofHref: string | null;
   href: string;
+  /** What moved the price on the bill this payment answers, if anything did. */
+  priceChange: PriceChange | null;
   cancelled: boolean;
   cancelledReason: string | null;
   search: string;
@@ -132,6 +135,11 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
           select: {
             id: true,
             number: true,
+            currency: true,
+            discount: true,
+            standardRate: true,
+            appliedRate: true,
+            items: { select: { category: true, description: true } },
             cargo: {
               select: {
                 id: true,
@@ -185,6 +193,57 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
       select: { rate: true, effectiveFrom: true },
     }),
   ]);
+
+  /* Who gave the discount, and when — the ledger's payment for a bill can be
+     the only place anybody sees this again once it is verified. */
+  const discountedInvoiceIds = [
+    ...new Set(
+      payments.filter((p) => p.invoice.discount.greaterThan(0)).map((p) => p.invoice.id)
+    ),
+  ];
+  const discountGivenBy = new Map<string, string>();
+  if (discountedInvoiceIds.length > 0) {
+    const audits = await prisma.auditLog.findMany({
+      where: { entity: "Invoice", entityId: { in: discountedInvoiceIds }, action: "invoice.discount" },
+      orderBy: { createdAt: "desc" },
+      select: { entityId: true, actor: { select: { name: true } } },
+    });
+    for (const a of audits) {
+      if (a.entityId && !discountGivenBy.has(a.entityId)) {
+        discountGivenBy.set(a.entityId, a.actor?.name ?? "somebody");
+      }
+    }
+  }
+
+  /** The price change to show on a payment's own row — the same words the
+      verify screen and the collections list use, so a discount never reads
+      three different ways depending which screen it is seen from. */
+  const priceChangeOf = (invoice: (typeof payments)[number]["invoice"]): PriceChange => {
+    const std = invoice.standardRate ? Number(invoice.standardRate) : null;
+    const applied = invoice.appliedRate ? Number(invoice.appliedRate) : null;
+    const discount = invoice.discount.greaterThan(0)
+      ? {
+          amount: Number(invoice.discount),
+          reason: [
+            invoice.items
+              .filter((i) => i.category === "Discount")
+              .map((i) => i.description.replace(/^Discount\s*[—-]\s*/, ""))
+              .filter(Boolean)
+              .join("; "),
+            discountGivenBy.get(invoice.id),
+          ]
+            .filter(Boolean)
+            .join(" — "),
+        }
+      : null;
+    return {
+      category: null,
+      cbm: null,
+      rate: std !== null && applied !== null && Math.abs(std - applied) > 0.005 ? { from: std, to: applied } : null,
+      currency: invoice.currency,
+      discount,
+    };
+  };
 
   const paymentById = new Map(payments.map((p) => [p.id, p]));
   const expenseById = new Map(expenses.map((e) => [e.id, e]));
@@ -244,6 +303,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         ...base,
         transport,
         credit: credit && !transport,
+        priceChange: transport ? null : priceChangeOf(p.invoice),
         title: p.customer.fullName,
         titleHref: `/app/customers/${p.customer.id}`,
         purpose: p.invoice.cargo.description,
@@ -276,6 +336,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
           p.recordedBy?.name,
           p.verifiedBy?.name,
           transport ? "transport" : "",
+          p.invoice.discount.greaterThan(0) ? "discount discounted" : "",
         ]
           .filter(Boolean)
           .join(" ")
@@ -299,6 +360,11 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
             ["Into", e.account ?? "—"],
             ["Paid on", (p.paidAt ?? p.createdAt).toISOString().slice(0, 10)],
             ["Recorded by", p.recordedBy?.name ?? "—"],
+            /* Same fact the row itself flags — repeated here because this is
+               where a correction is actually decided from. */
+            ...(p.invoice.discount.greaterThan(0)
+              ? ([["Discounted", `${p.invoice.currency} ${p.invoice.discount} — ${discountGivenBy.get(p.invoice.id) ?? "somebody"}`]] as [string, string][])
+              : []),
           ],
         },
       });
@@ -313,6 +379,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         ...base,
         transport: false,
         credit: false,
+        priceChange: null,
         title: x.description || x.expenseType?.name || x.vendor?.name || tr(locale, "Cost"),
         titleHref: null,
         purpose: x.vendor ? `${tr(locale, "paid to")} ${x.vendor.name}` : null,
@@ -359,6 +426,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         ...base,
         transport: false,
         credit: false,
+        priceChange: null,
         title: outbound
           ? `${tr(locale, "Out to")} ${t.toAccount.bankName} (${t.toAccount.currency})`
           : `${tr(locale, "In from")} ${t.fromAccount.bankName} (${t.fromAccount.currency})`,
@@ -394,7 +462,8 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
     rows.push({
       ...base,
       transport: false,
-        credit: false,
+      credit: false,
+      priceChange: null,
       title: `${tr(locale, "Opening balance for")} ${e.account}`,
       titleHref: null,
       purpose: tr(locale, "What was in the account when it was put on the system"),

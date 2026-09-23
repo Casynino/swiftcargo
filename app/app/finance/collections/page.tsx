@@ -155,7 +155,7 @@ export default async function CollectionsPage({
     include: {
       customer: { select: { id: true, fullName: true, phone: true } },
       payments: true,
-      items: { select: { unit: true, category: true, quantity: true } },
+      items: { select: { unit: true, category: true, quantity: true, description: true } },
       cargo: {
         select: {
           id: true,
@@ -235,6 +235,21 @@ export default async function CollectionsPage({
 
     const std = invoice.standardRate ? Number(invoice.standardRate) : null;
     const applied = invoice.appliedRate ? Number(invoice.appliedRate) : null;
+    /* Not the book's price moving — money the company chose to give away.
+       Read from the discount lines on the bill itself, the same figures the
+       invoice and the verify screen show. */
+    const discountLines = invoice.items.filter((i) => i.category === "Discount");
+    const discount = invoice.discount.greaterThan(0)
+      ? {
+          amount: Number(invoice.discount),
+          reason:
+            discountLines
+              .map((i) => i.description.replace(/^Discount\s*[—-]\s*/, ""))
+              .filter(Boolean)
+              .join("; ") || "",
+        }
+      : null;
+
     return {
       category:
         wasCategory && nowCategory && wasCategory !== nowCategory
@@ -243,6 +258,7 @@ export default async function CollectionsPage({
       cbm,
       rate: std !== null && applied !== null && Math.abs(std - applied) > 0.005 ? { from: std, to: applied } : null,
       currency: invoice.currency,
+      discount,
     };
   };
 

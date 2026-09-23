@@ -943,6 +943,7 @@ const ZH: Record<string, string> = {
   "Difference": "差值",
   "Direction": "收支方向",
   "Discount": "折扣",
+  "Discounted": "已打折",
   "Dismiss": "忽略",
   "Dispatch a batch and it appears here permanently.":
     "发运一个批次后，它会永久显示在这里。",

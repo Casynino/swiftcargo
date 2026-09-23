@@ -22,6 +22,7 @@ import { formatCurrency, toBase } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { ledgerRows, type LedgerPerson, type LedgerRow } from "@/lib/ledger";
+import { PriceChanged } from "@/components/app/price-changed";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -469,6 +470,9 @@ export default async function LedgerPage({
                           </span>
                         ) : null}
                       </span>
+                      {r.priceChange ? (
+                        <PriceChanged className="mt-1" change={r.priceChange} />
+                      ) : null}
                       {r.cancelled && r.cancelledReason ? (
                         <span className="mt-0.5 block text-xs text-muted-foreground">
                           {t(locale, r.kind === "payment" ? "Reversed" : "Cancelled")} — {r.cancelledReason}
