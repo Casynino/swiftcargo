@@ -99,6 +99,7 @@ const NO_TRAIL_NEEDED: Record<string, string> = {
   "clearance.ts:markContainerCleared": "lib/clearance.ts clearCargo writes a FieldChange and an AuditLog row per consignment it clears",
   "boxes.ts:scanBoxAtDar": "every scan, whatever it found, is a ScanEvent row with the box, the person and the result",
   "scan-release.ts:resolveForRelease": "a read — it opens a consignment for release and logs a ScanEvent, the same trail every other scan leaves; the release itself is a separate action that audits",
+  "merged-payment.ts:getMergedNotifyMessage": "a read — composes the WhatsApp text for a merged payment already recorded; logCustomerContact is what audits the actual notify press",
   "boxes.ts:scanBoxForRelease": "every scan, whatever it found, is a ScanEvent row with the box, the person and the result",
   "cargo.ts:issueDeliveryNote": "the note is the record, and it is numbered",
   "claims.ts:verifyClaims": "delegates to the payment actions, which audit",

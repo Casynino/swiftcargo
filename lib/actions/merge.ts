@@ -16,7 +16,12 @@ import { authorize } from "@/lib/session";
 import { confirmPayment } from "@/lib/payment-confirm";
 import { store, UploadError } from "@/lib/storage";
 
-export type MergeState = { error?: string; ok?: string };
+export type MergeState = {
+  error?: string;
+  ok?: string;
+  /** Set only when this payment actually spanned more than one bill. */
+  transactionRef?: string;
+};
 
 const METHOD_FOR = {
   CASH: "CASH",
@@ -336,6 +341,7 @@ export async function recordCombinedPayment(
     }
     return {
       ok: `Payment recorded${shared ? ` across ${slices.length} bills as ${shared}` : ` as ${references[0]}`}. ${receipts.join(" ")}`.trim(),
+      transactionRef: shared ?? undefined,
     };
   }
 
@@ -343,5 +349,6 @@ export async function recordCombinedPayment(
     ok: shared
       ? `Recorded across ${slices.length} bills as ${shared}. It is waiting in Verify payments.`
       : `Recorded as ${references[0]}. It is waiting in Verify payments.`,
+    transactionRef: shared ?? undefined,
   };
 }

@@ -179,36 +179,27 @@ export default async function MergePaymentForCustomer({
         }
       />
 
-      {open.length === 0 ? (
-        <div className="rounded-xl border bg-card px-5 py-12 text-center">
-          <p className="font-medium">{T("Every bill is settled")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {T("Nothing on this customer is waiting to be paid.")}
-          </p>
-        </div>
-      ) : (
-        <MergePaymentForm
-          canClear={can(user.role, "payment.verify")}
-          canChangeBill={can(user.role, "invoice.discount")}
-          canChangeRate={can(user.role, "invoice.edit")}
-          categories={can(user.role, "invoice.discount") ? await bookCategories() : []}
-          customerId={customer.id}
-          customerName={name}
-          bills={bills}
-          waiting={waiting}
-          accounts={accounts.map((a) => ({
-            id: a.id,
-            name: `${a.bankName} (${a.currency})`,
-            currency: a.currency,
-            kind: a.kind,
-          }))}
-          combinedBillHref={
-            open.length > 1
-              ? `/app/finance/payments/new/${customer.id}/bill`
-              : null
-          }
-        />
-      )}
+      <MergePaymentForm
+        canClear={can(user.role, "payment.verify")}
+        canChangeBill={can(user.role, "invoice.discount")}
+        canChangeRate={can(user.role, "invoice.edit")}
+        categories={can(user.role, "invoice.discount") ? await bookCategories() : []}
+        customerId={customer.id}
+        customerName={name}
+        bills={bills}
+        waiting={waiting}
+        accounts={accounts.map((a) => ({
+          id: a.id,
+          name: `${a.bankName} (${a.currency})`,
+          currency: a.currency,
+          kind: a.kind,
+        }))}
+        combinedBillHref={
+          open.length > 1
+            ? `/app/finance/payments/new/${customer.id}/bill`
+            : null
+        }
+      />
     </div>
   );
 }

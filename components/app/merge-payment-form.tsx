@@ -12,11 +12,13 @@ import { chargeStorage } from "@/lib/actions/invoices";
 import { AskCreditButton } from "@/components/app/ask-for-credit";
 import { CreditButton, DiscountDialog, ExchangeRateDialog, RateDialog } from "@/components/app/bill-dialogs";
 import { FormMessage } from "@/components/app/form-message";
+import { MergedNotifyButton } from "@/components/app/merged-notify-button";
 import { ShortfallNotice } from "@/components/app/shortfall-notice";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 import { Tx } from "@/components/app/tx";
@@ -201,7 +203,22 @@ export function MergePaymentForm({
      takes the button away with it. */
   const [storageSaid, setStorageSaid] = useState<{ invoiceId: string; error?: string; ok?: string } | null>(null);
 
+  /* A merge that just cleared every bill leaves nothing left to tick — but the
+     confirmation and the notify button still have to stand, so this only
+     shows the settled state when nothing just happened. */
+  if (bills.length === 0 && waiting.length === 0 && !(state.ok && state.transactionRef)) {
+    return (
+      <div className="rounded-xl border bg-card px-5 py-12 text-center">
+        <p className="font-medium">{t(null, "Every bill is settled")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t(null, "Nothing on this customer is waiting to be paid.")}
+        </p>
+      </div>
+    );
+  }
+
   return (
+    <>
     <form
       action={action}
       className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]"
@@ -706,5 +723,16 @@ export function MergePaymentForm({
         </SubmitButton>
       </div>
     </form>
+    {/* A form of its own — WhatsAppButton is one, and a form cannot nest
+        inside the form above without the browser silently breaking both. */}
+    {state.ok && state.transactionRef ? (
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
+        <div className="hidden xl:block" aria-hidden />
+        <div className="-mt-2">
+          <MergedNotifyButton transactionRef={state.transactionRef} />
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
