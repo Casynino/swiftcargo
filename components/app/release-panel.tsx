@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, DoorOpen, Search, X } from "lucide-react";
+import { Check, DoorOpen, Search, TriangleAlert, X } from "lucide-react";
 
 import { releaseCargo, type ActionState } from "@/lib/actions/release";
 import { raiseException, type ActionState as ExceptionState } from "@/lib/actions/exceptions";
@@ -68,15 +68,22 @@ export function ReleaseForm({
   packages,
   receiverName,
   receiverPhone,
+  pickupNoteNumber,
+  boxes,
   armed,
+  scanImpossible,
 }: {
   cargoId: string;
   reference: string;
   packages: number;
   receiverName: string;
   receiverPhone: string;
+  pickupNoteNumber: string | null;
+  boxes: { done: number; total: number };
   /** Every box scanned out — the counter's own proof, not a checkbox. */
   armed: boolean;
+  /** "The label cannot be read — release without scanning" was pressed. */
+  scanImpossible?: boolean;
 }) {
   const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
@@ -99,6 +106,27 @@ export function ReleaseForm({
         name="relationship"
         value={relationship === "SELF" ? "" : RELATIONSHIP_WORDS[relationship]}
       />
+      {scanImpossible ? <input type="hidden" name="noScan" value="1" /> : null}
+
+      {scanImpossible ? (
+        <div className="rounded-xl border-2 border-warning/50 bg-warning/10 p-3">
+          <p className="flex items-center gap-2 text-sm font-semibold text-warning">
+            <TriangleAlert className="size-4 shrink-0" />
+            {tx("Releasing without scanning the label")}
+          </p>
+          <p className="mt-1 text-xs text-warning/90">
+            {tx(
+              "You opened this from the unreadable-label list. Check the tracking number against the customer's paperwork yourself, and make sure the cargo is in the handover photograph — that photo is the only record that the right boxes left the building."
+            )}
+          </p>
+        </div>
+      ) : null}
+
+      {boxes.total > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {tx("Boxes scanned out")}: {boxes.done} {tx("of")} {boxes.total}
+        </p>
+      ) : null}
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold">{tx("Who is collecting?")}</h3>
@@ -152,6 +180,18 @@ export function ReleaseForm({
             <Input id="collectedByIdNo" name="collectedByIdNo" />
           </div>
         </div>
+
+        {pickupNoteNumber ? (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-dashed p-3 text-sm">
+            <input type="checkbox" name="noPickupNote" value="1" className="mt-0.5" />
+            <span>
+              {tx("The customer has no printed pickup note")}
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {tx("The note on file is")} {pickupNoteNumber}. {tx("Tick this only if they cannot show it.")}
+              </span>
+            </span>
+          </label>
+        ) : null}
 
         <div className="space-y-2">
           <Label htmlFor="rel-notes">{tx("Note")}</Label>

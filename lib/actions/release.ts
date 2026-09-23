@@ -25,6 +25,14 @@ const releaseSchema = z.object({
   collectedByIdNo: z.string().trim().optional(),
   relationship: z.string().trim().optional(),
   notes: z.string().trim().optional(),
+  /* Reached only from "The label cannot be read — release without scanning",
+     for the box whose sticker is torn, soaked or was never legible. The
+     handover photograph carries the proof a scan usually would. */
+  noScan: z.string().optional(),
+  /* The clerk's own note that the customer could not produce the paper —
+     advisory only, same as Target/BlueWave: the note itself was already
+     spent above by cargoId, not by matching a physical copy. */
+  noPickupNote: z.string().optional(),
 });
 
 /**
@@ -57,6 +65,8 @@ export async function releaseCargo(
     collectedByIdNo: formData.get("collectedByIdNo") || undefined,
     relationship: formData.get("relationship") || undefined,
     notes: formData.get("notes") || undefined,
+    noScan: formData.get("noScan") || undefined,
+    noPickupNote: formData.get("noPickupNote") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the form." };
@@ -98,13 +108,23 @@ export async function releaseCargo(
          somebody can carry out. */
       const boxes = await tx.cargoBox.findMany({
         where: { cargoId: cargo.id, voidedAt: null },
-        select: { collectedAt: true, missingAt: true, darReceivedAt: true },
+        select: { id: true, collectedAt: true, missingAt: true, darReceivedAt: true },
       });
       const toScan = boxes.filter((b) => !b.collectedAt && !(b.missingAt && !b.darReceivedAt));
       if (toScan.length > 0) {
-        throw new Error(
-          `Scan every box out first — ${toScan.length} of ${boxes.length} box${boxes.length === 1 ? "" : "es"} still to scan.`
-        );
+        if (!data.noScan) {
+          throw new Error(
+            `Scan every box out first — ${toScan.length} of ${boxes.length} box${boxes.length === 1 ? "" : "es"} still to scan.`
+          );
+        }
+        /* The label could not be read, so the boxes are recorded handed over
+           on the strength of this release alone — the handover photograph is
+           the proof a scan usually carries. Every other check above still
+           ran; this skips one signal, not the release's safety. */
+        await tx.cargoBox.updateMany({
+          where: { id: { in: toScan.map((b) => b.id) } },
+          data: { collectedAt: new Date(), collectedById: actor.id },
+        });
       }
 
       /* The note is spent by the handover, claimed rather than assumed: a
@@ -172,11 +192,13 @@ export async function releaseCargo(
     action: "cargo.release",
     entity: "Cargo",
     entityId: data.cargoId,
-    summary: `Released ${cargo?.reference} as ${number} to ${data.collectedByName} (${data.packagesReleased} package(s))`,
+    summary: `Released ${cargo?.reference} as ${number} to ${data.collectedByName} (${data.packagesReleased} package(s))${data.noScan ? " — released without scanning" : ""}`,
     metadata: {
       method: data.method,
       collectedBy: data.collectedByName,
       idNumber: data.collectedByIdNo ?? null,
+      noScan: !!data.noScan,
+      noPickupNote: !!data.noPickupNote,
     },
   });
 

@@ -239,7 +239,11 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
   /* Lifted out of BoxScanner so the release form's armed state follows every
      scan live, rather than only what the door-open response already knew. */
   const [boxes, setBoxes] = useState(target.boxes);
-  const armed = boxes.total === 0 || boxes.done >= boxes.total;
+  /* Reached only from "The label cannot be read — release without scanning".
+     One-way for this visit: "Scan another" is the way back if it was pressed
+     by mistake. */
+  const [scanImpossible, setScanImpossible] = useState(false);
+  const armed = boxes.total === 0 || boxes.done >= boxes.total || scanImpossible;
 
   const verdict = target.check.ok
     ? {
@@ -382,13 +386,26 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
       {target.check.ok ? (
         <div className="space-y-4">
           <div className="space-y-4 rounded-xl border bg-card p-4 shadow-soft sm:p-6">
-            {target.boxes.total > 0 ? (
-              <BoxScanner
-                mode="release"
-                cargoId={target.cargoId}
-                initial={target.boxes}
-                onProgress={setBoxes}
-              />
+            {target.boxes.total > 0 && !scanImpossible ? (
+              <>
+                <BoxScanner
+                  mode="release"
+                  cargoId={target.cargoId}
+                  initial={target.boxes}
+                  onProgress={setBoxes}
+                />
+                {/* The way out, for the box whose label cannot be read. Every
+                    other check still runs on submit; what is missing is a
+                    scan, and the mandatory-but-expected handover photograph
+                    carries that proof instead. */}
+                <button
+                  type="button"
+                  onClick={() => setScanImpossible(true)}
+                  className="focus-ring min-h-11 text-left text-xs font-medium text-warning underline underline-offset-2"
+                >
+                  {tx("The label cannot be read — release without scanning")}
+                </button>
+              </>
             ) : null}
             <ReleaseForm
               cargoId={target.cargoId}
@@ -396,7 +413,10 @@ function ReleaseScreen({ target, onDone }: { target: ScanTarget; onDone: () => v
               packages={boxes.total || target.measured.packages || 1}
               receiverName={target.customerName}
               receiverPhone={target.customerPhone ?? ""}
+              pickupNoteNumber={target.pickupNote?.noteNumber ?? null}
+              boxes={boxes}
               armed={armed}
+              scanImpossible={scanImpossible}
             />
           </div>
           <UnableToLocateCargo cargoId={target.cargoId} reference={target.reference} onDone={onDone} />
