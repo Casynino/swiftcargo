@@ -126,14 +126,17 @@ export default async function CargoLabelPage({
           </div>
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div>
-          <SmartBack fallbackHref={`/app/cargo/${cargo.id}`} fallbackLabel={`${cargo.reference}`} />
-          <p className="mt-1 text-xs text-muted-foreground">
-            One code per physical box — never copy a label onto two. {LABEL_MM.width} ×{" "}
-            {LABEL_MM.height} mm.
-          </p>
-        </div>
+      <div className="print:hidden">
+        <SmartBack fallbackHref={`/app/cargo/${cargo.id}`} fallbackLabel={`${cargo.reference}`} />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3 print:hidden">
+        <p className="text-xs text-muted-foreground">
+          One code per physical box — never copy a label onto two.{" "}
+          <span className="tnum">
+            {LABEL_MM.width} × {LABEL_MM.height} mm
+          </span>
+          .
+        </p>
         <div className="flex items-center gap-2">
           <PrintButton
             primary
