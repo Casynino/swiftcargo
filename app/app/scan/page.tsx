@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app/page-header";
 import { ScanReleaseWorkbench, type ReleaseCandidate } from "@/components/app/scan-release-workbench";
+import { resolveForRelease } from "@/lib/actions/scan-release";
 import { prisma } from "@/lib/prisma";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
 import { requirePermission } from "@/lib/session";
@@ -24,9 +25,25 @@ export const metadata: Metadata = { title: "Scan & release" };
  * consignment with no printed pickup note at all, must still be reachable
  * from this one screen rather than sending the clerk somewhere else.
  */
-export default async function ScanPage() {
+export default async function ScanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
   await primeLocale();
   await requirePermission("cargo.scan");
+  const { code } = await searchParams;
+
+  /*
+    A CODE IN THE URL IS A PICK, NOT A SCAN.
+
+    The pickup list's own "Release" button lands here with ?code= set to the
+    tracking number — a clerk chose this consignment from a list, they did not
+    read it off a box. It is resolved through the very same door a camera read
+    or a typed number uses, so the queue and the counter can never disagree
+    about what a held or short-shipped consignment looks like.
+  */
+  const opened = code ? await resolveForRelease(code) : null;
 
   /*
     THE BY-HAND FALLBACK.
@@ -62,7 +79,11 @@ export default async function ScanPage() {
         title={T("Scan & release")}
         description={T("Scan the box. Everything you need to hand it over is on this screen.")}
       />
-      <ScanReleaseWorkbench candidates={list} />
+      <ScanReleaseWorkbench
+        candidates={list}
+        initial={opened?.ok ? opened.data : null}
+        initialError={opened && !opened.ok ? opened.error : null}
+      />
     </div>
   );
 }

@@ -44,9 +44,21 @@ export type ReleaseCandidate = {
  * nobody can read, still opens here and still says exactly what stands
  * between it and the door.
  */
-export function ScanReleaseWorkbench({ candidates }: { candidates: ReleaseCandidate[] }) {
-  const [target, setTarget] = useState<ScanTarget | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export function ScanReleaseWorkbench({
+  candidates,
+  initial,
+  initialError,
+}: {
+  candidates: ReleaseCandidate[];
+  /* Resolved on the server from ?code=, the same door the pickup list's own
+     "Release" button walks through — a queue pick and a camera read land on
+     the same screen through the same check, and can never disagree about a
+     held or short-shipped consignment. */
+  initial?: ScanTarget | null;
+  initialError?: string | null;
+}) {
+  const [target, setTarget] = useState<ScanTarget | null>(initial ?? null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
   const [pending, startTransition] = useTransition();
   const tx = useT();
 
@@ -66,6 +78,9 @@ export function ScanReleaseWorkbench({ candidates }: { candidates: ReleaseCandid
   const reset = useCallback(() => {
     setTarget(null);
     setError(null);
+    /* Drop the code out of the address bar along with the cargo it opened —
+       a refresh must not reopen the consignment just handed over. */
+    window.history.replaceState(null, "", "/app/scan");
   }, []);
 
   if (pending) {
