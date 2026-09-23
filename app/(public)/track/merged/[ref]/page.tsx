@@ -54,7 +54,7 @@ export default async function MergedGroupPage({
     );
   }
 
-  const group = await mergedGroupByInvoiceIds(key.split(","));
+  const group = await mergedGroupByInvoiceIds(key.split("-"));
   if (!group) {
     return (
       <Shell>

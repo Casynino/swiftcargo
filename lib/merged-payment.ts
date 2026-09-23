@@ -64,9 +64,16 @@ const STAGE_LABEL: Record<(typeof STAGE_ORDER)[number], string> = {
   ready: "Cleared — Ready for Pickup",
 };
 
-/** The identity of a group, from the invoice ids a clerk ticked. */
+/**
+ * The identity of a group, from the invoice ids a clerk ticked.
+ *
+ * Joined with a hyphen rather than a comma: a cuid never contains one, so the
+ * path segment needs no percent-encoding at all — nothing for a messaging
+ * app's own link detector to misread or truncate on the way to a customer's
+ * phone.
+ */
 export function mergedGroupKey(invoiceIds: string[]): string {
-  return [...new Set(invoiceIds)].sort().join(",");
+  return [...new Set(invoiceIds)].sort().join("-");
 }
 
 /**

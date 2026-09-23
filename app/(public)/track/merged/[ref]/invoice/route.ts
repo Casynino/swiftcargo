@@ -37,7 +37,7 @@ export async function GET(
     return NextResponse.json({ error: "This link cannot open an invoice." }, { status: 404 });
   }
 
-  const loaded = await loadMergedInvoicePdf(key.split(","));
+  const loaded = await loadMergedInvoicePdf(key.split("-"));
   if (!loaded) return NextResponse.json({ error: "Bills not found." }, { status: 404 });
 
   const pdf = renderInvoicePdf({ ...loaded.input, logo: await invoiceLogo() });
