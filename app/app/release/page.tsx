@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
@@ -140,9 +140,11 @@ export default async function ReleasePage({
       customerPhone: note.customer.phone,
       cargoId: cargo.id,
       reference: cargo.reference,
+      description: cargo.description,
       packages: boxes.total || cargo.darReceiving?.packagesCount || 0,
       boxesDone: boxes.done,
       boxesTotal: boxes.total,
+      issuedAt: note.issuedAt,
       waitingMs,
       waitingLabel: waitLabel(waitingMs),
       onCredit: note.onCredit,
@@ -203,7 +205,7 @@ export default async function ReleasePage({
         />
         <KpiCard
           index={2}
-          label={T("Held back")}
+          label={T("Waiting on us")}
           numeric={held}
           hint={held > 0 ? T("Cannot be handed over yet") : T("Nothing blocked")}
           icon={AlertTriangle}
@@ -220,7 +222,7 @@ export default async function ReleasePage({
         {showMoney ? (
           <KpiCard
             index={4}
-            label={T("Storage accruing")}
+            label={T("Past the free days")}
             numeric={charging}
             hint={overAWeek > 0 ? `${overAWeek} ${T("waiting over a week")}` : T("Everyone still inside free storage")}
             icon={Hourglass}
@@ -252,11 +254,13 @@ export default async function ReleasePage({
             <TableHeader>
               <TableRow>
                 <TableHead>{T("Customer")}</TableHead>
-                <TableHead>{T("Tracking")}</TableHead>
-                <TableHead className="text-right">{T("Pkgs")}</TableHead>
+                <TableHead>{T("Cargo")}</TableHead>
+                <TableHead>{T("Boxes")}</TableHead>
+                <TableHead>{T("Pickup note")}</TableHead>
+                <TableHead>{T("Issued")}</TableHead>
                 <TableHead>{T("Waiting")}</TableHead>
                 {showMoney ? <TableHead className="text-right">{T("Settled")}</TableHead> : null}
-                <TableHead>{T("Status")}</TableHead>
+                <TableHead>{T("State")}</TableHead>
                 <TableHead className="w-8" />
               </TableRow>
             </TableHeader>
@@ -276,11 +280,27 @@ export default async function ReleasePage({
                     >
                       {row.reference}
                     </Link>
-                    <span className="tnum block text-xs text-muted-foreground">
-                      {row.noteNumber}
+                    <span className="block max-w-[16rem] truncate text-xs text-muted-foreground">
+                      {row.description}
                     </span>
                   </TableCell>
-                  <TableCell className="tnum text-right text-sm">{row.packages || "—"}</TableCell>
+                  <TableCell className="tnum text-sm">
+                    {row.packages || "—"} {T("pkg")}
+                    {row.boxesTotal > 0 && row.boxesDone < row.boxesTotal ? (
+                      <span className="block text-xs font-medium text-destructive">
+                        {row.boxesDone} {T("of")} {row.boxesTotal} {T("checked in")}
+                      </span>
+                    ) : null}
+                  </TableCell>
+                  <TableCell>
+                    <span className="tnum font-medium">{row.noteNumber}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {row.onCredit ? T("on credit") : T("payment confirmed")}
+                    </span>
+                  </TableCell>
+                  <TableCell className="tnum text-sm text-muted-foreground">
+                    {formatDateTime(row.issuedAt)}
+                  </TableCell>
                   <TableCell
                     className={
                       row.waitingMs >= 7 * DAY_MS
@@ -295,17 +315,14 @@ export default async function ReleasePage({
                   {showMoney ? (
                     <TableCell className="tnum text-right text-sm">
                       {formatMoney(row.amountPaid, row.currency)}
-                      {row.onCredit ? (
-                        <span className="block text-xs text-warning">{T("on credit")}</span>
-                      ) : null}
                     </TableCell>
                   ) : null}
                   <TableCell>
                     {row.ready ? (
-                      <Badge tone="good">{T("cleared")}</Badge>
+                      <Badge tone="good">{T("Ready")}</Badge>
                     ) : (
                       <Badge tone="warn" title={row.check.blockedBy ?? undefined}>
-                        {T("held")}
+                        {T("Waiting")}
                       </Badge>
                     )}
                     {!row.ready && row.check.blockedBy ? (
@@ -318,6 +335,7 @@ export default async function ReleasePage({
                     <Button asChild size="sm">
                       <Link href={`/app/scan?code=${encodeURIComponent(row.reference)}`}>
                         {T("Release")}
+                        <span aria-hidden>→</span>
                       </Link>
                     </Button>
                   </TableCell>
