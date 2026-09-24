@@ -15,9 +15,12 @@ import { useT } from "@/components/app/locale-provider";
 export function UndoArrivalButton({
   containerId,
   reference,
+  iconOnly = false,
 }: {
   containerId: string;
   reference: string;
+  /** A small square in a row of actions: a correction, not the next step. */
+  iconOnly?: boolean;
 }) {
   const tx = useT();
   const [open, setOpen] = useState(false);
@@ -29,10 +32,24 @@ export function UndoArrivalButton({
 
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
-        <Undo2 />
-        {tx("Undo arrived")}
-      </Button>
+      {iconOnly ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={() => setOpen(true)}
+          title={tx("Undo arrived")}
+          aria-label={`${tx("Undo arrived")} ${reference}`}
+          className="w-9 px-0 text-muted-foreground hover:text-foreground"
+        >
+          <Undo2 />
+        </Button>
+      ) : (
+        <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(true)}>
+          <Undo2 />
+          {tx("Undo arrived")}
+        </Button>
+      )}
       {state.ok ? <FormMessage ok={state.ok} /> : null}
       {open ? (
         <Modal title={`Undo the arrival of ${reference}`} onClose={close}>

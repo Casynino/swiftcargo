@@ -123,10 +123,10 @@ function Queue({
                 <TableHead className="hidden md:table-cell">{T("Departed / landed")}</TableHead>
                 <TableHead className="text-right">{T("Cargo")}</TableHead>
                 <TableHead className="min-w-[8rem]">{T("Checked in")}</TableHead>
-                <TableHead className="hidden text-right lg:table-cell">
+                <TableHead className="hidden text-right 2xl:table-cell">
                   {T("Packages present")}
                 </TableHead>
-                <TableHead className="hidden xl:table-cell">{T("Checked by")}</TableHead>
+                <TableHead className="hidden 2xl:table-cell">{T("Checked by")}</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">{T("Waiting")}</TableHead>
                 <TableHead className="text-right" />
                 <TableHead className="w-10" />
@@ -321,13 +321,13 @@ function Queue({
                     <TableCell
                       className={
                         arrivedPkgs < packages
-                          ? "tnum hidden text-right text-sm text-warning lg:table-cell"
-                          : "tnum hidden text-right text-sm text-muted-foreground lg:table-cell"
+                          ? "tnum hidden text-right text-sm text-warning 2xl:table-cell"
+                          : "tnum hidden text-right text-sm text-muted-foreground 2xl:table-cell"
                       }
                     >
                       {here ? `${arrivedPkgs} / ${packages}` : "—"}
                     </TableCell>
-                    <TableCell className="hidden text-sm text-muted-foreground xl:table-cell">
+                    <TableCell className="hidden text-sm text-muted-foreground 2xl:table-cell">
                       {checkers.length > 0 ? checkers.join(", ") : "Nobody yet"}
                     </TableCell>
                     <TableCell className="tnum hidden text-right text-sm text-muted-foreground sm:table-cell">
@@ -337,17 +337,33 @@ function Queue({
                       {here ? (
                         /* At the port: inspect (missing, damaged) if needed,
                            then one press clears the lot into our warehouse. */
-                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        /* One line, one height: the next step is the only
+                           solid button, the rest are quiet, and undoing the
+                           arrival is a correction, not a step — an icon. */
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           {awaitingClearance > 0 ? (
-                            <ClearanceButton containerId={container.id} waiting={awaitingClearance} terms={terms} />
+                            <ClearanceButton
+                              containerId={container.id}
+                              waiting={awaitingClearance}
+                              terms={terms}
+                              size="sm"
+                            />
                           ) : null}
-                          <Button asChild size="sm" variant="outline">
+                          <Button
+                            asChild
+                            size="sm"
+                            variant={awaitingClearance === 0 && left > 0 ? "default" : "outline"}
+                          >
                             <Link href={`/app/receive/dar/${container.id}`}>
-                              {awaitingClearance > 0 ? "Inspect" : left > 0 ? "Check in" : "Finish"}
+                              {awaitingClearance > 0 ? T("Inspect") : left > 0 ? T("Check in") : T("Finish")}
                             </Link>
                           </Button>
                           {untouched ? (
-                            <UndoArrivalButton containerId={container.id} reference={container.reference} />
+                            <UndoArrivalButton
+                              containerId={container.id}
+                              reference={container.reference}
+                              iconOnly
+                            />
                           ) : null}
                         </div>
                       ) : sailing ? (

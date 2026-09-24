@@ -43,6 +43,7 @@ export function ClearanceButton({
   waiting,
   label,
   terms,
+  size,
 }: {
   cargoId?: string;
   containerId?: string;
@@ -50,6 +51,8 @@ export function ClearanceButton({
   waiting: number;
   label?: string;
   terms: StorageTerms;
+  /** "sm" in a table row, beside the row's other small buttons. */
+  size?: "sm";
 }) {
   const tx = useT();
   const tm = (message: string) => translateMessage(message, tx);
@@ -66,9 +69,9 @@ export function ClearanceButton({
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)} disabled={waiting === 0}>
+      <Button type="button" size={size} onClick={() => setOpen(true)} disabled={waiting === 0}>
         <ShieldCheck />
-        {label ?? (containerId ? `Mark cleared (${waiting})` : "Mark cleared")}
+        {label ?? (containerId ? `${tx("Mark cleared")} (${waiting})` : tx("Mark cleared"))}
       </Button>
       {state.ok ? <FormMessage ok={state.ok} /> : null}
       {open ? (
