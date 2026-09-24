@@ -10,6 +10,7 @@ import { nextDeliveryReference, nextReleaseNumber } from "@/lib/ids";
 import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
+import { accrueStorageQuietly } from "@/lib/storage-charge";
 import { authorize, authorizeCustomer } from "@/lib/session";
 import { store, UploadError } from "@/lib/storage";
 import { formMessage } from "@/lib/safe-error";
@@ -87,6 +88,9 @@ export async function releaseCargo(
       error: error instanceof UploadError ? error.message : "That upload failed.",
     };
   }
+
+  /* Storage up to the moment of handover, so the check below reads it. */
+  await accrueStorageQuietly([data.cargoId]);
 
   let number: string;
   try {
@@ -221,6 +225,7 @@ export async function markReadyForRelease(
   const actor = await authorize("release.execute");
 
   const cargoId = String(formData.get("cargoId") ?? "");
+  await accrueStorageQuietly([cargoId]);
   const cargo = await prisma.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },
     include: RELEASE_INCLUDE,

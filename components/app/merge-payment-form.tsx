@@ -1,14 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, Banknote, CircleCheck, Download, FileText, Paperclip, SlidersHorizontal, Tag } from "lucide-react";
+import { ArrowLeftRight, Ban, Banknote, Download, FileText, Paperclip, SlidersHorizontal, Tag } from "lucide-react";
 
 import {
   recordCombinedPayment,
   type MergeState,
 } from "@/lib/actions/merge";
-import { chargeStorage } from "@/lib/actions/invoices";
+import { waiveStorage } from "@/lib/actions/invoices";
 import { AskCreditButton } from "@/components/app/ask-for-credit";
 import { CreditButton, DiscountDialog, ExchangeRateDialog, RateDialog } from "@/components/app/bill-dialogs";
 import { FormMessage } from "@/components/app/form-message";
@@ -38,8 +38,10 @@ export type MergeBill = {
   outstandingTzs: number | null;
   /** The rate frozen onto this bill. Null only on bills raised without one. */
   rate: number | null;
-  /** Storage accrued and NOT yet on the bill, in the bill's currency. */
-  storageUncharged: number;
+  /** Storage already on the bill (charged by itself), in the bill's currency. */
+  storageOnBill: number;
+  /** Days of storage that figure covers. */
+  storageDays: number;
   /** For the Edit price dialog. */
   standardRate: number | null;
   appliedRate: number | null;
@@ -90,7 +92,7 @@ export function MergePaymentForm({
   combinedBillHref: string | null;
   /** May write off a shortfall — the desk that verifies money. */
   canClear?: boolean;
-  /** May give a discount or add storage on a bill. */
+  /** May give a discount or take storage off a bill. */
   canChangeBill?: boolean;
   /** May move the rate the bill was pinned at — the desk that owns the bill. */
   canChangeRate?: boolean;
@@ -148,7 +150,8 @@ export function MergePaymentForm({
   const ticked = bills.filter((b) => picked.has(b.invoiceId));
   const allocated = ticked.reduce((s, b) => s + inPay(b), 0);
   const inBills = ticked.reduce((s, b) => s + b.outstanding, 0);
-  const uncharged = ticked.reduce((s, b) => s + inPay(b, b.storageUncharged), 0);
+  const storageTicked = ticked.filter((b) => b.storageOnBill > 0.005);
+  const storageTotal = storageTicked.reduce((s, b) => s + inPay(b, b.storageOnBill), 0);
 
   const cargo = typed !== null ? Number(typed) || 0 : allocated;
   const fare = Number(transport) || 0;
@@ -197,11 +200,6 @@ export function MergePaymentForm({
   const only = ticked.length === 1 ? ticked[0] : null;
   const router = useRouter();
   const [dialog, setDialog] = useState<"discount" | "fx" | null>(null);
-  const [addingStorage, startStorage] = useTransition();
-  /* Kept against the bill it was said about, so ticking another bill does not
-     carry the answer across. Outside the button, because a charge that lands
-     takes the button away with it. */
-  const [storageSaid, setStorageSaid] = useState<{ invoiceId: string; error?: string; ok?: string } | null>(null);
 
   /* A payment that just cleared every bill leaves nothing left to tick — but
      the confirmation still has to stand, so this only shows the settled state
@@ -317,13 +315,12 @@ export function MergePaymentForm({
                         {bill.number}
                         {bill.container ? ` · ${bill.container}` : ""}
                       </span>
-                      {/* Accrued and NOT in the figure to the right. Said apart,
-                          because folding it in would promise a total the
-                          payment would then be refused for. */}
-                      {bill.storageUncharged > 0.005 ? (
+                      {/* Part of the figure to the right, named so the desk
+                          knows what it can take off. */}
+                      {bill.storageOnBill > 0.005 ? (
                         <span className="mt-0.5 block text-[11px] font-medium text-warning">
-                          + {money(inPay(bill, bill.storageUncharged))} storage,
-                          not yet on the bill
+                          Includes {money(inPay(bill, bill.storageOnBill))} storage ·{" "}
+                          {bill.storageDays} day{bill.storageDays === 1 ? "" : "s"}
                         </span>
                       ) : null}
                     </span>
@@ -382,9 +379,9 @@ export function MergePaymentForm({
           <div>
             <p className="text-xs text-muted-foreground">{picked.size} selected</p>
             <p className="tnum text-lg font-bold">{money(allocated)}</p>
-            {uncharged > 0.005 ? (
+            {storageTotal > 0.005 ? (
               <p className="text-[11px] font-medium text-warning">
-                + {money(uncharged)} storage, not yet on the bill
+                Includes {money(storageTotal)} storage
               </p>
             ) : null}
             {cross && ticked.length > 0 ? (
@@ -410,6 +407,18 @@ export function MergePaymentForm({
             {part ? "Pay them in full" : "They are paying part of a bill"}
           </button>
         </footer>
+
+        {canChangeBill && storageTicked.length > 0 ? (
+          <RemoveStorage
+            key={storageTicked.map((b) => b.invoiceId).join(",")}
+            invoiceIds={storageTicked.map((b) => b.invoiceId)}
+            label={money(storageTotal)}
+            onDone={() => {
+              setTyped(null);
+              router.refresh();
+            }}
+          />
+        ) : null}
 
         {part ? (
           <p className="border-t px-5 py-2 text-xs text-muted-foreground">
@@ -596,44 +605,6 @@ export function MergePaymentForm({
                 </div>
                 {canChangeBill ? (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                    {only.storageUncharged > 0.005 ? (
-                      <button
-                        type="button"
-                        disabled={addingStorage}
-                        onClick={() =>
-                          startStorage(async () => {
-                            const invoiceId = only.invoiceId;
-                            setStorageSaid(null);
-                            const f = new FormData();
-                            f.set("invoiceId", invoiceId);
-                            /* Refused for no rate set, or no permission — the
-                               desk has to be told which, or the press looks like
-                               it did nothing. A thrown refusal reaches the
-                               browser without its words in production. */
-                            const result = await chargeStorage({}, f).catch(
-                              (): { error?: string; ok?: string } => ({ error: "That did not work." })
-                            );
-                            setStorageSaid({ invoiceId, error: result.error, ok: result.ok });
-                            if (result.ok) {
-                              setTyped(null);
-                              router.refresh();
-                            }
-                          })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-md border border-warning/40 px-2.5 py-1 text-xs font-medium text-warning hover:bg-warning/10 disabled:opacity-50"
-                      >
-                        <CircleCheck className="size-3.5" />
-                        {addingStorage ? "Adding…" : `Add storage · ${money(inPay(only, only.storageUncharged))}`}
-                      </button>
-                    ) : null}
-                    {storageSaid?.invoiceId === only.invoiceId && (storageSaid.error || storageSaid.ok) ? (
-                      <span
-                        role={storageSaid.error ? "alert" : "status"}
-                        className={cn("text-xs", storageSaid.error ? "text-destructive" : "text-success")}
-                      >
-                        {storageSaid.error ?? storageSaid.ok}
-                      </span>
-                    ) : null}
                     <button type="button" onClick={() => setDialog("discount")} className="inline-flex items-center gap-1.5 text-brand hover:underline">
                       <Tag className="size-3.5" />
                       Give a discount
@@ -731,5 +702,96 @@ export function MergePaymentForm({
         </SubmitButton>
       </div>
     </form>
+  );
+}
+
+/**
+ * TAKE THE STORAGE OFF, ALL AT ONCE.
+ *
+ * Storage is on the bill by itself; the desk decides when a customer is let
+ * off it. One press covers every ticked bill, with one reason, and the bills
+ * are then left alone by the nightly charge.
+ */
+function RemoveStorage({
+  invoiceIds,
+  label,
+  onDone,
+}: {
+  invoiceIds: string[];
+  label: string;
+  onDone: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, action, pending] = useActionState<{ error?: string; ok?: string }, FormData>(
+    waiveStorage,
+    {}
+  );
+  /* Once per answer. onDone is a new function every render of the form, and
+     re-running on it would refresh the page in a loop. */
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    if (state.ok) {
+      setOpen(false);
+      done.current();
+    }
+  }, [state]);
+
+  const bills = invoiceIds.length === 1 ? "this bill" : `${invoiceIds.length} bills`;
+
+  return (
+    <div className="border-t px-5 py-3">
+      {open ? (
+        <form action={action} className="space-y-2">
+          {invoiceIds.map((id) => (
+            <input key={id} type="hidden" name="invoiceId" value={id} />
+          ))}
+          <p className="text-xs font-medium">
+            Take {label} of storage off {bills}? It will not be charged again.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              name="reason"
+              required
+              maxLength={300}
+              autoFocus
+              placeholder="Why — e.g. agreed with the manager"
+              className="h-8 min-w-0 flex-1 rounded-md border bg-background px-2.5 text-xs"
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-destructive px-3 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              <Ban className="size-3.5" />
+              {pending ? "Removing…" : "Remove storage"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Keep it
+            </button>
+          </div>
+          {state.error ? <p role="alert" className="text-xs text-destructive">{state.error}</p> : null}
+        </form>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            {label} of storage is on {bills}, charged after the free days.
+          </p>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10"
+          >
+            <Ban className="size-3.5" />
+            Remove storage · {label}
+          </button>
+        </div>
+      )}
+      {state.ok ? <p role="status" className="mt-1 text-xs text-success">{state.ok}</p> : null}
+    </div>
   );
 }

@@ -1274,6 +1274,12 @@ model Invoice {
   cancelledAt     DateTime?
   cancelledReason String?
 
+  /// Finance took the storage off this bill. Storage is charged by itself each
+  /// night past the free days (lib/storage-charge.ts); a waiver is what stops
+  /// that job putting it straight back. Who did it is in FieldChange.
+  storageWaivedAt     DateTime?
+  storageWaivedReason String?
+
   notes String?
 
   createdAt DateTime @default(now())

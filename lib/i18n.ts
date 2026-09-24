@@ -7228,7 +7228,7 @@ const ZH: Record<string, string> = {
   "Changes the Dar column only. China's measurement stays as Guangzhou recorded it, and the old Dar figure is kept with your name and reason.": "只修改达累斯萨拉姆一列。中国的测量保持广州记录，旧的达累斯萨拉姆数据会连同您的姓名和原因一起保留。",
   "Changes this invoice only. The dollar total does not move.": "只修改此发票。美元总额不变。",
   "Charge": "费用",
-  "Charge storage on this bill": "在此账单收取仓储费",
+  "Charge storage after the free days": "免费期后收取仓储费",
   "Charged": "已收费",
   "Charged by": "收费方式",
   "Chase payment — billed": "催款——已开账单",

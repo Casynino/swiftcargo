@@ -91,7 +91,7 @@ export default async function PortalInvoicesPage() {
                         ["Total", tzs ? formatCurrency(balance.totalTzs, "TZS") : formatMoney(invoice.total, invoice.currency)],
                         ["Paid", tzs ? formatCurrency(balance.paidTzs, "TZS") : formatMoney(balance.paid, invoice.currency)],
                         ["Amount due", cancelled ? "—" : tzs ? formatCurrency(balance.outstandingTzs, "TZS") : formatMoney(balance.outstanding, invoice.currency)],
-                        ["Due", formatDate(invoice.dueAt)],
+                        ["Due", invoice.dueAt || invoice.status === "DRAFT" ? formatDate(invoice.dueAt) : "On collection"],
                       ].map(([label, value]) => (
                         <div key={label}>
                           <dt className="text-xs text-muted-foreground">{label}</dt>

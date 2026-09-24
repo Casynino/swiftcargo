@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, type RateBasis } from "@prisma/client";
 
+import { accrueStorageQuietly } from "@/lib/storage-charge";
 import { recordAudit, recordFieldChange } from "@/lib/audit";
 import { nextExceptionReference } from "@/lib/ids";
 import { notifyStaff, staffInDepartment } from "@/lib/notify";
@@ -83,6 +84,8 @@ export async function confirmPrices(
     waiting.map((c) => c.id),
     ctx
   );
+  /* A bill issued past the free days carries its storage from the start. */
+  await accrueStorageQuietly(waiting.map((c) => c.id));
 
   await recordAudit({
     actor,

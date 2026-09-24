@@ -120,7 +120,9 @@ export async function loadInvoicePdf(key: string) {
       tagline: company?.tagline ?? "On time, Every time",
     },
     issuedOn: formatDate(invoice.issuedAt ?? invoice.createdAt),
-    dueOn: formatDate(invoice.dueAt),
+    /* An issued bill with no date is one whose freight was paid and whose
+       storage is owed at pickup (lib/storage-charge.ts). */
+    dueOn: invoice.dueAt || invoice.status === "DRAFT" ? formatDate(invoice.dueAt) : "On collection",
 
     customer: {
       headline: invoice.customer.businessName || invoice.customer.fullName,

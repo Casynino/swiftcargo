@@ -8,6 +8,7 @@ import { parseScan } from "@/lib/qr";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { checkRelease, RELEASE_INCLUDE } from "@/lib/release";
+import { accrueStorageQuietly } from "@/lib/storage-charge";
 import { recordScan, resolveScanToken } from "@/lib/scan";
 import { authorize } from "@/lib/session";
 
@@ -114,6 +115,8 @@ export async function resolveForRelease(raw: string): Promise<ScanResult> {
     return { ok: false, error: "No cargo matches that code." };
   }
 
+  /* The counter reads the bill as of now, storage included. */
+  await accrueStorageQuietly([cargoId]);
   const cargo = await prisma.cargo.findFirst({
     where: { id: cargoId, deletedAt: null },
     include: {

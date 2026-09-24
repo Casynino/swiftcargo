@@ -246,7 +246,7 @@ export default async function InvoicePage({
           cbm={invoice.billableCbm ? Number(invoice.billableCbm) : null}
           storage={{
             configured: storage.configured,
-            onBill: invoice.items.some((i) => i.category === "Storage"),
+            onBill: !invoice.storageWaivedAt,
             clock: formatMoney(storage.amount, storage.currency),
             chargeableDays: storage.chargeableDays,
           }}

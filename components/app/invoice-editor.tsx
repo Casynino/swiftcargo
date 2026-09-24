@@ -93,10 +93,11 @@ export function InvoiceEditor({
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" name="storage" defaultChecked={storage.onBill} className="mt-0.5 size-4" />
                   <span>
-                    {tx("Charge storage on this bill")}
+                    {tx("Charge storage after the free days")}
                     <span className="block text-xs text-muted-foreground">
-                      The clock says {storage.clock}
-                      {storage.chargeableDays > 0 ? ` — ${storage.chargeableDays} day(s) past the free window` : " — still inside the free days"}.
+                      {storage.chargeableDays > 0
+                        ? `${storage.clock} so far — ${storage.chargeableDays} day(s) past the free days. It goes on the bill by itself and grows each day until pickup.`
+                        : "Still inside the free days. After that it goes on the bill by itself."}{" "}
                       Untick to waive it; either way it is recorded against your name.
                     </span>
                   </span>

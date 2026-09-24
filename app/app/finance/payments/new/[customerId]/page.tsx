@@ -15,9 +15,7 @@ import { balanceOf, outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
-import { storagePosition } from "@/lib/storage-fee";
 import { SmartBack } from "@/components/app/smart-back";
-import { storageStart } from "@/lib/storage-clock";
 
 import { primeLocale, T } from "@/lib/server-t";
 export const metadata: Metadata = { title: "Merge Payment" };
@@ -39,7 +37,7 @@ export default async function MergePaymentForCustomer({
   const user = await requirePermission("payment.submit");
   const { customerId } = await params;
 
-  const [customer, accounts, settings] = await Promise.all([
+  const [customer, accounts] = await Promise.all([
     prisma.customer.findUnique({
       where: { id: customerId },
       select: {
@@ -52,7 +50,7 @@ export default async function MergePaymentForCustomer({
           orderBy: { issuedAt: "asc" },
           include: {
             payments: true,
-            items: { select: { category: true, amount: true, unit: true } },
+            items: { select: { category: true, amount: true, unit: true, quantity: true } },
             cargo: {
               select: {
                 reference: true,
@@ -76,10 +74,6 @@ export default async function MergePaymentForCustomer({
       where: { active: true },
       orderBy: [{ sortOrder: "asc" }, { bankName: "asc" }],
       select: { id: true, bankName: true, currency: true, kind: true },
-    }),
-    prisma.companySetting.findUnique({
-      where: { id: "singleton" },
-      select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
     }),
   ]);
   if (!customer) notFound();
@@ -105,25 +99,12 @@ export default async function MergePaymentForCustomer({
       continue;
     }
 
-    /* Storage accrued against what is already on the bill. The difference is
-       named on the row rather than folded in: folding it in would promise a
-       total the payment would then be refused for. */
-    const accrued = storagePosition({
-      receivedAt: storageStart(invoice.cargo.darReceiving?.receivedAt, invoice.cargo.clearedAt),
-      collectedAt: null,
-      freeDays: settings?.freeStorageDays ?? 0,
-      perDay: settings?.storagePerDay ?? 0,
-      currency: settings?.storageCurrency ?? "USD",
-    });
-    const onBill = invoice.items
-      .filter((i) => i.category === "Storage")
-      .reduce((s, i) => s + Number(i.amount), 0);
+    /* Storage goes on the bill by itself (lib/storage-charge.ts); the row
+       says how much of the figure it is, so the desk can take it off. */
+    const storageLines = invoice.items.filter((i) => i.category === "Storage");
+    const storageOnBill = storageLines.reduce((s, i) => s + Number(i.amount), 0);
+    const storageDays = storageLines.reduce((s, i) => s + Number(i.quantity), 0);
     const rate = Number(invoice.fxRate) > 1 ? Number(invoice.fxRate) : null;
-    let accruedInBill = Number(accrued.amount);
-    if (accrued.currency !== invoice.currency && rate) {
-      accruedInBill =
-        accrued.currency === "TZS" ? accruedInBill / rate : accruedInBill * rate;
-    }
 
     bills.push({
       invoiceId: invoice.id,
@@ -137,7 +118,8 @@ export default async function MergePaymentForCustomer({
       outstanding: Number(outstandingOf(invoice)),
       outstandingTzs: balanceOf(invoice).outstandingTzs?.toNumber() ?? null,
       rate,
-      storageUncharged: Math.max(0, accruedInBill - onBill),
+      storageOnBill,
+      storageDays,
       standardRate: invoice.standardRate ? Number(invoice.standardRate) : null,
       appliedRate: invoice.appliedRate ? Number(invoice.appliedRate) : null,
       cbm: invoice.billableCbm ? Number(invoice.billableCbm) : null,
