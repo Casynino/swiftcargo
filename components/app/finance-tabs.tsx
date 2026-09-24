@@ -23,6 +23,7 @@ const TABS = [
   ["/app/finance/accounts", "Accounts"],
   ["/app/finance/collections", "Collections"],
   ["/app/finance/credit", "Credit"],
+  ["/app/finance/prices", "Confirm prices"],
   ["/app/finance/ledger", "General ledger"],
   ["/app/finance/expenses", "Expenses"],
   ["/app/finance/payroll", "Payroll"],

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Prisma, type CargoStatus } from "@prisma/client";
 import {
   Boxes,
+  ClipboardCheck,
   Container as ContainerIcon,
   Download,
   Package,
@@ -38,6 +39,7 @@ import {
   whatsappNumber,
   type ContactKind,
 } from "@/lib/messages";
+import { priceListWaitingInChina } from "@/lib/price-list";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { cargoTypeOptions } from "@/lib/valuation";
@@ -392,15 +394,37 @@ export default async function InventoryPage({
     return sum + Number(cbm ?? 0);
   }, 0);
 
+  /* THE FLOOR'S OWN DOOR TO WHAT IT IS WORTH.
+     A consignment does not wait for a container to be priced — see
+     lib/price-confirmation.ts — so whoever reads this floor for the money
+     behind it is told the same figure Confirm prices already holds, and sent
+     there to act on it rather than here, where nothing can be confirmed. */
+  const showPricing = inChina && can(user.role, "finance.view");
+  const pricing = showPricing ? await priceListWaitingInChina() : null;
+  /* The floor's own name for its own workspace stays "Guangzhou floor" —
+     everybody else reading it from outside is reading "Cargo in China",
+     the same list under the name the rest of the company calls it. */
+  const ownFloor = can(user.role, "receiving.china");
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={inChina ? T("Guangzhou floor") : T("Dar es Salaam floor")}
+        title={
+          inChina
+            ? ownFloor
+              ? T("Guangzhou floor")
+              : T("Cargo in China")
+            : T("Dar es Salaam floor")
+        }
         description={
           inChina
             ? loadedView
               ? T("Received in Guangzhou and already in a container, with the box it went into.")
-              : T("Everything received and still waiting for a container.")
+              : ownFloor
+                ? T("Everything received and still waiting for a container.")
+                : T(
+                    "Everything received in Guangzhou that has not sailed yet — on the floor or in a container — and whether its customer has been told."
+                  )
             : T("Everything landed in Dar, oldest first.")
         }
         actions={
@@ -518,6 +542,24 @@ export default async function InventoryPage({
           {T("Filter")}
         </Button>
       </form>
+
+      {pricing && pricing.rows.length > 0 ? (
+        <Link
+          href="/app/finance/prices"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-signal/40 bg-signal/5 px-4 py-3 hover:bg-signal/10"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <ClipboardCheck className="size-4 text-signal" />
+            {pricing.rows.length}{" "}
+            {T(pricing.rows.length === 1 ? "price to confirm" : "prices to confirm")}
+            <span className="tnum text-muted-foreground">
+              {pricing.totalUsdLabel}
+              {pricing.totalTzsLabel ? ` · ${pricing.totalTzsLabel}` : ""}
+            </span>
+          </span>
+          <span className="text-sm text-signal">{T("Confirm prices")} →</span>
+        </Link>
+      ) : null}
 
       <section>
         <SectionLabel count={held}>
@@ -704,7 +746,7 @@ export default async function InventoryPage({
                               cargoId={item.id}
                               phone={whatsappNumber(item.sender.phone)}
                               kind={letterKind(item)}
-                              label={T("Notify")}
+                              label={T("Notify customer")}
                               /* Written here, on the server, from the row the
                                  clerk is looking at — a figure retyped into a
                                  phone is a figure that can be typed wrong. */
@@ -736,7 +778,7 @@ export default async function InventoryPage({
                                 </span>
                               </span>
                             ) : (
-                              <Badge tone="warn">{T("Not told")}</Badge>
+                              <Badge tone="warn">{T("Not notified yet")}</Badge>
                             )}
                           </div>
                         </TableCell>

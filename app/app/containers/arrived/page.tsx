@@ -28,11 +28,7 @@ import {
 } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
-import {
-  priceListForContainer,
-  priceListWaitingInChina,
-  priceListWaitingInDar,
-} from "@/lib/price-list";
+import { priceListForContainer } from "@/lib/price-list";
 import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
 import { requirePermission } from "@/lib/session";
 import { unsailedToPrice } from "@/lib/unsailed-pricing";
@@ -455,18 +451,17 @@ export default async function ArrivedContainersPage({
   /*
     THE PRICES THEMSELVES, FOR A DESK THAT MAY SEE MONEY.
 
-    Each container still waiting, and the group with no container, as the same
-    list the container page opens with: the rate book's figure on every row,
-    the type and the rate correctable on the row, and one press per list.
+    Every container still waiting, as the same list its own page opens with:
+    the rate book's figure on every row, the type and the rate correctable on
+    the row, and one press per container. Cargo with no container yet is
+    priced from Confirm prices instead — one row is never on both lists.
   */
   const pricing =
     chosen === "pricing" && showMoney
       ? await (async () => {
           const mayConfirm = can(user.role, "invoice.priceConfirm");
-          const [cargoTypes, waitingInChina, waitingInDar, perContainer] = await Promise.all([
+          const [cargoTypes, perContainer] = await Promise.all([
             mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
-            priceListWaitingInChina(),
-            priceListWaitingInDar(),
             Promise.all(
               shown.map(async (row) => ({
                 row,
@@ -474,7 +469,7 @@ export default async function ArrivedContainersPage({
               }))
             ),
           ]);
-          return { mayConfirm, cargoTypes, waitingInChina, waitingInDar, perContainer };
+          return { mayConfirm, cargoTypes, perContainer };
         })()
       : null;
 
@@ -627,44 +622,28 @@ export default async function ArrivedContainersPage({
               locale={locale}
             />
           ))}
-          <PriceList
-            heading={
-              <span className="font-medium text-foreground">
-                {t(locale, "Still in China, not yet on a container")}
-              </span>
-            }
-            containerId={null}
-            list={pricing.waitingInChina}
-            cargoTypes={pricing.cargoTypes}
-            canConfirm={pricing.mayConfirm}
-            locale={locale}
-          />
-          <PriceList
-            heading={
-              <span className="font-medium text-foreground">
-                {t(locale, "In Dar with no container on record")}
-              </span>
-            }
-            containerId={null}
-            list={pricing.waitingInDar}
-            cargoTypes={pricing.cargoTypes}
-            canConfirm={pricing.mayConfirm}
-            locale={locale}
-          />
-          {pricing.perContainer.every(({ list }) => list.rows.length === 0) &&
-          pricing.waitingInChina.rows.length === 0 &&
-          pricing.waitingInDar.rows.length === 0 ? (
+          {pricing.perContainer.every(({ list }) => list.rows.length === 0) ? (
             <Card>
               <EmptyState
                 icon="Ship"
-                title={t(locale, "Nothing is waiting for a price")}
+                title={t(locale, "Nothing on a container is waiting for a price")}
                 description={t(
                   locale,
-                  "Cargo appears here as soon as it is measured — in China or at Dar."
+                  "Cargo not yet on a container is priced from Confirm prices."
                 )}
               />
             </Card>
           ) : null}
+          <p className="text-sm text-muted-foreground">
+            {t(locale, "Cargo not yet on a container is priced from")}{" "}
+            <Link
+              href="/app/finance/prices"
+              className="font-medium text-brand hover:underline"
+            >
+              {t(locale, "Confirm prices")}
+            </Link>
+            .
+          </p>
         </div>
       ) : null}
 

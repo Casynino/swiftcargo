@@ -134,6 +134,7 @@ const SECTIONS: NavSection[] = [
         anybody touched this file.
       */
       { label: "Overview", href: "/app/finance", icon: "Wallet", permissions: ["finance.view"], pinned: true },
+      { label: "Confirm prices", href: "/app/finance/prices", icon: "ClipboardCheck", permissions: ["finance.view"] },
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["accounting.view"] },
       { label: "Payroll", href: "/app/finance/payroll", icon: "Wallet", permissions: ["accounting.view"] },
       { label: "Accounts", href: "/app/finance/accounts", icon: "Landmark", permissions: ["accounting.view"] },
@@ -258,6 +259,7 @@ const SUPPORT_SECTIONS: NavSection[] = [
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["finance.view"] },
       { label: "Collections", href: "/app/finance/collections", icon: "HandCoins", permissions: ["finance.view"] },
       { label: "Pickup notes", href: "/app/finance/pickup-notes", icon: "QrCode", permissions: ["finance.view"] },
+      { label: "Confirm prices", href: "/app/finance/prices", icon: "ClipboardCheck", permissions: ["finance.view"] },
       { label: "Merge Payment", href: "/app/finance/payments/new", icon: "Layers", permissions: ["payment.submit"] },
       { label: "Record Payment", href: "#record-payment", icon: "Banknote", permissions: ["payment.submit"] },
       { label: "Rate book", href: "/app/finance/rates", icon: "Tags", permissions: ["rate.view"] },
@@ -310,6 +312,7 @@ const MANAGER_SECTIONS: NavSection[] = [
     icon: "ReceiptText",
     items: [
       { label: "Overview", href: "/app/finance", icon: "LayoutGrid", permissions: ["accounting.view"], pinned: true },
+      { label: "Confirm prices", href: "/app/finance/prices", icon: "ClipboardCheck", permissions: ["finance.view"] },
       { label: "Collections", href: "/app/finance/collections", icon: "HandCoins", permissions: ["finance.view"] },
       { label: "Profit & loss", href: "/app/finance/reports", icon: "TrendingUp", permissions: ["profit.view"] },
       { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", permissions: ["record.reconcile"] },
@@ -396,6 +399,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     items: [
       { label: "Overview", href: "/app/finance", icon: "Wallet", permissions: ["accounting.view"], pinned: true },
       { label: "Record Payment", href: "#record-payment", icon: "Banknote", permissions: ["payment.submit"] },
+      { label: "Confirm prices", href: "/app/finance/prices", icon: "ClipboardCheck", permissions: ["finance.view"] },
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["finance.view"] },
       { label: "Rate book", href: "/app/finance/rates", icon: "Tags", permissions: ["rate.view"] },
       { label: "Pickup notes", href: "/app/finance/pickup-notes", icon: "QrCode", permissions: ["finance.view"] },
