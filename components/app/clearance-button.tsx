@@ -79,7 +79,7 @@ export function ClearanceButton({
               <Warehouse className="size-5 text-warning" />
             </span>
             <div>
-              <p className="font-semibold">{tx("Dar must check these goods in")}</p>
+              <p className="font-semibold">{tx("The Dar warehouse must check these goods in")}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {tx(
                   "Storage does not start when you clear. It starts counting only from the day the Dar warehouse checks the goods in. We will notify the Dar warehouse for you."
@@ -98,7 +98,7 @@ export function ClearanceButton({
             <Step
               icon={Warehouse}
               tone="text-warning bg-warning/15"
-              title={tx("Dar checks in")}
+              title={tx("Dar warehouse checks in")}
               detail={tx("Storage starts counting from this day.")}
             />
             <Step

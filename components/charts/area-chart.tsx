@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { areaPath, scalePoints, smoothPath } from "@/lib/chart";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,12 @@ export function AreaChart({
   currency?: string;
   className?: string;
 }) {
-  const uid = useId().replace(/:/g, "");
+  /* THE FILL IS NAMED BY ITS COLOUR, NOT BY useId. The gradient depends on
+     nothing but the tone, and useId came out different on the server and in
+     the browser whenever anything above the chart rendered differently —
+     React flagged the page as mismatched and never repaired it. Two charts on
+     one page sharing an id share an identical fill, so nothing is lost. */
+  const fillId = (tone: number) => `area-fill-${tone}`;
   const [hover, setHover] = useState<number | null>(null);
 
   const W = 800;
@@ -108,7 +113,7 @@ export function AreaChart({
             {scaled.map((s) => (
               <linearGradient
                 key={s.name}
-                id={`${uid}-${s.tone}`}
+                id={fillId(s.tone)}
                 x1="0"
                 y1="0"
                 x2="0"
@@ -146,7 +151,7 @@ export function AreaChart({
 
           {scaled.map((s) => (
             <g key={s.name}>
-              <path d={areaPath(s.points, H)} fill={`url(#${uid}-${s.tone})`} />
+              <path d={areaPath(s.points, H)} fill={`url(#${fillId(s.tone)})`} />
               <path
                 d={smoothPath(s.points)}
                 fill="none"

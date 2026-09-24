@@ -417,7 +417,7 @@ export default async function CargoDetailPage({
               <Warehouse className="size-5 text-warning" />
             </span>
             <div className="text-sm">
-              <p className="font-semibold">{T("Cleared — Dar must check it in")}</p>
+              <p className="font-semibold">{T("Cleared — the Dar warehouse must check it in")}</p>
               <p className="mt-0.5 text-muted-foreground">
                 {can(user.role, "receiving.dar")
                   ? T("Storage has not started. Check it in on the Receiving dock — storage starts counting from that day.")

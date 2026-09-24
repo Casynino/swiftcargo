@@ -652,8 +652,8 @@ export default async function ContainerPage({
                 {clearedNotIn}{" "}
                 {T(
                   clearedNotIn === 1
-                    ? "consignment cleared — Dar must check it in"
-                    : "consignments cleared — Dar must check them in"
+                    ? "consignment cleared — the Dar warehouse must check it in"
+                    : "consignments cleared — the Dar warehouse must check them in"
                 )}
               </p>
               <p className="mt-0.5 text-muted-foreground">
