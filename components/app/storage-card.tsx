@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Ban, CheckCircle2, TriangleAlert } from "lucide-react";
 
 import { FormMessage } from "@/components/app/form-message";
@@ -22,9 +22,9 @@ import { useT } from "@/components/app/locale-provider";
  * works out to, and what is actually on the bill. A clerk who waived half of it
  * last week needs to see both, or they will waive it again.
  *
- * Nothing here charges by itself. Whether to bill a customer who was three days
- * late is a commercial judgement, and a charge that appears on its own is one
- * nobody can explain when the customer rings.
+ * The charge goes on the bill by itself each night past the free days
+ * (lib/storage-charge.ts). What is left to a person is the exception: taking
+ * it off, with a reason, or putting it back after that.
  */
 export function StorageCard({
   invoiceId,
@@ -35,6 +35,7 @@ export function StorageCard({
   calculated,
   onTheBill,
   since,
+  waived,
 }: {
   invoiceId: string;
   currency: string;
@@ -45,8 +46,10 @@ export function StorageCard({
   calculated: string;
   /** What is actually on the invoice, formatted. Null when nothing is. */
   onTheBill: string | null;
-  /** The day the boxes landed on the Dar floor, formatted. */
+  /** The day the goods were cleared — when the clock started — formatted. */
   since: string;
+  /** Why storage was taken off this bill, when it was. */
+  waived: string | null;
 }) {
   const tx = useT();
   const [state, action] = useActionState<ActionState, FormData>(
@@ -55,6 +58,7 @@ export function StorageCard({
   );
 
   const running = chargeableDays > 0;
+  const [removing, setRemoving] = useState(false);
 
   return (
     <div
@@ -96,7 +100,9 @@ export function StorageCard({
           ) : null}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          uncollected since {since} · charged at pickup
+          {waived
+            ? `cleared ${since} · storage taken off: ${waived}`
+            : `cleared ${since} · added to the bill by itself, a day at a time, until pickup`}
         </p>
       </div>
 
@@ -116,29 +122,51 @@ export function StorageCard({
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {waived ? (
           <form action={action}>
             <input type="hidden" name="invoiceId" value={invoiceId} />
-            <SubmitButton size="sm" variant="outline" disabled={!running}>
+            <SubmitButton size="sm" variant="outline">
               <CheckCircle2 />
-              Add storage fee · {calculated}
+              {tx("Charge storage again")}
             </SubmitButton>
           </form>
-          {onTheBill ? (
-            <form action={action}>
-              <input type="hidden" name="invoiceId" value={invoiceId} />
-              <input type="hidden" name="remove" value="1" />
-              <SubmitButton
-                size="sm"
-                variant="outline"
-                className="border-warning/40 text-warning hover:bg-warning/10"
-              >
+        ) : removing ? (
+          <form action={action} className="space-y-2">
+            <input type="hidden" name="invoiceId" value={invoiceId} />
+            <input type="hidden" name="remove" value="1" />
+            <input
+              name="reason"
+              required
+              maxLength={300}
+              autoFocus
+              placeholder={tx("Why — e.g. agreed with the manager")}
+              className="h-8 w-full rounded-md border bg-background px-2.5 text-xs"
+            />
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton size="sm" variant="destructive">
                 <Ban />
-                {tx("Waive storage fee")}
+                {tx("Remove storage")}
               </SubmitButton>
-            </form>
-          ) : null}
-        </div>
+              <button
+                type="button"
+                onClick={() => setRemoving(false)}
+                className="h-9 rounded-md px-3 text-sm text-muted-foreground hover:text-foreground"
+              >
+                {tx("Keep it")}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRemoving(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-warning/40 px-3 text-sm font-medium text-warning hover:bg-warning/10"
+          >
+            <Ban className="size-4" />
+            {tx("Remove storage")}
+            {onTheBill ? ` · ${onTheBill}` : ""}
+          </button>
+        )}
 
         <FormMessage error={state.error} ok={state.ok} />
       </div>

@@ -909,6 +909,7 @@ export default async function CargoDetailPage({
                   : null
               }
               since={formatDate(cargo.clearedAt)}
+              waived={billHere.storageWaivedAt ? billHere.storageWaivedReason ?? "no reason given" : null}
             />
           ) : null}
 
@@ -1000,10 +1001,14 @@ export default async function CargoDetailPage({
                   : null
               }
               storageLine={
-                !storage.configured || !dar
+                !storage.configured || !cargo.clearedAt
                   ? null
-                  : storage.chargeableDays > 0
-                    ? `Storage ${formatMoney(storage.amount, storage.currency)} so far${storageOnBill > 0 ? ` · ${formatMoney(storageOnBill, billHere?.currency ?? "USD")} on the bill` : " · not on the bill yet"}`
+                  : billHere?.storageWaivedAt
+                    ? "Storage taken off this bill"
+                    : storage.chargeableDays > 0
+                      ? storageOnBill > 0
+                        ? `Includes ${formatMoney(storageOnBill, billHere?.currency ?? "USD")} storage (${storage.chargeableDays} day${storage.chargeableDays === 1 ? "" : "s"}) — added by itself each day until pickup`
+                        : `Storage ${formatMoney(storage.amount, storage.currency)} — goes on the bill once it is issued`
                     : `No storage fee · ${Math.max(0, storage.freeDays - storage.daysHeld + 1)} free day${storage.freeDays - storage.daysHeld + 1 === 1 ? "" : "s"} left`
               }
               accounts={accounts.map((a) => ({
