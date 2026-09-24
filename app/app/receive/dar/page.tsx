@@ -374,6 +374,7 @@ function Queue({
                               reference={container.reference}
                               consignments={container.cargoLines.length}
                               checkedIn={checkedInHere}
+                              compact
                             />
                           ) : null}
                           {/* One step at a time: clearing first, then checking
@@ -387,7 +388,12 @@ function Queue({
                               size="sm"
                             />
                           ) : (
-                            <Button asChild size="sm" variant={ready > 0 ? "default" : "outline"}>
+                            <Button
+                              asChild
+                              size="sm"
+                              variant={ready > 0 ? "default" : "outline"}
+                              className="h-8 gap-1.5 rounded-full px-3 text-xs [&_svg]:size-3.5"
+                            >
                               <Link href={`/app/receive/dar/${container.id}`}>
                                 {ready > 0 ? `${T("Check in")} (${ready})` : T("Finish")}
                               </Link>

@@ -69,7 +69,13 @@ export function ClearanceButton({
 
   return (
     <>
-      <Button type="button" size={size} onClick={() => setOpen(true)} disabled={waiting === 0}>
+      <Button
+        type="button"
+        size={size}
+        onClick={() => setOpen(true)}
+        disabled={waiting === 0}
+        className={size === "sm" ? "h-8 gap-1.5 rounded-full px-3 text-xs [&_svg]:size-3.5" : undefined}
+      >
         <ShieldCheck />
         {label ?? (containerId ? `${tx("Mark cleared")} (${waiting})` : tx("Mark cleared"))}
       </Button>

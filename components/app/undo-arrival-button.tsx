@@ -23,7 +23,10 @@ export function UndoArrivalButton({
   reference,
   consignments,
   checkedIn = 0,
+  compact = false,
 }: {
+  /** The small pill used in a table row beside the next step. */
+  compact?: boolean;
   containerId: string;
   reference: string;
   /** Every consignment on the container, all of which go back to sea. */
@@ -47,7 +50,11 @@ export function UndoArrivalButton({
         size="sm"
         variant="ghost"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground hover:text-foreground"
+        className={
+          compact
+            ? "h-8 gap-1.5 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground [&_svg]:size-3.5"
+            : "text-muted-foreground hover:text-foreground"
+        }
       >
         <Undo2 />
         {tx("Undo arrived")}
