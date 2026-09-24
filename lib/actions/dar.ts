@@ -219,6 +219,21 @@ export async function receiveInDar(
         }
       }
 
+      /* An open flag is closed by resolving its case, not by checking in
+         again with figures that happen to agree. */
+      const flagged = before
+        ? discrepancy || !!recount?.caseRef || !!before.discrepancy
+        : discrepancy;
+
+      /* CHECKED IN IS SIGNED OFF, WHEN THE COUNT IS CLEAN.
+         By the owner's decision there is no separate "confirm the container"
+         press: the clerk who counts the boxes and finds them right has said
+         so, exactly as the tick does. A count that is short, over or damaged
+         stays unsigned — its case is how it is resolved. */
+      const signedOff = flagged
+        ? { verified: false, verifiedAt: null }
+        : { verified: true, verifiedAt: new Date() };
+
       const receiving = await tx.darReceiving.upsert({
         where: { cargoId: cargo.id },
         create: {
@@ -235,6 +250,7 @@ export async function receiveInDar(
           location: data.location || null,
           notes: data.notes || null,
           receivedById: actor.id,
+          ...signedOff,
         },
         update: {
           warehouseId: data.warehouseId,
@@ -244,12 +260,11 @@ export async function receiveInDar(
           weightKg: data.weightKg ?? null,
           cbm: data.cbm ?? null,
           condition: data.condition,
-          /* An open flag is closed by resolving its case, not by checking in
-             again with figures that happen to agree. */
-          discrepancy: discrepancy || !!recount?.caseRef || !!before?.discrepancy,
+          discrepancy: flagged,
           discrepancyNotes: data.discrepancyNotes || null,
           location: data.location || null,
           notes: data.notes || null,
+          ...signedOff,
         },
       });
 
@@ -389,11 +404,12 @@ export async function receiveInDar(
 }
 
 /**
- * Dar signs off the count.
+ * Dar signs off one count.
  *
- * Verification is a separate act from receiving on purpose: boxes come off a
- * container in a rush and are checked properly afterwards. Until this is done
- * the release engine will not let the cargo go, whatever the customer has paid.
+ * Checking in signs a clean count off in the same press, so this is only for a
+ * count that was left unsigned — taken before that rule, or sent back by
+ * Finance to be looked at again. Until it is signed the release engine will
+ * not let the cargo go, whatever the customer has paid.
  */
 export async function verifyCargo(
   _prev: ActionState,

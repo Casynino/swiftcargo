@@ -381,7 +381,6 @@ export default async function CheckInContainerPage({
         cargoTypes={cargoTypes}
         otherContainers={otherContainers}
         canAmend={mayAmend}
-        canConfirmUnchecked={can(user.role, "container.confirmUnchecked")}
         addable={addable.map((c) => ({
           id: c.id,
           label: `${c.reference} · ${c.shippingMark ?? c.sender.fullName} · ${c.description}`,

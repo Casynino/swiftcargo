@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -25,10 +25,9 @@ import { Button } from "@/components/ui/button";
 import {
   acceptAsExpected,
   setCheckInCargoType,
-  verifyContainer,
+  verifyCargo,
   type ActionState,
 } from "@/lib/actions/dar";
-import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn } from "@/lib/utils";
 import { distinctMark } from "@/lib/customer-name";
@@ -145,7 +144,6 @@ export function CheckInList({
   otherContainers,
   addable,
   canAmend,
-  canConfirmUnchecked,
 }: {
   containerId: string;
   rows: CheckInRow[];
@@ -159,7 +157,6 @@ export function CheckInList({
   addable: { id: string; label: string }[];
   canAmend: boolean;
   /** May this desk sign the box off over cargo nobody counted? */
-  canConfirmUnchecked: boolean;
 }) {
   /* Everything still open starts ticked — the common case is one answer for
      the whole container, and unticking the few that do not apply is less
@@ -257,15 +254,6 @@ export function CheckInList({
               />
             </>
           ) : null}
-          <FinishCheckIn
-            containerId={containerId}
-            remaining={open.map((r) => r.id)}
-            toVerify={
-              rows.filter((r) => r.arrivedPackages !== null && !r.verified && !r.discrepancy)
-                .length
-            }
-            canConfirmUnchecked={canConfirmUnchecked}
-          />
         </div>
         <div className="flex w-full flex-wrap items-center gap-1.5 border-t pt-3">
           {LENSES.map((option) => {
@@ -365,182 +353,6 @@ export function CheckInList({
   );
 }
 
-/**
- * THE LAST PRESS OF THE JOB.
- *
- * Confirming the container is the floor saying every consignment on the
- * manifest has been accounted for. Signing off what is counted and shutting the
- * box are both that one sentence, so they are one press.
- *
- * IT DOES NOT RULE ON ROWS NOBODY LOOKED AT. This press used to record every
- * untouched consignment as present and undamaged on its way past, warned about
- * in small type that read like a footnote rather than a decision about real
- * cartons on a real floor. Ticking them through is still one press — it is just
- * a press that says what it is doing, and the clerk chooses it.
- *
- * The confirmation refuses while anything is unchecked; the server decides
- * that, not this component, and the override below only puts a reason in front
- * of a desk that already holds the authority for it.
- */
-function FinishCheckIn({
-  containerId,
-  remaining,
-  toVerify,
-  canConfirmUnchecked,
-}: {
-  containerId: string;
-  remaining: string[];
-  toVerify: number;
-  canConfirmUnchecked: boolean;
-}) {
-  const [asking, setAsking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
-  const [pending, start] = useTransition();
-
-  if (remaining.length === 0 && toVerify === 0) return null;
-
-  /** Tick the untouched rows through as sent, then confirm the container. */
-  function tickThroughAndConfirm() {
-    setError(null);
-    start(async () => {
-      const body = new FormData();
-      for (const id of remaining) body.append("cargoIds", id);
-      const accepted = await acceptAsExpected({}, body);
-      if (accepted.error) {
-        setError(accepted.error);
-        return;
-      }
-      await confirm();
-    });
-  }
-
-  async function confirm(overrideReason?: string) {
-    const sign = new FormData();
-    sign.set("containerId", containerId);
-    if (overrideReason) sign.set("overrideReason", overrideReason);
-    const signed = await verifyContainer({}, sign);
-    if (signed.error) {
-      setError(signed.error);
-      return;
-    }
-    setAsking(false);
-  }
-
-  return (
-    <div className="flex flex-col items-end gap-2">
-      {asking ? (
-        <div className="w-80 rounded-lg border bg-card p-3 shadow-raised">
-          <p className="text-sm font-medium">Confirm this container?</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Everything counted and clean is signed off, and the box is closed.
-            Anything missing or damaged keeps its case and does not hold the rest
-            up.
-          </p>
-
-          {remaining.length > 0 ? (
-            <>
-              <p className="mt-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning">
-                <span className="font-semibold">
-                  {remaining.length} not yet checked.
-                </span>{" "}
-                They are either on the floor or they are a case, and the
-                container cannot be confirmed until somebody says which.
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-2 w-full"
-                onClick={tickThroughAndConfirm}
-                disabled={pending}
-              >
-                {pending
-                  ? "Checking in…"
-                  : `Tick the ${remaining.length} through as sent, then confirm`}
-              </Button>
-              {canConfirmUnchecked ? (
-                /* The evening decision, with a name on it. Every consignment it
-                   rules over keeps a case, so none of them leaves the dock
-                   without a list it is still on. */
-                <div className="mt-3 border-t pt-3">
-                  <label
-                    htmlFor="override-reason"
-                    className="text-xs font-medium"
-                  >
-                    Or confirm over them (a note, if you want one)
-                  </label>
-                  <Input
-                    id="override-reason"
-                    value={reason}
-                    onChange={(event) => setReason(event.target.value)}
-                    placeholder="Optional note"
-                    className="mt-1.5 h-8 text-xs"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    className="mt-2 w-full"
-                    disabled={pending}
-                    onClick={() => {
-                      setError(null);
-                      start(async () => {
-                        await confirm(reason.trim());
-                      });
-                    }}
-                  >
-                    Confirm over {remaining.length} unchecked
-                  </Button>
-                </div>
-              ) : null}
-            </>
-          ) : null}
-
-          {error ? (
-            <p className="mt-2 text-xs font-medium text-destructive">{error}</p>
-          ) : null}
-
-          <div className="mt-3 flex justify-end gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setAsking(false)}
-              disabled={pending}
-            >
-              Cancel
-            </Button>
-            {remaining.length === 0 ? (
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => {
-                  setError(null);
-                  start(async () => {
-                    await confirm();
-                  });
-                }}
-                disabled={pending}
-              >
-                {pending ? "Confirming…" : "Yes, confirm"}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      ) : (
-        <Button type="button" size="sm" onClick={() => setAsking(true)}>
-          <CheckCheck />
-          Confirm container
-        </Button>
-      )}
-      {!asking && error ? (
-        <p className="text-xs font-medium text-destructive">{error}</p>
-      ) : null}
-    </div>
-  );
-}
-
 /** The armful: twenty ticked before lunch, the rest after. */
 function AcceptPicked({
   cargoIds,
@@ -598,8 +410,16 @@ function CheckInRowView({
     acceptAsExpected,
     {}
   );
+  const [signState, signAction] = useActionState<ActionState, FormData>(
+    verifyCargo,
+    {}
+  );
 
   const done = row.arrivedPackages !== null;
+  /* Counted clean but never signed off — before checking in signed it off
+     itself, or sent back by Finance. The same tick signs it now; there is no
+     container-wide confirm to do it instead. */
+  const unsigned = done && !row.verified && !row.discrepancy && !row.missing;
   const short =
     done && row.arrivedPackages !== null
       ? row.expectedPackages - row.arrivedPackages
@@ -762,14 +582,14 @@ function CheckInRowView({
             <span className="text-xs text-muted-foreground">—</span>
           ) : (
             <div className="flex items-center justify-center gap-1">
-              <form action={action}>
+              <form action={unsigned ? signAction : action}>
                 <input type="hidden" name="cargoId" value={row.id} />
                 <SubmitButton
                   size="icon"
-                  variant={done ? "outline" : "default"}
-                  title="Present and correct"
-                  aria-label={`${row.reference}: present and correct`}
-                  disabled={done}
+                  variant={done && !unsigned ? "outline" : "default"}
+                  title={unsigned ? "Counted — sign it off" : "Present and correct"}
+                  aria-label={`${row.reference}: ${unsigned ? "sign off the count" : "present and correct"}`}
+                  disabled={done && !unsigned}
                 >
                   <Check />
                 </SubmitButton>
@@ -830,10 +650,10 @@ function CheckInRowView({
         </td>
       </tr>
 
-      {state.error ? (
+      {state.error || signState.error ? (
         <tr className="border-t">
           <td colSpan={11} className="px-3 py-2">
-            <FormMessage error={state.error} />
+            <FormMessage error={state.error ?? signState.error} />
           </td>
         </tr>
       ) : null}
