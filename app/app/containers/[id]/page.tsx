@@ -15,6 +15,7 @@ import {
   Scale,
   TriangleAlert,
   Users,
+  Warehouse,
 } from "lucide-react";
 
 import {
@@ -641,22 +642,27 @@ export default async function ContainerPage({
       {/* CLEARED, NOT CHECKED IN — said until the warehouse acts on it, so the
           desk that pressed Cleared knows who has to move next. */}
       {clearedNotIn > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-l-warning bg-warning/[0.06] px-4 py-3">
-          <p className="text-sm">
-            <span className="font-medium">
-              {clearedNotIn}{" "}
-              {T(
-                clearedNotIn === 1
-                  ? "consignment cleared — waiting to be checked in."
-                  : "consignments cleared — waiting to be checked in."
-              )}
-            </span>{" "}
-            <span className="text-muted-foreground">
-              {can(user.role, "receiving.dar")
-                ? T("Check them in on the Receiving dock. Storage starts counting from check-in.")
-                : T("Ask the Dar warehouse to check them in. Storage starts counting from check-in.")}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/[0.08] px-4 py-3">
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-warning/15">
+              <Warehouse className="size-5 text-warning" />
             </span>
-          </p>
+            <div className="text-sm">
+              <p className="font-semibold">
+                {clearedNotIn}{" "}
+                {T(
+                  clearedNotIn === 1
+                    ? "consignment cleared — Dar must check it in"
+                    : "consignments cleared — Dar must check them in"
+                )}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {can(user.role, "receiving.dar")
+                  ? T("Storage has not started. Check them in on the Receiving dock — storage starts counting from that day.")
+                  : T("Storage has not started. Ask the Dar warehouse to check them in — storage starts counting from that day.")}
+              </p>
+            </div>
+          </div>
           {can(user.role, "receiving.dar") ? (
             <Button asChild size="sm">
               <Link href="/app/receive/dar">{T("Receiving dock")}</Link>

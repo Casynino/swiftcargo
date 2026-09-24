@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { QrCode } from "lucide-react";
+import { QrCode, Warehouse } from "lucide-react";
 
 import { CargoTimeline } from "@/components/app/cargo-timeline";
 import { CargoDetailsEdit } from "@/components/app/cargo-details-edit";
@@ -411,15 +411,20 @@ export default async function CargoDetailPage({
           books the goods in, so whoever pressed Cleared — and whoever opens
           this afterwards — is told who has to act next, until they do. */}
       {cargo.clearedAt && !dar && cargo.status === "ARRIVED_TANZANIA" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-l-warning bg-warning/[0.06] px-4 py-3">
-          <p className="text-sm">
-            <span className="font-medium">{T("Cleared — waiting to be checked in.")}</span>{" "}
-            <span className="text-muted-foreground">
-              {can(user.role, "receiving.dar")
-                ? T("Check it in on the Receiving dock. Storage starts counting from check-in.")
-                : T("Ask the Dar warehouse to check it in. Storage starts counting from check-in.")}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/[0.08] px-4 py-3">
+          <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-warning/15">
+              <Warehouse className="size-5 text-warning" />
             </span>
-          </p>
+            <div className="text-sm">
+              <p className="font-semibold">{T("Cleared — Dar must check it in")}</p>
+              <p className="mt-0.5 text-muted-foreground">
+                {can(user.role, "receiving.dar")
+                  ? T("Storage has not started. Check it in on the Receiving dock — storage starts counting from that day.")
+                  : T("Storage has not started. Ask the Dar warehouse to check it in — storage starts counting from that day.")}
+              </p>
+            </div>
+          </div>
           {can(user.role, "receiving.dar") ? (
             <Button asChild size="sm">
               <Link href="/app/receive/dar">{T("Receiving dock")}</Link>
