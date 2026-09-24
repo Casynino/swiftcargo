@@ -9,6 +9,7 @@ import { ChinaReceivePanel } from "@/components/app/china-receive-panel";
 import { CopyField } from "@/components/app/copy-field";
 import { DarCountCorrection } from "@/components/app/dar-count-correction";
 import { DeliveryNoteButton } from "@/components/app/delivery-note-button";
+import { DeleteCargoButton } from "@/components/app/delete-cargo-button";
 import { Field } from "@/components/app/field";
 import { HoldToggle } from "@/components/app/hold-toggle";
 import { MeasurementCompare } from "@/components/app/measurement-compare";
@@ -1053,6 +1054,10 @@ export default async function CargoDetailPage({
 
           {!cargo.operationalHold && can(user.role, "cargo.hold") ? (
             <HoldToggle cargoId={cargo.id} held={false} reason={null} />
+          ) : null}
+
+          {can(user.role, "cargo.delete") && amend ? (
+            <DeleteCargoButton cargoId={cargo.id} />
           ) : null}
 
           {cargo.internalNotes && can(user.role, "cargo.viewInternal") ? (

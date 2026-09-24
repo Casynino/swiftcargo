@@ -305,6 +305,10 @@ const DAR_WAREHOUSE: Permission[] = [
      give is the wrong habit to build. */
   "cargo.viewAll",
   "cargo.edit",
+  /* By the owner's decision: once a consignment is on Dar's floor, Dar may
+     remove it as well as correct it — the same authority China already has
+     over its own half. */
+  "cargo.delete",
   "cargo.viewInternal",
   "cargo.amendDar",
   /* The same reach Guangzhou has over cargo not yet booked in at Dar. Every
@@ -368,6 +372,12 @@ const CUSTOMER_SUPPORT: Permission[] = [
   "cargo.view",
   "cargo.viewAll",
   "cargo.photo",
+  /* By the owner's decision: Support may correct a consignment's record on
+     either floor — never delete one. `cargo.delete` is deliberately absent
+     from this list. */
+  "cargo.edit",
+  "cargo.amendChina",
+  "cargo.amendDar",
   /*
     `receiving.china` IS NOT HERE, AND THE ABSENCE IS THE POINT.
 
@@ -440,6 +450,11 @@ const FINANCE: Permission[] = [
   "cargo.view",
   "cargo.viewAll",
   "cargo.viewInternal",
+  /* By the owner's decision: Finance may remove a consignment once it is on
+     Dar's floor — not edit one, delete only. `cargo.amendDar` here is custody
+     for that verb; `cargo.edit` is deliberately not granted alongside it. */
+  "cargo.delete",
+  "cargo.amendDar",
   "deliveryNote.view",
   /* The floor in Guangzhou, read-only: cargo standing there is the next
      container's price list, and the customer ringing about a bill is often
@@ -544,15 +559,19 @@ const ALL: Permission[] = Array.from(
  * The manager runs the business; the owner owns it.
  *
  * Everything except the things that would let an operator rewrite the rules
- * they operate under: who may do what, what the company is configured to be,
- * and the two destructive verbs. Removing these is the entire reason MANAGER
- * exists as a role rather than as a second ADMIN — the owner can hand over the
- * running of the business without handing over the keys to the system.
+ * they operate under: who may do what, and what the company is configured to
+ * be. Removing these is the entire reason MANAGER exists as a role rather than
+ * as a second ADMIN — the owner can hand over the running of the business
+ * without handing over the keys to the system.
  *
  * The manager does hire and move staff — the owner's decision, and the air
  * side's habit: the person running the floor is the person who knows who has
  * left. What they may not do is make another owner, which `lib/actions/users.ts`
  * refuses at the action, so the Staff screen is theirs without the keys being.
+ *
+ * `cargo.delete` is granted, by the owner's later decision, alongside China,
+ * Dar and Finance — a container is still the one destructive verb reserved to
+ * the owner alone.
  */
 const MANAGER: Permission[] = ALL.filter(
   (p) =>
@@ -561,7 +580,6 @@ const MANAGER: Permission[] = ALL.filter(
        owner's — the people who answer for the books. */
     p !== "fx.manage" &&
     p !== "warehouse.manage" &&
-    p !== "cargo.delete" &&
     p !== "container.delete"
 );
 

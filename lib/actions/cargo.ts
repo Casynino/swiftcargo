@@ -2,6 +2,7 @@
 
 import { bilingual } from "@/lib/translate";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { Prisma, type MeasurementUnit, type PackageType } from "@prisma/client";
 
@@ -22,7 +23,7 @@ import { notifyCustomer } from "@/lib/notify";
 import { normaliseTzPhone } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { syncCargoBoxes } from "@/lib/boxes";
-import { canAmendCargo } from "@/lib/rbac";
+import { canAmendCargo, cargoCustody } from "@/lib/rbac";
 import {
   applyCargoDetails,
   applyDarMeasurement,
@@ -651,6 +652,73 @@ export async function setOperationalHold(
 
   revalidatePath(`/app/cargo/${cargo.id}`);
   return { ok: on ? "Held." : "Hold lifted." };
+}
+
+/**
+ * TAKE A CONSIGNMENT OUT OF THE WORKING SYSTEM. NOTHING IS DESTROYED.
+ *
+ * Soft delete, same as a package line — the row survives with `deletedAt` set,
+ * its photos and history intact, and is answered for on the deleted-records
+ * screen until somebody with the same authority restores it (see
+ * `lib/actions/deleted-records.ts`). Held to `cargo.delete` beside custody of
+ * whichever floor the cargo is on right now, the same pairing every other
+ * correction on this record already asks for.
+ */
+export async function deleteCargo(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("cargo.delete");
+
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) return { error: "Say why this consignment is being deleted." };
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    select: { id: true, reference: true, status: true },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+  if (!canAmendCargo(actor.role, cargo.status)) {
+    return { error: "This consignment is not yours to amend." };
+  }
+
+  const deleted = await prisma.$transaction(async (tx) => {
+    /* Conditional, so two people pressing Delete at once write one deletion
+       and one audit line, not two. */
+    const { count } = await tx.cargo.updateMany({
+      where: { id: cargo.id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    if (count === 0) return false;
+
+    await recordAudit(
+      {
+        actor,
+        action: "cargo.delete",
+        entity: "Cargo",
+        entityId: cargo.id,
+        summary: `Deleted ${cargo.reference} — ${reason}`,
+        metadata: { reason },
+      },
+      tx
+    );
+    return true;
+  });
+  if (!deleted) return { error: "Somebody deleted it first." };
+
+  revalidatePath("/app/cargo");
+  revalidatePath("/app/inventory");
+  revalidatePath("/app/admin/deleted");
+
+  /* A server-side redirect, not a client-side one: the desk is standing on
+     this very record's page, and Next.js refreshes the current route the
+     moment any action on it completes — a client push racing that refresh is
+     how deleting cargo landed on that record's own now-404 page instead of
+     the list. Redirecting here is part of the same response, so there is
+     nothing left to race. China has no cargo.viewAll, so its own floor list
+     is the one address every custody can always reach. */
+  redirect(cargoCustody(cargo.status) === "CHINA" ? "/app/inventory" : "/app/cargo");
 }
 
 // ---------------------------------------------------------------------------

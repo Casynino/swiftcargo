@@ -204,7 +204,6 @@ describe("the manager runs the business; the owner owns it", () => {
     "settings.manage",
     "fx.manage",
     "warehouse.manage",
-    "cargo.delete",
     "container.delete",
   ];
 
@@ -214,6 +213,12 @@ describe("the manager runs the business; the owner owns it", () => {
       assert.ok(can("ADMIN", p), "and the owner does");
     });
   }
+
+  test("the manager may delete cargo, by the owner's later decision", () => {
+    /* Unlike container.delete, this one is not held back from the manager —
+       see the comment on MANAGER in lib/rbac.ts. */
+    assert.ok(can("MANAGER", "cargo.delete"));
+  });
 
   test("the manager hires and moves staff, by the owner's decision", () => {
     /* The person running the floor is the person who knows who has left, so
@@ -275,8 +280,11 @@ describe("custody follows the cargo", () => {
        cargo the system still called Guangzhou's. */
     assert.ok(canAmendCargo("DAR_WAREHOUSE", "ARRIVED_TANZANIA"));
     assert.ok(canAmendCargo("DAR_WAREHOUSE", "RECEIVED_DAR"));
-    /* Custody is not the verb. Support has neither half. */
-    assert.equal(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_CHINA"), false);
-    assert.equal(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_DAR"), false);
+    /* By the owner's later decision, Support holds both custody halves paired
+       with cargo.edit — it may correct a record on either floor. Custody is
+       still not the verb: cargo.delete is the one it does not also hold. */
+    assert.ok(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_CHINA"));
+    assert.ok(canAmendCargo("CUSTOMER_SUPPORT", "RECEIVED_DAR"));
+    assert.equal(can("CUSTOMER_SUPPORT", "cargo.delete"), false);
   });
 });

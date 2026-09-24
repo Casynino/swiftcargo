@@ -7712,6 +7712,13 @@ const ZH: Record<string, string> = {
   "Save receiving record": "保存收货记录",
   "Confirm received": "确认收货",
   // cargo/[id]/page.tsx
+  "Delete cargo": "删除货物",
+  "Duplicate record, wrong customer, entered by mistake…": "重复记录、客户填错、误操作录入……",
+  "Nothing is destroyed — the record, its photos and its history stay on the deleted-records screen until somebody restores it.": "不会被彻底删除——记录、照片和历史都会保留在「已删除记录」页面，直到有人将其恢复。",
+  "Say why this consignment is being deleted.": "请说明删除此货物的原因。",
+  "Somebody deleted it first.": "已被他人删除。",
+  "SC{n} deleted.": "SC{n} 已删除。",
+  "Somebody restored it first.": "已被他人恢复。",
   "In customs clearance": "清关中",
   "Arrived wet": "受潮到货",
   "{n} package(s)": "{n} 件",
