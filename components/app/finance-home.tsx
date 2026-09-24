@@ -15,6 +15,7 @@ import { Donut, type DonutSlice } from "@/components/charts/donut";
 import { loadBooks, sum, twelveMonths, within } from "@/lib/finance-report";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
+import { WAITING_FOR_A_PRICE } from "@/lib/unsailed-pricing";
 import { cn } from "@/lib/utils";
 
 import { primeLocale, T } from "@/lib/server-t";
@@ -43,7 +44,7 @@ export async function FinanceHome() {
   monthStart.setHours(0, 0, 0, 0);
   const thisMonth = { from: monthStart, to: new Date(8.64e15) };
 
-  const [books, openBills, drafts, unbilledAtDar, pending, notesOut, cases, recent] = await Promise.all([
+  const [books, openBills, drafts, waitingForPrice, pending, notesOut, cases, recent] = await Promise.all([
     loadBooks(),
     prisma.invoice.findMany({
       where: { status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } },
@@ -63,7 +64,7 @@ export async function FinanceHome() {
       },
     }),
     prisma.invoice.findMany({ where: { status: "DRAFT" }, select: { total: true, fxRate: true, currency: true } }),
-    prisma.darReceiving.count({ where: { cargo: { invoices: { none: { status: { not: "CANCELLED" } } } } } }),
+    prisma.cargo.count({ where: WAITING_FOR_A_PRICE }),
     prisma.payment.findMany({ where: { status: "PENDING" }, select: { amount: true, currency: true, fxRate: true } }),
     prisma.pickupNote.findMany({
       where: { status: "ACTIVE" },
@@ -119,13 +120,11 @@ export async function FinanceHome() {
   const untold = unpaid.filter((r) => r.i.cargo.contacts.length === 0);
   const owedTzs = unpaid.reduce((s, r) => s + inTzs(r.owing, r.i.currency, r.i.fxRate), 0);
   const noCosts = books.boxes.filter((c) => (c.status === "ARRIVED" || c.status === "IN_TRANSIT" || c.status === "DEPARTED") && c.spent.usd === 0);
-  /* Waiting on Finance: consignments priced from the book but not confirmed
-     (a draft bill) — China's and Dar's alike, since the rate book prices a
-     consignment the moment either floor measures it — plus any counted at
-     Dar before this system raised drafts automatically and still with no
-     bill at all. Arrived containers counts the same thing, so the two
-     screens agree. */
-  const toPrice = drafts.length + unbilledAtDar;
+  /* Waiting on Finance: every consignment measured on either floor with
+     nothing but a draft against it — the same rows the price lists hold
+     between them, so this number and those lists agree. Counted by
+     consignment, not by draft: one split across two sailings is one row. */
+  const toPrice = waitingForPrice;
 
   const items: AttentionItem[] = [
     ...(pending.length ? [{ id: "verify", group: "Collections", count: pending.length, tone: "warn" as const, title: `${pending.length} payment${pending.length === 1 ? "" : "s"} to verify`, detail: "Somebody says money moved and nobody has checked. It counts for nothing until it is verified.", href: "/app/finance/collections/verify", meta: tzs(pendingTzs), metaSub: "waiting on you" }] : []),

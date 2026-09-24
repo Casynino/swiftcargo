@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
 import { ClipboardCheck } from "lucide-react";
 
 import { FormMessage } from "@/components/app/form-message";
@@ -60,6 +60,42 @@ export function PriceList({
   canConfirm: boolean;
   locale: Locale;
 }) {
+  /* Ready to confirm right now — not blocked, and Dar has finished with it.
+     Everything else has no checkbox: there is nothing a press could do with a
+     row that is not in the press to begin with. */
+  const readyIds = list.rows
+    .filter((row) => !row.blockedReason && row.darConfirmed)
+    .map((row) => row.cargoId);
+  const readyKey = readyIds.join(",");
+
+  /*
+    PICK THE FEW, NOT ONLY THE WHOLE LIST.
+
+    Opens ticked to every ready row — the one press it always was — and a desk
+    that wants to hold one row back unticks it instead of confirming
+    everything and then explaining a bill that should not have gone out. The
+    selection resets to "everything ready" whenever the ready rows themselves
+    change underneath it — a fresh page, a confirm that just went through —
+    rather than remembering a tick against a row that may not mean the same
+    thing anymore.
+  */
+  const [selectedKey, setSelectedKey] = useState(readyKey);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(readyIds));
+  if (selectedKey !== readyKey) {
+    setSelectedKey(readyKey);
+    setSelected(new Set(readyIds));
+  }
+
+  const toggle = (cargoId: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(cargoId)) next.delete(cargoId);
+      else next.add(cargoId);
+      return next;
+    });
+  const toggleAll = () =>
+    setSelected((current) => (current.size === readyIds.length ? new Set() : new Set(readyIds)));
+
   if (list.rows.length === 0) return null;
 
   return (
@@ -69,11 +105,28 @@ export function PriceList({
       list={list}
       canConfirm={canConfirm}
       locale={locale}
+      selected={selected}
     >
       <div className="overflow-x-auto border-t bg-card">
-        <table className="w-full min-w-[860px] text-sm">
+        <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+              {canConfirm ? (
+                <th className="w-10 px-4 py-2">
+                  {readyIds.length > 0 ? (
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border-input"
+                      checked={selected.size === readyIds.length}
+                      ref={(el) => {
+                        if (el) el.indeterminate = selected.size > 0 && selected.size < readyIds.length;
+                      }}
+                      onChange={toggleAll}
+                      aria-label={t(locale, "Select all")}
+                    />
+                  ) : null}
+                </th>
+              ) : null}
               <th className="px-4 py-2 font-medium">{t(locale, "Cargo")}</th>
               <th className="px-4 py-2 font-medium">{t(locale, "Cargo type")}</th>
               <th className="px-4 py-2 text-right font-medium">{t(locale, "CBM")}</th>
@@ -90,6 +143,10 @@ export function PriceList({
                 canEdit={canConfirm}
                 vatPercent={list.vatIncluded ? 0 : Number(list.vatPercent)}
                 locale={locale}
+                showCheckbox={canConfirm}
+                ready={!row.blockedReason && row.darConfirmed}
+                checked={selected.has(row.cargoId)}
+                onToggle={() => toggle(row.cargoId)}
               />
             ))}
           </tbody>
@@ -119,6 +176,7 @@ export function ConfirmPricesBanner({
   canConfirm,
   locale,
   children,
+  selected,
 }: {
   heading?: React.ReactNode;
   containerId: string | null;
@@ -126,6 +184,9 @@ export function ConfirmPricesBanner({
   canConfirm: boolean;
   locale: Locale;
   children?: React.ReactNode;
+  /** Which ready rows are ticked. Absent (the container banner, with no rows
+      of its own here) presses every ready row, as it always did. */
+  selected?: Set<string>;
 }) {
   const [state, action] = useActionState<PriceListState, FormData>(confirmPrices, {});
   /* Two different reasons a row is not in the press, said as two different
@@ -135,6 +196,13 @@ export function ConfirmPricesBanner({
   const waiting = list.rows.filter((r) => !r.darConfirmed).length;
   const blocked = list.rows.length - list.ready - waiting;
   if (list.rows.length === 0) return null;
+
+  const readyRows = list.rows.filter((row) => !row.blockedReason && row.darConfirmed);
+  /* No selection passed in (the container's banner, ticking nothing of its
+     own) presses every ready row, exactly as one press always has. A
+     selection that IS passed in but empty presses nothing — the desk chose
+     that, on purpose, by uticking every row. */
+  const pressing = selected ? readyRows.filter((row) => selected.has(row.cargoId)) : readyRows;
 
   return (
     <section className="overflow-hidden rounded-xl border border-signal/40 bg-signal/5">
@@ -189,21 +257,28 @@ export function ConfirmPricesBanner({
         {canConfirm && list.ready > 0 ? (
           <form action={action} className="shrink-0">
             {containerId ? <input type="hidden" name="containerId" value={containerId} /> : null}
-            {/* Exactly the rows the button counts. Without them the press would
-                reach the whole container and come back reporting the rows still
-                with Dar as failures, which reads as a fault rather than as the
-                floor not having finished. The server narrows this against what
-                is actually waiting and re-checks each one, so a stale list can
+            {/* Exactly the rows the button counts — every ready row, or only the
+                ones ticked. Without them the press would reach the whole
+                container and come back reporting the rows still with Dar as
+                failures, which reads as a fault rather than as the floor not
+                having finished. The server narrows this against what is
+                actually waiting and re-checks each one, so a stale list can
                 only ask for less than it should, never more. */}
-            {list.rows
-              .filter((row) => !row.blockedReason && row.darConfirmed)
-              .map((row) => (
-                <input key={row.cargoId} type="hidden" name="cargoIds" value={row.cargoId} />
-              ))}
-            <SubmitButton variant="accent" pendingLabel={t(locale, "Confirming…")}>
-              {list.ready === 1
-                ? t(locale, "Confirm 1 price")
-                : `${t(locale, "Confirm all")} ${list.ready} ${t(locale, "prices")}`}
+            {pressing.map((row) => (
+              <input key={row.cargoId} type="hidden" name="cargoIds" value={row.cargoId} />
+            ))}
+            <SubmitButton
+              variant="accent"
+              pendingLabel={t(locale, "Confirming…")}
+              disabled={pressing.length === 0}
+            >
+              {pressing.length === 0
+                ? t(locale, "Nothing ticked")
+                : pressing.length === readyRows.length
+                  ? pressing.length === 1
+                    ? t(locale, "Confirm 1 price")
+                    : `${t(locale, "Confirm all")} ${pressing.length} ${t(locale, "prices")}`
+                  : `${t(locale, "Confirm")} ${pressing.length} ${t(locale, pressing.length === 1 ? "price" : "prices")}`}
             </SubmitButton>
           </form>
         ) : null}
@@ -225,15 +300,40 @@ function PriceRow({
   canEdit,
   vatPercent,
   locale,
+  showCheckbox,
+  ready,
+  checked,
+  onToggle,
 }: {
   row: PriceListRow;
   cargoTypes: string[];
   canEdit: boolean;
   vatPercent: number;
   locale: Locale;
+  /** Whether this list even offers ticking — a desk that cannot confirm has
+      nothing to tick and no reason to see the column. */
+  showCheckbox: boolean;
+  /** In the press at all. A row Dar has not finished with, or the book
+      cannot price, has no box — there is nothing pressing it would do. */
+  ready: boolean;
+  checked: boolean;
+  onToggle: () => void;
 }) {
   return (
     <tr className={cn("border-b align-top last:border-0", row.blockedReason && "bg-warning/[0.04]")}>
+      {showCheckbox ? (
+        <td className="px-4 py-3">
+          {ready ? (
+            <input
+              type="checkbox"
+              className="size-4 rounded border-input"
+              checked={checked}
+              onChange={onToggle}
+              aria-label={`${t(locale, "Confirm")} ${row.reference}`}
+            />
+          ) : null}
+        </td>
+      ) : null}
       <td className="px-4 py-3">
         <Link href={`/app/cargo/${row.cargoId}`} className="tnum font-medium hover:underline">
           {row.reference}

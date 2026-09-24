@@ -17,13 +17,25 @@ import { prisma, type TxClient } from "@/lib/prisma";
  * is selected — the list is a door to the consignment, and the figures live
  * behind Finance's permission on the pages it opens.
  */
-export const UNSAILED_TO_PRICE = {
+/**
+ * EVERY CONSIGNMENT WAITING FOR A PRICE, ON A CONTAINER OR NOT.
+ *
+ * Measured on either floor, not missing, and nothing but drafts billed. Each
+ * price list narrows this — one container's lines, or no container at all —
+ * and a counter that says how many are waiting counts this, so the number on
+ * the dashboard is the number of rows the lists hold between them.
+ */
+export const WAITING_FOR_A_PRICE = {
   deletedAt: null,
   OR: [{ chinaReceiving: { isNot: null } }, { darReceiving: { isNot: null } }],
-    /* Nobody is billed for boxes nobody found. */
-    status: { notIn: ["MISSING_AT_DAR", "CANCELLED"] },
-  containerLines: { none: {} },
+  /* Nobody is billed for boxes nobody found. */
+  status: { notIn: ["MISSING_AT_DAR", "CANCELLED"] },
   invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
+} satisfies Prisma.CargoWhereInput;
+
+export const UNSAILED_TO_PRICE = {
+  ...WAITING_FOR_A_PRICE,
+  containerLines: { none: {} },
 } satisfies Prisma.CargoWhereInput;
 
 /**
