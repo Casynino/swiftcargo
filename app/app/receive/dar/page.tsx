@@ -372,7 +372,11 @@ function Queue({
                             variant={awaitingClearance === 0 && left > 0 ? "default" : "outline"}
                           >
                             <Link href={`/app/receive/dar/${container.id}`}>
-                              {awaitingClearance > 0 ? T("Inspect") : left > 0 ? T("Check in") : T("Finish")}
+                              {awaitingClearance > 0
+                                ? T("Inspect")
+                                : left > 0
+                                  ? `${T("Check in")} (${left})`
+                                  : T("Finish")}
                             </Link>
                           </Button>
                         </div>
