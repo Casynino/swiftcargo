@@ -382,7 +382,15 @@ export default async function CargoDetailPage({
             ) : null}
             {(dar || cargo.status === "ARRIVED_TANZANIA") && !cargo.clearedAt && can(user.role, "cargo.clear") &&
             !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(cargo.status) ? (
-              <ClearanceButton cargoId={cargo.id} waiting={1} />
+              <ClearanceButton
+                cargoId={cargo.id}
+                waiting={1}
+                terms={{
+                  freeDays: money?.freeStorageDays ?? 7,
+                  perDay: money?.storagePerDay?.toString() ?? null,
+                  currency: money?.storageCurrency ?? "USD",
+                }}
+              />
             ) : null}
             {/* Printed at the counter while the boxes are still on the floor —
                 one sticker per carton, each with its own code. */}

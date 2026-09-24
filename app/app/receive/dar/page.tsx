@@ -13,7 +13,7 @@ import {
 
 import { KpiCard } from "@/components/app/kpi-card";
 import { MarkArrivedButton } from "@/components/app/container-controls";
-import { ClearanceButton } from "@/components/app/clearance-button";
+import { ClearanceButton, type StorageTerms } from "@/components/app/clearance-button";
 import { UndoArrivalButton } from "@/components/app/undo-arrival-button";
 import { StatStrip } from "@/components/app/stat-strip";
 import { EmptyState } from "@/components/app/empty-state";
@@ -97,11 +97,13 @@ function Queue({
   query,
   emptyTitle,
   emptyDescription,
+  terms,
 }: {
   rows: QueueRow[];
   query: string;
   emptyTitle: string;
   emptyDescription: string;
+  terms: StorageTerms;
 }) {
   return rows.length === 0 ? (
           <EmptyState
@@ -337,7 +339,7 @@ function Queue({
                            then one press clears the lot into our warehouse. */
                         <div className="flex flex-wrap items-center justify-end gap-1.5">
                           {awaitingClearance > 0 ? (
-                            <ClearanceButton containerId={container.id} waiting={awaitingClearance} />
+                            <ClearanceButton containerId={container.id} waiting={awaitingClearance} terms={terms} />
                           ) : null}
                           <Button asChild size="sm" variant="outline">
                             <Link href={`/app/receive/dar/${container.id}`}>
@@ -391,7 +393,18 @@ export default async function DarReceivePage({
   const { q } = await searchParams;
   const query = q?.trim().toLowerCase() ?? "";
 
-  const arrived = await inboundContainers();
+  const [arrived, company] = await Promise.all([
+    inboundContainers(),
+    prisma.companySetting.findUnique({
+      where: { id: "singleton" },
+      select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+    }),
+  ]);
+  const terms: StorageTerms = {
+    freeDays: company?.freeStorageDays ?? 7,
+    perDay: company?.storagePerDay?.toString() ?? null,
+    currency: company?.storageCurrency ?? "USD",
+  };
 
   /*
     THE DOCK, IN NUMBERS.
@@ -629,6 +642,7 @@ export default async function DarReceivePage({
       <Card>
         <Queue
           rows={matching}
+          terms={terms}
           query={query}
           emptyTitle="Nothing inbound"
           emptyDescription="No container is on the water or waiting to be checked in."

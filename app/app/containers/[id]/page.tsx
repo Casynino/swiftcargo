@@ -425,6 +425,12 @@ export default async function ContainerPage({
   const waitingCustomers = new Set(waiting.map((w) => w.senderId)).size;
 
   /* Landed and still with customs: what "Mark cleared" would clear. */
+  /* The company's storage terms, said in the Clearance dialog. */
+  const storageTerms = await prisma.companySetting.findUnique({
+    where: { id: "singleton" },
+    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+  });
+
   const inClearance = await prisma.cargo.count({
     where: {
       deletedAt: null,
@@ -600,7 +606,15 @@ export default async function ContainerPage({
               />
             ) : null}
             {can(user.role, "cargo.clear") && inClearance > 0 ? (
-              <ClearanceButton containerId={container.id} waiting={inClearance} />
+              <ClearanceButton
+                containerId={container.id}
+                waiting={inClearance}
+                terms={{
+                  freeDays: storageTerms?.freeStorageDays ?? 7,
+                  perDay: storageTerms?.storagePerDay?.toString() ?? null,
+                  currency: storageTerms?.storageCurrency ?? "USD",
+                }}
+              />
             ) : null}
             {/* Closing is one press on a box that is finished with, so it is a
                 button beside the others and not a panel across the page. What

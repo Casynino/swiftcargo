@@ -22,6 +22,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
+import { translateMessage } from "@/components/app/tx";
+
+/** The company's own storage terms, from CompanySetting — never typed here. */
+export type StorageTerms = {
+  freeDays: number;
+  /** Per day after the free days; null or zero when storage is not charged. */
+  perDay: string | null;
+  currency: string;
+};
 /**
  * "Customs is done" — for one consignment, or every one on a container. Asked
  * once in a dialog because it sends customers a message and starts their
@@ -33,14 +42,18 @@ export function ClearanceButton({
   containerId,
   waiting,
   label,
+  terms,
 }: {
   cargoId?: string;
   containerId?: string;
   /** How many consignments this would clear. */
   waiting: number;
   label?: string;
+  terms: StorageTerms;
 }) {
   const tx = useT();
+  const tm = (message: string) => translateMessage(message, tx);
+  const perDay = terms.perDay !== null && Number(terms.perDay) > 0 ? Number(terms.perDay) : null;
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<ClearanceState, FormData>(
     containerId ? markContainerCleared : markCargoCleared,
@@ -83,9 +96,15 @@ export function ClearanceButton({
             </span>
             <div>
               <p className="font-semibold">{tx("Storage starts now")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-sm">
+                {tm(`The customer gets ${terms.freeDays} free storage days, starting the moment you mark it cleared.`)}
+                {perDay !== null
+                  ? ` ${tm(`From day ${terms.freeDays + 1}, storage is charged at ${terms.currency} ${perDay} a day until the goods are collected.`)}`
+                  : null}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
                 {tx(
-                  "The free storage days start the moment you mark these cleared. The Dar warehouse will be asked to verify and check in the goods — that does not change the storage date."
+                  "The Dar warehouse will be asked to verify and check in the goods. Check-in does not change these dates."
                 )}
               </p>
             </div>
@@ -96,7 +115,7 @@ export function ClearanceButton({
               icon={CircleCheck}
               tone="text-success bg-success/12"
               title={tx("Cleared")}
-              detail={tx("Now. Storage starts and customers are told their goods have cleared.")}
+              detail={tm(`Now. The ${terms.freeDays} free storage days start, and customers are told their goods have cleared.`)}
             />
             <Step
               icon={Warehouse}
