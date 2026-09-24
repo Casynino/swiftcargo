@@ -47,6 +47,21 @@ export const metadata: Metadata = { title: "Receiving dock" };
  * of consignments in arrival order.
  */
 
+/**
+ * Cleared and not yet booked in: the only cargo the dock is asked to check in.
+ * Goods still with customs are in clearance, not waiting on the floor — the
+ * Dar warehouse checks goods in after they are marked cleared.
+ */
+function awaitsCheckIn(line: {
+  cargo: { clearedAt: Date | null; darReceiving: unknown; status: string };
+}) {
+  return (
+    Boolean(line.cargo.clearedAt) &&
+    !line.cargo.darReceiving &&
+    !["MISSING_AT_DAR", "CANCELLED", "COLLECTED", "DELIVERED"].includes(line.cargo.status)
+  );
+}
+
 /** Everything Dar has a reason to look at, newest state first. */
 async function inboundContainers() {
   return prisma.container.findMany({
@@ -176,13 +191,16 @@ function Queue({
                 );
                 const here = container.status === "ARRIVED";
                 const left = total - done - gone;
+                const ready = container.cargoLines.filter(awaitsCheckIn).length;
                 const sailing =
                   container.status === "DEPARTED" ||
                   container.status === "IN_TRANSIT";
                 const where = here
-                  ? left > 0
+                  ? ready > 0
                     ? "To check in"
-                    : "On the floor"
+                    : awaitingClearance > 0
+                      ? "In clearance"
+                      : "On the floor"
                   : sailing
                     ? "At sea"
                     : container.status === "SEALED" || container.status === "LOADED"
@@ -242,7 +260,7 @@ function Queue({
                       <Badge
                         tone={
                           here
-                            ? left > 0
+                            ? ready > 0 || awaitingClearance > 0
                               ? "warn"
                               : "good"
                             : sailing
@@ -369,13 +387,13 @@ function Queue({
                           <Button
                             asChild
                             size="sm"
-                            variant={awaitingClearance === 0 && left > 0 ? "default" : "outline"}
+                            variant={awaitingClearance === 0 && ready > 0 ? "default" : "outline"}
                           >
                             <Link href={`/app/receive/dar/${container.id}`}>
                               {awaitingClearance > 0
                                 ? T("Inspect")
-                                : left > 0
-                                  ? `${T("Check in")} (${left})`
+                                : ready > 0
+                                  ? `${T("Check in")} (${ready})`
                                   : T("Finish")}
                             </Link>
                           </Button>
@@ -464,9 +482,9 @@ export default async function DarReceivePage({
   const goneMissing = lines.filter(
     (l) => l.cargo.status === "MISSING_AT_DAR"
   ).length;
-  const toCheck = lines.length - checkedIn - goneMissing;
-  const progress = lines.length
-    ? Math.round(((checkedIn + goneMissing) / lines.length) * 100)
+  const toCheck = lines.filter(awaitsCheckIn).length;
+  const progress = checkedIn + toCheck
+    ? Math.round((checkedIn / (checkedIn + toCheck)) * 100)
     : 100;
 
   const flags = lines.filter(
@@ -522,29 +540,25 @@ export default async function DarReceivePage({
   /*
     THE MOST URGENT ONE, SO NOBODY HUNTS FOR IT.
 
-    Landed, oldest first, with boxes still unticked. It gets a button in the
-    header and, once it has been sitting a day, a banner — because a container
-    nobody has started is cargo nobody can invoice.
+    Cleared, oldest clearance first, with goods still to check in. It gets a
+    button in the header and, once it has been waiting a day, a banner. A
+    container still with customs has nothing to check in yet, so it is never
+    the one named here.
   */
-  const next = open
+  const clearedSince = (c: (typeof open)[number]) =>
+    Math.min(
+      ...c.cargoLines
+        .filter(awaitsCheckIn)
+        .map((l) => l.cargo.clearedAt?.getTime() ?? Date.now())
+    );
+  const readyToCheck = open.filter((c) => c.cargoLines.some(awaitsCheckIn));
+  const next = readyToCheck
     .slice()
-    .sort(
-      (a, b) =>
-        (a.shipment?.actualArrival?.getTime() ?? 0) -
-        (b.shipment?.actualArrival?.getTime() ?? 0)
-    )[0];
-  const nextWaited =
-    next?.shipment?.actualArrival
-      ? Math.max(
-          0,
-          Math.floor(
-            (Date.now() - next.shipment.actualArrival.getTime()) / 86_400_000
-          )
-        )
-      : 0;
-  const nextUnchecked = next
-    ? next.cargoLines.filter((l) => !l.cargo.darReceiving).length
+    .sort((a, b) => clearedSince(a) - clearedSince(b))[0];
+  const nextWaited = next
+    ? Math.max(0, Math.floor((Date.now() - clearedSince(next)) / 86_400_000))
     : 0;
+  const nextUnchecked = next ? next.cargoLines.filter(awaitsCheckIn).length : 0;
 
   return (
     <div className="space-y-6">
@@ -556,7 +570,7 @@ export default async function DarReceivePage({
             <Button asChild>
               <Link href={`/app/receive/dar/${next.id}`}>
                 <ClipboardCheck />
-                Check in {next.reference}
+                {T("Check in")} {next.reference} ({nextUnchecked})
               </Link>
             </Button>
           ) : null
@@ -587,8 +601,8 @@ export default async function DarReceivePage({
           numeric={toCheck}
           icon={ClipboardCheck}
           tone={toCheck > 0 ? "signal" : "success"}
-          ring={{ value: checkedIn + goneMissing, total: Math.max(1, lines.length) }}
-          hint={`across ${open.length} container(s) on the floor · ${progress}% done`}
+          ring={{ value: checkedIn, total: Math.max(1, checkedIn + toCheck) }}
+          hint={`cleared, across ${readyToCheck.length} container(s) · ${progress}% done`}
         />
         <KpiCard
           index={1}
@@ -626,13 +640,12 @@ export default async function DarReceivePage({
             <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
             <div>
               <p className="text-sm font-medium">
-                {next.reference} has been on the floor for {nextWaited}{" "}
-                {nextWaited === 1 ? "day" : "days"}
+                {next.reference} was cleared {nextWaited}{" "}
+                {nextWaited === 1 ? "day" : "days"} ago
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {nextUnchecked} of {next.cargoLines.length} consignment(s) still
-                unchecked. Customers cannot be invoiced until their cargo is
-                checked in.
+                to check in. Storage is already running on them.
               </p>
             </div>
           </div>
