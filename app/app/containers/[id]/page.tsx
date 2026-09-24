@@ -434,6 +434,18 @@ export default async function ContainerPage({
     },
   });
 
+  /* Cleared at the port and not yet booked in: nobody's storage clock is
+     running on these until the Dar warehouse checks them in. */
+  const clearedNotIn = await prisma.cargo.count({
+    where: {
+      deletedAt: null,
+      clearedAt: { not: null },
+      darReceiving: null,
+      status: "ARRIVED_TANZANIA",
+      containerLines: { some: { containerId: container.id } },
+    },
+  });
+
   const arrivalUndoable =
     container.status === "ARRIVED" &&
     (await prisma.cargo.count({
@@ -625,6 +637,33 @@ export default async function ContainerPage({
           </>
         }
       />
+
+      {/* CLEARED, NOT CHECKED IN — said until the warehouse acts on it, so the
+          desk that pressed Cleared knows who has to move next. */}
+      {clearedNotIn > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-l-warning bg-warning/[0.06] px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">
+              {clearedNotIn}{" "}
+              {T(
+                clearedNotIn === 1
+                  ? "consignment cleared — waiting to be checked in."
+                  : "consignments cleared — waiting to be checked in."
+              )}
+            </span>{" "}
+            <span className="text-muted-foreground">
+              {can(user.role, "receiving.dar")
+                ? T("Check them in on the Receiving dock. Storage starts counting from check-in.")
+                : T("Ask the Dar warehouse to check them in. Storage starts counting from check-in.")}
+            </span>
+          </p>
+          {can(user.role, "receiving.dar") ? (
+            <Button asChild size="sm">
+              <Link href="/app/receive/dar">{T("Receiving dock")}</Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       {/*
         THE BOX, IN SIX FIGURES.

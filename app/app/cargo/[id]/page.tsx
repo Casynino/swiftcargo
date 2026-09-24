@@ -407,6 +407,27 @@ export default async function CargoDetailPage({
         }
       />
 
+      {/* CLEARED, NOT CHECKED IN. Storage starts only when the Dar warehouse
+          books the goods in, so whoever pressed Cleared — and whoever opens
+          this afterwards — is told who has to act next, until they do. */}
+      {cargo.clearedAt && !dar && cargo.status === "ARRIVED_TANZANIA" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-l-warning bg-warning/[0.06] px-4 py-3">
+          <p className="text-sm">
+            <span className="font-medium">{T("Cleared — waiting to be checked in.")}</span>{" "}
+            <span className="text-muted-foreground">
+              {can(user.role, "receiving.dar")
+                ? T("Check it in on the Receiving dock. Storage starts counting from check-in.")
+                : T("Ask the Dar warehouse to check it in. Storage starts counting from check-in.")}
+            </span>
+          </p>
+          {can(user.role, "receiving.dar") ? (
+            <Button asChild size="sm">
+              <Link href="/app/receive/dar">{T("Receiving dock")}</Link>
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {cargo.operationalHold && can(user.role, "cargo.hold") ? (
         <HoldToggle
           cargoId={cargo.id}

@@ -21,7 +21,9 @@ import { storageState } from "@/lib/storage-clock";
  *              Never "come and collect". (lib/actions/containers.ts)
  *   cleared  — somebody said customs is done, at the port. The goods are then
  *              brought to our warehouse.
- *   warehouse— Dar books the boxes in. The storage clock starts here.
+ *   warehouse— Dar books the boxes in. The storage clock starts here — or,
+ *              for boxes booked in while customs still had them, at clearance.
+ *              Never at the price, never at the bill.
  *   ready    — the release check passes: at our warehouse, cleared, paid, no
  *              hold. Said once, whichever event completed it — clearing,
  *              checking in, or paying, in whatever order they happened.
@@ -61,9 +63,9 @@ function storageSentence(settings: StorageSettings, arrivedAt: Date) {
 
 /**
  * Booked in at our Dar warehouse. Called in the check-in transaction, once per
- * consignment that moved to RECEIVED_DAR. The storage clock starts now. If
- * customs has already cleared it and the money is settled, it is ready — and
- * announceIfReady says so instead.
+ * consignment that moved to RECEIVED_DAR, and again when goods already on the
+ * floor are cleared. The storage clock starts when both are true. If the money
+ * is settled too, it is ready — and announceIfReady says so instead.
  */
 export async function announceDarArrival(
   tx: TxClient,
@@ -89,7 +91,13 @@ export async function announceDarArrival(
           : cleared
             ? "It has cleared customs and is on our floor. Once payment is confirmed it will be ready to collect — we will tell you. "
             : "Customs clearance is still in progress. It is not ready to collect yet — we will tell you when it is. ") +
-        storageSentence(settings, options.arrivedAt),
+        /* Storage runs only on cleared goods on our floor: announcing free days
+           "from today" for boxes customs still holds promised a date the clock
+           never kept. Clearing them later sends this letter again, with the
+           terms. */
+        (cleared
+          ? storageSentence(settings, options.arrivedAt)
+          : "Storage starts once customs clearance is complete."),
       href: `/portal/cargo/${encodeURIComponent(cargo.reference)}`,
     },
     tx

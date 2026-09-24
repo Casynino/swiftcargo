@@ -16,10 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 import { useT } from "@/components/app/locale-provider";
 /**
- * "Customs is done" — for one consignment, or every one on a container that
- * Dar has booked in. Asked once in a dialog because it sends customers a
- * message: ready for pickup to those who have paid, payment required to those
- * who have not.
+ * "Customs is done" — for one consignment, or every one on a container. Asked
+ * once in a dialog because it sends customers a message. It does not book the
+ * goods in: that is the Dar warehouse's press, and it is what starts storage.
  */
 export function ClearanceButton({
   cargoId,
@@ -55,10 +54,11 @@ export function ClearanceButton({
         <Modal title={tx("Clearance complete")} onClose={close}>
           <p className="text-sm text-muted-foreground">
             {containerId
-              ? `${waiting} consignment${waiting === 1 ? "" : "s"} will be cleared and booked into our Dar warehouse — anything not yet checked in is checked in as China sent it. Anything reported missing is left out.`
-              : "This consignment will be cleared and booked into our Dar warehouse."}{" "}
-            Storage starts today. Customers who have paid are told their goods
-            are ready for pickup; the rest are told payment is required first.
+              ? `${waiting} ${tx(waiting === 1 ? "consignment will be marked cleared." : "consignments will be marked cleared.")} ${tx("Anything reported missing is left out.")}`
+              : tx("This consignment will be marked cleared.")}{" "}
+            {tx(
+              "Clearing does not check the goods in. The Dar warehouse still has to check them in, and storage starts counting only from check-in. Customers are told their goods have cleared."
+            )}
           </p>
           <form action={action} className="space-y-4">
             {cargoId ? <input type="hidden" name="cargoId" value={cargoId} /> : null}

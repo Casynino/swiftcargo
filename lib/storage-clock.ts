@@ -1,12 +1,13 @@
 /**
  * THE STORAGE CLOCK.
  *
- * It starts when Dar books the boxes in — the physical arrival, recorded on the
- * receiving row — and at nothing else: not the invoice, not the payment, not
- * the ship's arrival, not the end of clearance. It keeps running through
- * clearance. Days are counted on the Dar es Salaam calendar (UTC+3, no summer
- * time), so a consignment booked in at 01:00 local time is on its first day,
- * not the previous one's.
+ * It starts when the goods are both cleared and booked into our Dar warehouse —
+ * whichever of the two came last (storageStart, below) — and at nothing else:
+ * not the price, not the invoice, not the payment, not the ship's arrival.
+ * Cleared goods still at the port start nobody's clock until the warehouse
+ * checks them in. Days are counted on the Dar es Salaam calendar (UTC+3, no
+ * summer time), so a consignment booked in at 01:00 local time is on its first
+ * day, not the previous one's.
  *
  * Day 1 is the day it arrived. With seven free days, day 7 is the last free
  * one and day 8 is the first that may be charged.

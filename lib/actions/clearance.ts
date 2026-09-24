@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import { acceptAsExpectedBy } from "@/lib/accept-as-expected";
 import { announceDarArrival, clearCargo } from "@/lib/clearance";
+import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/rbac";
 import { formMessage } from "@/lib/safe-error";
 import { authorize, type SessionUser } from "@/lib/session";
 
@@ -13,81 +14,105 @@ export type ClearanceState = { error?: string; ok?: string };
 const GONE = ["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"] as const;
 
 /**
- * CLEARED, AND IN OUR WAREHOUSE, IN ONE PRESS.
+ * CLEARED IS NOT CHECKED IN.
  *
- * The owner's flow: the ship is marked arrived, the team inspects at the port
- * — reports what is missing, tags what is damaged — and when customs is done
- * one press clears the goods and books them into our warehouse together.
- * Anything the team has not already checked in is checked in as China sent
- * it; anything reported missing is left alone. The storage clock starts now,
- * and each customer gets one message: ready for pickup if they have paid,
- * payment required if not.
+ * By the owner's decision the two are separate presses by separate people.
+ * Anybody holding the clearance can say customs is done; only the Dar warehouse
+ * checks the goods into our floor, and storage starts counting at check-in —
+ * never at clearance, never at the price. So clearing leaves goods still at the
+ * port exactly where they are, tells their customers they are on the way to our
+ * warehouse, and tells the warehouse to check them in.
+ *
+ * Goods the floor had already booked in before customs finished are the one
+ * case where clearing IS the start: they were on our floor already, and the
+ * arrival letter with the storage terms goes out now.
  */
-async function clearAndReceive(actor: SessionUser, cargoIds: string[], note: string) {
-  const result = await prisma.$transaction(
-    (tx) => clearCargo(tx, cargoIds, actor, note, false),
+async function clear(actor: SessionUser, cargoIds: string[], note: string) {
+  const before = await prisma.cargo.findMany({
+    where: { id: { in: cargoIds } },
+    select: { id: true, darReceiving: { select: { id: true } } },
+  });
+  const onFloor = new Set(before.filter((c) => c.darReceiving).map((c) => c.id));
+  const atPortIds = cargoIds.filter((id) => !onFloor.has(id));
+  const floorIds = cargoIds.filter((id) => onFloor.has(id));
+
+  const { atPort, alreadyIn } = await prisma.$transaction(
+    async (tx) => ({
+      /* At the port: the clearance letter says they are on the way. */
+      atPort: atPortIds.length
+        ? await clearCargo(tx, atPortIds, actor, note, true)
+        : { cleared: [] as string[], skipped: [] as string[] },
+      /* On our floor already: the arrival letter below speaks for both. */
+      alreadyIn: floorIds.length
+        ? await clearCargo(tx, floorIds, actor, note, false)
+        : { cleared: [] as string[], skipped: [] as string[] },
+    }),
     { timeout: 60_000 }
   );
-  if (result.cleared.length === 0) return { result, unchecked: [] as string[], received: 0 };
 
-  const rows = await prisma.cargo.findMany({
-    where: { id: { in: cargoIds }, clearedAt: { not: null } },
-    select: {
-      id: true,
-      reference: true,
-      status: true,
-      senderId: true,
-      receiverId: true,
-      darReceiving: { select: { id: true } },
-    },
-  });
-  const cleared = rows.filter((r) => result.cleared.includes(r.reference));
+  if (alreadyIn.cleared.length > 0) {
+    const rows = await prisma.cargo.findMany({
+      where: { id: { in: floorIds }, reference: { in: alreadyIn.cleared } },
+      select: { id: true, reference: true, senderId: true, receiverId: true },
+    });
+    for (const cargo of rows) {
+      await prisma.$transaction((tx) =>
+        announceDarArrival(tx, cargo, { arrivedAt: new Date(), actorId: actor.id })
+      );
+    }
+  }
 
-  /* Already checked in at the port: they reach our warehouse now. */
-  for (const cargo of cleared.filter((c) => c.darReceiving)) {
-    await prisma.$transaction((tx) =>
-      announceDarArrival(tx, cargo, { arrivedAt: new Date(), actorId: actor.id })
+  /* THE WAREHOUSE IS TOLD, NOT LEFT TO NOTICE. Cleared goods sitting at the
+     port start nobody's clock and reach nobody's floor until somebody books
+     them in, so the desk that does it hears about it the moment it is due. */
+  if (atPort.cleared.length > 0) {
+    const refs = atPort.cleared;
+    await notifyStaff(
+      (await staffInDepartment("DAR_WAREHOUSE")).filter((id) => id !== actor.id),
+      {
+        kind: "cargo.cleared",
+        title:
+          refs.length === 1
+            ? `${refs[0]} cleared — check it in`
+            : `${refs.length} consignments cleared — check them in`,
+        body: `Customs is done for ${refs.slice(0, 8).join(", ")}${
+          refs.length > 8 ? " and others" : ""
+        }. Check ${refs.length === 1 ? "it" : "them"} in at the Dar warehouse — storage starts counting from check-in.`,
+        href: "/app/receive/dar",
+      }
     );
   }
 
-  /* Not checked in yet: checked in as China sent them, which also tells the
-     customer and prices the draft. */
-  const toReceive = cleared.filter((c) => !c.darReceiving && c.status === "ARRIVED_TANZANIA");
-  let received = 0;
-  const unchecked: string[] = [];
-  if (toReceive.length > 0) {
-    /* As the person clearing, who is authorised for clearance — not as the
-       floor, whose own button asks for receiving.dar. */
-    await acceptAsExpectedBy(actor, toReceive.map((c) => c.id));
-    const after = await prisma.cargo.findMany({
-      where: { id: { in: toReceive.map((c) => c.id) } },
-      select: { reference: true, darReceiving: { select: { id: true } } },
-    });
-    received = after.filter((c) => c.darReceiving).length;
-    unchecked.push(...after.filter((c) => !c.darReceiving).map((c) => c.reference));
-  }
-  return { result, unchecked, received };
+  return { atPort: atPort.cleared, alreadyIn: alreadyIn.cleared };
 }
 
-function sentence(outcome: Awaited<ReturnType<typeof clearAndReceive>>): ClearanceState {
-  const { result, unchecked } = outcome;
-  if (result.cleared.length === 0) {
+function sentence(
+  actor: SessionUser,
+  outcome: Awaited<ReturnType<typeof clear>>
+): ClearanceState {
+  const { atPort, alreadyIn } = outcome;
+  if (atPort.length + alreadyIn.length === 0) {
     return { error: "Nothing to clear — it has not landed in Dar yet, or is already cleared." };
   }
-  const n = result.cleared.length;
-  return {
-    ok: [
-      `${n} consignment${n === 1 ? "" : "s"} cleared and in our warehouse. Customers have been told; storage starts today.`,
-      unchecked.length
-        ? `${unchecked.join(", ")} has no Guangzhou count — check it in on the scales.`
-        : "",
-    ]
-      .filter(Boolean)
-      .join(" "),
-  };
+  const count = (n: number) => `${n} consignment${n === 1 ? "" : "s"}`;
+  const parts: string[] = [];
+  if (atPort.length > 0) {
+    parts.push(
+      `${count(atPort.length)} cleared. ${
+        can(actor.role, "receiving.dar")
+          ? "Now check them in on the Receiving dock"
+          : "Ask the Dar warehouse to check them in"
+      } — storage starts counting only from check-in.`
+    );
+  }
+  if (alreadyIn.length > 0) {
+    parts.push(`${count(alreadyIn.length)} already in our warehouse — storage starts today.`);
+  }
+  parts.push("Customers have been told.");
+  return { ok: parts.join(" ") };
 }
 
-/** Customs is done for one consignment — the Dar floor's call, or Finance's. */
+/** Customs is done for one consignment. */
 export async function markCargoCleared(
   _prev: ClearanceState,
   formData: FormData
@@ -96,11 +121,11 @@ export async function markCargoCleared(
   const cargoId = String(formData.get("cargoId") ?? "");
   const note = String(formData.get("note") ?? "").slice(0, 300);
   try {
-    const outcome = await clearAndReceive(actor, [cargoId], note);
+    const outcome = await clear(actor, [cargoId], note);
     revalidatePath(`/app/cargo/${cargoId}`);
     revalidatePath("/app/release");
     revalidatePath("/app/receive/dar");
-    return sentence(outcome);
+    return sentence(actor, outcome);
   } catch (error) {
     return { error: formMessage(error, "That did not save. Try again.") };
   }
@@ -130,11 +155,11 @@ export async function markContainerCleared(
     return { error: "Nothing on this container is waiting on clearance." };
   }
   try {
-    const outcome = await clearAndReceive(actor, lines.map((l) => l.cargoId), note);
+    const outcome = await clear(actor, lines.map((l) => l.cargoId), note);
     revalidatePath(`/app/containers/${containerId}`);
     revalidatePath("/app/release");
     revalidatePath("/app/receive/dar");
-    return sentence(outcome);
+    return sentence(actor, outcome);
   } catch (error) {
     return { error: formMessage(error, "That did not save. Try again.") };
   }
