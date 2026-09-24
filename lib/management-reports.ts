@@ -509,8 +509,8 @@ export async function runManagementReport(
         prisma.cargo.findMany({
           where: {
             deletedAt: null,
-            darReceiving: { isNot: null },
-            status: { in: ["RECEIVED_DAR", "READY_FOR_RELEASE"] },
+            clearedAt: { not: null },
+            status: { in: ["ARRIVED_TANZANIA", "RECEIVED_DAR", "READY_FOR_RELEASE"] },
           },
           select: {
             reference: true,
@@ -542,7 +542,7 @@ export async function runManagementReport(
             c.reference,
             c.receiver.businessName || c.receiver.fullName,
             c.darReceiving?.container?.reference ?? "",
-            d(c.darReceiving?.receivedAt),
+            d(c.clearedAt),
             position.daysHeld,
             position.chargeableDays,
             position.configured ? position.amount.toNumber() : "no rate set",
@@ -552,8 +552,8 @@ export async function runManagementReport(
         .sort((a, b) => Number(b[4]) - Number(a[4]));
       return {
         title: "Warehouse storage",
-        description: `Consignments on the Dar floor today and not yet handed over: how long each has been there, the days beyond the free ${company?.freeStorageDays ?? 7}, what storage that works out to, and what is already on a bill. Amounts in ${currency}, the currency storage is priced in.`,
-        columns: [{ label: "Cargo" }, { label: "Customer" }, { label: "Container" }, { label: "Arrived Dar" }, N("Days held"), N("Days over"), { label: `Calculated (${currency})`, numeric: true }, { label: "Charged on bill", numeric: true }],
+        description: `Consignments cleared in Dar and not yet handed over: how long since each was cleared (when storage starts), the days beyond the free ${company?.freeStorageDays ?? 7}, what storage that works out to, and what is already on a bill. Amounts in ${currency}, the currency storage is priced in.`,
+        columns: [{ label: "Cargo" }, { label: "Customer" }, { label: "Container" }, { label: "Cleared (storage from)" }, N("Days held"), N("Days over"), { label: `Calculated (${currency})`, numeric: true }, { label: "Charged on bill", numeric: true }],
         rows,
         asAt: true,
       };

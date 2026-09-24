@@ -407,9 +407,10 @@ export default async function CargoDetailPage({
         }
       />
 
-      {/* CLEARED, NOT CHECKED IN. Storage starts only when the Dar warehouse
-          books the goods in, so whoever pressed Cleared — and whoever opens
-          this afterwards — is told who has to act next, until they do. */}
+      {/* CLEARED, NOT YET VERIFIED. Storage is already running from clearance;
+          the Dar warehouse's check-in is internal verification, so whoever
+          opens this is told who has to act next, until they do. Staff only —
+          the customer never sees a check-in stage. */}
       {cargo.clearedAt && !dar && cargo.status === "ARRIVED_TANZANIA" ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/[0.08] px-4 py-3">
           <div className="flex items-start gap-3">
@@ -417,11 +418,12 @@ export default async function CargoDetailPage({
               <Warehouse className="size-5 text-warning" />
             </span>
             <div className="text-sm">
-              <p className="font-semibold">{T("Cleared — the Dar warehouse must check it in")}</p>
+              <p className="font-semibold">{T("Cleared — warehouse verification required")}</p>
               <p className="mt-0.5 text-muted-foreground">
+                {T("Storage started")} {formatDate(cargo.clearedAt)}.{" "}
                 {can(user.role, "receiving.dar")
-                  ? T("Storage has not started. Check it in on the Receiving dock — storage starts counting from that day.")
-                  : T("Storage has not started. Ask the Dar warehouse to check it in — storage starts counting from that day.")}
+                  ? T("Verify and check it in on the Receiving dock.")
+                  : T("Ask the Dar warehouse to verify and check it in.")}
               </p>
             </div>
           </div>
@@ -882,9 +884,10 @@ export default async function CargoDetailPage({
           */}
           {/* It is the only thing on this column that gets worse while nobody
               looks at it, so it is read before the payment form. */}
-          {/* Whenever the cargo is on the Dar floor and billed — a paid bill still
-              has a storage clock running until the cargo is collected. */}
-          {billHere && storage.configured && dar && can(user.role, "finance.view") ? (
+          {/* From the moment it is cleared and billed — a paid bill still has a
+              storage clock running until the cargo is collected. The Dar
+              warehouse checking it in does not start or move the clock. */}
+          {billHere && storage.configured && cargo.clearedAt && can(user.role, "finance.view") ? (
             <StorageCard
               invoiceId={billHere.id}
               currency={storage.currency}
@@ -897,7 +900,7 @@ export default async function CargoDetailPage({
                   ? formatMoney(storageOnBill, billHere.currency)
                   : null
               }
-              since={formatDate(dar.receivedAt)}
+              since={formatDate(cargo.clearedAt)}
             />
           ) : null}
 

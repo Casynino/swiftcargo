@@ -92,7 +92,7 @@ export default async function PortalCargoPage({
     where: { id: "singleton" },
     select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
   });
-  /* The clock runs from the day Dar booked the boxes in, until they leave. */
+  /* The clock runs from the day the goods were cleared, until they leave. */
   const clockFrom = storageStart(cargo.darReceiving?.receivedAt, cargo.clearedAt);
   const storage =
     clockFrom && !["COLLECTED", "DELIVERED", "CANCELLED"].includes(cargo.status)

@@ -650,12 +650,14 @@ export function publicTracking(input: {
   const counted = countedAs(packages, pieces);
   const charge = invoice ? chargeFrom(invoice) : null;
 
-  /* The floor clock, counted from the day Dar booked the boxes in — the day
-     they started taking up room. See lib/storage-fee.ts. */
+  /* The storage clock, counted from the day the goods were cleared — see
+     lib/storage-clock.ts. The Dar warehouse checking them in does not start or
+     move it. */
   let storage: PublicStorage | null = null;
-  if (cargo.darReceiving && settings) {
+  const clockFrom = storageStart(cargo.darReceiving?.receivedAt, cargo.clearedAt);
+  if (clockFrom && settings) {
     const position = storagePosition({
-      receivedAt: storageStart(cargo.darReceiving.receivedAt, cargo.clearedAt),
+      receivedAt: clockFrom,
       collectedAt: handedOverAt,
       freeDays: settings.freeStorageDays,
       perDay: dec(settings.storagePerDay),
@@ -664,7 +666,7 @@ export function publicTracking(input: {
     /* Today's rate, not a bill's: nothing has been billed for this yet, so there
        is no pinned rate to honour and no older bill to contradict. */
     storage = {
-      arrivedAt: cargo.darReceiving.receivedAt.toISOString(),
+      arrivedAt: clockFrom.toISOString(),
       daysInWarehouse: position.daysHeld,
       freeDays: position.freeDays,
       /* Today counts: on the last free day this reads one, never zero above a

@@ -14,18 +14,14 @@ export type ClearanceState = { error?: string; ok?: string };
 const GONE = ["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"] as const;
 
 /**
- * CLEARED IS NOT CHECKED IN.
+ * CLEARED STARTS STORAGE; CHECK-IN VERIFIES.
  *
- * By the owner's decision the two are separate presses by separate people.
- * Anybody holding the clearance can say customs is done; only the Dar warehouse
- * checks the goods into our floor, and storage starts counting at check-in —
- * never at clearance, never at the price. So clearing leaves goods still at the
- * port exactly where they are, tells their customers they are on the way to our
- * warehouse, and tells the warehouse to check them in.
- *
- * Goods the floor had already booked in before customs finished are the one
- * case where clearing IS the start: they were on our floor already, and the
- * arrival letter with the storage terms goes out now.
+ * By the owner's decision clearing is when the goods enter the Dar warehouse's
+ * flow and the free storage days begin (lib/storage-clock.ts). Checking them in
+ * is the Dar warehouse's internal verification, done after — it never moves the
+ * storage date and is never a stage the customer sees. So clearing tells the
+ * customers as before and asks the Dar warehouse to verify and check the goods
+ * in.
  */
 async function clear(actor: SessionUser, cargoIds: string[], note: string) {
   const before = await prisma.cargo.findMany({
@@ -62,9 +58,8 @@ async function clear(actor: SessionUser, cargoIds: string[], note: string) {
     }
   }
 
-  /* THE WAREHOUSE IS TOLD, NOT LEFT TO NOTICE. Cleared goods sitting at the
-     port start nobody's clock and reach nobody's floor until somebody books
-     them in, so the desk that does it hears about it the moment it is due. */
+  /* THE WAREHOUSE IS TOLD, NOT LEFT TO NOTICE. Staff only — the customer's
+     status does not change on it. */
   if (atPort.cleared.length > 0) {
     const refs = atPort.cleared;
     await notifyStaff(
@@ -73,11 +68,11 @@ async function clear(actor: SessionUser, cargoIds: string[], note: string) {
         kind: "cargo.cleared",
         title:
           refs.length === 1
-            ? `${refs[0]} cleared — check it in`
-            : `${refs.length} consignments cleared — check them in`,
-        body: `Customs is done for ${refs.slice(0, 8).join(", ")}${
+            ? `${refs[0]} cleared — warehouse verification required`
+            : `${refs.length} consignments cleared — warehouse verification required`,
+        body: `${refs.slice(0, 8).join(", ")}${
           refs.length > 8 ? " and others" : ""
-        }. Check ${refs.length === 1 ? "it" : "them"} in at the Dar warehouse — storage starts counting from check-in.`,
+        } ${refs.length === 1 ? "has" : "have"} completed clearance. Please verify and check in the cargo, and report anything missing or damaged.`,
         href: "/app/receive/dar",
       }
     );
@@ -96,17 +91,13 @@ function sentence(
   }
   const count = (n: number) => `${n} consignment${n === 1 ? "" : "s"}`;
   const parts: string[] = [];
+  parts.push(`${count(atPort.length + alreadyIn.length)} cleared — storage starts today.`);
   if (atPort.length > 0) {
     parts.push(
-      `${count(atPort.length)} cleared. ${
-        can(actor.role, "receiving.dar")
-          ? "Now check them in on the Receiving dock"
-          : "Ask the Dar warehouse to check them in"
-      } — storage starts counting only from check-in.`
+      can(actor.role, "receiving.dar")
+        ? "Verify and check them in on the Receiving dock."
+        : "The Dar warehouse has been asked to verify and check them in."
     );
-  }
-  if (alreadyIn.length > 0) {
-    parts.push(`${count(alreadyIn.length)} already in our warehouse — storage starts today.`);
   }
   parts.push("Customers have been told.");
   return { ok: parts.join(" ") };

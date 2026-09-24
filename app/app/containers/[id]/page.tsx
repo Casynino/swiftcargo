@@ -435,8 +435,8 @@ export default async function ContainerPage({
     },
   });
 
-  /* Cleared at the port and not yet booked in: nobody's storage clock is
-     running on these until the Dar warehouse checks them in. */
+  /* Cleared and not yet verified by the Dar warehouse. Their storage is
+     already running from clearance; the check-in is still owed. */
   const clearedNotIn = await prisma.cargo.count({
     where: {
       deletedAt: null,
@@ -639,8 +639,8 @@ export default async function ContainerPage({
         }
       />
 
-      {/* CLEARED, NOT CHECKED IN — said until the warehouse acts on it, so the
-          desk that pressed Cleared knows who has to move next. */}
+      {/* CLEARED, NOT YET VERIFIED — said until the warehouse acts on it.
+          Storage is already running from clearance. Staff only. */}
       {clearedNotIn > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/[0.08] px-4 py-3">
           <div className="flex items-start gap-3">
@@ -652,14 +652,15 @@ export default async function ContainerPage({
                 {clearedNotIn}{" "}
                 {T(
                   clearedNotIn === 1
-                    ? "consignment cleared — the Dar warehouse must check it in"
-                    : "consignments cleared — the Dar warehouse must check them in"
+                    ? "consignment cleared — warehouse verification required"
+                    : "consignments cleared — warehouse verification required"
                 )}
               </p>
               <p className="mt-0.5 text-muted-foreground">
+                {T("Storage has started from clearance.")}{" "}
                 {can(user.role, "receiving.dar")
-                  ? T("Storage has not started. Check them in on the Receiving dock — storage starts counting from that day.")
-                  : T("Storage has not started. Ask the Dar warehouse to check them in — storage starts counting from that day.")}
+                  ? T("Verify and check them in on the Receiving dock.")
+                  : T("Ask the Dar warehouse to verify and check them in.")}
               </p>
             </div>
           </div>

@@ -28,8 +28,7 @@ export async function sendStorageNotices(now = new Date()) {
       deletedAt: null,
       storageNoticeAt: null,
       status: { notIn: ["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"] },
-      darReceiving: { isNot: null },
-      /* The clock starts once cleared into our warehouse. */
+      /* The clock starts at clearance, checked in or not — lib/storage-clock.ts. */
       clearedAt: { lte: before },
     },
     select: {

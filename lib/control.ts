@@ -131,8 +131,10 @@ async function storageNotBilled(now: Date) {
   const cargo = await prisma.cargo.findMany({
     where: {
       deletedAt: null,
-      status: { in: ["RECEIVED_DAR", "READY_FOR_RELEASE"] },
-      darReceiving: { receivedAt: { lt: ago(freeDays, now) } },
+      /* Cleared is when the clock starts, whether or not the Dar warehouse
+         has checked the goods in yet. */
+      status: { in: ["ARRIVED_TANZANIA", "RECEIVED_DAR", "READY_FOR_RELEASE"] },
+      clearedAt: { lt: ago(freeDays, now) },
       invoices: {
         none: { status: { not: "CANCELLED" }, items: { some: { category: "Storage" } } },
       },

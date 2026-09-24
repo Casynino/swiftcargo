@@ -214,7 +214,7 @@ describe("public journey", () => {
     assert.equal(j.eta, null, "no ETA once arrived");
   });
 
-  test("booked in but not signed off is under verification, not received", () => {
+  test("the warehouse's own verification is never shown to the customer", () => {
     const j = publicJourney(
       input({
         status: "RECEIVED_DAR",
@@ -223,8 +223,8 @@ describe("public journey", () => {
         awaitingDarVerification: true,
       })
     );
-    assert.equal(j.stage, "DAR_VERIFICATION");
-    assert.equal(j.headline, "Arrived in Dar — being checked in");
+    assert.notEqual(j.stage, "DAR_VERIFICATION");
+    assert.equal(j.headline, "At our Dar warehouse — invoice being prepared");
     /* Our warehouse is not a customer step; the badge above says it. */
     assert.ok(!j.steps.some((s) => (s.key as string) === "RECEIVED_DAR"));
   });
@@ -356,7 +356,7 @@ describe("public journey", () => {
     assert.equal(detail(j, "CLEARED"), "Pay first, then collect");
   });
 
-  test("at the port, customs has it; cleared, it is on the way to our warehouse", () => {
+  test("at the port, customs has it; once cleared, check-in is not waited on", () => {
     const port = publicJourney(
       input({ status: "ARRIVED_TANZANIA", clearance: { clearedAt: null } })
     );
@@ -365,13 +365,26 @@ describe("public journey", () => {
     assert.equal(state(port, "CLEARANCE"), "current");
     assert.equal(state(port, "CLEARED"), "upcoming");
 
+    /* Cleared and not yet checked in by the Dar warehouse: the customer reads
+       cleared, and the step says what is left for them to do — never
+       "being checked in". */
     const cleared = publicJourney(
       input({ status: "ARRIVED_TANZANIA", clearance: { clearedAt: day(0) } })
     );
-    assert.equal(cleared.stage, "CLEARED_TO_WAREHOUSE");
+    assert.equal(cleared.stage, "RECEIVED_DAR");
     assert.equal(state(cleared, "CLEARED"), "current");
-    assert.equal(detail(cleared, "CLEARED"), "Being checked in");
+    assert.equal(detail(cleared, "CLEARED"), "Pay first, then collect");
     assert.equal(cleared.ready, false);
+
+    /* A bill out and cleared: payment is asked for now, check-in or not. */
+    const billed = publicJourney(
+      input({
+        status: "ARRIVED_TANZANIA",
+        clearance: { clearedAt: day(0) },
+        billing: { issuedAt: day(-3), owes: true, pendingClaim: false, paidSome: false, drafted: false },
+      })
+    );
+    assert.equal(billed.stage, "PAYMENT_PENDING");
   });
 
   test("received and not yet billed", () => {

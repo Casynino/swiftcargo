@@ -1,15 +1,15 @@
 /**
  * THE STORAGE CLOCK.
  *
- * It starts when the goods are both cleared and booked into our Dar warehouse —
- * whichever of the two came last (storageStart, below) — and at nothing else:
- * not the price, not the invoice, not the payment, not the ship's arrival.
- * Cleared goods still at the port start nobody's clock until the warehouse
- * checks them in. Days are counted on the Dar es Salaam calendar (UTC+3, no
- * summer time), so a consignment booked in at 01:00 local time is on its first
- * day, not the previous one's.
+ * It starts the moment the goods are marked CLEARED, by the owner's decision —
+ * cleared is when they enter the Dar warehouse's operational flow — and at
+ * nothing else: not the Dar warehouse checking them in (that is an internal
+ * verification that never moves the date), not the price, not the invoice,
+ * not the payment, not the ship's arrival. Days are counted on the Dar es
+ * Salaam calendar (UTC+3, no summer time), so goods cleared at 01:00 local time
+ * are on their first day, not the previous one's.
  *
- * Day 1 is the day it arrived. With seven free days, day 7 is the last free
+ * Day 1 is the day it was cleared. With seven free days, day 7 is the last free
  * one and day 8 is the first that may be charged.
  *
  * Pure: the caller supplies the settings and the clock.
@@ -76,21 +76,20 @@ export function storageState(input: {
 }
 
 /**
- * WHEN THE CLOCK STARTED: the goods in our warehouse AND cleared.
+ * WHEN THE CLOCK STARTED: the moment the goods were cleared.
  *
- * The team may check boxes in at the port while customs still has them; those
- * boxes are not on our floor yet, and nobody pays for a shelf they have not
- * stood on. So the clock starts at whichever came last — booked in, or
- * cleared — and does not start at all while customs has them.
+ * The Dar warehouse checking the goods in is verification running beside the
+ * clock, not a gate on it: goods cleared on the 24th and checked in on the 25th
+ * started storage on the 24th.
+ *
+ * `receivedAt` is read only by a caller that has no clearance to give (the
+ * older shape, from before clearance was recorded), where booking in was the
+ * start. Null clearance means read, and not cleared: no clock.
  */
 export function storageStart(
   receivedAt: Date | null | undefined,
   clearedAt: Date | null | undefined
 ): Date | null {
-  if (!receivedAt) return null;
-  /* Undefined: a caller that has not read clearance — the older shape, where
-     booking in was the start. Null: read, and not cleared. */
-  if (clearedAt === undefined) return receivedAt;
-  if (clearedAt === null) return null;
-  return receivedAt.getTime() > clearedAt.getTime() ? receivedAt : clearedAt;
+  if (clearedAt === undefined) return receivedAt ?? null;
+  return clearedAt;
 }

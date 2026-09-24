@@ -2,6 +2,7 @@
 
 import { useActionState, useCallback, useEffect, useState } from "react";
 import {
+  CalendarClock,
   CircleCheck,
   PackageCheck,
   ShieldCheck,
@@ -23,8 +24,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useT } from "@/components/app/locale-provider";
 /**
  * "Customs is done" — for one consignment, or every one on a container. Asked
- * once in a dialog because it sends customers a message. It does not book the
- * goods in: that is the Dar warehouse's press, and it is what starts storage.
+ * once in a dialog because it sends customers a message and starts their
+ * storage. It does not book the goods in: that is the Dar warehouse's
+ * verification, afterwards.
  */
 export function ClearanceButton({
   cargoId,
@@ -71,18 +73,19 @@ export function ClearanceButton({
             ) : null}
           </div>
 
-          {/* THE ONE THING TO CARRY AWAY. Clearing used to start storage on its
-              own; now it does not, and a desk that presses this and walks off
-              leaves the clock stopped until somebody in Dar checks the goods in. */}
+          {/* THE ONE THING TO CARRY AWAY. Pressing this starts the customer's
+              free storage days — by the owner's decision clearing is when the
+              goods enter the Dar warehouse's flow. The warehouse's check-in
+              afterwards is verification and never moves that date. */}
           <div className="flex gap-3 rounded-xl border border-warning/40 bg-warning/[0.08] p-4">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-warning/15">
-              <Warehouse className="size-5 text-warning" />
+              <CalendarClock className="size-5 text-warning" />
             </span>
             <div>
-              <p className="font-semibold">{tx("The Dar warehouse must check these goods in")}</p>
+              <p className="font-semibold">{tx("Storage starts now")}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {tx(
-                  "Storage does not start when you clear. It starts counting only from the day the Dar warehouse checks the goods in. We will notify the Dar warehouse for you."
+                  "The free storage days start the moment you mark these cleared. The Dar warehouse will be asked to verify and check in the goods — that does not change the storage date."
                 )}
               </p>
             </div>
@@ -93,19 +96,19 @@ export function ClearanceButton({
               icon={CircleCheck}
               tone="text-success bg-success/12"
               title={tx("Cleared")}
-              detail={tx("Now. Customers are told their goods have cleared.")}
+              detail={tx("Now. Storage starts and customers are told their goods have cleared.")}
             />
             <Step
               icon={Warehouse}
               tone="text-warning bg-warning/15"
-              title={tx("Dar warehouse checks in")}
-              detail={tx("Storage starts counting from this day.")}
+              title={tx("Dar warehouse verifies and checks in")}
+              detail={tx("Internal check of count, damage and missing cargo. Customers do not see it.")}
             />
             <Step
               icon={PackageCheck}
               tone="text-muted-foreground bg-secondary"
               title={tx("Ready for pickup")}
-              detail={tx("Once the customer has paid.")}
+              detail={tx("Once the customer has paid and the goods are verified.")}
             />
           </ol>
 

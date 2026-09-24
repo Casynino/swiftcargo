@@ -385,16 +385,20 @@ function stageOf(
   if (status === "COLLECTED") return "COLLECTED";
   if (ready) return "READY";
 
-  if (rank >= 6 && input.receivedAtDar) {
-    /* Booked in, not signed off. The clerk has the boxes and is still counting
-       them against the sheet. */
-    if (input.awaitingDarVerification) return "DAR_VERIFICATION";
-    /* Booked in before customs signed off (it happens): still not ready, and
-       money does not speak while customs has the goods. */
-    if (input.clearance && !input.clearance.clearedAt) return "WAREHOUSE_CLEARANCE";
-    /* A bill can go out while the container is still at sea, but a customer
-       watching a ship does not want "part paid" as the answer to where their
-       goods are. Money speaks only once the boxes are on the Dar floor. */
+  /*
+    CLEARED IS WHERE MONEY SPEAKS — by the owner's decision.
+
+    Clearance is when the goods enter our warehouse's flow and storage starts.
+    The Dar warehouse checking them in afterwards is internal verification:
+    the customer is never shown a check-in stage, and it does not hold back
+    their payment status. A record from before clearance was recorded has no
+    clearance to read, and being booked in stands for it.
+  */
+  const cleared = input.clearance
+    ? input.clearance.clearedAt !== null
+    : rank >= 6 && input.receivedAtDar;
+
+  if (rank >= 5 && cleared && status !== "MISSING_AT_DAR") {
     switch (payment) {
       case "PAID":
         return "PAID";
@@ -409,12 +413,13 @@ function stageOf(
     }
   }
 
-  /* Off the vessel and not yet booked in: somewhere between the quay and the
-     counter, which is also where a consignment nobody can find sits. */
-  /* The ship is in and the goods are not on our floor yet: they are with
-     customs at the port, or cleared and being brought over. */
+  /* Landed and still with customs — at the port, or already on our floor
+     because the team booked it in during inspection. */
+  if (rank >= 6 && input.receivedAtDar && status !== "MISSING_AT_DAR") {
+    return "WAREHOUSE_CLEARANCE";
+  }
   if (rank >= 5 && input.clearance && input.status !== "MISSING_AT_DAR") {
-    return input.clearance.clearedAt ? "CLEARED_TO_WAREHOUSE" : "IN_CLEARANCE";
+    return "IN_CLEARANCE";
   }
   if (rank >= 5) return "ARRIVED_DAR";
   if (rank >= 4) return "AT_SEA";
@@ -566,11 +571,9 @@ export function publicJourney(input: JourneyInput): Journey {
       label: "Cleared — ready for pickup",
       detail: ready
         ? "Bring your ID to collect"
-        : stage === "CLEARED_TO_WAREHOUSE" || stage === "DAR_VERIFICATION"
-          ? "Being checked in"
-          : reached.CLEARED && !handedOver
-            ? "Pay first, then collect"
-            : null,
+        : reached.CLEARED && !handedOver && payment !== "PAID"
+          ? "Pay first, then collect"
+          : null,
       at: input.clearance?.clearedAt ?? stamps.READY_FOR_RELEASE ?? null,
       atLabel: "Cleared",
     },
