@@ -756,6 +756,8 @@ const ZH: Record<string, string> = {
   "Anything reported missing is left out.": "已报告丢失的货物不包括在内。",
   "Storage starts now": "仓储费现在开始计算",
   "Inspect": "查验",
+  "consignment has been checked in. Its Dar count will be removed — what was counted stays in the history — and its draft bill goes back to China's figures.": "票货物已办理入库。其达累斯萨拉姆的清点记录将被移除——清点内容仍保留在历史记录中——草稿账单将改回按中国的测量数据计算。",
+  "consignments have been checked in. Their Dar counts will be removed — what was counted stays in the history — and their draft bills go back to China's figures.": "票货物已办理入库。其达累斯萨拉姆的清点记录将被移除——清点内容仍保留在历史记录中——草稿账单将改回按中国的测量数据计算。",
   "The customer gets {n} free storage days, starting the moment you mark it cleared.": "客户享有{n}天免费仓储，从你标记已清关的那一刻开始计算。",
   "From day {n}, storage is charged at USD {n} a day until the goods are collected.": "从第{n}天起，每天收取 USD {n} 仓储费，直到货物被提走。",
   "The Dar warehouse will be asked to verify and check in the goods. Check-in does not change these dates.": "系统会通知达累斯萨拉姆仓库核对并办理入库。入库不会改变这些日期。",

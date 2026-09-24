@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { formatCbm, formatDate } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 
 import { primeLocale, T } from "@/lib/server-t";
@@ -98,12 +99,15 @@ function Queue({
   emptyTitle,
   emptyDescription,
   terms,
+  undo,
 }: {
   rows: QueueRow[];
   query: string;
   emptyTitle: string;
   emptyDescription: string;
   terms: StorageTerms;
+  /** Who may undo an arrival: with nothing checked in, and with check-ins. */
+  undo: { plain: boolean; counted: boolean };
 }) {
   return rows.length === 0 ? (
           <EmptyState
@@ -148,15 +152,20 @@ function Queue({
                     !["COLLECTED", "DELIVERED", "CANCELLED", "MISSING_AT_DAR"].includes(l.cargo.status) &&
                     (l.cargo.status === "ARRIVED_TANZANIA" || l.cargo.darReceiving)
                 ).length;
-                /* Nothing has happened since the arrival, so it can be undone. */
-                const untouched =
+                /* The arrival can be undone while nothing is cleared, missing,
+                   damaged or short. Clean check-ins may be undone too, by the
+                   office only — undoContainerArrival holds the same rule. */
+                const checkedInHere = container.cargoLines.filter((l) => l.cargo.darReceiving).length;
+                const undoable =
                   container.status === "ARRIVED" &&
                   container.cargoLines.every(
                     (l) =>
-                      !l.cargo.darReceiving &&
                       !l.cargo.clearedAt &&
-                      ["ARRIVED_TANZANIA", "CANCELLED"].includes(l.cargo.status)
-                  );
+                      ["ARRIVED_TANZANIA", "RECEIVED_DAR", "CANCELLED"].includes(l.cargo.status) &&
+                      (!l.cargo.darReceiving ||
+                        (l.cargo.darReceiving.condition === "GOOD" && !l.cargo.darReceiving.discrepancy))
+                  ) &&
+                  (checkedInHere === 0 ? undo.plain : undo.counted);
                 const cbm = container.cargoLines.reduce(
                   (sum, l) => sum + Number(l.cbm),
                   0
@@ -358,10 +367,11 @@ function Queue({
                               {awaitingClearance > 0 ? T("Inspect") : left > 0 ? T("Check in") : T("Finish")}
                             </Link>
                           </Button>
-                          {untouched ? (
+                          {undoable ? (
                             <UndoArrivalButton
                               containerId={container.id}
                               reference={container.reference}
+                              checkedIn={checkedInHere}
                               iconOnly
                             />
                           ) : null}
@@ -405,7 +415,11 @@ export default async function DarReceivePage({
   searchParams: Promise<{ q?: string }>;
 }) {
   await primeLocale();
-  await requirePermission("receiving.dar");
+  const user = await requirePermission("receiving.dar");
+  const undo = {
+    plain: can(user.role, "container.arrive"),
+    counted: can(user.role, "container.undoCountedArrival"),
+  };
   const { q } = await searchParams;
   const query = q?.trim().toLowerCase() ?? "";
 
@@ -659,6 +673,7 @@ export default async function DarReceivePage({
         <Queue
           rows={matching}
           terms={terms}
+          undo={undo}
           query={query}
           emptyTitle="Nothing inbound"
           emptyDescription="No container is on the water or waiting to be checked in."

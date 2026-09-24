@@ -288,3 +288,18 @@ describe("custody follows the cargo", () => {
     assert.equal(can("CUSTOMER_SUPPORT", "cargo.delete"), false);
   });
 });
+
+describe("putting a landed container back at sea", () => {
+  test("after Dar has checked cargo in, only the office may undo the arrival", () => {
+    /* A plain mistaken arrival is still undone by whoever records arrivals. */
+    assert.ok(can("DAR_WAREHOUSE", "container.arrive"));
+    /* Once Dar has counted boxes off it, undoing removes those counts: by the
+       owner's decision that is Finance, the manager and the owner. */
+    assert.ok(can("FINANCE", "container.undoCountedArrival"));
+    assert.ok(can("MANAGER", "container.undoCountedArrival"));
+    assert.ok(can("ADMIN", "container.undoCountedArrival"));
+    assert.equal(can("DAR_WAREHOUSE", "container.undoCountedArrival"), false);
+    assert.equal(can("CUSTOMER_SUPPORT", "container.undoCountedArrival"), false);
+    assert.equal(can("CHINA_WAREHOUSE", "container.undoCountedArrival"), false);
+  });
+});

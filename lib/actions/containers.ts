@@ -22,6 +22,7 @@ import { notifyCustomer, notifyStaff, staffInDepartment } from "@/lib/notify";
 import { prisma, type TxClient } from "@/lib/prisma";
 import { nextOpenSailing, publicSailings } from "@/lib/sailing-schedule";
 import { formMessage } from "@/lib/safe-error";
+import { can } from "@/lib/rbac";
 import { authorize, type SessionUser } from "@/lib/session";
 
 export type ActionState = { error?: string; ok?: string; id?: string };
@@ -2013,9 +2014,18 @@ export async function closeSailing(
  * each with its own history line — and the customers who were told their goods
  * were at the port are told that was premature.
  *
- * Only while nothing has happened since: once a consignment has been checked
- * in, reported missing or cleared, the arrival is a fact other records stand
- * on, and undoing it here would leave them describing goods at sea.
+ * NOTHING TOUCHED: whoever records arrivals may undo one.
+ *
+ * DAR HAS CHECKED CARGO IN: by the owner's decision this can still be undone,
+ * by Finance, the manager or the owner, with a reason. Every Dar count on the
+ * container is removed — what was counted, by whom and when is written to
+ * FieldChange first, so the evidence outlives the row — the boxes' Dar scans
+ * are cleared, and draft bills are re-priced on China's figures. An issued bill
+ * is Finance's and is not moved.
+ *
+ * NEVER PAST CLEARANCE, and never over a consignment reported missing, tagged
+ * damaged, collected or holding a pickup note: each of those is a later fact
+ * built on the arrival, with its own case or its own customer conversation.
  */
 export async function undoContainerArrival(
   _prev: ActionState,
@@ -2043,7 +2053,22 @@ export async function undoContainerArrival(
               clearedAt: true,
               senderId: true,
               receiverId: true,
-              darReceiving: { select: { id: true } },
+              release: { select: { id: true } },
+              pickupNote: { select: { id: true } },
+              darReceiving: {
+                select: {
+                  id: true,
+                  packagesCount: true,
+                  piecesCount: true,
+                  weightKg: true,
+                  cbm: true,
+                  condition: true,
+                  discrepancy: true,
+                  verified: true,
+                  receivedAt: true,
+                  receivedBy: { select: { name: true } },
+                },
+              },
             },
           },
         },
@@ -2054,17 +2079,36 @@ export async function undoContainerArrival(
   if (container.status !== "ARRIVED") {
     return { error: `${container.reference} is not marked as arrived.` };
   }
-  const touched = container.cargoLines.find(
-    (l) =>
-      l.cargo.darReceiving ||
-      l.cargo.clearedAt ||
-      !["ARRIVED_TANZANIA", "CANCELLED"].includes(l.cargo.status)
-  );
-  if (touched) {
+
+  for (const { cargo } of container.cargoLines) {
+    if (cargo.clearedAt) {
+      return { error: `${cargo.reference} is already cleared, so the arrival stands.` };
+    }
+    if (cargo.release || ["COLLECTED", "DELIVERED", "READY_FOR_RELEASE"].includes(cargo.status)) {
+      return { error: `${cargo.reference} has already been released, so the arrival stands.` };
+    }
+    if (cargo.pickupNote) {
+      return { error: `${cargo.reference} has a pickup note, so the arrival stands.` };
+    }
+    if (cargo.status === "MISSING_AT_DAR") {
+      return { error: `${cargo.reference} is reported missing. Resolve its case before undoing the arrival.` };
+    }
+    if (cargo.darReceiving && (cargo.darReceiving.condition !== "GOOD" || cargo.darReceiving.discrepancy)) {
+      return { error: `${cargo.reference} was checked in damaged or short. Resolve its case before undoing the arrival.` };
+    }
+  }
+
+  const counted = container.cargoLines.filter((l) => l.cargo.darReceiving);
+  if (counted.length > 0 && !can(actor.role, "container.undoCountedArrival")) {
     return {
-      error: `${touched.cargo.reference} has already been checked in, cleared or reported missing, so the arrival stands. Correct that consignment instead.`,
+      error: `${counted.length} consignment${counted.length === 1 ? " has" : "s have"} been checked in. Only Finance, the manager or the owner can undo this arrival.`,
     };
   }
+  if (counted.length > 0 && !reason) {
+    return { error: "Say why the arrival is being undone — Dar's check-ins will be removed." };
+  }
+
+  const note = `Arrival of ${container.reference} undone${reason ? ` — ${reason}` : ""}`;
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -2087,14 +2131,44 @@ export async function undoContainerArrival(
         where: { containerId: container.id },
         data: { status: "IN_TRANSIT", actualArrival: null },
       });
+
+      /* The count comes off only after it is written down: what Dar said it
+         saw, when, and who said it, in words anybody can read later. */
+      for (const { cargoId, cargo } of counted) {
+        const r = cargo.darReceiving!;
+        await recordFieldChange(
+          {
+            actor,
+            entity: "DarReceiving",
+            entityId: r.id,
+            field: "checkIn",
+            oldValue:
+              `${r.packagesCount} pkg` +
+              (r.piecesCount !== null ? `, ${r.piecesCount} pcs` : "") +
+              (r.cbm !== null ? `, ${r.cbm} CBM` : "") +
+              (r.weightKg !== null ? `, ${r.weightKg} kg` : "") +
+              `, ${r.condition.toLowerCase()}, ${r.verified ? "signed off" : "not signed off"}` +
+              `, checked in ${r.receivedAt.toISOString()}${r.receivedBy ? ` by ${r.receivedBy.name}` : ""}`,
+            newValue: null,
+            reason: note,
+          },
+          tx
+        );
+        await tx.cargoBox.updateMany({
+          where: { cargoId },
+          data: { darReceivedAt: null, darReceivedById: null, darContainerId: null },
+        });
+        await tx.darReceiving.delete({ where: { id: r.id } });
+      }
+
       await setCargoStatusBulk(
         tx,
         container.cargoLines
-          .filter((l) => l.cargo.status === "ARRIVED_TANZANIA")
+          .filter((l) => ["ARRIVED_TANZANIA", "RECEIVED_DAR"].includes(l.cargo.status))
           .map((l) => l.cargoId),
         "IN_TRANSIT",
         actor,
-        `Arrival of ${container.reference} undone${reason ? ` — ${reason}` : ""}`
+        note
       );
       await notifyCustomer(
         container.cargoLines.flatMap((l) => [l.cargo.senderId, l.cargo.receiverId]),
@@ -2111,15 +2185,35 @@ export async function undoContainerArrival(
     return { error: formMessage(error, "That did not work.") };
   }
 
+  /* Drafts were re-priced on Dar's count at check-in; with that count gone
+     they follow China's again. Outside the transaction and never able to fail
+     the undo — the same as every other pricing trigger. */
+  if (counted.length > 0) {
+    await priceOnCheckIn(
+      actor,
+      counted.map((l) => l.cargoId),
+      undefined,
+      "Re-priced on China's figures after the arrival was undone"
+    );
+  }
+
   await recordAudit({
     actor,
     action: "container.arrivalUndone",
     entity: "Container",
     entityId: container.id,
-    summary: `Undid the arrival of ${container.reference}${reason ? ` — ${reason}` : ""}`,
+    summary: `Undid the arrival of ${container.reference}${
+      counted.length ? `, removing ${counted.length} Dar check-in${counted.length === 1 ? "" : "s"}` : ""
+    }${reason ? ` — ${reason}` : ""}`,
+    metadata: { removedCheckIns: counted.map((l) => l.cargo.reference), reason: reason || null },
   });
 
   revalidatePath("/app/receive/dar");
   revalidatePath(`/app/containers/${container.id}`);
-  return { ok: `${container.reference} is back in transit.` };
+  revalidatePath("/app/containers/arrived");
+  return {
+    ok: counted.length
+      ? `${container.reference} is back in transit. ${counted.length} check-in${counted.length === 1 ? "" : "s"} removed.`
+      : `${container.reference} is back in transit.`,
+  };
 }

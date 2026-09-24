@@ -73,6 +73,14 @@ export type Permission =
   | "container.seal"
   | "container.depart"
   | "container.arrive"
+  /**
+   * PUT A LANDED CONTAINER BACK AT SEA AFTER DAR HAS CHECKED CARGO IN.
+   *
+   * Undoing a plain mistaken arrival is `container.arrive`'s. Once Dar has
+   * counted boxes off it, undoing it also removes those counts, so it is the
+   * office's — Finance, the manager and the owner — by the owner's decision.
+   */
+  | "container.undoCountedArrival"
   | "container.close"
   | "container.delete"
   /**
@@ -468,6 +476,7 @@ const FINANCE: Permission[] = [
      measurement — what came off the container is still the floor's word. */
   "container.view",
   "container.arrive",
+  "container.undoCountedArrival",
   "cargo.clear",
   /* AND THE LAST WORD ON THE SAILING. The floor counts the box off and signs
      its count; the office shuts it. By the owner's decision that is Finance,

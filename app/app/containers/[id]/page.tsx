@@ -453,18 +453,35 @@ export default async function ContainerPage({
     },
   });
 
+  /* Undoing the arrival: never past clearance, never over cargo reported
+     missing, damaged or short. Clean check-ins may be undone, by the office
+     only — see undoContainerArrival. */
+  const [undoBlockers, checkedInHere] =
+    container.status === "ARRIVED"
+      ? await Promise.all([
+          prisma.cargo.count({
+            where: {
+              containerLines: { some: { containerId: container.id } },
+              OR: [
+                { clearedAt: { not: null } },
+                { status: { notIn: ["ARRIVED_TANZANIA", "RECEIVED_DAR", "CANCELLED"] } },
+                { darReceiving: { OR: [{ condition: { not: "GOOD" } }, { discrepancy: true }] } },
+              ],
+            },
+          }),
+          prisma.cargo.count({
+            where: {
+              containerLines: { some: { containerId: container.id } },
+              darReceiving: { isNot: null },
+            },
+          }),
+        ])
+      : [1, 0];
   const arrivalUndoable =
-    container.status === "ARRIVED" &&
-    (await prisma.cargo.count({
-      where: {
-        containerLines: { some: { containerId: container.id } },
-        OR: [
-          { darReceiving: { isNot: null } },
-          { clearedAt: { not: null } },
-          { status: { notIn: ["ARRIVED_TANZANIA", "CANCELLED"] } },
-        ],
-      },
-    })) === 0;
+    undoBlockers === 0 &&
+    (checkedInHere === 0
+      ? can(user.role, "container.arrive")
+      : can(user.role, "container.undoCountedArrival"));
 
   const loadedCbm = container.cargoLines.reduce(
     (sum, l) => sum.add(l.cbm),
@@ -637,8 +654,12 @@ export default async function ContainerPage({
                 }}
               />
             ) : null}
-            {can(user.role, "container.arrive") && container.status === "ARRIVED" && arrivalUndoable ? (
-              <UndoArrivalButton containerId={container.id} reference={container.reference} />
+            {container.status === "ARRIVED" && arrivalUndoable ? (
+              <UndoArrivalButton
+                containerId={container.id}
+                reference={container.reference}
+                checkedIn={checkedInHere}
+              />
             ) : null}
             {(can(user.role, "receiving.china") || can(user.role, "receiving.dar")) &&
             container.cargoLines.length > 0 ? (
