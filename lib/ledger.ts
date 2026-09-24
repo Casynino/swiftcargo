@@ -139,7 +139,9 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
             discount: true,
             standardRate: true,
             appliedRate: true,
-            items: { select: { category: true, description: true } },
+            storageWaivedAt: true,
+            storageWaivedReason: true,
+            items: { select: { category: true, description: true, amount: true, quantity: true } },
             cargo: {
               select: {
                 id: true,
@@ -215,10 +217,63 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
     }
   }
 
+  /*
+    STORAGE AS IT STOOD WHEN THE MONEY MOVED.
+
+    Storage is charged onto a bill a day at a time and can be taken off, so the
+    bill today says nothing about a payment made last week: a freight payment
+    made before the free days ran out did not include storage. Each payment is
+    read against the bill's own storage history up to its moment. A bill with
+    storage and no history had it put on by hand before the history was kept,
+    and is read as it stands.
+  */
+  type StorageAt = { storage: { amount: number; days: number } | null; removed: { amount: number | null; reason: string; by: string | null } | null };
+  const storageInvoiceIds = [...new Set(payments.map((p) => p.invoice.id))];
+  const storageHistory = new Map<string, { at: Date; field: string; oldValue: string | null; newValue: string | null; reason: string | null; by: string | null }[]>();
+  if (storageInvoiceIds.length > 0) {
+    const changes = await prisma.fieldChange.findMany({
+      where: { entity: "Invoice", entityId: { in: storageInvoiceIds }, field: { in: ["storage", "storageWaived"] } },
+      orderBy: { createdAt: "asc" },
+      select: { entityId: true, field: true, oldValue: true, newValue: true, reason: true, createdAt: true, actor: { select: { name: true } } },
+    });
+    for (const c of changes) {
+      const list = storageHistory.get(c.entityId) ?? [];
+      list.push({ at: c.createdAt, field: c.field, oldValue: c.oldValue, newValue: c.newValue, reason: c.reason, by: c.actor?.name ?? null });
+      storageHistory.set(c.entityId, list);
+    }
+  }
+  const storageAt = (invoice: (typeof payments)[number]["invoice"], at: Date): StorageAt => {
+    const history = storageHistory.get(invoice.id);
+    if (!history) {
+      const lines = invoice.items.filter((i) => i.category === "Storage");
+      const amount = lines.reduce((sum, i) => sum + Number(i.amount), 0);
+      return {
+        storage: amount > 0.005 ? { amount, days: lines.reduce((sum, i) => sum + Number(i.quantity), 0) } : null,
+        removed: null,
+      };
+    }
+    const state: StorageAt = { storage: null, removed: null };
+    for (const h of history) {
+      if (h.at.getTime() > at.getTime()) break;
+      if (h.field === "storage") {
+        const figure = h.newValue?.match(/^([\d.]+) day\(s\) · \S+ ([\d.]+)/);
+        state.storage = figure ? { days: Number(figure[1]), amount: Number(figure[2]) } : null;
+        state.removed = null;
+      } else if (h.newValue === "Waived") {
+        const figure = h.oldValue?.match(/([\d.]+) storage/);
+        state.storage = null;
+        state.removed = { amount: figure ? Number(figure[1]) : null, reason: h.reason ?? "", by: h.by };
+      } else {
+        state.removed = null;
+      }
+    }
+    return state;
+  };
+
   /** The price change to show on a payment's own row — the same words the
       verify screen and the collections list use, so a discount never reads
       three different ways depending which screen it is seen from. */
-  const priceChangeOf = (invoice: (typeof payments)[number]["invoice"]): PriceChange => {
+  const priceChangeOf = (invoice: (typeof payments)[number]["invoice"], at: Date): PriceChange => {
     const std = invoice.standardRate ? Number(invoice.standardRate) : null;
     const applied = invoice.appliedRate ? Number(invoice.appliedRate) : null;
     const discount = invoice.discount.greaterThan(0)
@@ -236,12 +291,15 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
             .join(" — "),
         }
       : null;
+    const then = storageAt(invoice, at);
     return {
       category: null,
       cbm: null,
       rate: std !== null && applied !== null && Math.abs(std - applied) > 0.005 ? { from: std, to: applied } : null,
       currency: invoice.currency,
       discount,
+      storage: then.storage,
+      storageRemoved: then.removed,
     };
   };
 
@@ -303,7 +361,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         ...base,
         transport,
         credit: credit && !transport,
-        priceChange: transport ? null : priceChangeOf(p.invoice),
+        priceChange: transport ? null : priceChangeOf(p.invoice, e.at),
         title: p.customer.fullName,
         titleHref: `/app/customers/${p.customer.id}`,
         purpose: p.invoice.cargo.description,
@@ -337,6 +395,8 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
           p.verifiedBy?.name,
           transport ? "transport" : "",
           p.invoice.discount.greaterThan(0) ? "discount discounted" : "",
+          transport ? "" : storageAt(p.invoice, e.at).storage ? "storage" : "",
+          transport ? "" : storageAt(p.invoice, e.at).removed ? "storage removed waived" : "",
         ]
           .filter(Boolean)
           .join(" ")

@@ -1,4 +1,4 @@
-import { Tag } from "lucide-react";
+import { Ban, Tag, Warehouse } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,10 @@ export type PriceChange = {
   /** Taken off the bill, and why. Not a from/to pair — the book's price did
       not move, the customer's charge did. */
   discount: { amount: number; reason: string } | null;
+  /** Storage charged on the bill after the free days, by itself. */
+  storage?: { amount: number; days: number } | null;
+  /** Storage Finance took off the bill, why, and who. */
+  storageRemoved?: { amount: number | null; reason: string; by: string | null } | null;
 };
 
 /**
@@ -36,7 +40,7 @@ export function PriceChanged({ change, className }: { change: PriceChange; class
       to: `${change.currency} ${change.rate.to.toFixed(2)}/CBM`,
     });
   }
-  if (parts.length === 0 && !change.discount) return null;
+  if (parts.length === 0 && !change.discount && !change.storage && !change.storageRemoved) return null;
 
   return (
     <span className={cn("flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-4 tabular-nums", className)}>
@@ -64,6 +68,29 @@ export function PriceChanged({ change, className }: { change: PriceChange; class
           {change.discount.reason ? (
             <span className="font-normal opacity-80">· {change.discount.reason}</span>
           ) : null}
+        </span>
+      ) : null}
+      {/* Storage is income of its own, and the ledger says when a payment
+          carried it — or when the desk let the customer off it. */}
+      {change.storage ? (
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-marine/15 px-1.5 py-0.5 font-medium text-marine">
+          <Warehouse className="size-3 shrink-0" aria-hidden />
+          {T("Includes storage")} {change.currency} {change.storage.amount.toFixed(2)}
+          <span className="font-normal opacity-80">
+            · {change.storage.days} {change.storage.days === 1 ? T("day") : T("days")}
+          </span>
+        </span>
+      ) : null}
+      {change.storageRemoved ? (
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-warning/15 px-1.5 py-0.5 font-medium text-warning">
+          <Ban className="size-3 shrink-0" aria-hidden />
+          {T("Storage removed")}
+          {change.storageRemoved.amount !== null
+            ? ` ${change.currency} ${change.storageRemoved.amount.toFixed(2)}`
+            : ""}
+          <span className="font-normal opacity-80">
+            · {[change.storageRemoved.reason, change.storageRemoved.by].filter(Boolean).join(" — ")}
+          </span>
         </span>
       ) : null}
     </span>

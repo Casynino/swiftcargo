@@ -91,6 +91,9 @@ export default async function LedgerEntryPage({ params }: { params: Promise<{ id
             currency: true,
             total: true,
             totalTzs: true,
+            storageWaivedAt: true,
+            storageWaivedReason: true,
+            items: { where: { category: "Storage" }, select: { amount: true, quantity: true } },
             cargo: { select: { id: true, reference: true, description: true } },
           },
         },
@@ -186,6 +189,18 @@ export default async function LedgerEntryPage({ params }: { params: Promise<{ id
             value: `${formatCurrency(p.invoice.total, p.invoice.currency)}${
               p.invoice.totalTzs ? ` · ${formatCurrency(p.invoice.totalTzs, "TZS")}` : ""
             }`,
+          },
+          {
+            label: "Storage on the bill today",
+            value:
+              p.invoice.items.length > 0
+                ? `${formatCurrency(
+                    p.invoice.items.reduce((s, i) => s + Number(i.amount), 0),
+                    p.invoice.currency
+                  )} · ${p.invoice.items.reduce((s, i) => s + Number(i.quantity), 0)} day(s) beyond the free days`
+                : p.invoice.storageWaivedAt
+                  ? `${t(locale, "Removed")} ${when(p.invoice.storageWaivedAt)} — ${p.invoice.storageWaivedReason ?? dash}`
+                  : dash,
           },
           {
             label: "Cargo",
