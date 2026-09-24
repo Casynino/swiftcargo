@@ -297,8 +297,8 @@ export function journeyOf(cargo: JourneyCargo, now = new Date()): Journey {
          screen to "we are confirming your payment" and not one shilling
          further — see paymentState. */
       paidSome: live.some((invoice) => balanceOf(invoice).paid.greaterThan(0)),
-      /* Priced by the rate book at Dar check-in and waiting on the price list.
-         Never called a bill: nobody has been asked for it. */
+      /* Priced by the rate book the moment a floor measured it, and waiting
+         on the price list. Never called a bill: nobody has been asked for it. */
       drafted: cargo.invoices.some((i) => i.status === "DRAFT"),
     },
     releasable: checkRelease(cargo).ok,

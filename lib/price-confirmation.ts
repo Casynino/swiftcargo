@@ -237,17 +237,20 @@ export async function priceWaitingCargo(
 }
 
 /**
- * Price cargo the moment Dar checks it in.
+ * Price cargo the moment a floor counts it — Dar checking it in, or Guangzhou
+ * receiving it in the first place. Same engine either way, since
+ * darConfirmationGap waits for either measurement, not specifically Dar's.
  *
- * Outside the check-in's own transaction and never able to fail it: the boxes
- * are on the Dar floor whether or not the rate book can price them, and a clerk
+ * Outside the counter's own transaction and never able to fail it: the boxes
+ * are on the floor whether or not the rate book can price them, and a clerk
  * cannot fix a rate book. A consignment that cannot be priced simply has no
  * draft yet, and the price list names it.
  */
 export async function priceOnCheckIn(
   actor: Actor,
   cargoIds: string[],
-  recount?: { reason: string }
+  recount?: { reason: string },
+  firstCountReason = "Priced from the rate book when Dar checked it in"
 ) {
   for (const cargoId of cargoIds) {
     try {
@@ -258,7 +261,7 @@ export async function priceOnCheckIn(
               { reason: recount.reason, keepAgreedRate: false }
             : /* Nothing moved: a rate somebody agreed is left standing. */
               {
-                reason: "Priced from the rate book when Dar checked it in",
+                reason: firstCountReason,
                 keepAgreedRate: true,
               }),
         { timeout: 20_000 }

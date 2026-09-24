@@ -120,8 +120,11 @@ export async function FinanceHome() {
   const owedTzs = unpaid.reduce((s, r) => s + inTzs(r.owing, r.i.currency, r.i.fxRate), 0);
   const noCosts = books.boxes.filter((c) => (c.status === "ARRIVED" || c.status === "IN_TRANSIT" || c.status === "DEPARTED") && c.spent.usd === 0);
   /* Waiting on Finance: consignments priced from the book but not confirmed
-     (a draft bill), plus any counted at Dar with no bill at all. Arrived
-     containers counts the same thing, so the two screens agree. */
+     (a draft bill) — China's and Dar's alike, since the rate book prices a
+     consignment the moment either floor measures it — plus any counted at
+     Dar before this system raised drafts automatically and still with no
+     bill at all. Arrived containers counts the same thing, so the two
+     screens agree. */
   const toPrice = drafts.length + unbilledAtDar;
 
   const items: AttentionItem[] = [
@@ -130,7 +133,7 @@ export async function FinanceHome() {
     ...(unpaid.length ? [{ id: "unpaid", group: "Collections", count: unpaid.length, tone: "neutral" as const, title: `${unpaid.length} bills unpaid`, detail: "Confirmed and sent to the customer. The money has not arrived.", href: "/app/finance/collections", meta: tzs(owedTzs), metaSub: usd(owed.usd) }] : []),
     ...(untold.length ? [{ id: "untold", group: "Collections", count: untold.length, tone: "warn" as const, title: `${untold.length} customers never contacted`, detail: "A bill the customer has not been shown is not a debt yet.", href: "/app/finance/collections?view=untold", meta: "tell them" }] : []),
     ...(notesOut.length ? [{ id: "notes", group: "Pickup", count: notesOut.length, tone: "neutral" as const, title: `${notesOut.length} cleared, not collected`, detail: "Paid for and released. The cargo is still on our floor waiting for the customer to turn up.", href: "/app/finance/pickup-notes", meta: "already paid for" }] : []),
-    ...(toPrice ? [{ id: "price", group: "Containers", count: toPrice, tone: "warn" as const, title: `${toPrice} consignment${toPrice === 1 ? "" : "s"} waiting for prices`, detail: "Counted at Dar with no bill. Nobody can be asked for this money until Finance confirms the price.", href: "/app/containers/arrived?view=pricing", meta: "confirm prices" }] : []),
+    ...(toPrice ? [{ id: "price", group: "Containers", count: toPrice, tone: "warn" as const, title: `${toPrice} consignment${toPrice === 1 ? "" : "s"} waiting for prices`, detail: "Measured — in China or at Dar — with no bill confirmed. Nobody can be asked for this money until Finance confirms the price.", href: "/app/containers/arrived?view=pricing", meta: "confirm prices" }] : []),
     ...(noCosts.length ? [{ id: "nocosts", group: "Containers", count: noCosts.length, tone: "warn" as const, title: `${noCosts.length} sailing${noCosts.length === 1 ? "" : "s"} with no costs recorded`, detail: `${noCosts.map((c) => c.reference).join(", ")} — freight and clearing not entered, so the margin reads higher than it is.`, href: "/app/finance/containers", meta: "record costs" }] : []),
     ...cases.map((c) => ({ id: c.id, group: "Cargo", count: 1, tone: (c.priority === "URGENT" || c.priority === "HIGH" ? "bad" : "warn") as "bad" | "warn", title: `${c.title} — ${c.reference}`, detail: c.description, href: `/app/exceptions/${c.id}`, meta: `Open for ${days(c.createdAt)} day(s)` })),
   ];
@@ -232,7 +235,7 @@ export async function FinanceHome() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {[
             { title: "Cash available", icon: Wallet, tone: "text-success", wash: "from-success/[0.08]", lead: cash, usd: today ? cash / today : 0, foot: `${holding.length} of ${balances.length} accounts holding`, note: "Every till and bank account, added up. Comes from the ledger, so it moves the moment money does.", href: "/app/finance/accounts" },
-            { title: "Waiting to be billed", icon: Hourglass, tone: "text-warning", wash: "from-warning/[0.08]", lead: waitingBilled.tzs, usd: waitingBilled.usd, foot: `${toPrice} consignment${toPrice === 1 ? "" : "s"} not yet confirmed`, note: "Counted at Dar and priced from the rate book, but nobody has confirmed it, so no customer has been asked for it.", href: "/app/containers/arrived?view=pricing" },
+            { title: "Waiting to be billed", icon: Hourglass, tone: "text-warning", wash: "from-warning/[0.08]", lead: waitingBilled.tzs, usd: waitingBilled.usd, foot: `${toPrice} consignment${toPrice === 1 ? "" : "s"} not yet confirmed`, note: "Priced from the rate book the moment it was measured, but nobody has confirmed it, so no customer has been asked for it.", href: "/app/containers/arrived?view=pricing" },
             { title: "Owed by customers", icon: Clock, tone: "text-warning", wash: "from-warning/[0.06]", lead: owed.tzs, usd: owed.usd, foot: `${open.length} bills`, note: "Confirmed, sent, and still unpaid.", href: "/app/finance/collections" },
             { title: "Collected of billed", icon: TrendingUp, tone: "text-brand", wash: "from-brand/[0.08]", lead: collected.tzs, usd: collected.usd, foot: `${billed.usd > 0 ? Math.round((collected.usd / billed.usd) * 100) : 0}% of what was billed`, note: "Money actually in, against everything ever billed. A bill raised is not a bill paid — the gap is what Collections is for.", href: "/app/finance/reports" },
             { title: "Spent this month", icon: TrendingDown, tone: "text-destructive", wash: "from-destructive/[0.08]", lead: spent.tzs, usd: spent.usd, foot: `${spentRows.length} payment${spentRows.length === 1 ? "" : "s"} out`, note: "Freight, clearing, rent, supplies — everything that has actually left an account since the 1st. Money moved between our own accounts is not spending and is not counted.", href: "/app/finance/expenses" },

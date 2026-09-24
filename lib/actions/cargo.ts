@@ -1434,6 +1434,19 @@ export async function receiveNewCargo(
     };
   }
 
+  /* THE RATE BOOK PRICES IT NOW, NOT WHEN A CONTAINER TURNS UP.
+     By the owner's decision the goods are billable the moment Guangzhou has
+     measured them — the same engine Dar's check-in already raises a draft
+     with, so Finance's price list holds a figure for this consignment before
+     it has ever seen a container. Outside the transaction and never able to
+     fail the receiving that just happened. */
+  await priceOnCheckIn(
+    actor,
+    [result.id],
+    undefined,
+    "Priced from the rate book when China received it"
+  );
+
   await recordAudit({
     actor,
     action: "cargo.receive.intake",

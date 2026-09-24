@@ -28,7 +28,11 @@ import {
 } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
-import { priceListForContainer, priceListWithoutContainer } from "@/lib/price-list";
+import {
+  priceListForContainer,
+  priceListWaitingInChina,
+  priceListWaitingInDar,
+} from "@/lib/price-list";
 import { AT_SEA_STATUSES, sailingDelay } from "@/lib/eta";
 import { requirePermission } from "@/lib/session";
 import { unsailedToPrice } from "@/lib/unsailed-pricing";
@@ -459,9 +463,10 @@ export default async function ArrivedContainersPage({
     chosen === "pricing" && showMoney
       ? await (async () => {
           const mayConfirm = can(user.role, "invoice.priceConfirm");
-          const [cargoTypes, withoutContainer, perContainer] = await Promise.all([
+          const [cargoTypes, waitingInChina, waitingInDar, perContainer] = await Promise.all([
             mayConfirm ? cargoTypeOptions() : Promise.resolve([] as string[]),
-            priceListWithoutContainer(),
+            priceListWaitingInChina(),
+            priceListWaitingInDar(),
             Promise.all(
               shown.map(async (row) => ({
                 row,
@@ -469,7 +474,7 @@ export default async function ArrivedContainersPage({
               }))
             ),
           ]);
-          return { mayConfirm, cargoTypes, withoutContainer, perContainer };
+          return { mayConfirm, cargoTypes, waitingInChina, waitingInDar, perContainer };
         })()
       : null;
 
@@ -549,14 +554,14 @@ export default async function ArrivedContainersPage({
                 {t(
                   locale,
                   waitingOnFinance === 1
-                    ? "consignment checked in at Dar and not yet priced"
-                    : "consignments checked in at Dar and not yet priced"
+                    ? "consignment measured and not yet priced"
+                    : "consignments measured and not yet priced"
                 )}
               </p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {t(
                   locale,
-                  "The floor has finished counting. Finance confirms the price on Dar’s CBM before anybody is asked for money."
+                  "Priced from the rate book the moment a floor measures it. Finance confirms the figure before anybody is asked for money."
                 )}
               </p>
             </div>
@@ -625,24 +630,37 @@ export default async function ArrivedContainersPage({
           <PriceList
             heading={
               <span className="font-medium text-foreground">
+                {t(locale, "Still in China, not yet on a container")}
+              </span>
+            }
+            containerId={null}
+            list={pricing.waitingInChina}
+            cargoTypes={pricing.cargoTypes}
+            canConfirm={pricing.mayConfirm}
+            locale={locale}
+          />
+          <PriceList
+            heading={
+              <span className="font-medium text-foreground">
                 {t(locale, "In Dar with no container on record")}
               </span>
             }
             containerId={null}
-            list={pricing.withoutContainer}
+            list={pricing.waitingInDar}
             cargoTypes={pricing.cargoTypes}
             canConfirm={pricing.mayConfirm}
             locale={locale}
           />
           {pricing.perContainer.every(({ list }) => list.rows.length === 0) &&
-          pricing.withoutContainer.rows.length === 0 ? (
+          pricing.waitingInChina.rows.length === 0 &&
+          pricing.waitingInDar.rows.length === 0 ? (
             <Card>
               <EmptyState
                 icon="Ship"
                 title={t(locale, "Nothing is waiting for a price")}
                 description={t(
                   locale,
-                  "Cargo appears here as soon as Dar checks it in."
+                  "Cargo appears here as soon as it is measured — in China or at Dar."
                 )}
               />
             </Card>

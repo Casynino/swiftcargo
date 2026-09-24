@@ -7,7 +7,7 @@ import { billingMeasurement, priceConsignment } from "@/lib/invoice-draft";
 import { carriesAgreedRate, darConfirmationGap } from "@/lib/price-confirmation";
 import { applyVat, companySettings, currentExchangeRate } from "@/lib/pricing";
 import { prisma, type TxClient } from "@/lib/prisma";
-import { UNSAILED_TO_PRICE } from "@/lib/unsailed-pricing";
+import { UNSAILED_IN_CHINA, UNSAILED_IN_DAR } from "@/lib/unsailed-pricing";
 
 /**
  * WHAT IS WAITING FOR A PRICE, WITH THE PRICE ALREADY WORKED OUT.
@@ -293,4 +293,8 @@ export async function priceListFor(
 export const priceListForContainer = (containerId: string) =>
   priceListFor(WAITING_ON_CONTAINER(containerId));
 
-export const priceListWithoutContainer = () => priceListFor(UNSAILED_TO_PRICE);
+/** Still on the Guangzhou floor — the same list, read apart by custody. */
+export const priceListWaitingInChina = () => priceListFor(UNSAILED_IN_CHINA);
+
+/** Reached Dar, but not yet on a container. */
+export const priceListWaitingInDar = () => priceListFor(UNSAILED_IN_DAR);

@@ -26,6 +26,25 @@ export const UNSAILED_TO_PRICE = {
   invoices: { none: { status: { notIn: ["DRAFT", "CANCELLED"] } } },
 } satisfies Prisma.CargoWhereInput;
 
+/**
+ * THE SAME WAITING LIST, READ APART BY WHO IS HOLDING THE BOXES.
+ *
+ * UNSAILED_TO_PRICE is still what confirming narrows against — one consignment
+ * is priced the same way whichever floor measured it. These two exist only so
+ * the price list can say where a row actually is: a consignment Guangzhou has
+ * not yet handed to Dar is not "in Dar with no container", and calling it that
+ * sent Finance looking for boxes on the wrong floor.
+ */
+export const UNSAILED_IN_CHINA = {
+  ...UNSAILED_TO_PRICE,
+  darReceiving: null,
+} satisfies Prisma.CargoWhereInput;
+
+export const UNSAILED_IN_DAR = {
+  ...UNSAILED_TO_PRICE,
+  darReceiving: { isNot: null },
+} satisfies Prisma.CargoWhereInput;
+
 export async function unsailedToPrice(client: TxClient | typeof prisma = prisma) {
   return client.cargo.findMany({
     where: UNSAILED_TO_PRICE,
