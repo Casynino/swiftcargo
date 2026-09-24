@@ -376,6 +376,9 @@ function Queue({
                               checkedIn={checkedInHere}
                             />
                           ) : null}
+                          {/* One step at a time: clearing first, then checking
+                              in. The container's reference still opens it for
+                              anyone who needs to look before it is cleared. */}
                           {awaitingClearance > 0 ? (
                             <ClearanceButton
                               containerId={container.id}
@@ -383,20 +386,13 @@ function Queue({
                               terms={terms}
                               size="sm"
                             />
-                          ) : null}
-                          <Button
-                            asChild
-                            size="sm"
-                            variant={awaitingClearance === 0 && ready > 0 ? "default" : "outline"}
-                          >
-                            <Link href={`/app/receive/dar/${container.id}`}>
-                              {awaitingClearance > 0
-                                ? T("Inspect")
-                                : ready > 0
-                                  ? `${T("Check in")} (${ready})`
-                                  : T("Finish")}
-                            </Link>
-                          </Button>
+                          ) : (
+                            <Button asChild size="sm" variant={ready > 0 ? "default" : "outline"}>
+                              <Link href={`/app/receive/dar/${container.id}`}>
+                                {ready > 0 ? `${T("Check in")} (${ready})` : T("Finish")}
+                              </Link>
+                            </Button>
+                          )}
                         </div>
                       ) : sailing ? (
                         <MarkArrivedButton containerId={container.id} />
