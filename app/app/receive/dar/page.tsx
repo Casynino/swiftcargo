@@ -131,7 +131,7 @@ function Queue({
                   {T("Packages present")}
                 </TableHead>
                 <TableHead className="hidden 2xl:table-cell">{T("Checked by")}</TableHead>
-                <TableHead className="hidden text-right sm:table-cell">{T("Waiting")}</TableHead>
+                <TableHead className="hidden text-right 2xl:table-cell">{T("Waiting")}</TableHead>
                 <TableHead className="text-right" />
                 <TableHead className="w-10" />
               </TableRow>
@@ -339,7 +339,7 @@ function Queue({
                     <TableCell className="hidden text-sm text-muted-foreground 2xl:table-cell">
                       {checkers.length > 0 ? checkers.join(", ") : "Nobody yet"}
                     </TableCell>
-                    <TableCell className="tnum hidden text-right text-sm text-muted-foreground sm:table-cell">
+                    <TableCell className="tnum hidden text-right text-sm text-muted-foreground 2xl:table-cell">
                       {waited === null ? "—" : `${waited}d`}
                     </TableCell>
                     <TableCell className="text-right">
@@ -347,9 +347,17 @@ function Queue({
                         /* At the port: inspect (missing, damaged) if needed,
                            then one press clears the lot into our warehouse. */
                         /* One line, one height: the next step is the only
-                           solid button, the rest are quiet, and undoing the
-                           arrival is a correction, not a step — an icon. */
+                           solid button; undoing the arrival is a quiet
+                           correction ahead of it. */
                         <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                          {undoable ? (
+                            <UndoArrivalButton
+                              containerId={container.id}
+                              reference={container.reference}
+                              consignments={container.cargoLines.length}
+                              checkedIn={checkedInHere}
+                            />
+                          ) : null}
                           {awaitingClearance > 0 ? (
                             <ClearanceButton
                               containerId={container.id}
@@ -367,14 +375,6 @@ function Queue({
                               {awaitingClearance > 0 ? T("Inspect") : left > 0 ? T("Check in") : T("Finish")}
                             </Link>
                           </Button>
-                          {undoable ? (
-                            <UndoArrivalButton
-                              containerId={container.id}
-                              reference={container.reference}
-                              checkedIn={checkedInHere}
-                              iconOnly
-                            />
-                          ) : null}
                         </div>
                       ) : sailing ? (
                         <MarkArrivedButton containerId={container.id} />

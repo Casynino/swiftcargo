@@ -658,6 +658,7 @@ export default async function ContainerPage({
               <UndoArrivalButton
                 containerId={container.id}
                 reference={container.reference}
+                consignments={container.cargoLines.length}
                 checkedIn={checkedInHere}
               />
             ) : null}
