@@ -546,6 +546,49 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
 }
 
 /**
+ * What moved the price on each bill a combined payment answered, said once.
+ * The line stands for every bill, so a discount or storage on the third bill
+ * is as much the line's as one on the first. A rate or volume change belongs
+ * to one bill's price and stays with the first that had one.
+ */
+function joinChanges(a: PriceChange | null, b: PriceChange | null): PriceChange | null {
+  if (!a || !b) return a ?? b;
+  const words = (...parts: (string | null | undefined)[]) =>
+    [...new Set(parts.flatMap((p) => (p ? p.split("; ") : [])).filter(Boolean))].join("; ");
+  const add = (x: number | null, y: number | null) => (x === null || y === null ? null : Math.round((x + y) * 100) / 100);
+  const storage =
+    a.storage && b.storage
+      ? {
+          amount: add(a.storage.amount, b.storage.amount) ?? 0,
+          days: a.storage.days + b.storage.days,
+          bills: (a.storage.bills ?? 1) + (b.storage.bills ?? 1),
+        }
+      : (a.storage ?? b.storage ?? null);
+  const removed =
+    a.storageRemoved && b.storageRemoved
+      ? {
+          amount: add(a.storageRemoved.amount, b.storageRemoved.amount),
+          reason: words(a.storageRemoved.reason, b.storageRemoved.reason),
+          by: words(a.storageRemoved.by, b.storageRemoved.by) || null,
+          bills: (a.storageRemoved.bills ?? 1) + (b.storageRemoved.bills ?? 1),
+        }
+      : (a.storageRemoved ?? b.storageRemoved ?? null);
+  const discount =
+    a.discount && b.discount
+      ? { amount: add(a.discount.amount, b.discount.amount) ?? 0, reason: words(a.discount.reason, b.discount.reason) }
+      : (a.discount ?? b.discount);
+  return {
+    category: a.category ?? b.category,
+    cbm: a.cbm ?? b.cbm,
+    rate: a.rate ?? b.rate,
+    currency: a.currency,
+    discount,
+    storage,
+    storageRemoved: removed,
+  };
+}
+
+/**
  * ONE HANDOVER, ONE LINE.
  *
  * A combined payment is stored as one payment per bill, sharing a MERGE-
@@ -590,6 +633,7 @@ function mergeSlices(
       head.purpose = head.purpose ? `${head.purpose}; ${row.purpose}` : row.purpose;
     }
     head.people = [...new Set([...head.people, ...row.people])];
+    head.priceChange = joinChanges(head.priceChange, row.priceChange);
     head.search = `${head.search} ${row.search}`;
     if (row.at < head.at) head.at = row.at;
   }

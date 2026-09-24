@@ -12,9 +12,10 @@ export type PriceChange = {
       not move, the customer's charge did. */
   discount: { amount: number; reason: string } | null;
   /** Storage charged on the bill after the free days, by itself. */
-  storage?: { amount: number; days: number } | null;
+  /** `bills` is set when a combined payment's line stands for several. */
+  storage?: { amount: number; days: number; bills?: number } | null;
   /** Storage Finance took off the bill, why, and who. */
-  storageRemoved?: { amount: number | null; reason: string; by: string | null } | null;
+  storageRemoved?: { amount: number | null; reason: string; by: string | null; bills?: number } | null;
 };
 
 /**
@@ -77,7 +78,10 @@ export function PriceChanged({ change, className }: { change: PriceChange; class
           <Warehouse className="size-3 shrink-0" aria-hidden />
           {T("Includes storage")} {change.currency} {change.storage.amount.toFixed(2)}
           <span className="font-normal opacity-80">
-            · {change.storage.days} {change.storage.days === 1 ? T("day") : T("days")}
+            ·{" "}
+            {change.storage.bills && change.storage.bills > 1
+              ? `${change.storage.bills} ${T("bills")}`
+              : `${change.storage.days} ${change.storage.days === 1 ? T("day") : T("days")}`}
           </span>
         </span>
       ) : null}
@@ -85,6 +89,9 @@ export function PriceChanged({ change, className }: { change: PriceChange; class
         <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-warning/15 px-1.5 py-0.5 font-medium text-warning">
           <Ban className="size-3 shrink-0" aria-hidden />
           {T("Storage removed")}
+          {change.storageRemoved.bills && change.storageRemoved.bills > 1
+            ? ` (${change.storageRemoved.bills} ${T("bills")})`
+            : ""}
           {change.storageRemoved.amount !== null
             ? ` ${change.currency} ${change.storageRemoved.amount.toFixed(2)}`
             : ""}
