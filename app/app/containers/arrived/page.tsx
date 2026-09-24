@@ -113,7 +113,11 @@ export default async function ArrivedContainersPage({
   const showCosts = can(user.role, "expense.view");
 
   const query = q?.trim() ?? "";
-  const chosen: View = view && view in VIEWS ? (view as View) : "active";
+  /* "Waiting for prices" is reached by URL as much as by the band below —
+     typed by hand, not only clicked — so a desk without showMoney is turned
+     back to Active here rather than trusting that nothing links to it. */
+  const requested: View = view && view in VIEWS ? (view as View) : "active";
+  const chosen: View = requested === "pricing" && !showMoney ? "active" : requested;
 
   /* Everything that has sailed. A container still taking cargo in Guangzhou is
      not on this page at all — that is the loading table. */
@@ -474,7 +478,7 @@ export default async function ArrivedContainersPage({
     unsailed.length;
 
   const chips: View[] =
-    chosen === "pricing" ? [...CHIPS, "pricing"] : CHIPS;
+    chosen === "pricing" && showMoney ? [...CHIPS, "pricing"] : CHIPS;
 
   return (
     <div className="space-y-6">
@@ -528,8 +532,11 @@ export default async function ArrivedContainersPage({
 
       {/* THE HAND-OFF, NAMED. Dar has finished counting and nobody has priced
           it — which is the only thing standing between a landed container and
-          a customer being asked for money. */}
-      {waitingOnFinance > 0 ? (
+          a customer being asked for money. Behind showMoney like everything
+          else priced on this page: a warehouse counts, it does not price, and
+          a band telling it money is waiting on someone else is still telling
+          it about money. */}
+      {waitingOnFinance > 0 && showMoney ? (
         <Link
           href="/app/containers/arrived?view=pricing"
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-l-4 border-l-brand border-y border-r bg-brand/[0.06] px-4 py-3 hover:bg-brand/[0.09]"
@@ -818,7 +825,7 @@ export default async function ArrivedContainersPage({
                         : row.state === "sea"
                           ? t(locale, "In transit")
                           : t(locale, "Closed")}
-                    {row.toPrice > 0 ? (
+                    {row.toPrice > 0 && showMoney ? (
                       <span className="mt-1 block w-fit rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
                         {row.toPrice} {t(locale, "to price")}
                       </span>
