@@ -8,8 +8,8 @@ import {
   MoveMoneyCard,
   OpeningBalanceForm,
 } from "@/components/app/account-tools";
-import { ExpensePicker } from "@/components/app/expense-picker";
-import { expenseCatalogue } from "@/lib/expense-catalogue";
+import { RecordExpense } from "@/components/app/expense-picker";
+import { expenseChoices } from "@/lib/expense-picker";
 import { EmptyState } from "@/components/app/empty-state";
 import { CorrectExpenseDialog } from "@/components/app/correct-expense-dialog";
 import { LedgerRowActions } from "@/components/app/ledger-row-actions";
@@ -131,7 +131,7 @@ export default async function AccountPage({
     .filter((e) => e.kind === "payment" && e.direction === "IN")
     .map((e) => e.recordId);
 
-  const [writeOffs, catalogue, containers] = await Promise.all([
+  const [writeOffs, catalogue] = await Promise.all([
     /* A shortfall the desk agreed to clear rides on the payment that was
        short. It moved no money, so it is not a line of this register — but a
        clerk reading the payment needs to know the bill was closed for less. */
@@ -145,17 +145,10 @@ export default async function AccountPage({
           select: { writeOffOfId: true, baseCurrencyAmount: true, amount: true },
         })
       : Promise.resolve([]),
+    /* The same picker the expenses page opens, read by the same desks. */
     isCash && mayRecordCost
-      ? expenseCatalogue()
-      : Promise.resolve({ groups: [], items: [] }),
-    isCash && mayRecordCost
-      ? prisma.container.findMany({
-          where: { deletedAt: null },
-          orderBy: { createdAt: "desc" },
-          take: 40,
-          select: { id: true, reference: true },
-        })
-      : Promise.resolve([]),
+      ? expenseChoices(undefined, { executives: true })
+      : Promise.resolve(null),
   ]);
 
   const writtenOffOn = new Map<string, number>();
@@ -346,15 +339,18 @@ export default async function AccountPage({
             </p>
           </header>
           <div className="px-5 py-4">
-            <ExpensePicker
+            {catalogue ? (
+            <RecordExpense
+              history={catalogue.history}
               groups={catalogue.groups}
-              items={catalogue.items}
+              containers={catalogue.containers}
+              executives={catalogue.executives}
               accounts={choices.map((c) => ({ id: c.id, label: c.label }))}
-              containers={containers.map((c) => ({ id: c.id, label: c.reference }))}
               defaultAccountId={account.id}
               defaultCurrency={account.currency}
               label={L("Record a cost")}
             />
+            ) : null}
           </div>
         </section>
       ) : null}

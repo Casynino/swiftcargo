@@ -3,8 +3,7 @@ import type { Metadata } from "next";
 import { Search } from "lucide-react";
 
 import { CorrectExpenseDialog } from "@/components/app/correct-expense-dialog";
-import { ExpensePicker } from "@/components/app/expense-picker";
-import { expenseCatalogue } from "@/lib/expense-catalogue";
+import { RecordExpense } from "@/components/app/expense-picker";
 import { FinanceTabs } from "@/components/app/finance-tabs";
 import { LedgerRowActions } from "@/components/app/ledger-row-actions";
 import { PageHeader } from "@/components/app/page-header";
@@ -15,6 +14,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { accountRegister } from "@/lib/accounts";
 import { correctableExpenses, correctionOptions } from "@/lib/expense-correction";
 import { formatDate } from "@/lib/format";
+import { expenseChoices } from "@/lib/expense-picker";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -101,7 +101,16 @@ export default async function ExpensesPage({
   const from = since(period);
   const query = sp.q?.trim().toLowerCase() ?? "";
 
-  const [expenses, register, containers, accounts, catalogue, rate, locale, options] = await Promise.all([
+  /* What this business actually pays for, read off the register — the picker
+     the Record button opens is built from it. */
+  const mayRecord = can(user.role, "expense.record");
+  /* Read only for a desk that may record — and the executives' draws only
+     here, on the one page whose readers already see every cost. */
+  const picker = mayRecord
+    ? await expenseChoices(undefined, { executives: true })
+    : null;
+
+  const [expenses, register, containers, accounts, types, rate, locale, options] = await Promise.all([
     prisma.containerExpense.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
@@ -110,6 +119,9 @@ export default async function ExpensesPage({
         expenseType: { select: { name: true } },
         vendor: { select: { name: true } },
         account: { select: { id: true, bankName: true, currency: true } },
+        /* Whose draw an executive cost is — named on the row, because the
+           question asked of it is "whose", never "what". */
+        executive: { select: { name: true } },
       },
     }),
     accountRegister(),
@@ -124,7 +136,11 @@ export default async function ExpensesPage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, bankName: true, currency: true },
     }),
-    expenseCatalogue(),
+    prisma.expenseType.findMany({
+      where: { active: true, name: { not: "Salaries" } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, forContainer: true },
+    }),
     prisma.exchangeRate.findFirst({
       where: { active: true },
       orderBy: { effectiveFrom: "desc" },
@@ -160,7 +176,12 @@ export default async function ExpensesPage({
         id: `e-${e.id}`,
         kind: "expense",
         recordId: e.id,
-        title: e.description || (e.container ? `${category} · ${e.container.reference}` : category),
+        title: [
+          e.description || (e.container ? `${category} · ${e.container.reference}` : category),
+          e.executive ? `${T("drawn by")} ${e.executive.name}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
         reference: e.reference,
         category,
         groups: cancelled
@@ -244,11 +265,12 @@ export default async function ExpensesPage({
         title={T("Expenses")}
         description={T("What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left.")}
         actions={
-          can(user.role, "expense.record") ? (
-            <ExpensePicker
-              groups={catalogue.groups}
-              items={catalogue.items}
-              containers={containers.map((c) => ({ id: c.id, label: c.reference }))}
+          picker ? (
+            <RecordExpense
+              history={picker.history}
+              groups={picker.groups}
+              containers={picker.containers}
+              executives={picker.executives}
               accounts={accounts.map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})` }))}
             />
           ) : null
@@ -325,7 +347,7 @@ export default async function ExpensesPage({
         <div className="flex flex-wrap gap-2">
           <NativeSelect name="category" defaultValue={sp.category ?? ""} className="w-52">
             <option value="">{T("Every category")}</option>
-            {[...catalogue.groups.map((t) => t.name), "Transport out", "Between accounts"].map((n) => (
+            {[...types.map((t) => t.name), "Transport out", "Between accounts"].map((n) => (
               <option key={n} value={n}>{n}</option>
             ))}
           </NativeSelect>

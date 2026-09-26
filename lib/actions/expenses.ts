@@ -16,6 +16,7 @@ export type ActionState = { error?: string; ok?: string };
 const schema = z.object({
   scope: z.enum(["CONTAINER", "OFFICE", "SPECIAL", "EXECUTIVE"]).default("CONTAINER"),
   containerId: z.string().optional(),
+  executiveId: z.string().optional(),
   expenseTypeId: z.string().optional(),
   accountId: z.string().optional(),
   vendorName: z.string().trim().optional(),
@@ -42,6 +43,7 @@ export async function recordExpense(
   const parsed = schema.safeParse({
     scope: formData.get("scope") || "CONTAINER",
     containerId: formData.get("containerId") || undefined,
+    executiveId: formData.get("executiveId") || undefined,
     expenseTypeId: formData.get("expenseTypeId") || undefined,
     accountId: formData.get("accountId") || undefined,
     vendorName: formData.get("vendorName") || undefined,
@@ -59,17 +61,32 @@ export async function recordExpense(
   /* Salaries leave only through an approved payroll run. Picked by hand here,
      a salary would reach the ledger with nobody having agreed it. */
   if (data.expenseTypeId) {
-    const type = await prisma.expenseType.findUnique({ where: { id: data.expenseTypeId }, select: { name: true, forContainer: true } });
-    if (type?.name === SALARIES_CATEGORY) {
+    const type = await prisma.expenseType.findUnique({
+      where: { id: data.expenseTypeId },
+      select: { name: true, forContainer: true, forExecutive: true },
+    });
+    /* A kind that does not exist is refused in words, not by the foreign key
+       halfway through the write — that reached the desk as an error page. */
+    if (!type) return { error: "That kind of cost no longer exists. Pick it again." };
+    if (type.name === SALARIES_CATEGORY) {
       return { error: "Salaries are paid through Payroll, where the manager approves the run." };
     }
-    /* A container is charged only a sailing's costs, and the business only
-       its own (the owner's lists) — the form offers one list or the other. */
-    if (type && type.forContainer !== (data.scope === "CONTAINER")) {
+    /* THE THREE LISTS DO NOT CROSS. Wharfage is a sailing's, rent is the
+       office's, school fees are an executive's draw. Filed across, each one
+       makes somebody's figure a lie: a container's margin, the running costs,
+       or what an owner has taken out. */
+    if (type.forContainer !== (data.scope === "CONTAINER")) {
       return {
         error: type.forContainer
-          ? `${type.name} is a container cost. Choose the container it belongs to.`
-          : `${type.name} is a general expense, not a container cost. Pick one of the container costs.`,
+          ? `${type.name} is a container cost. Record it inside the container.`
+          : `${type.name} is not a container cost.`,
+      };
+    }
+    if (type.forExecutive !== (data.scope === "EXECUTIVE")) {
+      return {
+        error: type.forExecutive
+          ? `${type.name} is an executive's draw. Record it under Executive, in the person's name.`
+          : `${type.name} is a running cost, not an executive's draw.`,
       };
     }
   }
@@ -84,6 +101,41 @@ export async function recordExpense(
       select: { id: true, reference: true },
     });
     if (!container) return { error: "That container no longer exists." };
+  }
+
+  /* WHOSE DRAW. An executive cost may name the person it was for, and only a
+     person the company counts as one: the Management desk, still on the
+     books. A name on a cost that is not an executive's is the office's rent
+     filed as somebody's travel, and the draws list reading as somebody's debt. */
+  let executive: { id: string; name: string } | null = null;
+  /* A draw in nobody's name is a draw nobody can be asked about. */
+  if (data.scope === "EXECUTIVE" && !data.executiveId) {
+    return { error: "Whose draw is it? Pick the person it was taken by." };
+  }
+  if (data.executiveId) {
+    if (data.scope !== "EXECUTIVE") {
+      return { error: "Only an executive cost names the person it was for." };
+    }
+    executive = await prisma.user.findFirst({
+      where: { id: data.executiveId, department: "MANAGEMENT", status: "ACTIVE" },
+      select: { id: true, name: true },
+    });
+    if (!executive) return { error: "That person is not on the Management desk." };
+  }
+
+  /* The account and the day, checked in words before anything is stored. A
+     receipt is written to storage before the row is, so a refusal that came
+     from the database afterwards — an account that no longer exists, a day
+     that is not a day — left a stored photo belonging to no cost. */
+  if (data.accountId) {
+    const account = await prisma.bankAccount.findFirst({
+      where: { id: data.accountId, active: true },
+      select: { id: true },
+    });
+    if (!account) return { error: "That account is closed or no longer exists. Pick another." };
+  }
+  if (data.expenseDate && Number.isNaN(new Date(data.expenseDate).getTime())) {
+    return { error: "That date is not a real day." };
   }
 
   /* A shilling cost is pinned to the rate in force the day it was recorded,
@@ -140,6 +192,7 @@ export async function recordExpense(
         reference: await nextExpenseReference(tx),
         scope: data.scope,
         containerId: container?.id ?? null,
+        executiveId: executive?.id ?? null,
         expenseTypeId: data.expenseTypeId || null,
         accountId: data.accountId || null,
         vendorId,
@@ -167,9 +220,16 @@ export async function recordExpense(
     action: "expense.record",
     entity: container ? "Container" : "ContainerExpense",
     entityId: container?.id ?? actor.id,
-    summary: `Recorded ${data.currency} ${data.amount} ${container ? `against ${container.reference}` : `as a ${data.scope.toLowerCase()} cost`}${
-      exchangeRateNote ? ` at ${exchangeRateNote}` : ""
-    }`,
+    summary: `Recorded ${data.currency} ${data.amount} ${
+      container
+        ? `against ${container.reference}`
+        : executive
+          ? `as a draw by ${executive.name}`
+          : `as a ${data.scope.toLowerCase()} cost`
+    }${exchangeRateNote ? ` at ${exchangeRateNote}` : ""}`,
+    /* Whose draw, kept as the id as well as the name: a name on a trail can
+       change, the person it pointed at cannot. */
+    metadata: executive ? { executiveId: executive.id, executive: executive.name } : undefined,
   });
 
   revalidatePath("/app/finance/expenses");

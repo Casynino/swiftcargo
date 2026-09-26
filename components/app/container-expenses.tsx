@@ -1,20 +1,20 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Ban, Plus } from "lucide-react";
+import { Ban } from "lucide-react";
 
-import {
-  cancelExpense,
-  recordExpense,
-  type ActionState,
-} from "@/lib/actions/expenses";
+import { cancelExpense, type ActionState } from "@/lib/actions/expenses";
 import { CorrectExpenseDialog } from "@/components/app/correct-expense-dialog";
+import {
+  RecordExpense,
+  type PickerContainer,
+  type PickerGroup,
+  type PickerHistory,
+} from "@/components/app/expense-picker";
 import { FormMessage } from "@/components/app/form-message";
 import { SubmitButton } from "@/components/app/submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import type { CorrectableExpense, CorrectionAccount } from "@/lib/expense-correction";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -55,9 +55,10 @@ type Correcting = {
  */
 export function ContainerExpenses({
   containerId,
+  containerReference,
   rows,
-  types,
   accounts,
+  picker,
   missing,
   totalLabel,
   totalSecondary,
@@ -67,9 +68,16 @@ export function ContainerExpenses({
   correctionCategories,
 }: {
   containerId: string;
+  /** The sailing's own reference, so the second step names it. */
+  containerReference: string;
   rows: ContainerExpenseRow[];
-  types: { id: string; name: string }[];
   accounts: { id: string; label: string }[];
+  /** What this business pays for, read off the register. See the picker. */
+  picker: {
+    history: PickerHistory;
+    groups: PickerGroup[];
+    containers: PickerContainer[];
+  };
   /** Usual costs with nothing recorded against this container yet. */
   missing: string[];
   totalLabel: string;
@@ -85,11 +93,6 @@ export function ContainerExpenses({
     accounts: [...correctionAccounts],
     categories: [...correctionCategories],
   };
-  const [state, action] = useActionState<ActionState, FormData>(
-    recordExpense,
-    {}
-  );
-
   return (
     <section className="overflow-hidden rounded-xl border border-destructive/25 bg-destructive/[0.03] shadow-soft">
       <header className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
@@ -133,75 +136,25 @@ export function ContainerExpenses({
       ) : null}
 
       {mayRecord ? (
-        <form
-          action={action}
-          className="flex flex-wrap items-end gap-3 border-t px-5 py-4"
-        >
-          <input type="hidden" name="containerId" value={containerId} />
-          <div className="min-w-[14rem] flex-1 space-y-1.5">
-            <Label htmlFor="quick-type" className="text-xs">
-              {tx("Expense")}
-            </Label>
-            <NativeSelect id="quick-type" name="expenseTypeId" defaultValue="">
-              <option value="">{tx("Something else")}</option>
-              {types.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                  {missing.includes(t.name) ? " — not recorded yet" : ""}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <div className="w-36 space-y-1.5">
-            <Label htmlFor="quick-amount" className="text-xs">
-              {tx("Amount")}
-            </Label>
-            <Input
-              id="quick-amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              min="0.01"
-              required
-              defaultValue=""
-            />
-          </div>
-          <div className="w-28 space-y-1.5">
-            <Label htmlFor="quick-currency" className="text-xs">
-              {tx("Currency")}
-            </Label>
-            <NativeSelect
-              id="quick-currency"
-              name="currency"
-              defaultValue="USD"
-            >
-              <option value="USD">USD</option>
-              <option value="TZS">TZS</option>
-            </NativeSelect>
-          </div>
-          <div className="min-w-[12rem] flex-1 space-y-1.5">
-            <Label htmlFor="quick-account" className="text-xs">
-              {tx("Paid from")}
-            </Label>
-            <NativeSelect id="quick-account" name="accountId" defaultValue="">
-              {/* A cost with no account is real money the balances cannot
-                  account for, so the screen names that rather than assuming. */}
-              <option value="">{tx("Not paid yet")}</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  <Tx>{a.label}</Tx>
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <SubmitButton>
-            <Plus className="mr-1.5 size-4" />
-            {tx("Add")}
-          </SubmitButton>
-          <div className="w-full">
-            <FormMessage error={state.error} ok={state.ok} />
-          </div>
-        </form>
+        /* THE SAME TWO STEPS AS EVERYWHERE ELSE: what it was for, then how
+           much. Opened from this sailing, so every cost recorded here is this
+           sailing's and nobody is asked which container. */
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-5 py-4">
+          <p className="text-sm text-muted-foreground">
+            {missing.length > 0
+              ? `${missing.length} ${missing.length === 1 ? tx("usual cost has") : tx("usual costs have")} ${tx("not been recorded on this container yet.")}`
+              : tx("Everything usual has been recorded against this container.")}
+          </p>
+          <RecordExpense
+            history={picker.history}
+            groups={picker.groups}
+            containers={picker.containers}
+            executives={[]}
+            accounts={accounts}
+            containerId={containerId}
+            label={tx("Record a cost")}
+          />
+        </div>
       ) : null}
     </section>
   );

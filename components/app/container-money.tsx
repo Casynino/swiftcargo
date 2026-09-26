@@ -27,6 +27,7 @@ import { formatCurrency, usdToTzs } from "@/lib/currency";
 import { formatCbm, formatDate, formatMoney } from "@/lib/format";
 import { bookCategories } from "@/lib/rate-categories";
 import { billLetter, composeMessage, messageStage, whatsappNumber } from "@/lib/messages";
+import { expenseChoices } from "@/lib/expense-picker";
 import { outstandingOf } from "@/lib/invoice-balance";
 import { prisma } from "@/lib/prisma";
 import type { Role } from "@prisma/client";
@@ -220,6 +221,18 @@ export async function ContainerMoney({
   /* Moving a figure the customer has already been given. Finance's, and the
      counter's, which is where the conversation about it happens. */
   const mayMovePricedBill = can(user.role, "invoice.discount");
+  /* Only what recording a cost on THIS sailing needs, and only for a desk
+     that may record one. Everything handed to the card is sent to the
+     browser, so the office's costs, other boxes and every executive's draws
+     stay on the server: a list of what the owner has taken out is not
+     something to ship to every desk that can open a container. */
+  const picker = mayRecordCost
+    ? await expenseChoices(container.id, { scopes: ["CONTAINER"] }).then((all) => ({
+        history: all.history,
+        groups: all.groups.filter((g) => g.family === "SAILING"),
+        containers: all.containers.filter((c) => c.id === container.id),
+      }))
+    : { history: { CONTAINER: [], OFFICE: [], SPECIAL: [], EXECUTIVE: [] }, groups: [], containers: [] };
   const [locale, correction, priceList, cargoTypes, settings] = await Promise.all([
     localeOf(user.id),
     mayRecordCost
@@ -713,8 +726,9 @@ export async function ContainerMoney({
 
       <ContainerExpenses
         containerId={container.id}
+        containerReference={container.reference}
         rows={expenseRows}
-        types={expenseTypes}
+        picker={picker}
         accounts={accounts.map((a) => ({
           id: a.id,
           label: `${a.bankName} (${a.currency})`,

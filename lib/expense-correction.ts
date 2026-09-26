@@ -34,7 +34,25 @@ export type CorrectableExpense = {
   paid: boolean;
   /** A month's salaries — corrected on its payroll run, never from a row. */
   payroll: boolean;
+  /**
+   * Which list of kinds this cost may be refiled within. A correction moves a
+   * cost to another kind of the same list and never across — the dialog
+   * offers only these, and the server refuses the rest.
+   */
+  family: CorrectionFamily;
 };
+
+export type CorrectionFamily = "SAILING" | "OFFICE" | "EXECUTIVE";
+/** A kind as the correction dialog offers it: with the list it belongs to. */
+export type CorrectionCategory = { id: string; name: string; family: CorrectionFamily };
+const familyOfKind = (k: { forContainer: boolean; forExecutive: boolean }): CorrectionFamily =>
+  k.forContainer ? "SAILING" : k.forExecutive ? "EXECUTIVE" : "OFFICE";
+const familyOfScope = (scope: string): CorrectionFamily =>
+  scope === "CONTAINER" ? "SAILING" : scope === "EXECUTIVE" ? "EXECUTIVE" : "OFFICE";
+/** The kinds read from the database, with their list worked out once. */
+export const withFamily = (
+  kinds: { id: string; name: string; forContainer: boolean; forExecutive: boolean }[]
+): CorrectionCategory[] => kinds.map((k) => ({ id: k.id, name: k.name, family: familyOfKind(k) }));
 
 export type CorrectionAccount = { id: string; label: string; currency: string };
 
@@ -45,6 +63,7 @@ const dayOf = (d: Date) => d.toISOString().slice(0, 10);
 type CorrectableSource = {
   id: string;
   reference: string;
+  scope: string;
   description: string | null;
   expenseTypeId: string | null;
   expenseType: { name: string } | null;
@@ -78,6 +97,7 @@ export function toCorrectable(x: CorrectableSource): CorrectableExpense {
     receiptUrl: x.receiptUrl,
     paid: x.accountId !== null,
     payroll: x.payrollRun !== null || x.expenseType?.name === SALARIES_CATEGORY,
+    family: familyOfScope(x.scope),
   };
 }
 
@@ -111,12 +131,12 @@ export async function correctionOptions(): Promise<{
     prisma.expenseType.findMany({
       where: { active: true, name: { not: SALARIES_CATEGORY } },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, forContainer: true, forExecutive: true },
     }),
   ]);
   return {
     accounts: accounts.map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})`, currency: a.currency })),
-    categories,
+    categories: withFamily(categories),
   };
 }
 
@@ -218,10 +238,30 @@ export async function correctExpense(
   const accountId = blank(input.accountId);
 
   if (expenseTypeId && expenseTypeId !== expense.expenseTypeId) {
-    const type = await tx.expenseType.findUnique({ where: { id: expenseTypeId }, select: { name: true } });
+    const type = await tx.expenseType.findUnique({
+      where: { id: expenseTypeId },
+      select: { name: true, forContainer: true, forExecutive: true },
+    });
     if (!type) throw new CorrectionRefusal("That category no longer exists.");
     if (type.name === SALARIES_CATEGORY) {
       throw new CorrectionRefusal("Salaries are paid through Payroll, where the manager approves the run.");
+    }
+    /* A correction refiles a cost within its own list, never across: the same
+       three lists recording a cost keeps apart. Moving a draw to "Rent" would
+       take it off the owner's draws and put it in the running costs. */
+    if (type.forContainer !== (expense.scope === "CONTAINER")) {
+      throw new CorrectionRefusal(
+        type.forContainer
+          ? `${type.name} is a container cost, and this is not one.`
+          : `${type.name} is not a container cost, and this is one.`
+      );
+    }
+    if (type.forExecutive !== (expense.scope === "EXECUTIVE")) {
+      throw new CorrectionRefusal(
+        type.forExecutive
+          ? `${type.name} is an executive's draw, and this is not one.`
+          : `${type.name} is not an executive's draw, and this is one.`
+      );
     }
   }
 
@@ -319,6 +359,11 @@ export async function correctExpense(
   const now = formatCurrency(amount, currency);
 
   if (paid && (amountMoves || accountMoves)) {
+    /* The repost is the same draw in the same name, and its line on the trail
+       says whose, like the draw it replaces. */
+    const drawnBy = expense.executiveId
+      ? await tx.user.findUnique({ where: { id: expense.executiveId }, select: { id: true, name: true } })
+      : null;
     const reference = await nextExpenseReference(tx);
     const newAccountId = account?.id ?? expense.accountId!;
 
@@ -335,6 +380,9 @@ export async function correctExpense(
         reference,
         scope: expense.scope,
         containerId: expense.containerId,
+        /* The replacement is the same draw, in the same person's name: without
+           this a corrected draw fell off that executive's list. */
+        executiveId: expense.executiveId,
         expenseTypeId: expenseTypeId === undefined ? expense.expenseTypeId : expenseTypeId,
         accountId: newAccountId,
         vendorId: await vendorId(),
@@ -389,7 +437,10 @@ export async function correctExpense(
         action: "expense.record",
         entity: "ContainerExpense",
         entityId: replacement.id,
-        summary: `Recorded ${reference} (${now}) correcting ${expense.reference}: ${reason}`,
+        summary: `Recorded ${reference} (${now}) correcting ${expense.reference}${
+          drawnBy ? `, a draw by ${drawnBy.name}` : ""
+        }: ${reason}`,
+        metadata: drawnBy ? { executiveId: drawnBy.id, executive: drawnBy.name } : undefined,
       },
       tx
     );

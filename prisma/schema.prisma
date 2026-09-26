@@ -168,6 +168,8 @@ model User {
   sourcingAssigned   SourcingRequest[]    @relation("SourcingAssignee")
   sourcingCreated    SourcingRequest[]    @relation("SourcingCreator")
   expensesRecorded   ContainerExpense[]
+  /// Money this person took out of the business, as an executive's draw.
+  executiveDraws     ContainerExpense[] @relation("ExpenseExecutive")
   cargoStatusEvents  CargoStatusHistory[]
   pickupNotesIssued  PickupNote[]         @relation("PickupNoteIssuedBy")
   contactsSent       CustomerContact[]    @relation("ContactSentBy")
@@ -1528,6 +1530,10 @@ model ExpenseType {
   /// business (rent, utilities). Inside a container only these are offered;
   /// the general expenses list offers only the others.
   forContainer Boolean @default(false)
+  /// What an owner or director takes out (drawings, a director's advance,
+  /// school fees) rather than a running cost. Never also a sailing's kind —
+  /// a database check keeps the three lists apart.
+  forExecutive Boolean @default(false)
 
   createdAt DateTime @default(now())
 
@@ -1606,6 +1612,11 @@ model ContainerExpense {
   /// Set when this cost IS a month's salaries being paid.
   payrollRun PayrollRun?
 
+  /// Whose draw an executive cost is. Only ever set on scope EXECUTIVE, and
+  /// only to somebody on the Management desk (lib/actions/expenses.ts).
+  executiveId String?
+  executive   User?   @relation("ExpenseExecutive", fields: [executiveId], references: [id], onDelete: SetNull)
+
   recordedById String?
   recordedBy   User?   @relation(fields: [recordedById], references: [id], onDelete: SetNull)
 
@@ -1619,6 +1630,7 @@ model ContainerExpense {
   @@index([deletedAt, createdAt])
   @@index([expenseDate])
   @@index([billedCustomerId])
+  @@index([executiveId, createdAt])
 }
 
 // ---------------------------------------------------------------------------

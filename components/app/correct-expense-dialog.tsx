@@ -43,7 +43,8 @@ export function CorrectExpenseDialog({
 }: {
   expense: CorrectableExpense;
   accounts: CorrectionAccount[];
-  categories: { id: string; name: string }[];
+  /** Each kind with the list it belongs to. Without one, every kind is offered. */
+  categories: { id: string; name: string; family?: CorrectableExpense["family"] }[];
   locale: Locale;
   buttonClassName?: string;
 }) {
@@ -72,10 +73,14 @@ export function CorrectExpenseDialog({
 
   /* A category retired since the cost was recorded is still this cost's
      category; missing from the list, the select would quietly clear it. */
+  /* Only the kinds of this cost's own list: a sailing's cost is refiled among
+     a sailing's kinds, a draw among the draw kinds. Offering the others only
+     for the server to refuse them is a screen that lies about what it can do. */
+  const sameList = categories.filter((c) => !c.family || c.family === expense.family);
   const categoryOptions =
-    expense.expenseTypeId && !categories.some((c) => c.id === expense.expenseTypeId)
-      ? [{ id: expense.expenseTypeId, name: expense.expenseTypeName }, ...categories]
-      : categories;
+    expense.expenseTypeId && !sameList.some((c) => c.id === expense.expenseTypeId)
+      ? [{ id: expense.expenseTypeId, name: expense.expenseTypeName }, ...sameList]
+      : sameList;
   const accountOptions =
     expense.accountId && !accounts.some((a) => a.id === expense.accountId)
       ? [{ id: expense.accountId, label: expense.accountLabel, currency: expense.currency }, ...accounts]
