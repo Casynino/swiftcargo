@@ -25,6 +25,7 @@ const TABS = [
   ["/app/finance/credit", "Credit"],
   ["/app/finance/prices", "Confirm prices"],
   ["/app/finance/ledger", "General ledger"],
+  ["/app/finance/income", "Income"],
   ["/app/finance/expenses", "Expenses"],
   ["/app/finance/payroll", "Payroll"],
   ["/app/finance/reports", "Profit & loss"],

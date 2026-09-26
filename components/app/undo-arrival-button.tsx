@@ -99,7 +99,7 @@ export function UndoArrivalButton({
             {checkedIn > 0 ? (
               <Step
                 icon={Warehouse}
-                tone="text-destructive bg-destructive/12"
+                tone="text-destructive bg-destructive/15"
                 title={tm(`${checkedIn} Dar check-${checkedIn === 1 ? "in" : "ins"} removed`)}
                 detail={tx(
                   "What was counted stays in the history, and draft bills go back to China's figures."

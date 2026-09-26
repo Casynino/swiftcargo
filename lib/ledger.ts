@@ -55,6 +55,11 @@ export type LedgerRow = {
   transport: boolean;
   /** Money for cargo already let go on credit — a debt settled, not a sale. */
   credit: boolean;
+  /** The fare that came in inside this payment and leaves again to the
+      transporter, in shillings. Money through the account, not income. */
+  transportTzs?: number;
+  /** Loose cargo or the customer's own container, for a customer payment. */
+  service?: "LCL" | "FCL";
   at: Date;
   title: string;
   /** The customer's own page, when the money was a customer's. */
@@ -147,6 +152,7 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
                 id: true,
                 reference: true,
                 description: true,
+                service: true,
                 pickupNote: { select: { onCredit: true, issuedAt: true } },
               },
             },
@@ -361,6 +367,8 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         ...base,
         transport,
         credit: credit && !transport,
+        transportTzs: transport ? 0 : shillings(delivery, p.currency, rate),
+        service: p.invoice.cargo.service,
         priceChange: transport ? null : priceChangeOf(p.invoice, e.at),
         title: p.customer.fullName,
         titleHref: `/app/customers/${p.customer.id}`,
@@ -626,6 +634,7 @@ function mergeSlices(
     headFix.merged = true;
     head.amount = Math.round((head.amount + row.amount) * 100) / 100;
     head.tzs += row.tzs;
+    head.transportTzs = (head.transportTzs ?? 0) + (row.transportTzs ?? 0);
     if (row.writtenOffTzs) head.writtenOffTzs = (head.writtenOffTzs ?? 0) + row.writtenOffTzs;
     head.proofHref = head.proofHref ?? row.proofHref;
     head.refs = [...new Set([...head.refs, ...row.refs])];

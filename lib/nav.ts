@@ -138,6 +138,7 @@ const SECTIONS: NavSection[] = [
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["accounting.view"] },
       { label: "Payroll", href: "/app/finance/payroll", icon: "Wallet", permissions: ["accounting.view"] },
       { label: "Accounts", href: "/app/finance/accounts", icon: "Landmark", permissions: ["accounting.view"] },
+      { label: "Income", href: "/app/finance/income", icon: "HandCoins", permissions: ["accounting.view"] },
       { label: "Expenses", href: "/app/finance/expenses", icon: "Banknote", permissions: ["expense.view"] },
       { label: "Collections", href: "/app/finance/collections", icon: "HandCoins", permissions: ["finance.view"] },
       { label: "Pickup notes", href: "/app/finance/pickup-notes", icon: "QrCode", permissions: ["finance.view"] },
@@ -325,6 +326,7 @@ const MANAGER_SECTIONS: NavSection[] = [
     icon: "Wallet",
     items: [
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["finance.view"] },
+      { label: "Income", href: "/app/finance/income", icon: "HandCoins", permissions: ["accounting.view"] },
       { label: "Expenses", href: "/app/finance/expenses", icon: "Banknote", permissions: ["expense.view"] },
       { label: "Accounts", href: "/app/finance/accounts", icon: "Landmark", permissions: ["accounting.view"] },
     ],
@@ -406,6 +408,7 @@ const ADMIN_SECTIONS: NavSection[] = [
       { label: "Accounts", href: "/app/finance/accounts", icon: "Landmark", permissions: ["accounting.view"] },
       { label: "General ledger", href: "/app/finance/ledger", icon: "ArrowLeftRight", permissions: ["accounting.view"] },
       { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", permissions: ["record.reconcile"] },
+      { label: "Income", href: "/app/finance/income", icon: "HandCoins", permissions: ["accounting.view"] },
       { label: "Expenses", href: "/app/finance/expenses", icon: "Receipt", permissions: ["expense.view"] },
       { label: "Payroll", href: "/app/finance/payroll", icon: "Wallet", permissions: ["payroll.prepare"] },
       { label: "Closed containers", href: "/app/containers/closed", icon: "PackageCheck", permissions: ["accounting.view"] },
