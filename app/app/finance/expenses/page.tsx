@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Search } from "lucide-react";
 
 import { CorrectExpenseDialog } from "@/components/app/correct-expense-dialog";
-import { ExpenseForm } from "@/components/app/expense-form";
+import { ExpensePicker } from "@/components/app/expense-picker";
+import { expenseCatalogue } from "@/lib/expense-catalogue";
 import { FinanceTabs } from "@/components/app/finance-tabs";
 import { LedgerRowActions } from "@/components/app/ledger-row-actions";
 import { PageHeader } from "@/components/app/page-header";
@@ -100,7 +101,7 @@ export default async function ExpensesPage({
   const from = since(period);
   const query = sp.q?.trim().toLowerCase() ?? "";
 
-  const [expenses, register, containers, accounts, types, rate, locale, options] = await Promise.all([
+  const [expenses, register, containers, accounts, catalogue, rate, locale, options] = await Promise.all([
     prisma.containerExpense.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
@@ -123,11 +124,7 @@ export default async function ExpensesPage({
       orderBy: { sortOrder: "asc" },
       select: { id: true, bankName: true, currency: true },
     }),
-    prisma.expenseType.findMany({
-      where: { active: true, name: { not: "Salaries" } },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, forContainer: true },
-    }),
+    expenseCatalogue(),
     prisma.exchangeRate.findFirst({
       where: { active: true },
       orderBy: { effectiveFrom: "desc" },
@@ -248,9 +245,10 @@ export default async function ExpensesPage({
         description={T("What the business spends, and what it has already paid. Costs are dated when they were incurred; the money is dated when it left.")}
         actions={
           can(user.role, "expense.record") ? (
-            <ExpenseForm
+            <ExpensePicker
+              groups={catalogue.groups}
+              items={catalogue.items}
               containers={containers.map((c) => ({ id: c.id, label: c.reference }))}
-              types={types}
               accounts={accounts.map((a) => ({ id: a.id, label: `${a.bankName} (${a.currency})` }))}
             />
           ) : null
@@ -327,7 +325,7 @@ export default async function ExpensesPage({
         <div className="flex flex-wrap gap-2">
           <NativeSelect name="category" defaultValue={sp.category ?? ""} className="w-52">
             <option value="">{T("Every category")}</option>
-            {[...types.map((t) => t.name), "Transport out", "Between accounts"].map((n) => (
+            {[...catalogue.groups.map((t) => t.name), "Transport out", "Between accounts"].map((n) => (
               <option key={n} value={n}>{n}</option>
             ))}
           </NativeSelect>

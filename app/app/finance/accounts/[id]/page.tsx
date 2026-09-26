@@ -8,7 +8,8 @@ import {
   MoveMoneyCard,
   OpeningBalanceForm,
 } from "@/components/app/account-tools";
-import { RecordCostPanel, type UsualCost } from "@/components/app/expense-form";
+import { ExpensePicker } from "@/components/app/expense-picker";
+import { expenseCatalogue } from "@/lib/expense-catalogue";
 import { EmptyState } from "@/components/app/empty-state";
 import { CorrectExpenseDialog } from "@/components/app/correct-expense-dialog";
 import { LedgerRowActions } from "@/components/app/ledger-row-actions";
@@ -130,7 +131,7 @@ export default async function AccountPage({
     .filter((e) => e.kind === "payment" && e.direction === "IN")
     .map((e) => e.recordId);
 
-  const [writeOffs, usedMost, types, containers] = await Promise.all([
+  const [writeOffs, catalogue, containers] = await Promise.all([
     /* A shortfall the desk agreed to clear rides on the payment that was
        short. It moved no money, so it is not a line of this register — but a
        clerk reading the payment needs to know the bill was closed for less. */
@@ -145,21 +146,8 @@ export default async function AccountPage({
         })
       : Promise.resolve([]),
     isCash && mayRecordCost
-      ? prisma.containerExpense.groupBy({
-          by: ["description", "expenseTypeId"],
-          where: { deletedAt: null, cancelledAt: null, description: { not: null } },
-          _count: { description: true },
-          orderBy: { _count: { description: "desc" } },
-          take: 12,
-        })
-      : Promise.resolve([]),
-    isCash && mayRecordCost
-      ? prisma.expenseType.findMany({
-          where: { active: true, name: { not: "Salaries" } },
-          orderBy: { name: "asc" },
-          select: { id: true, name: true, forContainer: true },
-        })
-      : Promise.resolve([]),
+      ? expenseCatalogue()
+      : Promise.resolve({ groups: [], items: [] }),
     isCash && mayRecordCost
       ? prisma.container.findMany({
           where: { deletedAt: null },
@@ -180,25 +168,6 @@ export default async function AccountPage({
     );
   }
 
-  /* Most-recorded first, then the kinds of cost the business has named, so a
-     tin that has never paid for anything still offers something to tap. */
-  const usual: UsualCost[] = (() => {
-    const seen = new Set<string>();
-    return [
-      ...usedMost.map((r) => ({
-        label: (r.description ?? "").trim(),
-        expenseTypeId: r.expenseTypeId,
-      })),
-      ...types.map((ty) => ({ label: ty.name, expenseTypeId: ty.id })),
-    ]
-      .filter((item) => {
-        const key = item.label.toLowerCase();
-        if (!key || key.length > 40 || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 12);
-  })();
 
   const kind = KIND[account.kind];
   const Icon = kind.icon;
@@ -376,17 +345,17 @@ export default async function AccountPage({
               )}
             </p>
           </header>
-          <div className="border-b px-5 py-3">
-            <p className="text-sm font-semibold">{L("Record a cost")}</p>
+          <div className="px-5 py-4">
+            <ExpensePicker
+              groups={catalogue.groups}
+              items={catalogue.items}
+              accounts={choices.map((c) => ({ id: c.id, label: c.label }))}
+              containers={containers.map((c) => ({ id: c.id, label: c.reference }))}
+              defaultAccountId={account.id}
+              defaultCurrency={account.currency}
+              label={L("Record a cost")}
+            />
           </div>
-          <RecordCostPanel
-            usual={usual}
-            types={types}
-            accounts={choices.map((c) => ({ id: c.id, label: c.label }))}
-            containers={containers.map((c) => ({ id: c.id, label: c.reference }))}
-            defaultAccountId={account.id}
-            defaultCurrency={account.currency}
-          />
         </section>
       ) : null}
 
