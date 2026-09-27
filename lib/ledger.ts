@@ -60,6 +60,11 @@ export type LedgerRow = {
   transportTzs?: number;
   /** Loose cargo or the customer's own container, for a customer payment. */
   service?: "LCL" | "FCL";
+  /** The consignments and bills a customer payment answered. */
+  cargoRefs?: string[];
+  invoiceNumbers?: string[];
+  /** The receipt numbers it was given. */
+  receiptNumbers?: string[];
   at: Date;
   title: string;
   /** The customer's own page, when the money was a customer's. */
@@ -369,6 +374,9 @@ export async function ledgerRows(locale: Locale = "en"): Promise<LedgerRow[]> {
         credit: credit && !transport,
         transportTzs: transport ? 0 : shillings(delivery, p.currency, rate),
         service: p.invoice.cargo.service,
+        cargoRefs: [p.invoice.cargo.reference],
+        invoiceNumbers: [p.invoice.number],
+        receiptNumbers: receipt ? [receipt.number] : [],
         priceChange: transport ? null : priceChangeOf(p.invoice, e.at),
         title: p.customer.fullName,
         titleHref: `/app/customers/${p.customer.id}`,
@@ -635,6 +643,9 @@ function mergeSlices(
     head.amount = Math.round((head.amount + row.amount) * 100) / 100;
     head.tzs += row.tzs;
     head.transportTzs = (head.transportTzs ?? 0) + (row.transportTzs ?? 0);
+    head.cargoRefs = [...new Set([...(head.cargoRefs ?? []), ...(row.cargoRefs ?? [])])];
+    head.invoiceNumbers = [...new Set([...(head.invoiceNumbers ?? []), ...(row.invoiceNumbers ?? [])])];
+    head.receiptNumbers = [...new Set([...(head.receiptNumbers ?? []), ...(row.receiptNumbers ?? [])])];
     if (row.writtenOffTzs) head.writtenOffTzs = (head.writtenOffTzs ?? 0) + row.writtenOffTzs;
     head.proofHref = head.proofHref ?? row.proofHref;
     head.refs = [...new Set([...head.refs, ...row.refs])];

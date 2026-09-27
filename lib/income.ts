@@ -35,6 +35,11 @@ export type IncomeRow = {
   source: IncomeSource;
   goods: string | null;
   refs: string[];
+  cargoRefs: string[];
+  invoiceNumbers: string[];
+  receiptNumbers: string[];
+  /** What the customer handed over, in the currency they paid in. */
+  tendered: { amount: number; currency: string };
   accountId: string;
   account: string;
   /** Received, in shillings, less any transport fare that passed through. */
@@ -76,6 +81,10 @@ export async function incomeRows(from: Date, to: Date): Promise<IncomeRow[]> {
         source: r.credit ? "CREDIT" : r.service === "FCL" ? "FCL" : "LCL",
         goods: r.purpose,
         refs: r.refs,
+        cargoRefs: r.cargoRefs ?? [],
+        invoiceNumbers: r.invoiceNumbers ?? [],
+        receiptNumbers: r.receiptNumbers ?? [],
+        tendered: { amount: r.amount, currency: r.currency },
         accountId: r.accountId,
         account: r.account,
         amount: Math.round(r.tzs - transportTzs),
@@ -192,4 +201,37 @@ export async function toCollect(): Promise<CollectRow[]> {
     });
   }
   return out.sort((a, b) => RANK[a.stage] - RANK[b.stage] || b.owedTzs - a.owedTzs);
+}
+
+/**
+ * WHAT THE BILLS RAISED IN A WINDOW WERE MADE OF — BILLED, NOT RECEIVED.
+ *
+ * A payment answers a bill, never a line on it, so no shilling received can
+ * honestly be called freight or storage. The bills can: their lines say what
+ * they charged. Valued in shillings at each bill's own pinned rate.
+ */
+export async function billedInWindow(from: Date, to: Date) {
+  const items = await prisma.invoiceItem.findMany({
+    where: {
+      invoice: {
+        status: { in: ["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"] },
+        issuedAt: { gte: from, lt: to },
+      },
+    },
+    select: {
+      category: true,
+      amount: true,
+      invoice: { select: { currency: true, fxRate: true } },
+    },
+  });
+  const sum = { freight: 0, storage: 0, other: 0 };
+  for (const i of items) {
+    if (i.category === "Discount") continue;
+    const rate = Number(i.invoice.fxRate ?? 0);
+    const tzs = i.invoice.currency === "TZS" ? Number(i.amount) : rate > 1 ? Number(i.amount) * rate : 0;
+    if (i.category === "Freight") sum.freight += tzs;
+    else if (i.category === "Storage") sum.storage += tzs;
+    else sum.other += tzs;
+  }
+  return sum;
 }
