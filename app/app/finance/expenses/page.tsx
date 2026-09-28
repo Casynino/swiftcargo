@@ -15,6 +15,7 @@ import { accountRegister } from "@/lib/accounts";
 import { correctableExpenses, correctionOptions } from "@/lib/expense-correction";
 import { formatDate } from "@/lib/format";
 import { expenseChoices } from "@/lib/expense-picker";
+import { darDay } from "@/lib/income";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -375,8 +376,21 @@ export default async function ExpensesPage({
         {shown.length === 0 ? (
           <p className="px-5 py-12 text-center text-sm text-muted-foreground">{T("Nothing here for this period.")}</p>
         ) : (
+          <div>
+            {byDay(shown).map((d) => (
+              <div key={d.day}>
+                {/* One heading per day, so a day's spending reads as one block. */}
+                <div className="flex items-center justify-between gap-3 border-y bg-secondary/30 px-5 py-2 first:border-t-0">
+                  <p className="text-sm font-semibold">
+                    {d.label}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      {d.rows.length} {d.rows.length === 1 ? T("line") : T("lines")}
+                    </span>
+                  </p>
+                  <p className="tnum text-sm font-semibold text-destructive">{tzs(d.total)}</p>
+                </div>
           <ul className="divide-y">
-            {shown.map((o) => (
+            {d.rows.map((o) => (
               <li key={o.id} className={cn("flex flex-wrap items-center gap-4 px-5 py-3", o.status === "Cancelled" && "opacity-70")}>
                 <div className="min-w-0 flex-1">
                   <Link href={o.href} className={cn("font-medium hover:underline", o.status === "Cancelled" && "line-through")}>
@@ -423,8 +437,31 @@ export default async function ExpensesPage({
               </li>
             ))}
           </ul>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
+}
+
+/** Newest day first, each with what it spent — cancelled costs not counted. */
+function byDay(rows: Outgoing[]) {
+  const days = new Map<string, Outgoing[]>();
+  for (const o of [...rows].sort((a, b) => b.at.getTime() - a.at.getTime())) {
+    const key = darDay(o.at);
+    days.set(key, [...(days.get(key) ?? []), o]);
+  }
+  return [...days.entries()].map(([day, list]) => ({
+    day,
+    label: list[0].at.toLocaleDateString("en-GB", {
+      timeZone: "Africa/Dar_es_Salaam",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }),
+    rows: list,
+    total: list.filter((o) => o.status !== "Cancelled").reduce((s, o) => s + o.tzs, 0),
+  }));
 }

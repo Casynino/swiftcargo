@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { CalendarClock, ChevronRight, Layers, Paperclip, Plus, Wallet } from "lucide-react";
@@ -21,6 +22,7 @@ import { creditBook } from "@/lib/credit";
 import { formatCurrency, toBase } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { t } from "@/lib/i18n";
+import { darDay } from "@/lib/income";
 import { ledgerRows, type LedgerPerson, type LedgerRow } from "@/lib/ledger";
 import { PriceChanged } from "@/components/app/price-changed";
 import { prisma } from "@/lib/prisma";
@@ -185,6 +187,21 @@ export default async function LedgerPage({
 
   const pages = Math.max(1, Math.ceil(shown.length / PAGE_SIZE));
   const onPage = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* Each day's money in and out, read over every matching row — not only this
+     page — so a day split across two pages still shows its whole total. */
+  const dayTotals = new Map<string, { lines: number; in: number; out: number }>();
+  for (const r of shown) {
+    const key = darDay(r.at);
+    const d = dayTotals.get(key) ?? { lines: 0, in: 0, out: 0 };
+    d.lines += 1;
+    if (!r.cancelled) {
+      if (r.direction === "IN") d.in += r.tzs;
+      else d.out += r.tzs;
+    }
+    dayTotals.set(key, d);
+  }
+  const tsh = (n: number) => `TSh ${Math.round(n).toLocaleString("en-US")}`;
 
   /* Money that has not moved yet is read at today's rate — it has no rate of
      its own until it moves. */
@@ -403,7 +420,10 @@ export default async function LedgerPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {onPage.map((r) => {
+              {onPage.map((r, index) => {
+                const day = darDay(r.at);
+                const newDay = index === 0 || darDay(onPage[index - 1].at) !== day;
+                const totals = dayTotals.get(day);
                 const inbound = r.direction === "IN";
                 const amount = formatCurrency(r.amount, r.currency);
                 const twoPeople = r.verifiedBy && r.submittedBy && r.verifiedBy.id !== r.submittedBy.id;
@@ -419,8 +439,28 @@ export default async function LedgerPage({
                         ? mayMove
                         : false;
                 return (
+                  <Fragment key={r.id}>
+                  {newDay && totals ? (
+                    /* One heading per day, so a day's movements read as one block. */
+                    <TableRow className="bg-secondary/30 hover:bg-secondary/30">
+                      <TableCell colSpan={mayFix ? 11 : 10} className="py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="text-sm font-semibold">
+                            {r.at.toLocaleDateString("en-GB", { timeZone: "Africa/Dar_es_Salaam", day: "numeric", month: "short", year: "numeric" })}{" "}
+                            <span className="font-normal text-muted-foreground">
+                              {totals.lines} {totals.lines === 1 ? t(locale, "line") : t(locale, "lines")}
+                            </span>
+                          </p>
+                          <p className="tnum text-sm font-semibold">
+                            {totals.in > 0 ? <span className="text-success">+{tsh(totals.in)}</span> : null}
+                            {totals.in > 0 && totals.out > 0 ? <span className="text-muted-foreground"> · </span> : null}
+                            {totals.out > 0 ? <span className="text-destructive">−{tsh(totals.out)}</span> : null}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
                   <TableRow
-                    key={r.id}
                     className={cn(
                       "transition-colors hover:bg-secondary/40",
                       r.executive &&
@@ -578,6 +618,7 @@ export default async function LedgerPage({
                       </Link>
                     </TableCell>
                   </TableRow>
+                  </Fragment>
                 );
               })}
             </TableBody>
