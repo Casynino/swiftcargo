@@ -570,10 +570,11 @@ export async function applyPackageLine(
     const measurementMoved = changes.some((c) =>
       ["cbm", "weightKg", "quantity", "cargoType"].includes(c.field)
     );
-    if (changes.some((c) => c.field === "cbm")) {
+    /* The consignment's totals follow its lines — the count and the weight as
+       much as the volume. Re-adding them only on a volume change left a line
+       corrected from 11 cartons to 16 under a card still saying 11. */
+    if (changes.some((c) => ["cbm", "quantity", "weightKg", "pieces"].includes(c.field))) {
       await syncLineTotals(tx, actor, cargo.id, reason);
-    } else if (changes.some((c) => c.field === "quantity" || c.field === "weightKg")) {
-      await syncContainerLines(tx, cargo.id);
     }
 
     await recordAudit(
