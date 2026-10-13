@@ -329,12 +329,12 @@ export async function managerOverview(locale: Locale = "en", now = new Date()) {
     prisma.conversation.count({ where: OPEN_TICKET }),
     prisma.conversation.count({ where: { ...OPEN_TICKET, priority: "URGENT" } }),
     prisma.user.findMany({
-      where: { role: { not: "CUSTOMER" }, active: true },
+      where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, active: true },
       select: { department: true, lastActiveAt: true, lastLoginAt: true },
     }),
     /* Counted outside the roster above: a suspended account carries
        active=false, so a roster filtered on active can never contain one. */
-    prisma.user.count({ where: { role: { not: "CUSTOMER" }, status: "SUSPENDED" } }),
+    prisma.user.count({ where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, status: "SUSPENDED" } }),
     prisma.sourcingRequest.count({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
     prisma.auditLog.findMany({
       orderBy: { createdAt: "desc" },

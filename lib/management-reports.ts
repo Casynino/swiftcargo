@@ -657,7 +657,7 @@ export async function runManagementReport(
     case "staff": {
       const [staff, b] = await Promise.all([
         prisma.user.findMany({
-          where: { active: true, status: "ACTIVE", role: { not: "CUSTOMER" } },
+          where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
           orderBy: [{ department: "asc" }, { name: "asc" }],
           select: {
             name: true,

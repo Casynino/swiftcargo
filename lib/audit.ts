@@ -2,6 +2,9 @@ import "server-only";
 
 import type { Prisma } from "@prisma/client";
 
+import { headers } from "next/headers";
+
+import { auditIdentity } from "@/lib/audit-identity";
 import { prisma, type TxClient } from "@/lib/prisma";
 import type { SessionUser } from "@/lib/session";
 
@@ -12,7 +15,19 @@ type AuditInput = {
   entityId?: string | null;
   summary: string;
   metadata?: Prisma.InputJsonValue;
+  /** "FAILURE" for an attempt that did not go through. Defaults to success. */
+  outcome?: "SUCCESS" | "FAILURE" | "DENIED";
 };
+
+/** The request this line belongs to, when there is one — scripts have none. */
+async function requestIdOf(): Promise<string | undefined> {
+  try {
+    const head = await headers();
+    return head.get("x-vercel-id") ?? head.get("x-request-id") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * THE NOTE, WHEN SOMEBODY HAD SOMETHING TO SAY.
@@ -38,9 +53,13 @@ export async function recordAudit(input: AuditInput, tx?: TxClient) {
   const client = tx ?? prisma;
   await client.auditLog.create({
     data: {
-      actorId: input.actor?.id ?? null,
-      actorEmail: input.actor?.email ?? null,
-      actorRole: input.actor?.role ?? null,
+      /* The actor is whoever the server authenticated — it is never read from
+         a request. Name, department and type are copied as they stand now. */
+      ...(input.actor
+        ? auditIdentity(input.actor)
+        : { actorId: null, actorEmail: null, actorRole: null }),
+      outcome: input.outcome ?? "SUCCESS",
+      requestId: await requestIdOf(),
       action: input.action,
       entity: input.entity,
       entityId: input.entityId ?? null,

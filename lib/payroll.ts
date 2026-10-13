@@ -215,7 +215,7 @@ export async function payrollRoster(client: TxClient | typeof prisma = prisma): 
     where: {
       active: true,
       status: "ACTIVE",
-      role: { not: "CUSTOMER" },
+      role: { notIn: ["CUSTOMER", "DEVELOPER"] },
       baseSalary: { not: null },
     },
     orderBy: [{ name: "asc" }],

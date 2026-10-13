@@ -70,7 +70,7 @@ export default async function SourcingRequestPage({
       include: { actor: { select: { name: true } } },
     }),
     prisma.user.findMany({
-      where: { status: "ACTIVE", role: { not: "CUSTOMER" } },
+      where: { status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, role: true },
     }),

@@ -6,6 +6,8 @@ import { z } from "zod";
 
 import { authConfig } from "@/auth.config";
 import { normaliseTzPhone } from "@/lib/phone";
+import { auditIdentity } from "@/lib/audit-identity";
+import { startDeveloperSession } from "@/lib/developer";
 import { prisma } from "@/lib/prisma";
 import { defaultLocaleForRole } from "@/lib/locale";
 
@@ -129,6 +131,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Suspended and former staff keep their history but lose access.
         if (!usable || !ok) {
           await record(false);
+          /* A failed attempt on the developer account is a security event worth
+             a line of its own — the owner reads these, not just the lockout. */
+          if (user?.role === "DEVELOPER") {
+            await prisma.auditLog.create({
+              data: {
+                ...auditIdentity(user),
+                action: "auth.login.failed",
+                entity: "User",
+                entityId: user.id,
+                summary: "Failed sign-in to the developer account",
+                outcome: "FAILURE",
+                requestId: head.get("x-vercel-id") ?? undefined,
+              },
+            });
+          }
           return null;
         }
 
@@ -149,15 +166,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
+        /* The developer's sign-in proves who they are and opens a session that
+           holds NO privilege until they choose developer mode. Its id is what
+           the browser carries; what it may do is read from the database. */
+        const sid =
+          user.role === "DEVELOPER"
+            ? await startDeveloperSession(user.id, {
+                ipAddress,
+                userAgent: head.get("user-agent"),
+              })
+            : undefined;
+
         await prisma.auditLog.create({
           data: {
-            actorId: user.id,
-            actorEmail: user.email,
-            actorRole: user.role,
+            ...auditIdentity(user),
             action: "auth.login",
             entity: "User",
             entityId: user.id,
-            summary: `${user.name} signed in`,
+            summary:
+              user.role === "DEVELOPER"
+                ? `${user.name} signed in to the developer account (account type not chosen yet)`
+                : `${user.name} signed in`,
+            requestId: head.get("x-vercel-id") ?? undefined,
           },
         });
 
@@ -166,6 +196,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           role: user.role,
+          sid,
         };
       },
     }),

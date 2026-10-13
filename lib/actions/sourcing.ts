@@ -187,7 +187,7 @@ export async function updateSourcingRequest(
     }
     if (input.assignedToId) {
       const user = await prisma.user.findFirst({
-        where: { id: input.assignedToId, status: "ACTIVE", role: { not: "CUSTOMER" } },
+        where: { id: input.assignedToId, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
         select: { id: true, name: true, role: true },
       });
       if (!user || !can(user.role, "conversation.reply")) {

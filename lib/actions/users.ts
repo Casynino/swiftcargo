@@ -256,7 +256,7 @@ export async function setUserActive(
       where: { id: userId },
       select: { id: true, name: true, role: true, status: true },
     });
-    if (!target || target.role === "CUSTOMER") {
+    if (!target || target.role === "CUSTOMER" || target.role === "DEVELOPER") {
       return { error: "That staff member no longer exists." };
     }
 
@@ -361,7 +361,7 @@ export async function resetUserPassword(
       where: { id: userId },
       select: { id: true, name: true, role: true },
     });
-    if (!target || target.role === "CUSTOMER") {
+    if (!target || target.role === "CUSTOMER" || target.role === "DEVELOPER") {
       return { error: "That staff member no longer exists." };
     }
 
@@ -433,7 +433,7 @@ export async function changeUserRole(
       where: { id: userId },
       select: { id: true, name: true, role: true, department: true, warehouseId: true },
     });
-    if (!target || target.role === "CUSTOMER") {
+    if (!target || target.role === "CUSTOMER" || target.role === "DEVELOPER") {
       return { error: "That staff member no longer exists." };
     }
 
@@ -564,7 +564,7 @@ export async function setBaseSalary(
       where: { id: userId },
       select: { id: true, name: true, role: true, baseSalary: true },
     });
-    if (!target || target.role === "CUSTOMER") {
+    if (!target || target.role === "CUSTOMER" || target.role === "DEVELOPER") {
       return { error: "That staff member no longer exists." };
     }
     const before = target.baseSalary === null ? null : Number(target.baseSalary);

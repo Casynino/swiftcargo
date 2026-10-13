@@ -212,6 +212,9 @@ export type Permission =
   | "record.reconcile"
   | "report.view"
   | "audit.view"
+  /* The developer's own view of every action across the system. Held by the
+     DEVELOPER role and no other — not the owner, not the manager. */
+  | "developer.activity"
   | "records.viewDeleted"
   | "user.manage"
   | "settings.manage"
@@ -602,8 +605,21 @@ const MANAGER: Permission[] = ALL.filter(
  */
 const CUSTOMER: Permission[] = [];
 
+/**
+ * THE DEVELOPER'S PERMISSIONS, WRITTEN OUT.
+ *
+ * Everything the owner can do, so the system can be inspected and run at every
+ * desk — and the one permission that is the developer's alone. Nothing here
+ * switches off a financial rule: those live in the actions and the database,
+ * and are asked of whoever holds the permission. The role only opens the door;
+ * it does not move the walls. It is also not reachable at all until the
+ * developer has chosen developer mode — see lib/developer.ts.
+ */
+const DEVELOPER: Permission[] = [...ALL, "developer.activity"];
+
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: ALL,
+  DEVELOPER,
   MANAGER,
   CUSTOMER_SUPPORT,
   CHINA_WAREHOUSE,

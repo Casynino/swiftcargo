@@ -74,6 +74,12 @@ enum Role {
   DAR_WAREHOUSE
   FINANCE
 
+  /// The system's developer. One dedicated account, provisioned by script and
+  /// never assignable through the staff screens. Signs in through a mode
+  /// choice (DeveloperSession) and is audited as a developer, never as the
+  /// staff account it may later sign in to.
+  DEVELOPER
+
   /// Not staff. A customer signing in to their own portal. Holds no department
   /// and reaches nothing under /app. Every query on their behalf is scoped by
   /// the customerId on their own row, never by anything in a URL.
@@ -141,6 +147,7 @@ model User {
   createdUsers User[]  @relation("UserCreatedBy")
 
   auditLogs          AuditLog[]
+  developerSessions  DeveloperSession[]
   loginEvents        LoginEvent[]
   notifications      Notification[]
   fieldChanges       FieldChange[]
@@ -202,6 +209,41 @@ model LoginEvent {
 
   @@index([email, createdAt])
   @@index([userId, createdAt])
+}
+
+enum DeveloperMode {
+  /// Credentials verified; the account type is not chosen yet. Holds no
+  /// privilege whatever — the app treats it as signed out.
+  PENDING
+  /// Developer mode, entered on purpose.
+  DEVELOPER
+  /// Over: signed out, or left for a staff account. Never reopened.
+  ENDED
+}
+
+/// A developer's sign-in, held on the server.
+///
+/// The browser's token carries only this row's id. Whether it may act as the
+/// developer is read from here on every request, so the privilege cannot be
+/// obtained by editing anything the browser holds, and ending it ends it
+/// everywhere at once.
+model DeveloperSession {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mode     DeveloperMode @default(PENDING)
+  chosenAt DateTime?
+  endedAt  DateTime?
+  /// Why it ended: "signed-out", "switched-to-staff", "replaced".
+  endedBy  String?
+
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, mode])
 }
 
 // ---------------------------------------------------------------------------
@@ -2477,6 +2519,16 @@ model AuditLog {
   actor      User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
   actorEmail String?
   actorRole  Role?
+  /// Who they were AT THE TIME: a renamed or moved person does not rewrite
+  /// history. Derived from the authenticated session, never from a request.
+  actorName       String?
+  actorDepartment Department?
+  /// "STAFF" or "DEVELOPER" — kept apart so one history never blurs the two.
+  actorType       String      @default("STAFF")
+  /// "SUCCESS", "FAILURE" or "DENIED" (a permission refused).
+  outcome         String      @default("SUCCESS")
+  /// Ties every line written by one request together.
+  requestId       String?
 
   action   String // "cargo.received", "payment.verified", "cbm.override"
   entity   String
@@ -2492,6 +2544,8 @@ model AuditLog {
   @@index([entity, entityId, createdAt])
   @@index([entity, action, createdAt])
   @@index([createdAt])
+  @@index([actorType, createdAt])
+  @@index([outcome, createdAt])
 }
 
 /// A single field changing, with both values. Separate from AuditLog because a

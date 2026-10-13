@@ -99,7 +99,7 @@ export default async function RequestsPage() {
       },
     }),
     prisma.user.findMany({
-      where: { active: true, status: "ACTIVE", role: { not: "CUSTOMER" } },
+      where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, role: true },
       take: 100,

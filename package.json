@@ -21,6 +21,7 @@
     "db:seed": "prisma db seed",
     "db:seed:production": "tsx prisma/seed.production.ts",
     "db:studio": "prisma studio",
+    "developer:provision": "tsx --conditions=react-server scripts/provision-developer.ts",
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate"
   },

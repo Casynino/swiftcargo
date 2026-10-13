@@ -471,10 +471,24 @@ const ADMIN_SECTIONS: NavSection[] = [
   },
 ];
 
+/* The developer's own door, below everything the owner sees. Its permission is
+   held by the developer role alone, so it appears for nobody else. */
+const DEVELOPER_SECTIONS: NavSection[] = [
+  ...ADMIN_SECTIONS,
+  {
+    label: "",
+    icon: "",
+    items: [
+      { label: "Developer activity", href: "/app/developer/activity", icon: "History", permissions: ["developer.activity"] },
+    ],
+  },
+];
+
 const ROLE_SECTIONS: Partial<Record<Role, NavSection[]>> = {
   CUSTOMER_SUPPORT: SUPPORT_SECTIONS,
   MANAGER: MANAGER_SECTIONS,
   ADMIN: ADMIN_SECTIONS,
+  DEVELOPER: DEVELOPER_SECTIONS,
 };
 
 /** Where Home takes this desk. Support's home is the support desk itself. */

@@ -35,6 +35,8 @@ export const authConfig = {
         token.id = user.id as string;
         token.role = (user as { role?: string }).role;
         token.name = user.name;
+        /* Only the developer has one. Set at sign-in and never from the browser. */
+        token.sid = (user as { sid?: string }).sid;
       }
       return token;
     },
@@ -42,6 +44,7 @@ export const authConfig = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as typeof session.user.role;
+        session.user.sid = token.sid as string | undefined;
       }
       return session;
     },

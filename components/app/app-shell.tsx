@@ -16,7 +16,7 @@ import { NavProvider } from "@/components/app/section-tabs";
 import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { logout } from "@/lib/actions/auth";
+import { chooseStaffAccount, logout } from "@/lib/actions/auth";
 import { BUILD_ID } from "@/lib/build-id";
 import { type NavItem, type NavSection } from "@/lib/nav";
 import { LanguageSwitch } from "@/components/app/language-switch";
@@ -257,7 +257,7 @@ function UserFooter({
   user,
   locale,
 }: {
-  user: { name: string; email: string; roleLabel: string };
+  user: { name: string; email: string; role: Role; roleLabel: string };
   locale: Locale;
 }) {
   return (
@@ -279,6 +279,21 @@ function UserFooter({
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </Link>
+      {/* THE ACTIVE ACCOUNT, SAID PLAINLY. The developer is told every time they
+          look that this is developer mode, and has one press to leave it for a
+          staff account — which ends this session before anything else. */}
+      {user.role === "DEVELOPER" ? (
+        <div className="mt-1 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-warning">
+            {t(locale, "Developer mode")}
+          </p>
+          <form action={chooseStaffAccount} className="mt-1">
+            <button type="submit" className="text-xs font-medium text-foreground underline-offset-2 hover:underline">
+              {t(locale, "Switch to a staff account")}
+            </button>
+          </form>
+        </div>
+      ) : null}
       <div className="mt-1 flex items-center gap-1">
         <form action={logout} className="flex-1">
           <Button

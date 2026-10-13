@@ -61,7 +61,7 @@ export default async function ExceptionPage({
 
   const staff = can(user.role, "exception.assign")
     ? await prisma.user.findMany({
-        where: { role: { not: "CUSTOMER" }, active: true, status: "ACTIVE" },
+        where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, active: true, status: "ACTIVE" },
         orderBy: { name: "asc" },
         select: { id: true, name: true },
       })
