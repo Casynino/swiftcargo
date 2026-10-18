@@ -680,7 +680,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{T("Needs your attention")}</h2>
+        <h2 className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{T("Needs your attention")}{all.length > 0 ? <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-semibold tracking-normal text-warning">{all.length}</span> : null}</h2>
         <span className={cn("shrink-0 text-xs font-medium", badge.c)}>{badge.t}</span>
       </div>
       <div className="overflow-hidden rounded-xl border bg-card">
@@ -694,7 +694,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
           </p>
         </div>
       ) : (
-        <div className="divide-y">
+        <div className="max-h-[196px] divide-y overflow-y-auto overscroll-contain">
           {all.map((f) => {
               const t = TONE[f.tone];
               return (
@@ -763,6 +763,9 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
             })}
         </div>
       )}
+      {all.length > 3 ? (
+        <p className="flex items-center justify-center gap-1.5 border-t px-5 py-1.5 text-xs text-muted-foreground"><ChevronDown className="size-3.5" />{T("scroll for")} {all.length - 3} {T("more")}</p>
+      ) : null}
 
       <details className="group border-t">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-2.5 text-xs text-muted-foreground">
