@@ -26,12 +26,12 @@ export function WorkAsDialog({ people }: { people: Person[] }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-full w-full items-start gap-4 rounded-2xl border bg-card p-5 text-left transition hover:border-foreground/30"
+        className="group flex h-full w-full items-start gap-3.5 rounded-xl border bg-card p-4 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
       >
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><LogIn className="size-5" /></span>
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><LogIn className="size-5" /></span>
         <span>
-          <span className="block font-semibold">Work as →</span>
-          <span className="mt-1 block text-sm text-muted-foreground">Pick a name and open the system exactly as that person sees it. One click, and every action is recorded under yours.</span>
+          <span className="block text-sm font-semibold">Work as →</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Pick a name and open the system as that person. Recorded under you.</span>
         </span>
       </button>
       {open ? (

@@ -87,12 +87,12 @@ export function AddAccountDialog({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex h-full w-full items-start gap-4 rounded-2xl border bg-card p-5 text-left transition hover:border-foreground/30"
+          className="group flex h-full w-full items-start gap-3.5 rounded-xl border bg-card p-4 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
         >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><UserPlus className="size-5" /></span>
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><UserPlus className="size-5" /></span>
           <span>
-            <span className="block font-semibold">Add an account →</span>
-            <span className="mt-1 block text-sm text-muted-foreground">Open an account for the owner, a manager, Finance, Support or a warehouse clerk. They can sign in straight away.</span>
+            <span className="block text-sm font-semibold">Add an account →</span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Open an account for anyone on the team. They can sign in straight away.</span>
           </span>
         </button>
       ) : (

@@ -60,7 +60,7 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
 export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await primeLocale();
   const sp = await searchParams;
-  const tab = ["business", "security", "data"].includes(sp.tab ?? "") ? (sp.tab as string) : "activity";
+  const tab = ["activity", "security", "data"].includes(sp.tab ?? "") ? (sp.tab as string) : "business";
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
@@ -93,6 +93,8 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
     tab === "data" ? dataPulse() : null,
   ]);
 
+  const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Africa/Dar_es_Salaam" })) % 24;
+  const greeting = hour >= 5 && hour < 12 ? T("Good morning") : hour >= 12 && hour < 17 ? T("Good afternoon") : T("Good evening");
   const hello = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dar_es_Salaam" });
   const need = o.findings.filter((f) => f.tone !== "info");
   const good = o.findings.filter((f) => f.tone === "info");
@@ -100,16 +102,49 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand via-violet-500 to-fuchsia-500 px-6 py-7 text-white shadow-sm">
-        <p className="flex items-center gap-2 text-xs text-white/85">
-          {hello}
-          <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">{T("Developer")}</span>
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          {T("Good day")}, {user.name.split(" ")[0]}.
-        </h1>
-        <p className="mt-1 text-sm text-white/90">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
+      <section
+        className="relative overflow-hidden rounded-2xl px-5 py-5 text-white sm:px-8 sm:py-6"
+        style={{ backgroundImage: "linear-gradient(135deg, #2e1065 0%, #5b21b6 55%, #7c3aed 100%)" }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "36px 36px",
+          }}
+        />
+        <div className="relative">
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-medium text-white/80">
+            <span>{hello}</span>
+            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">{T("Developer")}</span>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+            {greeting}, {user.name.split(" ")[0]}.
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/80">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
+        </div>
       </section>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <WorkAsDialog people={people} />
+        <AddAccountDialog warehouses={warehouses} variant="card" />
+        {[
+          { href: "/app/developer/activity", icon: ScrollText, title: "Audit", body: "Everything done in the system, by staff and by you." },
+          { href: "/app/developer/business", icon: BarChart3, title: "Business", body: "Cargo, bills, payments and customers. Read only." },
+        ].map((c) => (
+          <Link key={c.href} href={c.href} className="group flex items-start gap-3.5 rounded-xl border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><c.icon className="size-5" /></span>
+            <span>
+              <span className="block text-sm font-semibold">{T(c.title)} →</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{T(c.body)}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+
+
 
       <section className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="flex items-center gap-6">
@@ -162,30 +197,21 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
             })}
           </div>
         </section>
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <WorkAsDialog people={people} />
-        <AddAccountDialog warehouses={warehouses} variant="card" />
-        {[
-          { href: "/app/developer/activity", icon: ScrollText, title: "Audit", body: "The permanent diary of everything done in the system — by staff and by you. Your own lines can never be edited or deleted." },
-          { href: "/app/developer/business", icon: BarChart3, title: "Business", body: "Customers, cargo, invoices and payments in read-only tables. Good for checking a number without risking a change." },
-        ].map((c) => (
-          <Link key={c.href} href={c.href} className="flex items-start gap-4 rounded-2xl border bg-card p-5 transition hover:border-foreground/30">
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><c.icon className="size-5" /></span>
-            <span>
-              <span className="block font-semibold">{T(c.title)} →</span>
-              <span className="mt-1 block text-sm text-muted-foreground">{T(c.body)}</span>
-            </span>
-          </Link>
-        ))}
-      </div>
+      ) : (
+        <section className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-success/15 text-success"><Info className="size-4" /></span>
+          <span>
+            <span className="block text-sm font-semibold">{T("Nothing needs your attention")}</span>
+            <span className="block text-xs text-muted-foreground">{T("Nothing is broken and nothing is waiting too long.")}</span>
+          </span>
+        </section>
+      )}
 
       <nav className="flex flex-wrap gap-2">
-        {([["activity", "Activity"], ["business", "The business"], ["security", "Sign-ins & security"], ["data", "The data"]] as const).map(([k, label]) => (
+        {([["business", "Cargo & money"], ["activity", "Activity"], ["security", "Sign-ins & security"], ["data", "The data"]] as const).map(([k, label]) => (
           <Link
             key={k}
-            href={k === "activity" ? "/app/developer" : `/app/developer?tab=${k}`}
+            href={k === "business" ? "/app/developer" : `/app/developer?tab=${k}`}
             className={cn("rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
           >
             {T(label)}
