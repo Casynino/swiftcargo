@@ -252,27 +252,28 @@ const guessing: Check = async () => {
   return out;
 };
 
-export type CheckResult = { id: string; name: string; status: "ok" | "fix" | "look" | "unknown"; note?: string; finding?: Finding };
+export type CheckResult = { id: string; name: string; status: "ok" | "fix" | "look" | "unknown"; note?: string; fine?: string; finding?: Finding };
 
-const REGISTRY: { id: string; name: string; run: Check; unknownIf?: () => Promise<string | null> }[] = [
-  { id: "database", name: "The database answers quickly", run: database },
-  { id: "errors", name: "No server errors in the last 24 hours", run: errors },
-  { id: "photos", name: "Photos can be loaded", run: photos },
-  { id: "env", name: "Every required setting is present", run: missingSettings },
+const REGISTRY: { id: string; name: string; fine: string; run: Check; unknownIf?: () => Promise<string | null> }[] = [
+  { id: "database", fine: "Answers quickly.", name: "The database answers quickly", run: database },
+  { id: "errors", fine: "No server errors in 24 hours.", name: "No server errors in the last 24 hours", run: errors },
+  { id: "photos", fine: "Recent photos load.", name: "Photos can be loaded", run: photos },
+  { id: "env", fine: "All required settings are set.", name: "Every required setting is present", run: missingSettings },
   {
     id: "jobs",
+    fine: "Every job ran when it should.",
     name: "Automatic jobs run on time",
     run: jobsOnTime,
     unknownIf: async () => ((await prisma.jobRun.count()) === 0 ? "No run of any job has been recorded yet." : null),
   },
-  { id: "storage", name: "Storage is added to bills past the free days", run: storageNotCharging },
-  { id: "status", name: "Bill status agrees with its payments", run: invoiceStatus },
-  { id: "totals", name: "Bill totals agree with their lines", run: invoiceTotals },
-  { id: "china", name: "Package counts agree with their lines", run: chinaCount },
-  { id: "rate", name: "Issued dollar bills keep their exchange rate", run: rateOnBills },
-  { id: "containers", name: "Containers and their cargo agree", run: contradiction },
-  { id: "audit", name: "The developer's audit lines cannot be changed", run: auditProtected },
-  { id: "guessing", name: "Nobody is guessing passwords", run: guessing },
+  { id: "storage", fine: "Storage is added when free days end.", name: "Storage is added to bills past the free days", run: storageNotCharging },
+  { id: "status", fine: "No bill disagrees with its payments.", name: "Bill status agrees with its payments", run: invoiceStatus },
+  { id: "totals", fine: "No bill disagrees with its lines.", name: "Bill totals agree with their lines", run: invoiceTotals },
+  { id: "china", fine: "Every count matches its lines.", name: "Package counts agree with their lines", run: chinaCount },
+  { id: "rate", fine: "Every dollar bill has its rate.", name: "Issued dollar bills keep their exchange rate", run: rateOnBills },
+  { id: "containers", fine: "No container contradicts its cargo.", name: "Containers and their cargo agree", run: contradiction },
+  { id: "audit", fine: "The protecting rule is in place.", name: "The developer's audit lines cannot be changed", run: auditProtected },
+  { id: "guessing", fine: "Nothing unusual in 24 hours.", name: "Nobody is guessing passwords", run: guessing },
 ];
 
 export async function runChecks(): Promise<{ results: CheckResult[]; findings: Finding[] }> {
@@ -285,7 +286,7 @@ export async function runChecks(): Promise<{ results: CheckResult[]; findings: F
           const worst = found.find((f) => f.tone === "fix") ?? found[0];
           return { id: c.id, name: c.name, status: worst.tone === "fix" ? "fix" : "look", finding: worst };
         }
-        return unknown ? { id: c.id, name: c.name, status: "unknown", note: unknown } : { id: c.id, name: c.name, status: "ok" };
+        return unknown ? { id: c.id, name: c.name, status: "unknown", note: unknown } : { id: c.id, name: c.name, status: "ok", fine: c.fine };
       } catch {
         return { id: c.id, name: c.name, status: "unknown", note: "This check could not run just now." };
       }

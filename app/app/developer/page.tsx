@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AlertTriangle, BarChart3, Info, ScrollText, TriangleAlert } from "lucide-react";
+import { AlertTriangle, BarChart3, ChevronUp, CircleCheck, Info, ScrollText, TriangleAlert } from "lucide-react";
 
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
@@ -192,93 +192,9 @@ export default async function DeveloperHome() {
         </dl>
       </section>
 
-      {o.findings.length > 0 ? (
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-semibold">{T("Needs your attention")} · {need.length}</h2>
-            <p className="text-sm text-muted-foreground">{T("Checked just now.")}</p>
-          </div>
-          <div className="grid gap-3 lg:grid-cols-2">
-            {[...need, ...good].map((f) => {
-              const t = TONE[f.tone];
-              return (
-                <details key={f.key} open={f.tone !== "info"} className={cn("group rounded-xl border px-4 py-3 lg:col-span-2", t.ring)}>
-                  <summary className="flex cursor-pointer list-none items-center gap-3">
-                    <t.icon className="size-5 shrink-0" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold">{f.title}</span>
-                    </span>
-                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", t.badge)}>{T(t.label)}</span>
-                  </summary>
-                  <p className="mt-2 pl-8 text-sm text-muted-foreground">{f.detail}</p>
-                  {f.lines?.length ? (
-                    <ul className="mt-2 space-y-0.5 pl-8 text-xs text-muted-foreground">
-                      {f.lines.map((l, i) => <li key={i} className="truncate font-mono">• {l}</li>)}
-                    </ul>
-                  ) : null}
-                  {f.fix ? (
-                    <p className="mt-3 pl-8 text-sm"><span className="font-semibold">{T("What to do:")}</span> {f.fix}</p>
-                  ) : null}
-                  {f.href || f.workAs ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-2 pl-8">
-                      {f.href ? (
-                        <Link href={f.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Look at it")}</Link>
-                      ) : null}
-                      {(() => {
-                        const who = f.workAs ? people.find((p) => p.role === f.workAs) : null;
-                        return who ? (
-                          <form action={startWorkAs}>
-                            <input type="hidden" name="userId" value={who.id} />
-                            {f.href ? <input type="hidden" name="next" value={f.href} /> : null}
-                            <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {who.name.split(" ")[0]} · {ROLE_LABELS[who.role as keyof typeof ROLE_LABELS]}</button>
-                          </form>
-                        ) : null;
-                      })()}
-                    </div>
-                  ) : null}
-                  {f.items?.length ? (
-                    <ul className="mt-3 space-y-2 pl-8">
-                      {f.items.map((it, i) => (
-                        <li key={i} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/60 px-3 py-2.5">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{it.title}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {T("For")} {it.who} · {ROLE_LABELS[it.role as keyof typeof ROLE_LABELS]} · {it.age}
-                              {it.body ? ` — ${it.body}` : ""}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {it.href ? (
-                              <Link href={it.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Open")}</Link>
-                            ) : null}
-                            <form action={startWorkAs}>
-                              <input type="hidden" name="userId" value={it.whoId} />
-                              {it.href ? <input type="hidden" name="next" value={it.href} /> : null}
-                              <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {it.who.split(" ")[0]}</button>
-                            </form>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </details>
-              );
-            })}
-          </div>
-        </section>
-      ) : (
-        <section className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-4">
-          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-success/15 text-success"><Info className="size-4" /></span>
-          <span>
-            <span className="block text-sm font-semibold">{T("Nothing needs your attention")}</span>
-            <span className="block text-xs text-muted-foreground">{T("Nothing is broken and nothing is waiting too long.")}</span>
-          </span>
-        </section>
-      )}
+      <AttentionPanel need={need} good={good} checks={checks} dbMs={o.db.ms} people={people} />
 
 
-
-      <ChecksCard checks={checks} fine={fine} />
 
       <Section id="activity" title="Activity" hint="Who is using the system, and what they are doing.">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -711,40 +627,136 @@ function SpeedTab({ d, times, size }: { d: Awaited<ReturnType<typeof dataPulse>>
   );
 }
 
-const CHECK_TONE: Record<CheckResult["status"], { dot: string; label: string }> = {
-  ok: { dot: "bg-emerald-500", label: "Fine" },
-  fix: { dot: "bg-destructive", label: "Fix" },
-  look: { dot: "bg-warning", label: "Look" },
-  unknown: { dot: "bg-slate-400", label: "Not known yet" },
+const ROW_ICON: Record<CheckResult["status"], { icon: typeof Info; cls: string; label: string; pill: string }> = {
+  ok: { icon: CircleCheck, cls: "text-success", label: "Fine", pill: "text-success" },
+  fix: { icon: TriangleAlert, cls: "text-destructive", label: "Fix now", pill: "bg-destructive/15 text-destructive" },
+  look: { icon: AlertTriangle, cls: "text-warning", label: "Look at it", pill: "bg-warning/15 text-warning" },
+  unknown: { icon: Info, cls: "text-muted-foreground", label: "Not checked yet", pill: "bg-secondary text-muted-foreground" },
 };
+const ORDER: Record<CheckResult["status"], number> = { fix: 0, look: 1, unknown: 2, ok: 3 };
 
-/** Every check that ran, not just the ones that found something — so "nothing wrong" can be told from "nothing looked". */
-function ChecksCard({ checks, fine }: { checks: CheckResult[]; fine: number }) {
-  const bad = checks.filter((c) => c.status === "fix" || c.status === "look").length;
+/**
+ * NEEDS YOUR ATTENTION — one panel: what is wrong (each with what to do), then
+ * every check that ran, so "nothing wrong" can be told from "nothing looked".
+ */
+function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[]; good: Finding[]; checks: CheckResult[]; dbMs: number; people: { id: string; name: string; role: string }[] }) {
+  const fine = checks.filter((c) => c.status === "ok").length;
+  const unknown = checks.filter((c) => c.status === "unknown").length;
+  const fix = need.filter((f) => f.tone === "fix").length;
+  const sorted = [...checks].sort((a, b) => ORDER[a.status] - ORDER[b.status]);
+  const all = [...need, ...good];
+  const badge = fix > 0 ? { t: `${fix} ${T("to fix now")}`, c: "text-destructive" } : need.length > 0 ? { t: `${need.length} ${T("to look at")}`, c: "text-warning" } : { t: T("All clear"), c: "text-success" };
   return (
-    <details className="group rounded-2xl border bg-card p-5">
-      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3">
-        <span className={cn("grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold", bad ? "bg-warning/15 text-warning" : "bg-emerald-500/15 text-emerald-600")}>{fine}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-semibold">{fine} {T("of")} {checks.length} {T("system checks are fine")}</span>
-          <span className="block text-xs text-muted-foreground">{T("Show what was checked")}</span>
-        </span>
-      </summary>
-      <ul className="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-2">
-        {checks.map((c) => {
-          const t = CHECK_TONE[c.status];
-          return (
-            <li key={c.id} className="flex items-start gap-2.5 text-sm">
-              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", t.dot)} />
-              <span className="min-w-0">
-                <span className="block">{T(c.name)}</span>
-                {c.status !== "ok" ? <span className="block text-xs text-muted-foreground">{c.note ?? c.finding?.title}</span> : null}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </details>
+    <section className="overflow-hidden rounded-2xl border bg-card">
+      <div className="flex items-start justify-between gap-4 px-5 py-4">
+        <div>
+          <h2 className="font-semibold">{T("Needs your attention")}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{T("Checked just now. Tap a card to see what it means and what to do.")}</p>
+        </div>
+        <span className={cn("shrink-0 text-sm font-medium", badge.c)}>{badge.t}</span>
+      </div>
+
+      {all.length === 0 ? (
+        <div className="flex items-center gap-4 border-t px-5 py-4">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-success/15 text-success"><CircleCheck className="size-5" /></span>
+          <span>
+            <span className="block font-semibold">{T("Nothing needs your attention")}</span>
+            <span className="block text-sm text-muted-foreground">{T("Nothing is broken, and every required setting is in place.")}</span>
+          </span>
+        </div>
+      ) : (
+        <div className="divide-y border-t">
+          {all.map((f) => {
+              const t = TONE[f.tone];
+              return (
+                <details key={f.key} open={f.tone !== "info"} className={cn("group px-5 py-4", f.tone === "fix" ? "bg-destructive/5" : f.tone === "look" ? "bg-warning/5" : "")}>
+                  <summary className="flex cursor-pointer list-none items-center gap-3">
+                    <t.icon className="size-5 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold">{f.title}</span>
+                    </span>
+                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", t.badge)}>{T(t.label)}</span>
+                  </summary>
+                  <p className="mt-2 pl-8 text-sm text-muted-foreground">{f.detail}</p>
+                  {f.lines?.length ? (
+                    <ul className="mt-2 space-y-0.5 pl-8 text-xs text-muted-foreground">
+                      {f.lines.map((l, i) => <li key={i} className="truncate font-mono">• {l}</li>)}
+                    </ul>
+                  ) : null}
+                  {f.fix ? (
+                    <p className="mt-3 pl-8 text-sm"><span className="font-semibold">{T("What to do:")}</span> {f.fix}</p>
+                  ) : null}
+                  {f.href || f.workAs ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 pl-8">
+                      {f.href ? (
+                        <Link href={f.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Look at it")}</Link>
+                      ) : null}
+                      {(() => {
+                        const who = f.workAs ? people.find((p) => p.role === f.workAs) : null;
+                        return who ? (
+                          <form action={startWorkAs}>
+                            <input type="hidden" name="userId" value={who.id} />
+                            {f.href ? <input type="hidden" name="next" value={f.href} /> : null}
+                            <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {who.name.split(" ")[0]} · {ROLE_LABELS[who.role as keyof typeof ROLE_LABELS]}</button>
+                          </form>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : null}
+                  {f.items?.length ? (
+                    <ul className="mt-3 space-y-2 pl-8">
+                      {f.items.map((it, i) => (
+                        <li key={i} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/60 px-3 py-2.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{it.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {T("For")} {it.who} · {ROLE_LABELS[it.role as keyof typeof ROLE_LABELS]} · {it.age}
+                              {it.body ? ` — ${it.body}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {it.href ? (
+                              <Link href={it.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Open")}</Link>
+                            ) : null}
+                            <form action={startWorkAs}>
+                              <input type="hidden" name="userId" value={it.whoId} />
+                              {it.href ? <input type="hidden" name="next" value={it.href} /> : null}
+                              <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {it.who.split(" ")[0]}</button>
+                            </form>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </details>
+              );
+            })}
+        </div>
+      )}
+
+      <details open className="group border-t">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-3.5 text-sm font-medium">
+          <span>{T("What was checked")} · {fine} {T("of")} {checks.length} {T("fine")}{unknown ? `, ${unknown} ${T("not checked yet")}` : ""}</span>
+          <ChevronUp className="size-4 text-muted-foreground transition-transform group-[&:not([open])]:rotate-180" />
+        </summary>
+        <ul className="divide-y border-t">
+          {sorted.map((c) => {
+            const t = ROW_ICON[c.status];
+            const note = c.status === "ok" ? (c.id === "database" ? `${T("Answers in")} ${dbMs} ms.` : c.fine) : (c.note ?? c.finding?.title);
+            return (
+              <li key={c.id} className="flex items-center gap-3.5 px-5 py-3">
+                <t.icon className={cn("size-[18px] shrink-0", t.cls)} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm">{T(c.name)}</span>
+                  {note ? <span className="block text-xs text-muted-foreground">{note}</span> : null}
+                </span>
+                <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-medium", t.pill)}>{T(t.label)}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
+    </section>
   );
 }
 
