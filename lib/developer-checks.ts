@@ -3,6 +3,7 @@ import "server-only";
 import { impliedStatus } from "@/lib/invoice-balance";
 import type { Finding } from "@/lib/developer-overview";
 import { prisma } from "@/lib/prisma";
+import { JOBS } from "@/lib/jobs";
 import { readUpload } from "@/lib/storage";
 
 /**
@@ -196,9 +197,115 @@ const missingSettings: Check = async () => {
   return [{ key: "env", tone: "fix", title: `${plural(missing.length, "required setting")} missing`, detail: "Parts of the system will not work without these.", fix: "Add them in Vercel → Settings → Environment Variables, then redeploy.", lines: missing }];
 };
 
-const ALL: Check[] = [errors, photos, invoiceStatus, invoiceTotals, chinaCount, storageNotCharging, contradiction, missingSettings];
+/* ------------------------------------------------------------------ */
+/* Checks that look at the machinery itself.                           */
+/* ------------------------------------------------------------------ */
+
+const database: Check = async () => {
+  const times: number[] = [];
+  for (let i = 0; i < 3; i++) {
+    const t = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    times.push(Date.now() - t);
+  }
+  const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+  if (avg < 400) return [];
+  return [{ key: "db-slow", tone: "look", title: `The database is slow (${avg} ms)`, detail: "Every page waits on it, so everything will feel sluggish.", fix: "Check the database provider's status page. If it stays slow, look at the Speed & size section for which question is slow." }];
+};
+
+const jobsOnTime: Check = async () => {
+  const out: Finding[] = [];
+  for (const job of JOBS) {
+    const last = await prisma.jobRun.findFirst({ where: { name: job.name }, orderBy: { startedAt: "desc" }, select: { startedAt: true, ok: true, result: true } });
+    if (!last) continue;
+    const lateBy = Date.now() - last.startedAt.getTime() - job.everyHours * 1.5 * 3_600_000;
+    if (!last.ok) {
+      out.push({ key: `job-${job.name}`, tone: "fix", title: `"${job.label}" failed on its last run`, detail: last.result ?? "It stopped with an error.", fix: "Fix the error shown, then run it again: open its address once while signed in as the developer, or wait for the next night." });
+    } else if (lateBy > 0) {
+      out.push({ key: `job-${job.name}`, tone: "fix", title: `"${job.label}" has not run on time`, detail: `It last ran ${last.startedAt.toLocaleString("en-GB", { timeZone: "Africa/Dar_es_Salaam" })}, and should run every ${job.everyHours} hours.`, fix: "In Vercel → the project → Crons, check it is listed and enabled, and that CRON_SECRET is set." });
+    }
+  }
+  return out;
+};
+
+const auditProtected: Check = async () => {
+  const rows = await prisma.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM pg_trigger WHERE tgname = 'swift_protect_developer_audit_trg'`;
+  if ((rows[0]?.n ?? 0) > 0) return [];
+  return [{ key: "audit-trigger", tone: "fix", title: "The developer's audit lines are no longer protected", detail: "The database rule that stops them being edited or deleted is missing, so the developer's trail could be rewritten.", fix: "Run the database migrations again (npx prisma migrate deploy) so migration 0024 restores it." }];
+};
+
+const rateOnBills: Check = async () => {
+  const n = await prisma.invoice.count({ where: { status: { notIn: ["DRAFT", "CANCELLED"] }, currency: "USD", OR: [{ fxRate: null }, { fxRate: { lte: 1 } }] } });
+  if (n === 0) return [];
+  return [{ key: "fx-pinned", tone: "look", title: `${plural(n, "issued bill")} with no exchange rate pinned`, detail: "A bill in dollars must keep the rate it was issued at. Without it, shilling balances cannot be worked out reliably.", fix: "Open one of them in Finance and check how it was issued; this should not happen from the screens." }];
+};
+
+const guessing: Check = async () => {
+  const since = new Date(Date.now() - DAY);
+  const [failed, dev] = await Promise.all([
+    prisma.loginEvent.count({ where: { ok: false, createdAt: { gte: since } } }),
+    prisma.loginEvent.count({ where: { ok: false, createdAt: { gte: since }, user: { role: "DEVELOPER" } } }),
+  ]);
+  const out: Finding[] = [];
+  if (failed >= 20) out.push({ key: "guessing", tone: "look", title: `${failed} failed sign-ins in 24 hours`, detail: "More than typing mistakes: somebody may be guessing passwords.", fix: "See Sign-ins & security for which addresses are trying which accounts." });
+  if (dev >= 3) out.push({ key: "guessing-dev", tone: "look", title: `${dev} wrong-password tries on your own account`, detail: "After 10 wrong tries for one account it locks for 15 minutes.", fix: "If it was not you, change your developer password." });
+  return out;
+};
+
+export type CheckResult = { id: string; name: string; status: "ok" | "fix" | "look" | "unknown"; note?: string; finding?: Finding };
+
+const REGISTRY: { id: string; name: string; run: Check; unknownIf?: () => Promise<string | null> }[] = [
+  { id: "database", name: "The database answers quickly", run: database },
+  { id: "errors", name: "No server errors in the last 24 hours", run: errors },
+  { id: "photos", name: "Photos can be loaded", run: photos },
+  { id: "env", name: "Every required setting is present", run: missingSettings },
+  {
+    id: "jobs",
+    name: "Automatic jobs run on time",
+    run: jobsOnTime,
+    unknownIf: async () => ((await prisma.jobRun.count()) === 0 ? "No run of any job has been recorded yet." : null),
+  },
+  { id: "storage", name: "Storage is added to bills past the free days", run: storageNotCharging },
+  { id: "status", name: "Bill status agrees with its payments", run: invoiceStatus },
+  { id: "totals", name: "Bill totals agree with their lines", run: invoiceTotals },
+  { id: "china", name: "Package counts agree with their lines", run: chinaCount },
+  { id: "rate", name: "Issued dollar bills keep their exchange rate", run: rateOnBills },
+  { id: "containers", name: "Containers and their cargo agree", run: contradiction },
+  { id: "audit", name: "The developer's audit lines cannot be changed", run: auditProtected },
+  { id: "guessing", name: "Nobody is guessing passwords", run: guessing },
+];
+
+export async function runChecks(): Promise<{ results: CheckResult[]; findings: Finding[] }> {
+  const results: CheckResult[] = await Promise.all(
+    REGISTRY.map(async (c): Promise<CheckResult> => {
+      try {
+        const unknown = await c.unknownIf?.();
+        const found = await c.run();
+        if (found.length > 0) {
+          const worst = found.find((f) => f.tone === "fix") ?? found[0];
+          return { id: c.id, name: c.name, status: worst.tone === "fix" ? "fix" : "look", finding: worst };
+        }
+        return unknown ? { id: c.id, name: c.name, status: "unknown", note: unknown } : { id: c.id, name: c.name, status: "ok" };
+      } catch {
+        return { id: c.id, name: c.name, status: "unknown", note: "This check could not run just now." };
+      }
+    })
+  );
+  /* A check with several findings still counts once, but every finding is shown. */
+  const findings = (
+    await Promise.all(
+      REGISTRY.map(async (c) => {
+        try {
+          return await c.run();
+        } catch {
+          return [] as Finding[];
+        }
+      })
+    )
+  ).flat();
+  return { results, findings };
+}
 
 export async function systemChecks(): Promise<Finding[]> {
-  const settled = await Promise.allSettled(ALL.map((c) => c()));
-  return settled.flatMap((r) => (r.status === "fulfilled" ? r.value : [])) as Finding[];
+  return (await runChecks()).findings;
 }

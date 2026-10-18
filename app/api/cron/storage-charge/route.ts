@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { runJob } from "@/lib/jobs";
 import { accrueStorage } from "@/lib/storage-charge";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,9 @@ export async function GET(request: Request) {
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   }
-  const result = await accrueStorage();
-  return NextResponse.json({ checked: result.checked, charged: result.charged.length });
+  const result = await runJob("storage-charge", async () => {
+    const r = await accrueStorage();
+    return { checked: r.checked, charged: r.charged.length };
+  });
+  return NextResponse.json(result);
 }

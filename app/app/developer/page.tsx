@@ -8,8 +8,10 @@ import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { startWorkAs } from "@/lib/actions/developer";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
-import { systemChecks } from "@/lib/developer-checks";
-import { activityKpis, businessPulse, dataPulse, messagesPulse, peoplePulse, securityPulse, settingsPulse, speedPulse } from "@/lib/developer-system";
+import { runChecks, type CheckResult } from "@/lib/developer-checks";
+import { activityKpis, businessPulse, dataPulse, dbSize, deployment, errorList, jobsTable, messagesPulse, peoplePulse, securityExtras, securityPulse, settingsPulse, timings } from "@/lib/developer-system";
+import { WhoCanDo } from "@/components/app/who-can-do";
+import { ROLE_PERMISSIONS } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -64,7 +66,7 @@ export default async function DeveloperHome() {
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
-    systemChecks(),
+    runChecks(),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
     prisma.user.findMany({
       where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
@@ -74,7 +76,7 @@ export default async function DeveloperHome() {
   ]);
 
   /* What the business is waiting on counts toward the health of the whole. */
-  const findings = [...o0.findings, ...extra.map((f) => ({ ...f }))] as Finding[];
+  const findings = [...o0.findings, ...extra.findings.map((f) => ({ ...f }))] as Finding[];
   const counts = {
     fix: findings.filter((f) => f.tone === "fix").length,
     look: findings.filter((f) => f.tone === "look").length,
@@ -87,11 +89,9 @@ export default async function DeveloperHome() {
     score: Math.max(0, Math.min(100, 100 - counts.fix * 35 - counts.look * 15 - Math.min(counts.info, 3) * 2)),
   };
 
-  /* Always read: the tab badges say at a glance where something is wrong. */
-  const speed = await speedPulse();
   const envMissing = ["AUTH_SECRET", "DATABASE_URL", "DIRECT_URL", "BLOB_READ_WRITE_TOKEN", "CRON_SECRET", "NEXT_PUBLIC_SITE_URL"].filter((n) => !process.env[n]?.trim()).length;
   /* One page: everything is read, and each part has its own section. */
-  const [biz, kpis, msgs, sec, set, ppl, data] = await Promise.all([
+  const [biz, kpis, msgs, sec, set, ppl, data, errs, jobs, times, size, secX] = await Promise.all([
     businessPulse(),
     activityKpis(),
     messagesPulse(),
@@ -99,7 +99,18 @@ export default async function DeveloperHome() {
     settingsPulse(),
     peoplePulse(),
     dataPulse(),
+    errorList(),
+    jobsTable(),
+    timings(),
+    dbSize(),
+    securityExtras(),
   ]);
+  const deploy = deployment();
+  const checks = extra.results;
+  const fine = checks.filter((c) => c.status === "ok").length;
+  const staffRoles = Array.from(new Set(people.map((p) => p.role)));
+  const grants = Object.fromEntries(staffRoles.map((r) => [r, ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS] as string[]]));
+  const allPermissions = [...ROLE_PERMISSIONS.ADMIN] as string[];
 
   const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Africa/Dar_es_Salaam" })) % 24;
   const greeting = hour >= 5 && hour < 12 ? T("Good morning") : hour >= 12 && hour < 17 ? T("Good afternoon") : T("Good evening");
@@ -267,6 +278,8 @@ export default async function DeveloperHome() {
 
 
 
+      <ChecksCard checks={checks} fine={fine} />
+
       <Section id="activity" title="Activity" hint="Who is using the system, and what they are doing.">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label="People signed in" value={String(kpis.people24)} caption="different people in 24 hours" tag="Live" tone="good"
@@ -354,14 +367,30 @@ export default async function DeveloperHome() {
 
       <Section id="security" title="Sign-ins & security" hint="Failed tries, who is locked out, and what people were refused.">
         <SecurityTab s={sec} />
+        <SecurityExtras x={secX} />
       </Section>
 
-      <Section id="speed" title="Speed & size" hint={`How fast the database answers (${speed.avg} ms now) and how much the system holds.`}>
-        <SpeedTab d={data} speed={speed} />
+      <Section id="access" title="Who can do what" hint="Pick a person and a permission. The answer comes from the same table the system enforces.">
+        <Card title={T("Check a permission")}>
+          <WhoCanDo
+            people={people.map((p) => ({ id: p.id, name: p.name, role: p.role, roleLabel: ROLE_LABELS[p.role as keyof typeof ROLE_LABELS] }))}
+            grants={grants}
+            permissions={allPermissions}
+          />
+        </Card>
       </Section>
 
-      <Section id="settings" title="Settings" hint="Whether everything the system needs to run is in place.">
+      <Section id="errors" title="Errors & automatic jobs" hint="What went wrong on the server, and whether the nightly jobs ran.">
+        <ErrorsAndJobs errs={errs} jobs={jobs} />
+      </Section>
+
+      <Section id="speed" title="Speed & size" hint="How long real screens take, and how big the database is.">
+        <SpeedTab d={data} times={times} size={size} />
+      </Section>
+
+      <Section id="settings" title="Settings & this deployment" hint="Whether everything the system needs is in place, and which build is running.">
         <SettingsTab s={set} />
+        <DeploymentCard d={deploy} />
       </Section>
 
       <Section id="messages" title="Messages" hint="What the system has told customers.">
@@ -565,7 +594,7 @@ function MessagesTab({ m }: { m: Awaited<ReturnType<typeof messagesPulse>> }) {
 
 function SettingsTab({ s }: { s: Awaited<ReturnType<typeof settingsPulse>> }) {
   const row = (label: string, value: string, ok: boolean | null, note: string) => (
-    <li className="flex flex-wrap items-start justify-between gap-3 py-3">
+    <li key={label} className="flex flex-wrap items-start justify-between gap-3 py-3">
       <div className="min-w-0 flex-1"><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{note}</p></div>
       <span className={cn("shrink-0 text-sm font-semibold tnum", ok === false ? "text-destructive" : ok ? "text-success" : "")}>{value}</span>
     </li>
@@ -630,28 +659,179 @@ function PeopleTab({ p }: { p: Awaited<ReturnType<typeof peoplePulse>> }) {
   );
 }
 
-function SpeedTab({ d, speed }: { d: Awaited<ReturnType<typeof dataPulse>>; speed: Awaited<ReturnType<typeof speedPulse>> }) {
-  const max = Math.max(1, ...d.rows.map((r) => r.count));
+const kb = (n: number) => (n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+function SpeedTab({ d, times, size }: { d: Awaited<ReturnType<typeof dataPulse>>; times: Awaited<ReturnType<typeof timings>>; size: Awaited<ReturnType<typeof dbSize>> }) {
+  const top = Math.max(1, ...times.map((t) => t.ms));
+  const slow = times.filter((t) => t.ms >= t.slowAt).length;
+  const sizeTop = Math.max(1, ...(size?.tables.map((t) => t.bytes) ?? [1]));
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi label="Database answer" value={`${speed.avg} ms`} caption={`slowest of 5: ${speed.max} ms`} tag={speed.avg >= 400 ? "Slow" : speed.avg >= 150 ? "Look" : "Fast"} tone={speed.avg >= 400 ? "bad" : speed.avg >= 150 ? "warn" : "good"}
-          explain="How long the database takes to answer the simplest question, measured just now five times. Under 150 ms is fast; over 400 ms, pages will feel slow." />
-        <Kpi label="Cargo list" value={`${speed.list} ms`} caption="the newest 50 consignments" tag={speed.list >= 600 ? "Slow" : "Fine"} tone={speed.list >= 600 ? "bad" : "good"}
-          explain="How long a real screen's query takes. If this grows far above the figure beside it as data grows, the screen needs an index or a smaller page." />
-        <Kpi label="Audit lines" value={(d.rows.find((r) => r.name === "Audit lines")?.count ?? 0).toLocaleString("en-US")} caption="in the permanent diary" tag="Size" tone="info"
-          explain="Every action is kept for good, so this only grows. It is cheap to keep, but it is the table to watch first." />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title={T("How long each thing takes")} hint={slow ? `${slow} ${T("slower than it should be.")}` : T("Measured just now, one after another. All within the normal range.")}>
+          <ul className="space-y-3">
+            {times.map((t) => {
+              const bad = t.ms < 0 || t.ms >= t.slowAt;
+              const warn = !bad && t.ms >= t.slowAt / 2;
+              return (
+                <li key={t.name}>
+                  <div className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="font-medium">{T(t.name)}</span>
+                    <span className={cn("tnum", bad ? "text-destructive" : warn ? "text-warning" : "text-muted-foreground")}>{t.ms < 0 ? T("failed") : `${t.ms} ms`}</span>
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+                    <div className={cn("h-full rounded-full", bad ? "bg-destructive" : warn ? "bg-warning" : "bg-brand")} style={{ width: `${Math.max(2, (Math.max(t.ms, 0) / top) * 100)}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+        <Card title={T("Database size")} hint={size ? `${kb(size.total)} ${T("in")} ${size.count} ${T("tables. The biggest are below.")}` : T("The size could not be read just now.")}>
+          {size ? (
+            <ul className="space-y-3">
+              {size.tables.map((t) => (
+                <li key={t.name}>
+                  <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-mono text-xs">{t.name}</span><span className="tnum text-muted-foreground">{kb(t.bytes)}</span></div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(2, (t.bytes / sizeTop) * 100)}%` }} /></div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
       </div>
-      <Card title="What the system holds" hint={d.since ? `Records in the database. The audit log reaches back to ${when(d.since).slice(0, 6)}.` : "Records in the database."}>
-        <ul className="space-y-3">
+      <Card title={T("What the system holds")} hint={d.since ? `${T("Records in the database. The audit log reaches back to")} ${when(d.since).slice(0, 6)}.` : T("Records in the database.")}>
+        <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {d.rows.map((r) => (
-            <li key={r.name}>
-              <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-medium">{r.name}</span><span className="tnum text-muted-foreground">{r.count.toLocaleString("en-US")}</span></div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(1, (r.count / max) * 100)}%` }} /></div>
-            </li>
+            <div key={r.name} className="flex items-baseline justify-between gap-3 border-b border-dashed py-1.5 text-sm last:border-0"><span>{r.name}</span><span className="tnum font-medium">{r.count.toLocaleString("en-US")}</span></div>
           ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+const CHECK_TONE: Record<CheckResult["status"], { dot: string; label: string }> = {
+  ok: { dot: "bg-emerald-500", label: "Fine" },
+  fix: { dot: "bg-destructive", label: "Fix" },
+  look: { dot: "bg-warning", label: "Look" },
+  unknown: { dot: "bg-slate-400", label: "Not known yet" },
+};
+
+/** Every check that ran, not just the ones that found something — so "nothing wrong" can be told from "nothing looked". */
+function ChecksCard({ checks, fine }: { checks: CheckResult[]; fine: number }) {
+  const bad = checks.filter((c) => c.status === "fix" || c.status === "look").length;
+  return (
+    <details className="group rounded-2xl border bg-card p-5">
+      <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3">
+        <span className={cn("grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold", bad ? "bg-warning/15 text-warning" : "bg-emerald-500/15 text-emerald-600")}>{fine}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">{fine} {T("of")} {checks.length} {T("system checks are fine")}</span>
+          <span className="block text-xs text-muted-foreground">{T("Show what was checked")}</span>
+        </span>
+      </summary>
+      <ul className="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-2">
+        {checks.map((c) => {
+          const t = CHECK_TONE[c.status];
+          return (
+            <li key={c.id} className="flex items-start gap-2.5 text-sm">
+              <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", t.dot)} />
+              <span className="min-w-0">
+                <span className="block">{T(c.name)}</span>
+                {c.status !== "ok" ? <span className="block text-xs text-muted-foreground">{c.note ?? c.finding?.title}</span> : null}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
+function ErrorsAndJobs({ errs, jobs }: { errs: Awaited<ReturnType<typeof errorList>>; jobs: Awaited<ReturnType<typeof jobsTable>> }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card title={T("Server errors")} hint={`${errs.last24} ${T("in 24 hours")} · ${errs.last7} ${T("in 7 days")}`}>
+        {errs.groups.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">{T("No errors in the last 7 days.")}</p>
+        ) : (
+          <ul className="divide-y text-sm">
+            {errs.groups.map((g, i) => (
+              <li key={i} className="py-2.5">
+                <p className="break-words font-medium">{g.message.slice(0, 160)}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {g.where ? <span className="font-mono">{g.where}</span> : null}{g.where ? " · " : ""}
+                  {g.count > 1 ? `${g.count} ${T("times")} · ` : ""}{T("last")} {ago(g.last)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card title={T("Automatic jobs")} hint={T("Run by the platform on a timer. Each run is written down when it ends.")}>
+        <ul className="divide-y text-sm">
+          {jobs.map(({ job, last, lastOkAt, runs, late }) => {
+            const state = !last ? { t: "No run yet", c: "bg-secondary text-muted-foreground" } : !last.ok ? { t: "Failed", c: "bg-destructive/15 text-destructive" } : late ? { t: "Late", c: "bg-warning/15 text-warning" } : { t: "On time", c: "bg-emerald-500/15 text-emerald-600" };
+            return (
+              <li key={job.name} className="py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{T(job.label)}</span>
+                  <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", state.c)}>{T(state.t)}</span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{job.runsAt}</p>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div><dt className="text-muted-foreground">{T("Last run")}</dt><dd>{last ? ago(last.startedAt) : "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">{T("Last success")}</dt><dd>{ago(lastOkAt)}</dd></div>
+                  <div><dt className="text-muted-foreground">{T("Took")}</dt><dd>{last?.ms != null ? `${last.ms} ms` : "—"}</dd></div>
+                  <div><dt className="text-muted-foreground">{T("Runs recorded")}</dt><dd>{runs}</dd></div>
+                </dl>
+                {last?.result ? <p className="mt-2 break-words rounded-lg bg-secondary px-2.5 py-1.5 font-mono text-[11px]">{last.result.slice(0, 200)}</p> : null}
+              </li>
+            );
+          })}
         </ul>
       </Card>
     </div>
+  );
+}
+
+function SecurityExtras({ x }: { x: Awaited<ReturnType<typeof securityExtras>> }) {
+  return (
+    <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <Card title={T("Latest failed tries")} hint={T("Wrong passwords in the last 7 days.")}>
+        {x.failed.length === 0 ? <p className="py-2 text-sm text-muted-foreground">{T("None.")}</p> : (
+          <ul className="space-y-2 text-xs">
+            {x.failed.map((f, i) => (
+              <li key={i}><span className="block truncate font-medium">{f.email}</span><span className="text-muted-foreground">{f.ipAddress ?? T("unknown address")} · {ago(f.createdAt)}</span></li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card title={T("Refused today")} hint={T("Times somebody asked for something their role may not do.")}>
+        <p className="text-3xl font-semibold tnum">{x.refused}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{x.refused === 0 ? T("Nobody tried anything outside their role.") : T("The names and what they tried are listed above, under refused.")}</p>
+      </Card>
+      <Card title={T("Your own sign-ins")} hint={`${x.devSessions} ${T("developer session(s) open now")}`}>
+        <ul className="space-y-2 text-xs">
+          {x.mine.map((m, i) => (
+            <li key={i} className="flex items-baseline justify-between gap-2"><span className={m.ok ? "" : "text-destructive"}>{m.ok ? T("Signed in") : T("Wrong password")} · {m.ipAddress ?? "—"}</span><span className="text-muted-foreground">{ago(m.createdAt)}</span></li>
+          ))}
+          {x.mine.length === 0 ? <li className="text-muted-foreground">{T("Nothing yet.")}</li> : null}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function DeploymentCard({ d }: { d: ReturnType<typeof deployment> }) {
+  const rows: [string, string | null][] = [["Running on", d.place], ["Region", d.region], ["Version", d.commit], ["Branch", d.branch], ["Last change", d.message], ["Node", d.node]];
+  return (
+    <Card title={T("This deployment")} hint={T("Which build is serving this page right now.")} className="mt-4">
+      <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+        {rows.filter(([, v]) => v).map(([k, v]) => (
+          <div key={k} className="flex justify-between gap-3 border-b border-dashed py-1.5 last:border-0"><dt className="text-muted-foreground">{T(k)}</dt><dd className="min-w-0 truncate text-right font-medium">{v}</dd></div>
+        ))}
+      </dl>
+    </Card>
   );
 }

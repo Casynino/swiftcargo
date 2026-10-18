@@ -252,6 +252,22 @@ model DeveloperSession {
   @@index([userId, mode])
 }
 
+/// One run of an automatic job, so the developer can see whether the nightly
+/// work happened, how long it took, and how it ended.
+model JobRun {
+  id String @id @default(cuid())
+
+  name       String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean   @default(false)
+  /// What it reported, or why it failed. Never a secret.
+  result     String?
+  ms         Int?
+
+  @@index([name, startedAt])
+}
+
 /// A server error, written down when it happens, so the developer sees what
 /// is going wrong without anyone having to report it. Never holds a request
 /// body, a cookie or a header — only what failed and where.

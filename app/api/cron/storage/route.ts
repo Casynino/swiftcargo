@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { runJob } from "@/lib/jobs";
 import { sendStorageNotices } from "@/lib/storage-notices";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,6 @@ export async function GET(request: Request) {
   if (secret && request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   }
-  const result = await sendStorageNotices();
+  const result = await runJob("storage-notices", () => sendStorageNotices());
   return NextResponse.json(result);
 }

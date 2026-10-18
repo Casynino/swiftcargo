@@ -163,14 +163,6 @@ export async function developerOverview(): Promise<{
 
   const findings: Finding[] = [];
   if (!dbOk) findings.push({ key: "db", tone: "fix", title: "The database is not answering", detail: "Nothing can be saved until it is back. Check the database provider." });
-  else if (ms > 800) findings.push({ key: "slow", tone: "look", title: `The database is slow (${ms} ms)`, detail: "Pages may feel sluggish. If it stays this way, check the provider's status." });
-  if (failedDev > 0)
-    findings.push({
-      key: "devfail",
-      tone: failedDev >= 4 ? "look" : "info",
-      title: `${failedDev} failed developer sign-in${failedDev === 1 ? "" : "s"} in 24 hours`,
-      detail: "Wrong-password tries on your own account. After 10 wrong tries for one address it locks for 15 minutes.",
-    });
   const counts = {
     fix: findings.filter((f) => f.tone === "fix").length,
     look: findings.filter((f) => f.tone === "look").length,

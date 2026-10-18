@@ -276,3 +276,109 @@ export async function speedPulse() {
   const list = Date.now() - t;
   return { avg: Math.round(times.reduce((a, b) => a + b, 0) / times.length), max: Math.max(...times), list };
 }
+
+/* ------------------------------------------------------------------ */
+/* Errors & jobs, speed & size, the deployment, who can do what.       */
+/* ------------------------------------------------------------------ */
+
+export async function errorList() {
+  const since = new Date(Date.now() - 7 * DAY);
+  const rows = await prisma.systemEvent.findMany({
+    where: { kind: "ERROR", createdAt: { gte: since } },
+    orderBy: { createdAt: "desc" },
+    take: 300,
+    select: { message: true, path: true, route: true, createdAt: true },
+  });
+  const by = new Map<string, { message: string; where: string | null; count: number; last: Date }>();
+  for (const r of rows) {
+    const where = r.route ?? r.path;
+    const key = `${r.message}\u0000${where ?? ""}`;
+    const cur = by.get(key);
+    if (cur) cur.count++;
+    else by.set(key, { message: r.message, where, count: 1, last: r.createdAt });
+  }
+  const day = Date.now() - DAY;
+  return {
+    last24: rows.filter((r) => r.createdAt.getTime() >= day).length,
+    last7: rows.length,
+    groups: [...by.values()].sort((a, b) => b.last.getTime() - a.last.getTime()).slice(0, 10),
+  };
+}
+
+export async function jobsTable() {
+  const { JOBS } = await import("@/lib/jobs");
+  return Promise.all(
+    JOBS.map(async (job) => {
+      const [last, lastOk, runs] = await Promise.all([
+        prisma.jobRun.findFirst({ where: { name: job.name }, orderBy: { startedAt: "desc" } }),
+        prisma.jobRun.findFirst({ where: { name: job.name, ok: true }, orderBy: { startedAt: "desc" }, select: { startedAt: true } }),
+        prisma.jobRun.count({ where: { name: job.name } }),
+      ]);
+      const late = last ? Date.now() - last.startedAt.getTime() > job.everyHours * 1.5 * 3_600_000 : false;
+      return { job, last, lastOkAt: lastOk?.startedAt ?? null, runs, late };
+    })
+  );
+}
+
+/** How long real questions take, one at a time so they do not slow each other. */
+export async function timings() {
+  const ops: { name: string; run: () => Promise<unknown>; slowAt: number }[] = [
+    { name: "Simplest question (ping)", run: () => prisma.$queryRaw`SELECT 1`, slowAt: 400 },
+    { name: "Cargo list, newest 50", run: () => prisma.cargo.findMany({ where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 50, select: { id: true, reference: true } }), slowAt: 600 },
+    { name: "Bills with their payments, newest 50", run: () => prisma.invoice.findMany({ orderBy: { createdAt: "desc" }, take: 50, include: { payments: true } }), slowAt: 800 },
+    { name: "Customers, newest 50", run: () => prisma.customer.findMany({ orderBy: { createdAt: "desc" }, take: 50 }), slowAt: 600 },
+    { name: "Audit trail, newest 50", run: () => prisma.auditLog.findMany({ orderBy: { createdAt: "desc" }, take: 50 }), slowAt: 600 },
+    { name: "Containers with their cargo count", run: () => prisma.container.findMany({ take: 50, include: { _count: true } }), slowAt: 800 },
+    { name: "Money still to collect (whole list)", run: () => toCollect(), slowAt: 3000 },
+  ];
+  const out: { name: string; ms: number; slowAt: number }[] = [];
+  for (const op of ops) {
+    const t = Date.now();
+    try {
+      await op.run();
+    } catch {
+      out.push({ name: op.name, ms: -1, slowAt: op.slowAt });
+      continue;
+    }
+    out.push({ name: op.name, ms: Date.now() - t, slowAt: op.slowAt });
+  }
+  return out;
+}
+
+export async function dbSize() {
+  try {
+    const rows = await prisma.$queryRaw<{ name: string; bytes: bigint; rows: bigint }[]>`
+      SELECT c.relname AS name, pg_total_relation_size(c.oid) AS bytes, c.reltuples::bigint AS rows
+      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname <> '_prisma_migrations'
+      ORDER BY bytes DESC`;
+    const tables = rows.map((r) => ({ name: r.name, bytes: Number(r.bytes), rows: Math.max(0, Number(r.rows)) }));
+    return { tables: tables.slice(0, 8), total: tables.reduce((a, b) => a + b.bytes, 0), count: tables.length };
+  } catch {
+    return null;
+  }
+}
+
+/** Which build is serving this page. Names and ids only, never a value that is a secret. */
+export function deployment() {
+  const e = process.env;
+  return {
+    place: e.VERCEL_ENV ?? (process.env.NODE_ENV === "production" ? "production" : "this computer"),
+    region: e.VERCEL_REGION ?? null,
+    commit: e.VERCEL_GIT_COMMIT_SHA ? e.VERCEL_GIT_COMMIT_SHA.slice(0, 7) : null,
+    branch: e.VERCEL_GIT_COMMIT_REF ?? null,
+    message: e.VERCEL_GIT_COMMIT_MESSAGE ? e.VERCEL_GIT_COMMIT_MESSAGE.split("\n")[0].slice(0, 90) : null,
+    node: process.version,
+  };
+}
+
+export async function securityExtras() {
+  const day = new Date(Date.now() - DAY);
+  const [failed, refused, mine, devSessions] = await Promise.all([
+    prisma.loginEvent.findMany({ where: { ok: false, createdAt: { gte: new Date(Date.now() - 7 * DAY) } }, orderBy: { createdAt: "desc" }, take: 8, select: { createdAt: true, email: true, ipAddress: true } }),
+    prisma.auditLog.count({ where: { outcome: "DENIED", createdAt: { gte: day } } }),
+    prisma.loginEvent.findMany({ where: { user: { role: "DEVELOPER" } }, orderBy: { createdAt: "desc" }, take: 5, select: { createdAt: true, ok: true, ipAddress: true, userAgent: true } }),
+    prisma.developerSession.count({ where: { endedAt: null } }).catch(() => 0),
+  ]);
+  return { failed, refused, mine, devSessions };
+}
