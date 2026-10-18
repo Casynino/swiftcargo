@@ -49,8 +49,7 @@ export async function developerOverview(): Promise<{
   db: { ok: boolean; ms: number };
   signedInToday: number;
   actionsToday: number;
-  alertsWaiting: number;
-  alertsOverDay: number;
+  errors24: number;
   signinsPerDay: { day: string; label: string; by: Partial<Record<Group, number>>; total: number }[];
   actionsPerDay: { day: string; label: string; team: number; developer: number }[];
   hours: number[];
@@ -73,7 +72,7 @@ export async function developerOverview(): Promise<{
   }
   const ms = Date.now() - t0;
 
-  const [logins, actions, recent, unread, failedDev, pending, idleUsers, statusSplit] = await Promise.all([
+  const [logins, actions, recent, unread, failedDev, pending, idleUsers, statusSplit, errors24] = await Promise.all([
     prisma.loginEvent.findMany({
       where: { ok: true, createdAt: { gte: since14 } },
       select: { createdAt: true, userId: true, user: { select: { role: true } } },
@@ -102,8 +101,11 @@ export async function developerOverview(): Promise<{
       select: { name: true, role: true, lastLoginAt: true },
     }),
     prisma.user.count({ where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, active: true, status: "ACTIVE" } }),
+    prisma.systemEvent.count({ where: { kind: "ERROR", createdAt: { gte: since24 } } }),
   ]);
   void statusSplit;
+  void pending;
+  void unread;
 
   /* The last fourteen Dar days, oldest first, so a chart reads left to right. */
   const days = Array.from({ length: 14 }, (_, i) => darDay(new Date(now - (13 - i) * DAY)));
@@ -160,30 +162,6 @@ export async function developerOverview(): Promise<{
   const findings: Finding[] = [];
   if (!dbOk) findings.push({ key: "db", tone: "fix", title: "The database is not answering", detail: "Nothing can be saved until it is back. Check the database provider." });
   else if (ms > 800) findings.push({ key: "slow", tone: "look", title: `The database is slow (${ms} ms)`, detail: "Pages may feel sluggish. If it stays this way, check the provider's status." });
-  if (alertsOverDay > 0) {
-    const age = (d: Date) => {
-      const days = Math.floor((now - d.getTime()) / DAY);
-      return days < 1 ? "today" : `${days} day${days === 1 ? "" : "s"} waiting`;
-    };
-    findings.push({
-      key: "alerts",
-      tone: "look",
-      title: `${alertsOverDay} alert${alertsOverDay === 1 ? "" : "s"} waiting for more than a day`,
-      detail: "Each is a message sent to a member of staff — to approve something, or to receive it — that they have not opened. Open it to deal with it yourself, or work as that person.",
-      items: unread
-        .filter((n) => now - n.createdAt.getTime() > DAY && n.user)
-        .slice(0, 8)
-        .map((n) => ({
-          title: n.title,
-          body: n.body,
-          who: n.user!.name,
-          whoId: n.user!.id,
-          role: n.user!.role as string,
-          age: age(n.createdAt),
-          href: n.href,
-        })),
-    });
-  }
   if (failedDev > 0)
     findings.push({
       key: "devfail",
@@ -191,11 +169,6 @@ export async function developerOverview(): Promise<{
       title: `${failedDev} failed developer sign-in${failedDev === 1 ? "" : "s"} in 24 hours`,
       detail: "Wrong-password tries on your own account. After 10 wrong tries for one address it locks for 15 minutes.",
     });
-  if (pending > 0)
-    findings.push({ key: "susp", tone: "info", title: `${pending} suspended account${pending === 1 ? "" : "s"}`, detail: "They cannot sign in until re-activated." });
-  if (idle.length > 0)
-    findings.push({ key: "idle", tone: "info", title: `${idle.length} account${idle.length === 1 ? "" : "s"} not used in 30 days`, detail: "Active, but never signed in or silent for a month." });
-
   const counts = {
     fix: findings.filter((f) => f.tone === "fix").length,
     look: findings.filter((f) => f.tone === "look").length,
@@ -214,8 +187,7 @@ export async function developerOverview(): Promise<{
     db: { ok: dbOk, ms },
     signedInToday,
     actionsToday,
-    alertsWaiting: unread.length,
-    alertsOverDay,
+    errors24,
     signinsPerDay,
     actionsPerDay,
     hours,

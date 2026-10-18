@@ -2,7 +2,6 @@ import "server-only";
 
 import { impliedStatus } from "@/lib/invoice-balance";
 import type { Finding } from "@/lib/developer-overview";
-import { businessFindings } from "@/lib/developer-system";
 import { prisma } from "@/lib/prisma";
 import { readUpload } from "@/lib/storage";
 
@@ -182,13 +181,12 @@ const storageNotCharging: Check = async () => {
 };
 
 const exchangeRate: Check = async () => {
-  const rate = await prisma.exchangeRate.findFirst({ where: { active: true, fromCurrency: "USD", toCurrency: "TZS" }, orderBy: { effectiveFrom: "desc" }, select: { effectiveFrom: true } });
+  const rate = await prisma.exchangeRate.findFirst({ where: { active: true, fromCurrency: "USD", toCurrency: "TZS" }, select: { id: true } });
   if (!rate) {
     return [{ key: "rate", tone: "fix", title: "There is no exchange rate", detail: "No bill can be issued and no shilling payment can be valued without one.", fix: "Set today's rate in Finance → Rates.", href: "/app/finance/exchange-rate" }];
   }
-  const age = Math.floor((Date.now() - rate.effectiveFrom.getTime()) / DAY);
-  if (age <= 7) return [];
-  return [{ key: "rate", tone: "look", title: `The exchange rate is ${age} days old`, detail: "New bills and payments are valued at this rate. If the market has moved, customers are charged the old figure.", fix: "Check today's rate and publish it in Finance → Rates.", href: "/app/finance/exchange-rate" }];
+  /* An old rate is Finance's to refresh. Only a missing one stops the system. */
+  return [];
 };
 
 const contradiction: Check = async () => {
@@ -217,7 +215,7 @@ const missingSettings: Check = async () => {
   return [{ key: "env", tone: "fix", title: `${plural(missing.length, "required setting")} missing`, detail: "Parts of the system will not work without these.", fix: "Add them in Vercel → Settings → Environment Variables, then redeploy.", lines: missing }];
 };
 
-const ALL: Check[] = [errors, photos, invoiceStatus, invoiceTotals, chinaCount, noAccount, storageNotCharging, exchangeRate, contradiction, missingSettings, businessFindings];
+const ALL: Check[] = [errors, photos, invoiceStatus, invoiceTotals, chinaCount, noAccount, storageNotCharging, exchangeRate, contradiction, missingSettings];
 
 export async function systemChecks(): Promise<Finding[]> {
   const settled = await Promise.allSettled(ALL.map((c) => c()));

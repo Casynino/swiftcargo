@@ -178,7 +178,7 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
           <Stat label="Database" value={o.db.ok ? "Online" : "Down"} tone={o.db.ok ? "text-success" : "text-destructive"} sub={`${o.db.ms} ms`} />
           <Stat label="Signed in today" value={String(o.signedInToday)} sub={T("different people")} />
           <Stat label="Actions today" value={String(o.actionsToday)} sub={T("saved in 24 hours")} />
-          <Stat label="Alerts waiting" value={String(o.alertsWaiting)} tone={o.alertsOverDay ? "text-warning" : undefined} sub={`${o.alertsOverDay} ${T("over a day")}`} />
+          <Stat label="Server errors" value={String(o.errors24)} tone={o.errors24 ? "text-warning" : undefined} sub={T("in 24 hours")} />
         </dl>
       </section>
 
@@ -415,10 +415,10 @@ function BusinessTab({ b }: { b: Awaited<ReturnType<typeof businessPulse>> }) {
           explain="Everything customers owe on bills already sent. It becomes income only when the payment is verified." />
         <Kpi label="Received, 14 days" value={tsh(b.received14)} caption="verified payments" tag="Income" tone="good"
           explain="Payments Finance has verified, after reversals and without the transport fare passed on to drivers." />
-        <Kpi label="Storage running" value={String(b.storageRunning)} caption={`${tsh(b.storageOwed)} owed on them`} tag={b.storageRunning ? "Look" : "Clear"} tone={b.storageRunning ? "warn" : "good"}
+        <Kpi label="Storage running" value={String(b.storageRunning)} caption={`${tsh(b.storageOwed)} owed on them`} tag="Info" tone="info"
           explain="Consignments cleared and past their free days, still uncollected. Storage is added to their bill each night until pickup." />
-        <Kpi label="Payments to verify" value={String(b.pendingPayments)} caption={b.pendingPayments ? `oldest ${b.oldestPending} day(s)` : "none waiting"} tag={b.oldestPending >= 2 ? "Look" : "Quiet"} tone={b.oldestPending >= 2 ? "warn" : "good"}
-          explain="Money reported by a customer or a desk that Finance has not yet checked. Until it is verified, the bill still shows it owing." />
+        <Kpi label="Payments to verify" value={String(b.pendingPayments)} caption={b.pendingPayments ? `oldest ${b.oldestPending} day(s)` : "none waiting"} tag="Info" tone="info"
+          explain="Money reported by a customer or a desk that Finance has not yet checked. This is Finance's to deal with — it is shown here so you can see the system is moving." />
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card title="Where the cargo is" hint="Every consignment, by where it stands now.">
