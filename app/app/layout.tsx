@@ -44,16 +44,16 @@ export default async function AppLayout({
           : null,
       }}
     >
-      {/* ALWAYS SAID: this is the developer, working as somebody, and what they
-          do is recorded as the developer. One press ends it. */}
+      {/* Working as somebody: a small pill in the corner, out of the way, with
+          the one thing needed — Stop. Hover for who is really behind it. */}
       {user.impersonatedBy ? (
-        <div className="sticky top-0 z-30 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-warning px-4 py-2 text-xs font-medium text-white shadow-sm">
-          <span>
-            Working as {user.name} ({ROLE_LABELS[user.role]}) — everything you do is recorded as{" "}
-            {user.impersonatedBy.name} (Developer)
-          </span>
+        <div
+          title={`Everything you do is recorded as ${user.impersonatedBy.name} (Developer)`}
+          className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-warning py-1 pl-3 pr-1 text-xs font-medium text-white shadow-lg lg:bottom-4"
+        >
+          <span>Working as {user.name}</span>
           <form action={stopWorkAs}>
-            <button type="submit" className="rounded-full bg-white/20 px-3 py-1 font-semibold hover:bg-white/30">
+            <button type="submit" className="rounded-full bg-white/25 px-2.5 py-1 font-semibold hover:bg-white/35">
               Stop
             </button>
           </form>
