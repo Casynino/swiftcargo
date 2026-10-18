@@ -2,9 +2,11 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AlertTriangle, BarChart3, Info, ScrollText, ShieldCheck, TriangleAlert } from "lucide-react";
 
+import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
+import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
 import { cn } from "@/lib/utils";
@@ -56,7 +58,10 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
 export default async function DeveloperHome() {
   await primeLocale();
   const user = await requirePermission("developer.activity");
-  const o = await developerOverview();
+  const [o, warehouses] = await Promise.all([
+    developerOverview(),
+    prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
+  ]);
 
   const hello = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dar_es_Salaam" });
   const need = o.findings.filter((f) => f.tone !== "info");
@@ -65,7 +70,8 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand via-violet-500 to-fuchsia-500 px-6 py-7 text-white shadow-sm">
+      <section className="relative flex flex-wrap items-start justify-between gap-4 overflow-hidden rounded-3xl bg-gradient-to-r from-brand via-violet-500 to-fuchsia-500 px-6 py-7 text-white shadow-sm">
+        <div>
         <p className="flex items-center gap-2 text-xs text-white/85">
           {hello}
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">{T("Developer")}</span>
@@ -74,6 +80,8 @@ export default async function DeveloperHome() {
           {T("Good day")}, {user.name.split(" ")[0]}.
         </h1>
         <p className="mt-1 text-sm text-white/90">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
+        </div>
+        <AddAccountDialog warehouses={warehouses} tone="light" />
       </section>
 
       <section className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1.4fr_1fr]">

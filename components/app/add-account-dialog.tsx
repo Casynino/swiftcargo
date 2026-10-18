@@ -29,7 +29,14 @@ const field = "h-11 w-full rounded-xl border bg-background px-3.5 text-sm outlin
  * make for you. Only the warehouse roles ask which warehouse. When it is made,
  * the dialog says so and keeps the sign-in details on screen to hand over.
  */
-export function AddAccountDialog({ warehouses }: { warehouses: { id: string; name: string; kind: WarehouseKind }[] }) {
+export function AddAccountDialog({
+  warehouses,
+  tone = "brand",
+}: {
+  warehouses: { id: string; name: string; kind: WarehouseKind }[];
+  /** "light" for a button that sits on the coloured home banner. */
+  tone?: "brand" | "light";
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<ActionState, FormData>(createUser, {});
@@ -79,7 +86,10 @@ export function AddAccountDialog({ warehouses }: { warehouses: { id: string; nam
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm hover:opacity-90"
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm hover:opacity-90",
+          tone === "light" ? "bg-white text-slate-900" : "bg-brand text-brand-foreground"
+        )}
       >
         <UserPlus className="size-4" />
         Add an account
