@@ -28,7 +28,7 @@ export default async function UsersPage() {
     prisma.user.findMany({
       // Customers sign up on the website against their own Customer record and
       // are not staff; they are never listed or edited here.
-      where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
+      where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, NOT: { email: { endsWith: "@deleted.invalid" } } },
       orderBy: [{ active: "desc" }, { name: "asc" }],
       select: {
         id: true,

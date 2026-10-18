@@ -328,3 +328,33 @@ describe("the developer's audit lines cannot be rewritten", () => {
       await tx.auditLog.delete({ where: { id: staff.id } });
     }));
 });
+
+describe("deleting an account", () => {
+  test("scrubs what is personal, keeps the row, and the account can never sign in", () =>
+    inRollback(async (tx) => {
+      const { scrubAccount, isDeletedEmail, DELETED_NAME } = await import("@/lib/developer-accounts");
+      const u = await tx.user.create({ data: { name: "Real Person", email: "real@example.test", phone: "+255700000000", passwordHash: "secret-hash", role: "FINANCE", department: "FINANCE" } });
+      await tx.notification.create({ data: { userId: u.id, kind: "probe", title: "hello", body: "x" } });
+      await scrubAccount(tx, u.id);
+      const after = await tx.user.findUniqueOrThrow({ where: { id: u.id } });
+      assert.equal(after.name, DELETED_NAME);
+      assert.ok(isDeletedEmail(after.email));
+      assert.equal(after.phone, null);
+      assert.notEqual(after.passwordHash, "secret-hash");
+      assert.equal(after.active, false);
+      assert.equal(after.status, "INACTIVE");
+      assert.equal(await tx.notification.count({ where: { userId: u.id } }), 0);
+    }));
+
+  test("the last active owner is protected; with another owner it is not", () =>
+    inRollback(async (tx) => {
+      const { wouldLeaveNoOwner } = await import("@/lib/developer-accounts");
+      await tx.user.updateMany({ where: { role: "ADMIN" }, data: { status: "SUSPENDED" } });
+      const only = await tx.user.create({ data: { name: "Only Owner", email: "only@example.test", passwordHash: "x", role: "ADMIN", department: "MANAGEMENT" } });
+      assert.equal(await wouldLeaveNoOwner(tx, only), true);
+      await tx.user.create({ data: { name: "Second Owner", email: "second-owner@example.test", passwordHash: "x", role: "ADMIN", department: "MANAGEMENT" } });
+      assert.equal(await wouldLeaveNoOwner(tx, only), false);
+      const fin = await tx.user.create({ data: { name: "Fin2", email: "fin2@example.test", passwordHash: "x", role: "FINANCE", department: "FINANCE" } });
+      assert.equal(await wouldLeaveNoOwner(tx, fin), false);
+    }));
+});

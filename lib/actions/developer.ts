@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { recordAudit } from "@/lib/audit";
 import { startWorkingAs, stopWorkingAs, workingAs } from "@/lib/developer";
+import { isDeletedEmail, scrubAccount, wouldLeaveNoOwner } from "@/lib/developer-accounts";
 import { prisma } from "@/lib/prisma";
 import { realDeveloper } from "@/lib/session";
 
@@ -69,11 +70,12 @@ export async function suspendAccount(_prev: AccessState, formData: FormData): Pr
   const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
   if (String(formData.get("confirm") ?? "").trim() !== "CONFIRM") return { error: "Type CONFIRM to suspend." };
   if (reason.length < 3) return { error: "Say why." };
-  const target = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, role: true, status: true } });
-  if (!target || ["ADMIN", "DEVELOPER", "CUSTOMER"].includes(target.role) || target.id === dev.user.id) {
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, role: true, status: true, email: true } });
+  if (!target || target.role === "DEVELOPER" || target.id === dev.user.id || isDeletedEmail(target.email)) {
     return { error: "That account cannot be suspended here." };
   }
   if (target.status !== "ACTIVE") return { error: "It is not active." };
+  if (await wouldLeaveNoOwner(prisma, target)) return { error: "That is the only active owner account. Open another owner account first." };
   await prisma.user.update({ where: { id: target.id }, data: { status: "SUSPENDED" } });
   await recordAudit({
     actor: dev.user,
@@ -111,4 +113,51 @@ export async function reactivateAccount(_prev: AccessState, formData: FormData):
   });
   revalidatePath("/app/developer/users");
   return { ok: `${target.name} can sign in again.` };
+}
+
+/**
+ * DELETE AN ACCOUNT FOR GOOD, WITH A REASON AND THE WORD DELETE.
+ *
+ * Any account but another developer's, one's own, or the last active owner's.
+ * It can never sign in again and disappears from every list. When the books
+ * name the person, the row stays as "Deleted account" with nothing personal
+ * left on it (lib/developer-accounts.ts); an account that never did anything
+ * is removed outright. Recorded under the developer first, with who it was.
+ */
+export async function deleteAccount(_prev: AccessState, formData: FormData): Promise<AccessState> {
+  const dev = await realDeveloper();
+  if (!dev) return { error: "Not allowed." };
+  if (await workingAs(dev.user.id, dev.sid)) return { error: "Stop working as someone first." };
+  const id = String(formData.get("userId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
+  if (String(formData.get("confirm") ?? "").trim() !== "DELETE") return { error: "Type DELETE to delete." };
+  if (reason.length < 3) return { error: "Say why." };
+  const target = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, role: true } });
+  if (!target || target.role === "DEVELOPER" || target.id === dev.user.id || isDeletedEmail(target.email)) {
+    return { error: "That account cannot be deleted here." };
+  }
+  if (await wouldLeaveNoOwner(prisma, target)) return { error: "That is the only active owner account. Open another owner account first." };
+
+  const history = await prisma.auditLog.count({ where: { actorId: id } });
+  let removed = false;
+  if (history === 0) {
+    try {
+      await prisma.user.delete({ where: { id } });
+      removed = true;
+    } catch {
+      /* something still names this account: keep the row and scrub it below */
+    }
+  }
+  if (!removed) await prisma.$transaction((tx) => scrubAccount(tx, id));
+
+  await recordAudit({
+    actor: dev.user,
+    action: "developer.delete",
+    entity: "User",
+    entityId: id,
+    summary: `${dev.user.name} deleted ${target.name} (${target.role}) — ${reason}`,
+    metadata: { reason, was: { name: target.name, email: target.email, role: target.role }, how: removed ? "removed" : "scrubbed" },
+  });
+  revalidatePath("/app/developer/users");
+  return { ok: `${target.name} is deleted.` };
 }

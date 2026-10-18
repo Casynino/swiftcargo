@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, Warehouse } from "lucide-react";
 
-import { ReactivateForm, SuspendForm } from "@/components/app/access-actions";
+import { DeleteForm, ReactivateForm, SuspendForm } from "@/components/app/access-actions";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { startWorkAs } from "@/lib/actions/developer";
 import { canWorkAs } from "@/lib/developer-mode";
+import { DELETED_DOMAIN } from "@/lib/developer-accounts";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -36,18 +37,31 @@ const ago = (d: Date | null) => {
  * screens, without their password. A bar on every page says who you are and
  * stops it. Everything done is recorded under the developer.
  */
-export default async function AccessPage({ searchParams }: { searchParams: Promise<{ refused?: string }> }) {
+export default async function AccessPage({ searchParams }: { searchParams: Promise<{ refused?: string; q?: string }> }) {
   await primeLocale();
   const dev = await requirePermission("developer.activity");
   const sp = await searchParams;
-  const [people, suspendedByMe, warehouses] = await Promise.all([
+  const q = (sp.q ?? "").trim().slice(0, 60);
+  const [people, suspendedByMe, warehouses, customers] = await Promise.all([
     prisma.user.findMany({
-      where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
+      where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, NOT: { email: { endsWith: `@${DELETED_DOMAIN}` } } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true, role: true, active: true, status: true, lastLoginAt: true },
     }),
     prisma.auditLog.findMany({ where: { action: "developer.suspend", actorId: dev.id }, select: { entityId: true } }),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
+    q
+      ? prisma.user.findMany({
+          where: {
+            role: "CUSTOMER",
+            NOT: { email: { endsWith: `@${DELETED_DOMAIN}` } },
+            OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { phone: { contains: q } }],
+          },
+          orderBy: { name: "asc" },
+          take: 25,
+          select: { id: true, name: true, email: true, role: true, active: true, status: true, lastLoginAt: true },
+        })
+      : Promise.resolve([]),
   ]);
   const mine = new Set(suspendedByMe.map((r) => r.entityId));
 
@@ -73,7 +87,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
       <section className="grid gap-3 md:grid-cols-3">
         {[
           { icon: LogIn, title: "Work as", body: "Opens that person's screens with their real permissions. A bar at the top shows who you are working as; press Stop to come back here. It ends by itself after 4 hours." },
-          { icon: AlertTriangle, title: "Suspend", body: "Blocks the account at once. You must say why and type CONFIRM. You can only re-activate accounts you suspended yourself." },
+          { icon: AlertTriangle, title: "Suspend and delete", body: "Suspend blocks the account at once and can be undone. Delete is for good: it can never sign in again. Both need a reason and a typed word. Not for the last active owner, yourself, or another developer." },
           { icon: Lock, title: "Safety while working as someone", body: "You cannot change passwords or roles, or create accounts, while working as someone — so it can never be used to take over an account." },
         ].map((c) => (
           <div key={c.title} className="rounded-2xl border bg-card p-4">
@@ -126,13 +140,12 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                           {T("Work as")}
                         </button>
                       </form>
-                      {p.role === "ADMIN" ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground"><Lock className="size-3.5" />{T("Can't be suspended here")}</span>
-                      ) : suspended ? (
+                      {suspended ? (
                         mine.has(p.id) ? <ReactivateForm userId={p.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>
                       ) : (
                         <SuspendForm userId={p.id} name={p.name} />
                       )}
+                      <DeleteForm userId={p.id} name={p.name} />
                     </div>
                   </div>
                 );
@@ -141,7 +154,36 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
           </section>
         );
       })}
-      <p className="flex items-center gap-2 text-xs text-muted-foreground"><Package className="size-3.5" />{T("Customer accounts are not listed — they are managed from Customers.")}</p>
+      <section className="space-y-2">
+        <h2 className="font-semibold">{T("Customers’ sign-in accounts")}</h2>
+        <form className="flex gap-2">
+          <input name="q" defaultValue={q} placeholder={T("Search by name, email or phone")} className="h-10 w-full max-w-sm rounded-lg border bg-background px-3 text-sm" />
+          <button className="h-10 rounded-lg border px-4 text-sm font-medium hover:bg-secondary">{T("Search")}</button>
+        </form>
+        {q ? (
+          customers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{T("No customer account matches.")}</p>
+          ) : (
+            <div className="divide-y rounded-2xl border bg-card">
+              {customers.map((c) => (
+                <div key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 text-sm font-semibold">{c.name}<span className={cn("text-xs font-medium", c.status === "SUSPENDED" ? "text-destructive" : "text-success")}>{c.status === "SUSPENDED" ? T("Suspended") : T("Active")}</span></p>
+                    <p className="truncate text-xs text-muted-foreground">{c.email} · {T("Last signed in")} {ago(c.lastLoginAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.status === "SUSPENDED" ? (mine.has(c.id) ? <ReactivateForm userId={c.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={c.id} name={c.name} />}
+                    <DeleteForm userId={c.id} name={c.name} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+          <p className="text-sm text-muted-foreground">{T("Search to find a customer’s login. Their cargo and bills are not touched.")}</p>
+        )}
+      </section>
+      <p className="flex items-center gap-2 text-xs text-muted-foreground"><Package className="size-3.5" />{T("Customer logins are found by search above; their records are managed from Customers.")}</p>
     </div>
   );
 }
