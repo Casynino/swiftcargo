@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, Warehouse } from "lucide-react";
 
 import { DeleteForm, ReactivateForm, SuspendForm } from "@/components/app/access-actions";
+import { AccessSearch } from "@/components/app/access-search";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
+import { ROLE_LABELS } from "@/lib/constants";
 import { startWorkAs } from "@/lib/actions/developer";
 import { canWorkAs } from "@/lib/developer-mode";
 import { DELETED_DOMAIN } from "@/lib/developer-accounts";
@@ -64,18 +66,22 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
       : Promise.resolve([]),
   ]);
   const mine = new Set(suspendedByMe.map((r) => r.entityId));
+  const activeOwners = people.filter((p) => p.role === "ADMIN" && p.active && p.status === "ACTIVE").length;
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-        <h1 className="text-2xl font-bold">{T("Access")}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          {people.length} {T("accounts. Pick a person and press “Work as” to open their screens exactly as they see them — without their password. Everything you do is recorded under your name.")}
-        </p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-brand">{T("Developer console")}</p>
+          <h1 className="mt-1.5 text-3xl font-bold">{T("Access")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {people.length} {T("accounts")} · {T("Work as, suspend or delete. Everything you do is recorded under your name.")}
+          </p>
         </div>
         <AddAccountDialog warehouses={warehouses} />
       </header>
+
+      <AccessSearch />
 
       {sp.refused ? (
         <p className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
@@ -84,25 +90,11 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
         </p>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-3">
-        {[
-          { icon: LogIn, title: "Work as", body: "Opens that person's screens with their real permissions. A bar at the top shows who you are working as; press Stop to come back here. It ends by itself after 4 hours." },
-          { icon: AlertTriangle, title: "Suspend and delete", body: "Suspend blocks the account at once and can be undone. Delete removes their access for good; what they recorded is kept, under their name. Not for the last active owner, yourself, or another developer." },
-          { icon: Lock, title: "Safety while working as someone", body: "You cannot change passwords or roles, or create accounts, while working as someone — so it can never be used to take over an account." },
-        ].map((c) => (
-          <div key={c.title} className="rounded-2xl border bg-card p-4">
-            <c.icon className="size-5 text-brand" />
-            <p className="mt-2 text-sm font-semibold">{T(c.title)}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{T(c.body)}</p>
-          </div>
-        ))}
-      </section>
-
       {GROUPS.map((g) => {
         const list = people.filter((p) => (g.roles as readonly string[]).includes(p.role));
         if (list.length === 0) return null;
         return (
-          <section key={g.title} className="space-y-2">
+          <section key={g.title} data-access-group className="space-y-2">
             <div className="flex items-start gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><g.icon className="size-5" /></span>
               <div>
@@ -115,7 +107,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                 const ok = canWorkAs(p, dev.id);
                 const suspended = p.status === "SUSPENDED";
                 return (
-                  <div key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                  <div key={p.id} data-access-row={`${p.name} ${p.email} ${ROLE_LABELS[p.role as keyof typeof ROLE_LABELS]} ${p.role}`.toLowerCase()} className="flex flex-wrap items-center gap-4 px-5 py-4">
                     <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-sm font-semibold text-brand">
                       {p.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                     </span>
@@ -123,7 +115,7 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                       <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                         {p.name}
                         <span className={cn("text-xs font-medium", suspended ? "text-destructive" : "text-success")}>{suspended ? T("Suspended") : T("Active")}</span>
-                        {p.role === "ADMIN" ? <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{T("Owner")}</span> : null}
+                        <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-[11px] font-medium text-brand">{p.role === "ADMIN" ? T("Owner") : T(ROLE_LABELS[p.role as keyof typeof ROLE_LABELS])}</span>
                       </p>
                       <p className="truncate text-xs text-muted-foreground">{p.email}</p>
                       <p className="text-xs text-muted-foreground">{T("Last signed in")} {ago(p.lastLoginAt)}</p>
@@ -140,12 +132,18 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                           {T("Work as")}
                         </button>
                       </form>
+                      {p.role === "ADMIN" && !suspended && activeOwners <= 1 ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="size-3.5" />{T("Last owner: can't be suspended or deleted")}</span>
+                      ) : (
+                      <>
                       {suspended ? (
                         mine.has(p.id) ? <ReactivateForm userId={p.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>
                       ) : (
                         <SuspendForm userId={p.id} name={p.name} />
                       )}
                       <DeleteForm userId={p.id} name={p.name} />
+                      </>
+                      )}
                     </div>
                   </div>
                 );
