@@ -26,10 +26,13 @@ export function WorkAsDialog({ people }: { people: Person[] }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full bg-white/20 px-5 py-2.5 text-sm font-semibold text-white ring-1 ring-white/40 hover:bg-white/30"
+        className="flex h-full w-full items-start gap-4 rounded-2xl border bg-card p-5 text-left transition hover:border-foreground/30"
       >
-        <LogIn className="size-4" />
-        Work as
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><LogIn className="size-5" /></span>
+        <span>
+          <span className="block font-semibold">Work as →</span>
+          <span className="mt-1 block text-sm text-muted-foreground">Pick a name and open the system exactly as that person sees it. One click, and every action is recorded under yours.</span>
+        </span>
       </button>
       {open ? (
         <Modal title="Work as…" onClose={() => { setOpen(false); setQ(""); }} className="max-w-sm">

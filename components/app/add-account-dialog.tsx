@@ -31,11 +31,11 @@ const field = "h-11 w-full rounded-xl border bg-background px-3.5 text-sm outlin
  */
 export function AddAccountDialog({
   warehouses,
-  tone = "brand",
+  variant = "button",
 }: {
   warehouses: { id: string; name: string; kind: WarehouseKind }[];
-  /** "light" for a button that sits on the coloured home banner. */
-  tone?: "brand" | "light";
+  /** "card" is the tile on the developer home; "button" is the plain button. */
+  variant?: "button" | "card";
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -83,17 +83,28 @@ export function AddAccountDialog({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={cn(
-          "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm hover:opacity-90",
-          tone === "light" ? "bg-white text-slate-900" : "bg-brand text-brand-foreground"
-        )}
-      >
-        <UserPlus className="size-4" />
-        Add an account
-      </button>
+      {variant === "card" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-full w-full items-start gap-4 rounded-2xl border bg-card p-5 text-left transition hover:border-foreground/30"
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><UserPlus className="size-5" /></span>
+          <span>
+            <span className="block font-semibold">Add an account →</span>
+            <span className="mt-1 block text-sm text-muted-foreground">Open an account for the owner, a manager, Finance, Support or a warehouse clerk. They can sign in straight away.</span>
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-brand-foreground shadow-sm hover:opacity-90"
+        >
+          <UserPlus className="size-4" />
+          Add an account
+        </button>
+      )}
 
       {open ? (
         <Modal title={done ? "Account created" : "Add an account"} onClose={close} className="max-w-md">

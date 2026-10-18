@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AlertTriangle, BarChart3, Info, ScrollText, ShieldCheck, TriangleAlert } from "lucide-react";
+import { AlertTriangle, BarChart3, Info, ScrollText, TriangleAlert } from "lucide-react";
 
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
@@ -76,8 +76,7 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <section className="relative flex flex-wrap items-start justify-between gap-4 overflow-hidden rounded-3xl bg-gradient-to-r from-brand via-violet-500 to-fuchsia-500 px-6 py-7 text-white shadow-sm">
-        <div>
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand via-violet-500 to-fuchsia-500 px-6 py-7 text-white shadow-sm">
         <p className="flex items-center gap-2 text-xs text-white/85">
           {hello}
           <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">{T("Developer")}</span>
@@ -86,11 +85,6 @@ export default async function DeveloperHome() {
           {T("Good day")}, {user.name.split(" ")[0]}.
         </h1>
         <p className="mt-1 text-sm text-white/90">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <WorkAsDialog people={people} />
-          <AddAccountDialog warehouses={warehouses} tone="light" />
-        </div>
       </section>
 
       <section className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1.4fr_1fr]">
@@ -146,16 +140,19 @@ export default async function DeveloperHome() {
         </section>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <WorkAsDialog people={people} />
+        <AddAccountDialog warehouses={warehouses} variant="card" />
         {[
-          { href: "/app/developer/users", icon: ShieldCheck, title: "Open Access (work as someone)", body: "Open the system as the owner, a team member or a partner to help them or to see what they see. Every click is recorded under your name." },
-          { href: "/app/developer/activity", icon: ScrollText, title: "Open Audit", body: "The permanent diary of everything done in the system — by staff and by you. Your own lines can never be edited or deleted." },
-          { href: "/app/developer/business", icon: BarChart3, title: "Open Business", body: "Customers, cargo, invoices and payments in read-only tables. Good for checking a number without risking a change." },
+          { href: "/app/developer/activity", icon: ScrollText, title: "Audit", body: "The permanent diary of everything done in the system — by staff and by you. Your own lines can never be edited or deleted." },
+          { href: "/app/developer/business", icon: BarChart3, title: "Business", body: "Customers, cargo, invoices and payments in read-only tables. Good for checking a number without risking a change." },
         ].map((c) => (
-          <Link key={c.href} href={c.href} className="rounded-2xl border bg-card p-5 transition hover:border-foreground/30">
-            <c.icon className="size-5 text-brand" />
-            <p className="mt-3 font-semibold">{T(c.title)} →</p>
-            <p className="mt-1 text-sm text-muted-foreground">{T(c.body)}</p>
+          <Link key={c.href} href={c.href} className="flex items-start gap-4 rounded-2xl border bg-card p-5 transition hover:border-foreground/30">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary"><c.icon className="size-5" /></span>
+            <span>
+              <span className="block font-semibold">{T(c.title)} →</span>
+              <span className="mt-1 block text-sm text-muted-foreground">{T(c.body)}</span>
+            </span>
           </Link>
         ))}
       </div>
