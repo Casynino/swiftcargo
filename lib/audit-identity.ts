@@ -15,7 +15,20 @@ export function auditIdentity(actor: {
   email: string;
   role: Role;
   department: Department | null;
+  impersonatedBy?: { id: string; name: string; email: string } | null;
 }) {
+  /* WORKING AS. The line is the developer's — never the person's alone — and
+     it says whose screens it was done on. */
+  if (actor.impersonatedBy) {
+    return {
+      actorId: actor.impersonatedBy.id,
+      actorEmail: actor.impersonatedBy.email,
+      actorRole: "DEVELOPER" as Role,
+      actorName: actor.impersonatedBy.name,
+      actorDepartment: null as Department | null,
+      actorType: "DEVELOPER",
+    };
+  }
   return {
     actorId: actor.id,
     actorEmail: actor.email,

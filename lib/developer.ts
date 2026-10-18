@@ -4,7 +4,9 @@ import bcrypt from "bcryptjs";
 
 import {
   DEVELOPER_MIN_PASSWORD,
+  canWorkAs,
   developerStanding,
+  workAsLive,
   type DeveloperStanding,
 } from "@/lib/developer-mode";
 import { prisma, type TxClient } from "@/lib/prisma";
@@ -51,9 +53,55 @@ export async function standingOf(userId: string, sid: string | undefined): Promi
   if (!sid) return "none";
   const row = await prisma.developerSession.findUnique({
     where: { id: sid },
-    select: { userId: true, mode: true, endedAt: true },
+    select: { userId: true, mode: true, endedAt: true, createdAt: true },
   });
   return developerStanding(userId, row);
+}
+
+/**
+ * WHO THE DEVELOPER IS WORKING AS RIGHT NOW, IF ANYONE.
+ *
+ * Re-checked every time it is asked: the four hours, and that the person is
+ * still a live account the developer may work as. When either stops being
+ * true the answer is simply "nobody" and the developer is themselves again.
+ */
+export async function workingAs(developerId: string, sid: string | undefined) {
+  if (!sid) return null;
+  const row = await prisma.developerSession.findUnique({
+    where: { id: sid },
+    select: { userId: true, actingAsId: true, actingStartedAt: true },
+  });
+  if (!row || row.userId !== developerId || !row.actingAsId || !workAsLive(row.actingStartedAt)) return null;
+  const target = await prisma.user.findUnique({
+    where: { id: row.actingAsId },
+    select: {
+      id: true, name: true, email: true, role: true, department: true,
+      warehouseId: true, customerId: true, active: true, status: true,
+    },
+  });
+  return target && canWorkAs(target, developerId) ? target : null;
+}
+
+/** Start working as somebody. The caller has already proved a live developer session. */
+export async function startWorkingAs(developerId: string, sid: string, targetId: string) {
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, name: true, role: true, active: true, status: true },
+  });
+  if (!target || !canWorkAs(target, developerId)) return null;
+  const done = await prisma.developerSession.updateMany({
+    where: { id: sid, userId: developerId, mode: "DEVELOPER", endedAt: null },
+    data: { actingAsId: target.id, actingStartedAt: new Date() },
+  });
+  return done.count === 1 ? target : null;
+}
+
+export async function stopWorkingAs(developerId: string, sid: string | undefined) {
+  if (!sid) return;
+  await prisma.developerSession.updateMany({
+    where: { id: sid, userId: developerId },
+    data: { actingAsId: null, actingStartedAt: null },
+  });
 }
 
 /** Developer mode, entered on purpose. Only a waiting session can be activated. */
@@ -73,7 +121,7 @@ export async function endDeveloperSession(
   if (!sid) return;
   await prisma.developerSession.updateMany({
     where: { id: sid, userId, endedAt: null },
-    data: { mode: "ENDED", endedAt: new Date(), endedBy: reason },
+    data: { mode: "ENDED", endedAt: new Date(), endedBy: reason, actingAsId: null, actingStartedAt: null },
   });
 }
 

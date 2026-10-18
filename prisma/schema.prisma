@@ -235,6 +235,12 @@ model DeveloperSession {
 
   mode     DeveloperMode @default(PENDING)
   chosenAt DateTime?
+
+  /// "Work as": the staff member the developer is currently working as, and
+  /// since when. Cleared by Stop, by the four-hour limit, or when the session
+  /// ends. Re-checked on every request — see lib/developer-mode.ts.
+  actingAsId      String?
+  actingStartedAt DateTime?
   endedAt  DateTime?
   /// Why it ended: "signed-out", "switched-to-staff", "replaced".
   endedBy  String?

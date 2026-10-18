@@ -479,6 +479,7 @@ const DEVELOPER_SECTIONS: NavSection[] = [
     label: "",
     icon: "",
     items: [
+      { label: "Work as", href: "/app/developer/users", icon: "UserCog", permissions: ["developer.activity"] },
       { label: "Developer activity", href: "/app/developer/activity", icon: "History", permissions: ["developer.activity"] },
     ],
   },

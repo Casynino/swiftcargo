@@ -6,7 +6,7 @@ import { after, before, describe, test } from "node:test";
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { auditIdentity } from "@/lib/audit-identity";
-import { developerStanding } from "@/lib/developer-mode";
+import { canWorkAs, developerStanding, workAsLive } from "@/lib/developer-mode";
 import { ROLE_PERMISSIONS, can } from "@/lib/rbac";
 
 /*
@@ -110,12 +110,22 @@ async function inRollback(fn: (tx: Prisma.TransactionClient) => Promise<void>) {
   }
 }
 
+/* The developer's audit lines are append-only, so a developer account that has
+   acted cannot be deleted. The tests stand it aside instead, inside a
+   transaction that is rolled back. */
+async function clearDeveloper(tx: Prisma.TransactionClient) {
+  await tx.user.updateMany({
+    where: { role: "DEVELOPER" },
+    data: { role: "ADMIN", email: `stood-aside-${Date.now()}@example.test` },
+  });
+}
+
 describe("provisioning the developer account", () => {
   const long = "a-long-enough-password-1";
 
   test("creates one account, and running it again changes nothing", () =>
     inRollback(async (tx) => {
-      await tx.user.deleteMany({ where: { role: "DEVELOPER" } });
+      await clearDeveloper(tx);
       const first = await dev.provisionDeveloper(tx, { email: "Dev@Example.Test", name: "Dev", password: long });
       assert.equal(first.status, "created");
       const before = await tx.user.findFirstOrThrow({ where: { role: "DEVELOPER" } });
@@ -133,7 +143,7 @@ describe("provisioning the developer account", () => {
 
   test("a password is replaced only when a reset is asked for", () =>
     inRollback(async (tx) => {
-      await tx.user.deleteMany({ where: { role: "DEVELOPER" } });
+      await clearDeveloper(tx);
       await dev.provisionDeveloper(tx, { email: "dev@example.test", name: "Dev", password: long });
       const old = (await tx.user.findFirstOrThrow({ where: { role: "DEVELOPER" } })).passwordHash;
       const reset = await dev.provisionDeveloper(tx, { email: "dev@example.test", name: "Dev", password: "a-new-long-password-3", resetPassword: true });
@@ -144,13 +154,13 @@ describe("provisioning the developer account", () => {
 
   test("refuses a second developer, a short password and converting a staff account", () =>
     inRollback(async (tx) => {
-      await tx.user.deleteMany({ where: { role: "DEVELOPER" } });
+      await clearDeveloper(tx);
       assert.equal((await dev.provisionDeveloper(tx, { email: "dev@example.test", name: "Dev", password: "short" })).status, "refused");
       await dev.provisionDeveloper(tx, { email: "dev@example.test", name: "Dev", password: long });
       assert.equal((await dev.provisionDeveloper(tx, { email: "second@example.test", name: "Two", password: long })).status, "refused");
 
       await tx.user.create({ data: { name: "Fin", email: "fin@example.test", passwordHash: "x", role: "FINANCE", department: "FINANCE" } });
-      await tx.user.deleteMany({ where: { role: "DEVELOPER" } });
+      await clearDeveloper(tx);
       const refused = await dev.provisionDeveloper(tx, { email: "fin@example.test", name: "Fin", password: long });
       assert.equal(refused.status, "refused");
       assert.equal((await tx.user.findUniqueOrThrow({ where: { email: "fin@example.test" } })).role, "FINANCE");
@@ -190,4 +200,109 @@ describe("a developer's server-side session", () => {
     assert.equal(await dev.standingOf(user.id, first), "none", "the old session no longer acts");
     assert.equal(await dev.standingOf(user.id, second), "pending");
   });
+});
+
+describe("who the developer may work as", () => {
+  const live = { id: "t", role: "FINANCE", active: true, status: "ACTIVE" };
+  test("any live staff account, the owner included", () => {
+    assert.ok(canWorkAs(live, "dev"));
+    assert.ok(canWorkAs({ ...live, role: "ADMIN" }, "dev"));
+  });
+  test("never themselves, another developer, a customer, or a suspended or inactive account", () => {
+    assert.equal(canWorkAs({ ...live, id: "dev" }, "dev"), false);
+    assert.equal(canWorkAs({ ...live, role: "DEVELOPER" }, "dev"), false);
+    assert.equal(canWorkAs({ ...live, role: "CUSTOMER" }, "dev"), false);
+    assert.equal(canWorkAs({ ...live, status: "SUSPENDED" }, "dev"), false);
+    assert.equal(canWorkAs({ ...live, active: false }, "dev"), false);
+  });
+  test("a developer sign-in and a work-as both run out", () => {
+    const now = Date.now();
+    const hours = (n: number) => new Date(now - n * 3_600_000);
+    assert.equal(developerStanding("d", { userId: "d", mode: "DEVELOPER", endedAt: null, createdAt: hours(1) }, now), "active");
+    assert.equal(developerStanding("d", { userId: "d", mode: "DEVELOPER", endedAt: null, createdAt: hours(9) }, now), "none");
+    assert.equal(workAsLive(hours(3), now), true);
+    assert.equal(workAsLive(hours(5), now), false);
+    assert.equal(workAsLive(null, now), false);
+  });
+});
+
+describe("work as is recorded under the developer", () => {
+  test("the line names the developer, not the person worked as", () => {
+    const who = auditIdentity({
+      id: "finance-1", name: "Finance Officer", email: "f@x.test", role: "FINANCE", department: "FINANCE",
+      impersonatedBy: { id: "dev-1", name: "Dev", email: "dev@x.test" },
+    });
+    assert.equal(who.actorId, "dev-1");
+    assert.equal(who.actorType, "DEVELOPER");
+    assert.equal(who.actorName, "Dev");
+    assert.equal(who.actorDepartment, null);
+  });
+});
+
+describe("working as, against the database", () => {
+  test("starts only for eligible people, follows the session, and ends with it", async () => {
+    const stamp = Date.now();
+    const mk = (suffix: string, role: "FINANCE" | "ADMIN", extra: Record<string, unknown> = {}) =>
+      prisma.user.create({
+        data: { name: `Probe ${suffix}`, email: `probe-${suffix}-${stamp}@example.test`, passwordHash: "x", role, department: role === "ADMIN" ? "MANAGEMENT" : "FINANCE", ...extra },
+      });
+    const [devish, finance, suspended] = await Promise.all([
+      mk("dev", "ADMIN"),
+      mk("fin", "FINANCE"),
+      mk("sus", "FINANCE", { status: "SUSPENDED" }),
+    ]);
+    cleanup.push(devish.id, finance.id, suspended.id);
+
+    const sid = await dev.startDeveloperSession(devish.id, {});
+    assert.equal(await dev.startWorkingAs(devish.id, sid, finance.id), null, "not before developer mode is chosen");
+    await dev.enterDeveloperMode(devish.id, sid);
+
+    assert.equal(await dev.startWorkingAs(devish.id, sid, devish.id), null, "never themselves");
+    assert.equal(await dev.startWorkingAs(devish.id, sid, suspended.id), null, "never a suspended account");
+    assert.equal(await dev.workingAs(devish.id, sid), null);
+
+    assert.equal((await dev.startWorkingAs(devish.id, sid, finance.id))?.id, finance.id);
+    assert.equal((await dev.workingAs(devish.id, sid))?.id, finance.id);
+    assert.equal(await dev.workingAs("someone-else", sid), null, "another account cannot use this session");
+
+    await prisma.user.update({ where: { id: finance.id }, data: { status: "SUSPENDED" } });
+    assert.equal(await dev.workingAs(devish.id, sid), null, "ends the moment the person is suspended");
+    await prisma.user.update({ where: { id: finance.id }, data: { status: "ACTIVE" } });
+
+    assert.equal((await dev.workingAs(devish.id, sid))?.id, finance.id);
+    await dev.stopWorkingAs(devish.id, sid);
+    assert.equal(await dev.workingAs(devish.id, sid), null, "Stop ends it");
+
+    await dev.startWorkingAs(devish.id, sid, finance.id);
+    await dev.endDeveloperSession(devish.id, sid, "signed-out");
+    assert.equal(await dev.workingAs(devish.id, sid), null, "ending the session ends it");
+  });
+});
+
+describe("the developer's audit lines cannot be rewritten", () => {
+  test("update and delete are refused for the developer's, and allowed for staff's", () =>
+    inRollback(async (tx) => {
+      const dev1 = await tx.auditLog.create({ data: { action: "probe", entity: "Probe", summary: "dev", actorType: "DEVELOPER" } });
+      const staff = await tx.auditLog.create({ data: { action: "probe", entity: "Probe", summary: "staff", actorType: "STAFF" } });
+
+      await assert.rejects(() => tx.$executeRaw`UPDATE "AuditLog" SET "summary" = 'changed' WHERE "id" = ${dev1.id}`, /append-only/);
+    }));
+
+  test("a refused delete leaves the line there", async () => {
+    await assert.rejects(
+      () =>
+        prisma.$transaction(async (tx) => {
+          const row = await tx.auditLog.create({ data: { action: "probe", entity: "Probe", summary: "dev", actorType: "DEVELOPER" } });
+          await tx.$executeRaw`DELETE FROM "AuditLog" WHERE "id" = ${row.id}`;
+        }),
+      /append-only/
+    );
+  });
+
+  test("staff lines behave as they always did", () =>
+    inRollback(async (tx) => {
+      const staff = await tx.auditLog.create({ data: { action: "probe", entity: "Probe", summary: "staff", actorType: "STAFF" } });
+      await tx.auditLog.update({ where: { id: staff.id }, data: { summary: "edited" } });
+      await tx.auditLog.delete({ where: { id: staff.id } });
+    }));
 });

@@ -63,8 +63,16 @@ export async function recordAudit(input: AuditInput, tx?: TxClient) {
       action: input.action,
       entity: input.entity,
       entityId: input.entityId ?? null,
-      summary: input.summary,
-      metadata: input.metadata,
+      /* Said in words as well as stored, so the line reads true on any screen. */
+      summary: input.actor?.impersonatedBy
+        ? `${input.summary} (developer ${input.actor.impersonatedBy.name} working as ${input.actor.name})`
+        : input.summary,
+      metadata: input.actor?.impersonatedBy
+        ? ({
+            ...((input.metadata ?? {}) as Record<string, Prisma.InputJsonValue>),
+            workingAs: { id: input.actor.id, name: input.actor.name, role: input.actor.role },
+          } as Prisma.InputJsonValue)
+        : input.metadata,
     },
   });
 }
@@ -101,8 +109,11 @@ export async function recordFieldChange(
       field: input.field,
       oldValue: show(input.oldValue),
       newValue: show(input.newValue),
-      reason: input.reason ?? null,
-      actorId: input.actor?.id ?? null,
+      reason: input.actor?.impersonatedBy
+        ? `${input.reason ?? "No reason given"} (developer working as ${input.actor.name})`
+        : input.reason ?? null,
+      /* Under the developer while working as somebody — see auditIdentity. */
+      actorId: input.actor?.impersonatedBy?.id ?? input.actor?.id ?? null,
     },
   });
 }

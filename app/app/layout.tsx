@@ -3,6 +3,7 @@ import { DEPARTMENT_LABELS, ROLE_LABELS } from "@/lib/constants";
 import { homeFor, navigationFor } from "@/lib/nav";
 import { can } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { stopWorkAs } from "@/lib/actions/developer";
 import { requireStaff } from "@/lib/session";
 import { viewerLocale } from "@/lib/viewer-locale";
 
@@ -43,6 +44,21 @@ export default async function AppLayout({
           : null,
       }}
     >
+      {/* ALWAYS SAID: this is the developer, working as somebody, and what they
+          do is recorded as the developer. One press ends it. */}
+      {user.impersonatedBy ? (
+        <div className="sticky top-0 z-30 mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-warning px-4 py-2 text-xs font-medium text-white shadow-sm">
+          <span>
+            Working as {user.name} ({ROLE_LABELS[user.role]}) — everything you do is recorded as{" "}
+            {user.impersonatedBy.name} (Developer)
+          </span>
+          <form action={stopWorkAs}>
+            <button type="submit" className="rounded-full bg-white/20 px-3 py-1 font-semibold hover:bg-white/30">
+              Stop
+            </button>
+          </form>
+        </div>
+      ) : null}
       {children}
     </AppShell>
   );

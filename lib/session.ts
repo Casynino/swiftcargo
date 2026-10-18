@@ -4,7 +4,7 @@ import type { Department, Role } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { auditIdentity } from "@/lib/audit-identity";
-import { standingOf } from "@/lib/developer";
+import { standingOf, workingAs } from "@/lib/developer";
 import { prisma } from "@/lib/prisma";
 import { can, isStaff, type Permission } from "@/lib/rbac";
 
@@ -19,6 +19,12 @@ export type SessionUser = {
   customerId: string | null;
   /** "DEVELOPER" only for the developer account in developer mode. */
   accountType?: "DEVELOPER" | "STAFF";
+  /**
+   * Set while the developer is working as this person. The session IS that
+   * person — their role, their permissions, their menu — and this says who is
+   * really behind it, so everything recorded is recorded under the developer.
+   */
+  impersonatedBy?: { id: string; name: string; email: string } | null;
 };
 
 /**
@@ -90,6 +96,22 @@ async function viewer(): Promise<SessionUser | null> {
   if (user.role === "DEVELOPER") {
     const standing = await standingOf(user.id, session.user.sid);
     if (standing !== "active") return null;
+    /* WORKING AS. The target's own role and permissions apply, never the
+       developer's — a refusal for that person is a refusal. */
+    const target = await workingAs(user.id, session.user.sid);
+    if (target) {
+      return {
+        id: target.id,
+        name: target.name,
+        email: target.email,
+        role: target.role,
+        department: target.department,
+        warehouseId: target.warehouseId,
+        customerId: target.customerId,
+        accountType: "DEVELOPER",
+        impersonatedBy: { id: user.id, name: user.name, email: user.email },
+      };
+    }
   }
   return {
     id: user.id,
@@ -170,6 +192,20 @@ export async function authorize(permission: Permission): Promise<SessionUser> {
     throw new Error("You do not have permission to do that.");
   }
   return user;
+}
+
+/**
+ * The developer themselves, whatever they are working as — for the few things
+ * only the developer may do (start or stop working as someone). Null for
+ * anybody else, and for a developer who has not chosen developer mode.
+ */
+export async function realDeveloper() {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "DEVELOPER") return null;
+  if ((await standingOf(session.user.id, session.user.sid)) !== "active") return null;
+  const row = await liveUser(session.user.id);
+  if (!row || !row.active || row.status !== "ACTIVE") return null;
+  return { user: row, sid: session.user.sid! };
 }
 
 /**
