@@ -166,15 +166,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
 
-        /* The developer's sign-in proves who they are and opens a session that
-           holds NO privilege until they choose developer mode. Its id is what
-           the browser carries; what it may do is read from the database. */
+        /* The developer signs in here, like everybody. What it opens is a
+           server-side session whose id is all the browser carries; whether it
+           may act is read from the database on every request, and signing out
+           or a newer sign-in ends it. */
         const sid =
           user.role === "DEVELOPER"
-            ? await startDeveloperSession(user.id, {
-                ipAddress,
-                userAgent: head.get("user-agent"),
-              })
+            ? await startDeveloperSession(
+                user.id,
+                { ipAddress, userAgent: head.get("user-agent") },
+                true
+              )
             : undefined;
 
         await prisma.auditLog.create({
@@ -185,7 +187,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             entityId: user.id,
             summary:
               user.role === "DEVELOPER"
-                ? `${user.name} signed in to the developer account (account type not chosen yet)`
+                ? `${user.name} signed in to the developer account`
                 : `${user.name} signed in`,
             requestId: head.get("x-vercel-id") ?? undefined,
           },

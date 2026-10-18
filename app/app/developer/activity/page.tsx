@@ -12,7 +12,7 @@ import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Developer activity" };
+export const metadata: Metadata = { title: "Audit" };
 
 const PAGE = 50;
 const DAR = "Africa/Dar_es_Salaam";
@@ -101,8 +101,25 @@ export default async function DeveloperActivityPage({ searchParams }: { searchPa
     return `/app/developer/activity?${q.toString()}`;
   };
 
+  const chip = (label: string, extra: Record<string, string | undefined>, on: boolean) => (
+    <Link
+      href={link({ kind: "actions", type: undefined, outcome: undefined, page: undefined, ...extra })}
+      className={cn("rounded-full border px-3 py-1 text-xs font-medium", on ? "border-brand bg-brand/10 text-brand" : "bg-card hover:bg-secondary")}
+    >
+      {T(label)}
+    </Link>
+  );
+
   const tabs = (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {kind === "actions" ? (
+        <>
+          {chip("Everything", {}, !sp.type && !sp.outcome)}
+          {chip("Developer actions", { type: "DEVELOPER" }, sp.type === "DEVELOPER")}
+          {chip("Failures", { outcome: "FAILURE" }, sp.outcome === "FAILURE")}
+          <span className="mx-1 h-4 w-px bg-border" aria-hidden />
+        </>
+      ) : null}
       {([["actions", "Actions"], ["signins", "Sign-in attempts"]] as const).map(([k, label]) => (
         <Link
           key={k}
@@ -206,7 +223,7 @@ export default async function DeveloperActivityPage({ searchParams }: { searchPa
     });
     return (
       <div className="space-y-4">
-        <PageHeader title={T("Developer activity")} description={T("Every sign-in attempt, successful or not. Passwords are never recorded.")} />
+        <PageHeader title={T("Audit")} description={T("Every sign-in attempt, successful or not. Passwords are never recorded.")} />
         {tabs}
         {filters}
         <div className="overflow-x-auto rounded-xl border bg-card">
@@ -263,7 +280,7 @@ export default async function DeveloperActivityPage({ searchParams }: { searchPa
   return (
     <div className="space-y-4">
       <PageHeader
-        title={T("Developer activity")}
+        title={T("Audit")}
         description={T("Every action in the system and who did it. The developer account and staff accounts are never mixed: staff work is recorded under the staff member, whoever was at the keyboard.")}
       />
       {tabs}

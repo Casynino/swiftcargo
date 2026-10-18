@@ -189,6 +189,15 @@ describe("a developer's server-side session", () => {
     assert.equal(await dev.standingOf(user.id, undefined), "none");
   });
 
+  test("signing in can open developer mode at once — there is no second step", async () => {
+    const user = await prisma.user.create({
+      data: { name: "Direct Probe", email: `direct-${Date.now()}@example.test`, passwordHash: "x", role: "ADMIN", department: "MANAGEMENT" },
+    });
+    cleanup.push(user.id);
+    const sid = await dev.startDeveloperSession(user.id, {}, true);
+    assert.equal(await dev.standingOf(user.id, sid), "active");
+  });
+
   test("a new sign-in replaces the earlier one", async () => {
     const user = await prisma.user.create({
       data: { name: "Replace Probe", email: `replace-${Date.now()}@example.test`, passwordHash: "x", role: "ADMIN", department: "MANAGEMENT" },

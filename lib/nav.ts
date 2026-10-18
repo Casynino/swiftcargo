@@ -471,16 +471,16 @@ const ADMIN_SECTIONS: NavSection[] = [
   },
 ];
 
-/* The developer's own door, below everything the owner sees. Its permission is
-   held by the developer role alone, so it appears for nobody else. */
+/* THE DEVELOPER'S OWN MENU: four doors and nothing else. Everything else in
+   the system is reached by working as the person who uses it. */
 const DEVELOPER_SECTIONS: NavSection[] = [
-  ...ADMIN_SECTIONS,
   {
     label: "",
     icon: "",
     items: [
-      { label: "Work as", href: "/app/developer/users", icon: "UserCog", permissions: ["developer.activity"] },
-      { label: "Developer activity", href: "/app/developer/activity", icon: "History", permissions: ["developer.activity"] },
+      { label: "Audit", href: "/app/developer/activity", icon: "ScrollText", permissions: ["developer.activity"] },
+      { label: "Access", href: "/app/developer/users", icon: "ShieldCheck", permissions: ["developer.activity"] },
+      { label: "Business", href: "/app/developer/business", icon: "BarChart3", permissions: ["developer.activity"] },
     ],
   },
 ];
@@ -494,6 +494,7 @@ const ROLE_SECTIONS: Partial<Record<Role, NavSection[]>> = {
 
 /** Where Home takes this desk. Support's home is the support desk itself. */
 export function homeFor(role: Role | null | undefined): NavItem {
+  if (role === "DEVELOPER") return { ...HOME, href: "/app/developer", icon: "LayoutDashboard" };
   if (role === "CUSTOMER_SUPPORT") {
     return { ...HOME, href: "/app/support", icon: "Headset" };
   }

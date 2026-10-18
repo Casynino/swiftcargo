@@ -141,7 +141,7 @@ export async function requireUser(): Promise<SessionUser> {
       const held = await auth();
       if (held?.user?.id && held.user.role === "DEVELOPER") {
         const standing = await standingOf(held.user.id, held.user.sid);
-        if (standing === "pending") redirect("/login/choose");
+        if (standing === "pending") redirect("/login");
         if (standing === "none") redirect("/login?revoked=1&reason=session-ended");
       }
     }

@@ -28,7 +28,9 @@ import { prisma, type TxClient } from "@/lib/prisma";
 /** A new sign-in replaces any earlier one: one live developer session at a time. */
 export async function startDeveloperSession(
   userId: string,
-  context: { ipAddress?: string | null; userAgent?: string | null }
+  context: { ipAddress?: string | null; userAgent?: string | null },
+  /** True: the sign-in is developer mode from the start — there is no second step. */
+  activate = false
 ): Promise<string> {
   return prisma.$transaction(async (tx) => {
     await tx.developerSession.updateMany({
@@ -38,7 +40,8 @@ export async function startDeveloperSession(
     const row = await tx.developerSession.create({
       data: {
         userId,
-        mode: "PENDING",
+        mode: activate ? "DEVELOPER" : "PENDING",
+        chosenAt: activate ? new Date() : null,
         ipAddress: context.ipAddress ?? null,
         userAgent: context.userAgent?.slice(0, 500) ?? null,
       },

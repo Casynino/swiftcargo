@@ -152,6 +152,10 @@ export default async function DashboardPage() {
      a call, rather than the warehouse's floor charts. */
   if (user.role === "CUSTOMER_SUPPORT") redirect("/app/support");
 
+  /* The developer lands in the control room — unless working as somebody, when
+     the session IS that person and gets that person's own home. */
+  if (user.role === "DEVELOPER" && !user.impersonatedBy) redirect("/app/developer");
+
   /* The manager's home is the whole business on one screen, and it lives at
      /app/manager so the sidebar and the landing page are the same place. */
   if (user.role === "MANAGER") redirect("/app/manager");
