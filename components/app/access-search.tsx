@@ -33,11 +33,11 @@ export function AccessSearch({ initial = "" }: { initial?: string }) {
         name="q"
         defaultValue={initial}
         onChange={(e) => filter(e.target.value)}
-        placeholder={tx("Search by name, email or role")}
+        placeholder={tx("Search by name, email or role — or a customer’s name or phone")}
         className="h-full w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
       />
     </label>
-    <p className="text-xs text-muted-foreground">{tx("Press Enter to also find a customer’s sign-in account.")}</p>
+    <p className="text-xs text-muted-foreground">{tx("Press Enter to also find a customer by name or phone number.")}</p>
     </form>
   );
 }

@@ -7,7 +7,7 @@ import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { ROLE_LABELS } from "@/lib/constants";
 import { startWorkAs } from "@/lib/actions/developer";
 import { canWorkAs } from "@/lib/developer-mode";
-import { DELETED_DOMAIN } from "@/lib/developer-accounts";
+import { DELETED_DOMAIN, isDeletedEmail } from "@/lib/developer-accounts";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -44,6 +44,9 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   const dev = await requirePermission("developer.activity");
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().slice(0, 60);
+  /* A number is typed many ways: 0712 345 678, +255 712 345 678, 712345678. */
+  const digits = q.replace(/[^\d]/g, "");
+  const phoneParts = digits.length >= 4 ? Array.from(new Set([digits, digits.replace(/^0+/, "")].filter((v) => v.length >= 4))) : [];
   const [people, suspendedByMe, warehouses, customers] = await Promise.all([
     prisma.user.findMany({
       where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, NOT: { email: { endsWith: `@${DELETED_DOMAIN}` } } },
@@ -53,15 +56,23 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
     prisma.auditLog.findMany({ where: { action: "developer.suspend", actorId: dev.id }, select: { entityId: true } }),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
     q
-      ? prisma.user.findMany({
+      ? prisma.customer.findMany({
           where: {
-            role: "CUSTOMER",
-            NOT: { email: { endsWith: `@${DELETED_DOMAIN}` } },
-            OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { phone: { contains: q } }],
+            deletedAt: null,
+            OR: [
+              { fullName: { contains: q, mode: "insensitive" } },
+              { businessName: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" } },
+              ...phoneParts.flatMap((v) => [{ phone: { contains: v } }, { altPhone: { contains: v } }]),
+            ],
           },
-          orderBy: { name: "asc" },
+          orderBy: { fullName: "asc" },
           take: 25,
-          select: { id: true, name: true, email: true, role: true, active: true, status: true, lastLoginAt: true },
+          select: {
+            id: true, fullName: true, businessName: true, phone: true, code: true,
+            login: { select: { id: true, email: true, status: true, active: true, lastLoginAt: true } },
+          },
         })
       : Promise.resolve([]),
   ]);
@@ -85,28 +96,34 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
 
       {q ? (
         <section className="space-y-2">
-          <h2 className="font-semibold">{T("Customers’ sign-in accounts")} · {customers.length}</h2>
+          <h2 className="font-semibold">{T("Customers")} · {customers.length}</h2>
           {customers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{T("No customer account matches.")}</p>
+            <p className="text-sm text-muted-foreground">{T("No customer matches that name or number.")}</p>
           ) : (
             <div className="divide-y rounded-2xl border bg-card">
-              {customers.map((c) => (
-                <div key={c.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 text-sm font-semibold">
-                      {c.name}
-                      <span className={cn("text-xs font-medium", c.status === "SUSPENDED" ? "text-destructive" : "text-success")}>{c.status === "SUSPENDED" ? T("Suspended") : T("Active")}</span>
-                      <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-[11px] font-medium text-brand">{T("Customer")}</span>
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">{c.email}</p>
-                    <p className="text-xs text-muted-foreground">{T("Last signed in")} {ago(c.lastLoginAt)}</p>
+              {customers.map((c) => {
+                const login = c.login && !isDeletedEmail(c.login.email) ? c.login : null;
+                const suspended = login?.status === "SUSPENDED";
+                return (
+                  <div key={c.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                        {c.businessName || c.fullName}
+                        {login ? <span className={cn("text-xs font-medium", suspended ? "text-destructive" : "text-success")}>{suspended ? T("Suspended") : T("Active")}</span> : null}
+                        <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-[11px] font-medium text-brand">{T("Customer")}</span>
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">{c.businessName ? `${c.fullName} · ` : ""}{c.phone} · {c.code}</p>
+                      <p className="text-xs text-muted-foreground">{login ? `${login.email} · ${T("Last signed in")} ${ago(login.lastLoginAt)}` : T("No sign-in account")}</p>
+                    </div>
+                    {login ? (
+                      <div className="flex items-center gap-2">
+                        {suspended ? (mine.has(login.id) ? <ReactivateForm userId={login.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={login.id} name={c.businessName || c.fullName} />}
+                        <DeleteForm userId={login.id} name={c.businessName || c.fullName} />
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {c.status === "SUSPENDED" ? (mine.has(c.id) ? <ReactivateForm userId={c.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={c.id} name={c.name} />}
-                    <DeleteForm userId={c.id} name={c.name} />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
