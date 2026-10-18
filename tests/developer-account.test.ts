@@ -330,20 +330,22 @@ describe("the developer's audit lines cannot be rewritten", () => {
 });
 
 describe("deleting an account", () => {
-  test("scrubs what is personal, keeps the row, and the account can never sign in", () =>
+  test("removes the way in and keeps the name and everything recorded", () =>
     inRollback(async (tx) => {
-      const { scrubAccount, isDeletedEmail, DELETED_NAME } = await import("@/lib/developer-accounts");
-      const u = await tx.user.create({ data: { name: "Real Person", email: "real@example.test", phone: "+255700000000", passwordHash: "secret-hash", role: "FINANCE", department: "FINANCE" } });
-      await tx.notification.create({ data: { userId: u.id, kind: "probe", title: "hello", body: "x" } });
-      await scrubAccount(tx, u.id);
+      const { removeAccess, isDeletedEmail } = await import("@/lib/developer-accounts");
+      const u = await tx.user.create({ data: { name: "Real Person", email: "real@example.test", passwordHash: "secret-hash", role: "FINANCE", department: "FINANCE" } });
+      const note = await tx.notification.create({ data: { userId: u.id, kind: "probe", title: "hello", body: "x" } });
+      const line = await tx.auditLog.create({ data: { action: "probe", entity: "Probe", summary: "did a thing", actorType: "STAFF", actorId: u.id, actorName: "Real Person" } });
+      await removeAccess(tx, u.id);
       const after = await tx.user.findUniqueOrThrow({ where: { id: u.id } });
-      assert.equal(after.name, DELETED_NAME);
-      assert.ok(isDeletedEmail(after.email));
-      assert.equal(after.phone, null);
+      assert.equal(after.name, "Real Person", "the name stays on what they did");
+      assert.equal(after.role, "FINANCE");
+      assert.ok(isDeletedEmail(after.email), "the address is freed");
       assert.notEqual(after.passwordHash, "secret-hash");
       assert.equal(after.active, false);
       assert.equal(after.status, "INACTIVE");
-      assert.equal(await tx.notification.count({ where: { userId: u.id } }), 0);
+      assert.equal((await tx.auditLog.findUniqueOrThrow({ where: { id: line.id } })).actorId, u.id, "their record still points at them");
+      assert.ok(await tx.notification.findUnique({ where: { id: note.id } }));
     }));
 
   test("the last active owner is protected; with another owner it is not", () =>

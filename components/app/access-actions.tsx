@@ -54,8 +54,8 @@ export function DeleteForm({ userId, name }: { userId: string; name: string }) {
       </summary>
       <form action={action} className="absolute right-0 z-20 mt-2 w-72 space-y-2 rounded-xl border bg-card p-3 shadow-lg">
         <input type="hidden" name="userId" value={userId} />
-        <p className="text-sm font-medium">Delete {name} for good?</p>
-        <p className="text-xs text-muted-foreground">They can never sign in again. Records that name them stay, as “Deleted account”. This cannot be undone.</p>
+        <p className="text-sm font-medium">Delete {name}’s account?</p>
+        <p className="text-xs text-muted-foreground">They lose all access and can never sign in again. Everything they recorded stays, under their name.</p>
         <input name="reason" required placeholder="Why" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
         <input name="confirm" required placeholder="Type DELETE" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
         {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}

@@ -1,17 +1,16 @@
 import type { Prisma } from "@prisma/client";
 
 /**
- * A DELETED ACCOUNT IS GONE FROM EVERY SCREEN AND CAN NEVER SIGN IN — BUT THE
- * ROW STAYS WHEN THE BOOKS POINT AT IT.
+ * DELETING AN ACCOUNT TAKES AWAY ACCESS, NEVER THE RECORD.
  *
- * A payment verified by this person, a bill issued by them, a check-in they
- * counted: those records name a user id, and the books must keep saying who. So
- * a person with any history is scrubbed rather than removed — name, address,
- * phone and password go, the id stays and reads "Deleted account". Only an
- * account that never did anything is removed outright.
+ * Whatever this person recorded — payments checked, cargo received, bills
+ * issued, messages sent — is the business's history and keeps saying who did
+ * it, by name. So the row stays and only the way in goes: the password is
+ * made unusable, the sign-in address is freed (so it can be used again), the
+ * account is switched off and every list that offers a person to pick leaves
+ * it out. The address it had is kept in the developer's audit line.
  */
 export const DELETED_DOMAIN = "deleted.invalid";
-export const DELETED_NAME = "Deleted account";
 
 export const isDeletedEmail = (email: string) => email.endsWith(`@${DELETED_DOMAIN}`);
 
@@ -24,19 +23,15 @@ export async function wouldLeaveNoOwner(db: Db, target: { id: string; role: stri
   return others === 0;
 }
 
-export async function scrubAccount(db: Db, id: string) {
-  await db.notification.deleteMany({ where: { userId: id } });
+export async function removeAccess(db: Db, id: string) {
   await db.user.update({
     where: { id },
     data: {
-      name: DELETED_NAME,
       email: `deleted-${id}@${DELETED_DOMAIN}`,
-      phone: null,
       passwordHash: "!deleted",
       status: "INACTIVE",
       active: false,
       customerId: null,
-      warehouseId: null,
     },
   });
 }

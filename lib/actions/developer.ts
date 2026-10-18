@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { recordAudit } from "@/lib/audit";
 import { startWorkingAs, stopWorkingAs, workingAs } from "@/lib/developer";
-import { isDeletedEmail, scrubAccount, wouldLeaveNoOwner } from "@/lib/developer-accounts";
+import { isDeletedEmail, removeAccess, wouldLeaveNoOwner } from "@/lib/developer-accounts";
 import { prisma } from "@/lib/prisma";
 import { realDeveloper } from "@/lib/session";
 
@@ -116,13 +116,13 @@ export async function reactivateAccount(_prev: AccessState, formData: FormData):
 }
 
 /**
- * DELETE AN ACCOUNT FOR GOOD, WITH A REASON AND THE WORD DELETE.
+ * DELETE AN ACCOUNT: REMOVE THE PERSON'S WAY IN, KEEP EVERYTHING THEY DID.
  *
  * Any account but another developer's, one's own, or the last active owner's.
- * It can never sign in again and disappears from every list. When the books
- * name the person, the row stays as "Deleted account" with nothing personal
- * left on it (lib/developer-accounts.ts); an account that never did anything
- * is removed outright. Recorded under the developer first, with who it was.
+ * They can never sign in again and disappear from every list, but the records
+ * they made — payments, receiving, bills, messages — stay exactly as they
+ * were, under their name (lib/developer-accounts.ts). Recorded under the
+ * developer first, with who it was and the address they signed in with.
  */
 export async function deleteAccount(_prev: AccessState, formData: FormData): Promise<AccessState> {
   const dev = await realDeveloper();
@@ -138,26 +138,15 @@ export async function deleteAccount(_prev: AccessState, formData: FormData): Pro
   }
   if (await wouldLeaveNoOwner(prisma, target)) return { error: "That is the only active owner account. Open another owner account first." };
 
-  const history = await prisma.auditLog.count({ where: { actorId: id } });
-  let removed = false;
-  if (history === 0) {
-    try {
-      await prisma.user.delete({ where: { id } });
-      removed = true;
-    } catch {
-      /* something still names this account: keep the row and scrub it below */
-    }
-  }
-  if (!removed) await prisma.$transaction((tx) => scrubAccount(tx, id));
-
+  await prisma.$transaction((tx) => removeAccess(tx, id));
   await recordAudit({
     actor: dev.user,
     action: "developer.delete",
     entity: "User",
     entityId: id,
-    summary: `${dev.user.name} deleted ${target.name} (${target.role}) — ${reason}`,
-    metadata: { reason, was: { name: target.name, email: target.email, role: target.role }, how: removed ? "removed" : "scrubbed" },
+    summary: `${dev.user.name} deleted the account of ${target.name} (${target.role}) — ${reason}`,
+    metadata: { reason, was: { name: target.name, email: target.email, role: target.role } },
   });
   revalidatePath("/app/developer/users");
-  return { ok: `${target.name} is deleted.` };
+  return { ok: `${target.name}'s account is deleted. What they recorded is kept.` };
 }
