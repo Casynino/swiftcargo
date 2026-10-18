@@ -6,7 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { readUpload } from "@/lib/storage";
 
 /**
- * WHAT IS WRONG, AND WHAT TO DO ABOUT IT.
+ * WHAT IS WRONG WITH THE SYSTEM, AND WHAT TO DO ABOUT IT.
+ *
+ * Only the system's own faults — errors, jobs that stopped, data that
+ * disagrees with itself, settings that are missing. Never the business's
+ * to-dos (a payment awaiting verification, a rate to refresh): those belong
+ * to Finance and the floors, and are not the developer's to chase.
  *
  * Each check looks for one way this system goes wrong — a bill that disagrees
  * with its payments, a count that disagrees with its lines, storage not being
@@ -138,21 +143,6 @@ const chinaCount: Check = async () => {
   ];
 };
 
-const noAccount: Check = async () => {
-  const n = await prisma.payment.count({ where: { status: "VERIFIED", accountId: null, writtenOff: false } });
-  if (n === 0) return [];
-  return [
-    {
-      key: "no-account",
-      tone: "look",
-      title: `${plural(n, "verified payment")} with no account`,
-      detail: "Money was verified but nobody said which account it reached. It is on the bill but missing from every account's balance, so the books will not add up.",
-      fix: "Open the ledger to find it. To name the account, work as Finance.", workAs: "FINANCE",
-      href: "/app/finance/ledger",
-    },
-  ];
-};
-
 const storageNotCharging: Check = async () => {
   const company = await prisma.companySetting.findUnique({ where: { id: "singleton" }, select: { freeStorageDays: true, storagePerDay: true } });
   if (!company || Number(company.storagePerDay) <= 0) return [];
@@ -178,15 +168,6 @@ const storageNotCharging: Check = async () => {
       lines: bills.slice(0, 5).map((b) => `${b.number} · ${b.cargo.reference}`),
     },
   ];
-};
-
-const exchangeRate: Check = async () => {
-  const rate = await prisma.exchangeRate.findFirst({ where: { active: true, fromCurrency: "USD", toCurrency: "TZS" }, select: { id: true } });
-  if (!rate) {
-    return [{ key: "rate", tone: "fix", title: "There is no exchange rate", detail: "No bill can be issued and no shilling payment can be valued without one.", fix: "Set today's rate in Finance → Rates.", href: "/app/finance/exchange-rate" }];
-  }
-  /* An old rate is Finance's to refresh. Only a missing one stops the system. */
-  return [];
 };
 
 const contradiction: Check = async () => {
@@ -215,7 +196,7 @@ const missingSettings: Check = async () => {
   return [{ key: "env", tone: "fix", title: `${plural(missing.length, "required setting")} missing`, detail: "Parts of the system will not work without these.", fix: "Add them in Vercel → Settings → Environment Variables, then redeploy.", lines: missing }];
 };
 
-const ALL: Check[] = [errors, photos, invoiceStatus, invoiceTotals, chinaCount, noAccount, storageNotCharging, exchangeRate, contradiction, missingSettings];
+const ALL: Check[] = [errors, photos, invoiceStatus, invoiceTotals, chinaCount, storageNotCharging, contradiction, missingSettings];
 
 export async function systemChecks(): Promise<Finding[]> {
   const settled = await Promise.allSettled(ALL.map((c) => c()));

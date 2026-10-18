@@ -62,7 +62,7 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
 export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await primeLocale();
   const sp = await searchParams;
-  const tab = ["activity", "messages", "speed", "security", "settings", "people"].includes(sp.tab ?? "") ? (sp.tab as string) : "business";
+  const tab = ["business", "messages", "speed", "security", "settings", "people"].includes(sp.tab ?? "") ? (sp.tab as string) : "activity";
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
@@ -268,17 +268,17 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
 
       <nav className="flex flex-wrap gap-2">
         {([
-          ["business", "Cargo & money", null],
           ["activity", "Activity", null],
-          ["messages", "Messages", null],
           ["speed", "Speed & size", `${speed.avg} ms`],
           ["security", "Sign-ins & security", null],
           ["settings", "Settings", envMissing > 0 ? String(envMissing) : null],
+          ["messages", "Messages", null],
           ["people", "People & my actions", null],
+          ["business", "Business (read only)", null],
         ] as const).map(([k, label, badge]) => (
           <Link
             key={k}
-            href={k === "business" ? "/app/developer" : `/app/developer?tab=${k}`}
+            href={k === "activity" ? "/app/developer" : `/app/developer?tab=${k}`}
             className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
           >
             {T(label)}
@@ -523,13 +523,11 @@ function MessagesTab({ m }: { m: Awaited<ReturnType<typeof messagesPulse>> }) {
   const sent = one("Messages", "bg-brand");
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <Kpi label="Told to customers" value={String(m.total)} caption="messages in 14 days" tag="Customers" tone="info"
           explain="Every message the system sent to a customer's portal — cargo received, on the way, arrived, cleared, bill issued, ready for pickup." />
         <Kpi label="Opened" value={m.total ? `${Math.round((m.read / m.total) * 100)}%` : "—"} caption={`${m.read} of ${m.total} read`} tag="Reach" tone="good"
           explain="How many of those messages the customer has actually opened. A low figure means customers are not looking at the portal." />
-        <Kpi label="Staff alerts waiting" value={String(m.unreadStaff)} caption="unread by the team" tag={m.unreadStaff > 10 ? "Look" : "Quiet"} tone={m.unreadStaff > 10 ? "warn" : "good"}
-          explain="Alerts sent to staff — a payment to verify, cargo to check in — that nobody has opened yet." />
       </div>
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <Card title="Messages to customers per day" hint="Last 14 days.">
