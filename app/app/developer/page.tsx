@@ -209,6 +209,23 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
                   {f.fix ? (
                     <p className="mt-3 pl-8 text-sm"><span className="font-semibold">{T("What to do:")}</span> {f.fix}</p>
                   ) : null}
+                  {f.href || f.workAs ? (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 pl-8">
+                      {f.href ? (
+                        <Link href={f.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Look at it")}</Link>
+                      ) : null}
+                      {(() => {
+                        const who = f.workAs ? people.find((p) => p.role === f.workAs) : null;
+                        return who ? (
+                          <form action={startWorkAs}>
+                            <input type="hidden" name="userId" value={who.id} />
+                            {f.href ? <input type="hidden" name="next" value={f.href} /> : null}
+                            <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {who.name.split(" ")[0]} · {ROLE_LABELS[who.role as keyof typeof ROLE_LABELS]}</button>
+                          </form>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : null}
                   {f.items?.length ? (
                     <ul className="mt-3 space-y-2 pl-8">
                       {f.items.map((it, i) => (
@@ -233,10 +250,6 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
                         </li>
                       ))}
                     </ul>
-                  ) : f.href ? (
-                    <div className="mt-3 pl-8">
-                      <Link href={f.href} className="inline-flex rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Open it")} →</Link>
-                    </div>
                   ) : null}
                 </details>
               );

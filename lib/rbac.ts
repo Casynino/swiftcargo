@@ -606,16 +606,46 @@ const MANAGER: Permission[] = ALL.filter(
 const CUSTOMER: Permission[] = [];
 
 /**
- * THE DEVELOPER'S PERMISSIONS, WRITTEN OUT.
+ * THE DEVELOPER LOOKS; THE DEVELOPER DOES NOT OPERATE.
  *
- * Everything the owner can do, so the system can be inspected and run at every
- * desk — and the one permission that is the developer's alone. Nothing here
- * switches off a financial rule: those live in the actions and the database,
- * and are asked of whoever holds the permission. The role only opens the door;
- * it does not move the walls. It is also not reachable at all until the
- * developer has chosen developer mode — see lib/developer.ts.
+ * The developer's own work is the system: seeing what is wrong, opening
+ * accounts, and working as somebody to test or to help. It is not the
+ * business's work. So the developer's own permissions are every way of LOOKING
+ * at the business and none of the ways of changing it — no verifying a
+ * payment, pricing, clearing, releasing, editing cargo. To do any of that the
+ * developer works as the person who does, and then it is that person's
+ * permissions that apply, recorded under the developer.
+ *
+ * Opening accounts (user.manage) and the developer's own pages are the two
+ * things that are the developer's alone to do.
  */
-const DEVELOPER: Permission[] = [...ALL, "developer.activity"];
+const DEVELOPER: Permission[] = [
+  "cargo.view",
+  "cargo.viewAll",
+  "cargo.viewInternal",
+  "deliveryNote.view",
+  "inventory.view",
+  "warehouse.reports",
+  "container.view",
+  "packingList.view",
+  "shipment.view",
+  "finance.view",
+  "accounting.view",
+  "rate.view",
+  "expense.view",
+  "profit.view",
+  "release.view",
+  "exception.view",
+  "customer.view",
+  "conversation.view",
+  "request.view",
+  "search.global",
+  "report.view",
+  "audit.view",
+  "records.viewDeleted",
+  "user.manage",
+  "developer.activity",
+];
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ADMIN: ALL,

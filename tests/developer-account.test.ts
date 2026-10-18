@@ -17,11 +17,24 @@ import { ROLE_PERMISSIONS, can } from "@/lib/rbac";
 */
 
 describe("the developer's permissions", () => {
-  test("hold everything the owner holds", () => {
-    for (const permission of ROLE_PERMISSIONS.ADMIN) assert.ok(can("DEVELOPER", permission), permission);
+  test("look at everything the business holds", () => {
+    for (const p of ["cargo.view", "finance.view", "accounting.view", "audit.view", "customer.view", "release.view", "expense.view"] as const) {
+      assert.ok(can("DEVELOPER", p), p);
+    }
   });
 
-  test("and the activity view is the developer's alone", () => {
+  test("change nothing operational — that is done by working as the person who does it", () => {
+    for (const p of [
+      "payment.verify", "payment.record", "invoice.priceConfirm", "invoice.issue", "invoice.discount", "cargo.clear",
+      "release.execute", "cargo.edit", "cargo.delete", "cargo.amendDar", "container.arrive", "container.depart",
+      "expense.record", "payroll.approve", "settings.manage", "cbm.override", "receiving.dar", "receiving.china",
+    ] as const) {
+      assert.equal(can("DEVELOPER", p), false, p);
+    }
+  });
+
+  test("open accounts, and own the developer pages — alone", () => {
+    assert.ok(can("DEVELOPER", "user.manage"));
     assert.ok(can("DEVELOPER", "developer.activity"));
     for (const role of ["ADMIN", "MANAGER", "FINANCE", "CUSTOMER_SUPPORT", "CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER"] as const) {
       assert.equal(can(role, "developer.activity"), false, role);

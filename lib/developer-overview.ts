@@ -22,6 +22,8 @@ export type Finding = {
   href?: string;
   /** What to do about it, in plain words. */
   fix?: string;
+  /** Who to work as to make the change — the developer looks, they operate. */
+  workAs?: string;
   /** Plain examples behind a count — the first few of what is wrong. */
   lines?: string[];
   /** The individual things behind a count, so the card says what they are. */
