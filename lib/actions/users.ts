@@ -144,7 +144,9 @@ export async function createUser(
 
   // No transaction needed: this account does not exist yet, so there is no row
   // whose role could change underneath the check.
-  if (role === OWNER && actor.role !== OWNER) {
+  /* The owner opens the owner's own kind of account — and so does the
+     developer, who opens every account. Nobody else can. */
+  if (role === OWNER && actor.role !== OWNER && actor.role !== "DEVELOPER") {
     await recordAudit({
       actor,
       action: "user.escalationBlocked",
@@ -242,6 +244,7 @@ export async function createUser(
   });
 
   revalidatePath("/app/admin/users");
+  revalidatePath("/app/developer/users");
   return { ok: `${user.name} can now sign in.` };
 }
 

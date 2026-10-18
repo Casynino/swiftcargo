@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, Warehouse } from "lucide-react";
+import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, UserPlus, Warehouse } from "lucide-react";
 
 import { ReactivateForm, SuspendForm } from "@/components/app/access-actions";
+import { NewUserForm } from "@/components/app/new-user-form";
+import { localeOf } from "@/lib/viewer-locale";
 import { startWorkAs } from "@/lib/actions/developer";
 import { canWorkAs } from "@/lib/developer-mode";
 import { prisma } from "@/lib/prisma";
@@ -39,13 +41,15 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
   await primeLocale();
   const dev = await requirePermission("developer.activity");
   const sp = await searchParams;
-  const [people, suspendedByMe] = await Promise.all([
+  const [people, suspendedByMe, warehouses, locale] = await Promise.all([
     prisma.user.findMany({
       where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true, role: true, active: true, status: true, lastLoginAt: true },
     }),
     prisma.auditLog.findMany({ where: { action: "developer.suspend", actorId: dev.id }, select: { entityId: true } }),
+    prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
+    localeOf(dev.id),
   ]);
   const mine = new Set(suspendedByMe.map((r) => r.entityId));
 
@@ -57,6 +61,22 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
           {people.length} {T("accounts. Pick a person and press “Work as” to open their screens exactly as they see them — without their password. Everything you do is recorded under your name.")}
         </p>
       </header>
+
+      {/* Opening an account: the same form the owner uses, with every role —
+          the owner's own included — because the developer opens them all. */}
+      <details className="group rounded-2xl border bg-card">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4">
+          <span className="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand"><UserPlus className="size-5" /></span>
+          <span className="flex-1">
+            <span className="block font-semibold">{T("Add an account")}</span>
+            <span className="block text-sm text-muted-foreground">{T("Name, email, role and a password. They can sign in straight away.")}</span>
+          </span>
+          <span className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-brand-foreground group-open:hidden">{T("Add")}</span>
+        </summary>
+        <div className="border-t p-2">
+          <NewUserForm warehouses={warehouses} actorIsOwner locale={locale} />
+        </div>
+      </details>
 
       {sp.refused ? (
         <p className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
