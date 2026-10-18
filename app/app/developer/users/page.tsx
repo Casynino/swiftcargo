@@ -81,7 +81,36 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
         <AddAccountDialog warehouses={warehouses} />
       </header>
 
-      <AccessSearch />
+      <AccessSearch initial={q} />
+
+      {q ? (
+        <section className="space-y-2">
+          <h2 className="font-semibold">{T("Customers’ sign-in accounts")} · {customers.length}</h2>
+          {customers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{T("No customer account matches.")}</p>
+          ) : (
+            <div className="divide-y rounded-2xl border bg-card">
+              {customers.map((c) => (
+                <div key={c.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      {c.name}
+                      <span className={cn("text-xs font-medium", c.status === "SUSPENDED" ? "text-destructive" : "text-success")}>{c.status === "SUSPENDED" ? T("Suspended") : T("Active")}</span>
+                      <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-[11px] font-medium text-brand">{T("Customer")}</span>
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{c.email}</p>
+                    <p className="text-xs text-muted-foreground">{T("Last signed in")} {ago(c.lastLoginAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.status === "SUSPENDED" ? (mine.has(c.id) ? <ReactivateForm userId={c.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={c.id} name={c.name} />}
+                    <DeleteForm userId={c.id} name={c.name} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {sp.refused ? (
         <p className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
@@ -152,36 +181,6 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
           </section>
         );
       })}
-      <section className="space-y-2">
-        <h2 className="font-semibold">{T("Customers’ sign-in accounts")}</h2>
-        <form className="flex gap-2">
-          <input name="q" defaultValue={q} placeholder={T("Search by name, email or phone")} className="h-10 w-full max-w-sm rounded-lg border bg-background px-3 text-sm" />
-          <button className="h-10 rounded-lg border px-4 text-sm font-medium hover:bg-secondary">{T("Search")}</button>
-        </form>
-        {q ? (
-          customers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{T("No customer account matches.")}</p>
-          ) : (
-            <div className="divide-y rounded-2xl border bg-card">
-              {customers.map((c) => (
-                <div key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 text-sm font-semibold">{c.name}<span className={cn("text-xs font-medium", c.status === "SUSPENDED" ? "text-destructive" : "text-success")}>{c.status === "SUSPENDED" ? T("Suspended") : T("Active")}</span></p>
-                    <p className="truncate text-xs text-muted-foreground">{c.email} · {T("Last signed in")} {ago(c.lastLoginAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {c.status === "SUSPENDED" ? (mine.has(c.id) ? <ReactivateForm userId={c.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={c.id} name={c.name} />}
-                    <DeleteForm userId={c.id} name={c.name} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )
-        ) : (
-          <p className="text-sm text-muted-foreground">{T("Search to find a customer’s login. Their cargo and bills are not touched.")}</p>
-        )}
-      </section>
-      <p className="flex items-center gap-2 text-xs text-muted-foreground"><Package className="size-3.5" />{T("Customer logins are found by search above; their records are managed from Customers.")}</p>
     </div>
   );
 }

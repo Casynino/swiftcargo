@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Search } from "lucide-react";
 
 import { useT } from "@/components/app/locale-provider";
@@ -8,7 +9,7 @@ import { useT } from "@/components/app/locale-provider";
  * Narrows the people already on the page as you type — name, email or role.
  * It only hides rows; nothing is fetched and nothing changes.
  */
-export function AccessSearch() {
+export function AccessSearch({ initial = "" }: { initial?: string }) {
   const tx = useT();
   function filter(value: string) {
     const q = value.trim().toLowerCase();
@@ -20,15 +21,23 @@ export function AccessSearch() {
       group.style.display = any ? "" : "none";
     });
   }
+  useEffect(() => {
+    if (initial) filter(initial);
+  }, [initial]);
   return (
+    <form method="get" className="space-y-1.5">
     <label className="flex h-12 w-full max-w-xl items-center gap-3 rounded-xl border bg-card px-4 focus-within:border-brand/60">
       <Search className="size-4 shrink-0 text-muted-foreground" />
       <input
         type="search"
+        name="q"
+        defaultValue={initial}
         onChange={(e) => filter(e.target.value)}
         placeholder={tx("Search by name, email or role")}
         className="h-full w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
       />
     </label>
+    <p className="text-xs text-muted-foreground">{tx("Press Enter to also find a customer’s sign-in account.")}</p>
+    </form>
   );
 }
