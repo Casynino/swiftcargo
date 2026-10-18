@@ -1,31 +1,70 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { Trash2, UserRoundX, UserRoundCheck } from "lucide-react";
 
+import { Modal } from "@/components/app/modal";
 import { deleteAccount, reactivateAccount, suspendAccount, type AccessState } from "@/lib/actions/developer";
 
-/** Suspend: a reason and the word CONFIRM, so it cannot be an accident. */
-export function SuspendForm({ userId, name }: { userId: string; name: string }) {
-  const [state, action, pending] = useActionState<AccessState, FormData>(suspendAccount, {});
+/** One question, two buttons: nothing to type. */
+function ConfirmDialog({
+  trigger,
+  tone,
+  title,
+  body,
+  confirmLabel,
+  userId,
+  action,
+}: {
+  trigger: React.ReactNode;
+  tone: "neutral" | "danger";
+  title: string;
+  body: string;
+  confirmLabel: string;
+  userId: string;
+  action: (prev: AccessState, formData: FormData) => Promise<AccessState>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState<AccessState, FormData>(action, {});
+  const close = useCallback(() => setOpen(false), []);
+  useEffect(() => {
+    if (state.ok) setOpen(false);
+  }, [state]);
   return (
-    <details className="relative">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">
-        <UserRoundX className="size-4" />
-        Suspend
-      </summary>
-      <form action={action} className="absolute right-0 z-20 mt-2 w-72 space-y-2 rounded-xl border bg-card p-3 shadow-lg">
-        <input type="hidden" name="userId" value={userId} />
-        <p className="text-sm font-medium">Suspend {name}?</p>
-        <input name="reason" required placeholder="Why" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
-        <input name="confirm" required placeholder="Type CONFIRM" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
-        {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}
-        {state.ok ? <p className="text-xs text-success">{state.ok}</p> : null}
-        <button disabled={pending} className="h-9 w-full rounded-lg bg-destructive text-sm font-medium text-destructive-foreground disabled:opacity-50">
-          {pending ? "Suspending…" : "Suspend"}
-        </button>
-      </form>
-    </details>
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={tone === "danger" ? "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10" : "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"}>
+        {trigger}
+      </button>
+      {open ? (
+        <Modal title={title} onClose={close} className="max-w-md">
+          <p className="text-sm text-muted-foreground">{body}</p>
+          <form action={formAction} className="space-y-3">
+            <input type="hidden" name="userId" value={userId} />
+            {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={close} className="h-10 rounded-lg border px-4 text-sm font-medium hover:bg-secondary">Cancel</button>
+              <button disabled={pending} className="h-10 rounded-lg bg-destructive px-4 text-sm font-semibold text-destructive-foreground disabled:opacity-50">
+                {pending ? "Please wait…" : confirmLabel}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+    </>
+  );
+}
+
+export function SuspendForm({ userId, name }: { userId: string; name: string }) {
+  return (
+    <ConfirmDialog
+      trigger={<><UserRoundX className="size-4" />Suspend</>}
+      tone="neutral"
+      title={`Suspend ${name}?`}
+      body="They are signed out at once and cannot sign in until you re-activate them. Nothing they recorded is touched."
+      confirmLabel="Confirm"
+      userId={userId}
+      action={suspendAccount}
+    />
   );
 }
 
@@ -43,27 +82,16 @@ export function ReactivateForm({ userId }: { userId: string }) {
   );
 }
 
-/** Delete: a reason and the word DELETE, because it cannot be undone. */
 export function DeleteForm({ userId, name }: { userId: string; name: string }) {
-  const [state, action, pending] = useActionState<AccessState, FormData>(deleteAccount, {});
   return (
-    <details className="relative">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10">
-        <Trash2 className="size-4" />
-        Delete
-      </summary>
-      <form action={action} className="absolute right-0 z-20 mt-2 w-72 space-y-2 rounded-xl border bg-card p-3 shadow-lg">
-        <input type="hidden" name="userId" value={userId} />
-        <p className="text-sm font-medium">Delete {name}’s account?</p>
-        <p className="text-xs text-muted-foreground">They lose all access and can never sign in again. Everything they recorded stays, under their name.</p>
-        <input name="reason" required placeholder="Why" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
-        <input name="confirm" required placeholder="Type DELETE" className="h-9 w-full rounded-lg border bg-background px-2 text-sm" />
-        {state.error ? <p className="text-xs text-destructive">{state.error}</p> : null}
-        {state.ok ? <p className="text-xs text-success">{state.ok}</p> : null}
-        <button disabled={pending} className="h-9 w-full rounded-lg bg-destructive text-sm font-medium text-destructive-foreground disabled:opacity-50">
-          {pending ? "Deleting…" : "Delete account"}
-        </button>
-      </form>
-    </details>
+    <ConfirmDialog
+      trigger={<><Trash2 className="size-4" />Delete</>}
+      tone="danger"
+      title={`Delete ${name}’s account?`}
+      body="They lose all access and can never sign in again. Everything they recorded stays, under their name."
+      confirmLabel="Confirm"
+      userId={userId}
+      action={deleteAccount}
+    />
   );
 }

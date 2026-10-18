@@ -56,7 +56,7 @@ export async function stopWorkAs() {
 export type AccessState = { error?: string; ok?: string };
 
 /**
- * SUSPEND A STAFF ACCOUNT, AND ONLY WITH A REASON AND A CONFIRMATION.
+ * SUSPEND AN ACCOUNT — ASKED ONCE, IN A DIALOG, BEFORE IT IS SENT.
  *
  * Blocks the account at once — every request re-reads it, so an open session
  * stops with the next click. Never the owner, never another developer, never
@@ -67,9 +67,6 @@ export async function suspendAccount(_prev: AccessState, formData: FormData): Pr
   if (!dev) return { error: "Not allowed." };
   if (await workingAs(dev.user.id, dev.sid)) return { error: "Stop working as someone first." };
   const id = String(formData.get("userId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
-  if (String(formData.get("confirm") ?? "").trim() !== "CONFIRM") return { error: "Type CONFIRM to suspend." };
-  if (reason.length < 3) return { error: "Say why." };
   const target = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, role: true, status: true, email: true } });
   if (!target || target.role === "DEVELOPER" || target.id === dev.user.id || isDeletedEmail(target.email)) {
     return { error: "That account cannot be suspended here." };
@@ -82,8 +79,7 @@ export async function suspendAccount(_prev: AccessState, formData: FormData): Pr
     action: "developer.suspend",
     entity: "User",
     entityId: target.id,
-    summary: `${dev.user.name} suspended ${target.name} — ${reason}`,
-    metadata: { reason },
+    summary: `${dev.user.name} suspended ${target.name}`,
   });
   revalidatePath("/app/developer/users");
   return { ok: `${target.name} is suspended.` };
@@ -129,9 +125,6 @@ export async function deleteAccount(_prev: AccessState, formData: FormData): Pro
   if (!dev) return { error: "Not allowed." };
   if (await workingAs(dev.user.id, dev.sid)) return { error: "Stop working as someone first." };
   const id = String(formData.get("userId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
-  if (String(formData.get("confirm") ?? "").trim() !== "DELETE") return { error: "Type DELETE to delete." };
-  if (reason.length < 3) return { error: "Say why." };
   const target = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true, email: true, role: true } });
   if (!target || target.role === "DEVELOPER" || target.id === dev.user.id || isDeletedEmail(target.email)) {
     return { error: "That account cannot be deleted here." };
@@ -144,8 +137,8 @@ export async function deleteAccount(_prev: AccessState, formData: FormData): Pro
     action: "developer.delete",
     entity: "User",
     entityId: id,
-    summary: `${dev.user.name} deleted the account of ${target.name} (${target.role}) — ${reason}`,
-    metadata: { reason, was: { name: target.name, email: target.email, role: target.role } },
+    summary: `${dev.user.name} deleted the account of ${target.name} (${target.role})`,
+    metadata: { was: { name: target.name, email: target.email, role: target.role } },
   });
   revalidatePath("/app/developer/users");
   return { ok: `${target.name}'s account is deleted. What they recorded is kept.` };
