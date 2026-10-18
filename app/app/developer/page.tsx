@@ -678,33 +678,31 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
   const all = [...need, ...good];
   const badge = fix > 0 ? { t: `${fix} ${T("to fix now")}`, c: "text-destructive" } : need.length > 0 ? { t: `${need.length} ${T("to look at")}`, c: "text-warning" } : { t: T("All clear"), c: "text-success" };
   return (
-    <section className="overflow-hidden rounded-2xl border bg-card">
-      <div className="flex items-start justify-between gap-4 px-6 py-4">
-        <div className="min-w-0">
-          <h2 className="font-semibold">{T("Needs your attention")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{T("Checked just now. Tap a card to see what it means and what to do.")}</p>
-        </div>
-        <span className={cn("shrink-0 text-sm font-medium", badge.c)}>{badge.t}</span>
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">{T("Needs your attention")}</h2>
+        <span className={cn("shrink-0 text-xs font-medium", badge.c)}>{badge.t}</span>
       </div>
+      <div className="overflow-hidden rounded-xl border bg-card">
 
       {all.length === 0 ? (
-        <div className="flex items-center gap-4 border-t border-l-2 border-l-success px-6 py-3.5">
-          <CircleCheck className="size-5 shrink-0 text-success" />
-          <span className="min-w-0">
-            <span className="block font-medium">{T("Nothing needs your attention")}</span>
-            <span className="block truncate text-sm text-muted-foreground">{T("Nothing is broken, and every required setting is in place.")}</span>
-          </span>
+        <div className="flex items-center gap-3 px-5 py-3.5">
+          <CircleCheck className="size-4 shrink-0 text-success" />
+          <p className="min-w-0 text-sm">
+            <span className="font-semibold">{T("Nothing needs your attention.")}</span>{" "}
+            <span className="text-muted-foreground">{T("Nothing is broken, and every required setting is in place.")}</span>
+          </p>
         </div>
       ) : (
-        <div className="divide-y border-t">
+        <div className="divide-y">
           {all.map((f) => {
               const t = TONE[f.tone];
               return (
-                <details key={f.key} className={cn("group border-l-2 px-6 py-3.5", f.tone === "fix" ? "border-l-destructive" : f.tone === "look" ? "border-l-warning" : "border-l-border")}>
-                  <summary className="flex cursor-pointer list-none items-center gap-4">
-                    <t.icon className={cn("size-5 shrink-0", f.tone === "fix" ? "text-destructive" : f.tone === "look" ? "text-warning" : "text-muted-foreground")} />
+                <details key={f.key} className={cn("group border-l-2 px-5 py-3", f.tone === "fix" ? "border-l-destructive" : f.tone === "look" ? "border-l-warning" : "border-l-border")}>
+                  <summary className="flex cursor-pointer list-none items-center gap-3">
+                    <t.icon className={cn("size-4 shrink-0", f.tone === "fix" ? "text-destructive" : f.tone === "look" ? "text-warning" : "text-muted-foreground")} />
                     <span className="min-w-0 flex-1">
-                      <span className="block font-medium">{f.title}</span>
+                      <span className="block text-sm font-semibold">{f.title}</span>
                       <span className="block truncate text-sm text-muted-foreground group-open:hidden">{f.detail}</span>
                     </span>
                     <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
@@ -767,7 +765,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
       )}
 
       <details className="group border-t">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-3.5 text-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-2.5 text-xs text-muted-foreground">
           <span>{T("What was checked")} · {fine} {T("of")} {checks.length} {T("fine")}{unknown ? `, ${unknown} ${T("not checked yet")}` : ""}</span>
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
@@ -776,7 +774,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
             const t = ROW_ICON[c.status];
             const note = c.status === "ok" ? (c.id === "database" ? `${T("Answers in")} ${dbMs} ms.` : c.fine) : (c.note ?? c.finding?.title);
             return (
-              <li key={c.id} className="flex items-center gap-3 px-6 py-2.5">
+              <li key={c.id} className="flex items-center gap-3 px-5 py-2.5">
                 <t.icon className={cn("size-4 shrink-0", t.cls)} />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px]">{T(c.name)}</span>
@@ -788,6 +786,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
           })}
         </ul>
       </details>
+      </div>
     </section>
   );
 }
