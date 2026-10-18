@@ -18,6 +18,10 @@ export type Finding = {
   tone: "fix" | "look" | "info";
   title: string;
   detail: string;
+  /** Where to go and deal with it — the developer's permissions open any screen. */
+  href?: string;
+  /** The individual things behind a count, so the card says what they are. */
+  items?: { title: string; body: string | null; who: string; whoId: string; role: string; age: string; href: string | null }[];
 };
 
 /** Which group a role belongs to on the sign-in chart. */
@@ -82,7 +86,8 @@ export async function developerOverview(): Promise<{
     }),
     prisma.notification.findMany({
       where: { readAt: null, user: { role: { notIn: ["CUSTOMER", "DEVELOPER"] } } },
-      select: { createdAt: true },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true, title: true, body: true, href: true, user: { select: { id: true, name: true, role: true } } },
     }),
     prisma.loginEvent.count({
       where: { ok: false, createdAt: { gte: since24 }, user: { role: "DEVELOPER" } },
@@ -151,13 +156,30 @@ export async function developerOverview(): Promise<{
   const findings: Finding[] = [];
   if (!dbOk) findings.push({ key: "db", tone: "fix", title: "The database is not answering", detail: "Nothing can be saved until it is back. Check the database provider." });
   else if (ms > 800) findings.push({ key: "slow", tone: "look", title: `The database is slow (${ms} ms)`, detail: "Pages may feel sluggish. If it stays this way, check the provider's status." });
-  if (alertsOverDay > 0)
+  if (alertsOverDay > 0) {
+    const age = (d: Date) => {
+      const days = Math.floor((now - d.getTime()) / DAY);
+      return days < 1 ? "today" : `${days} day${days === 1 ? "" : "s"} waiting`;
+    };
     findings.push({
       key: "alerts",
       tone: "look",
       title: `${alertsOverDay} alert${alertsOverDay === 1 ? "" : "s"} waiting for more than a day`,
-      detail: "These ask someone to approve or receive something, and nobody has.",
+      detail: "Each is a message sent to a member of staff — to approve something, or to receive it — that they have not opened. Open it to deal with it yourself, or work as that person.",
+      items: unread
+        .filter((n) => now - n.createdAt.getTime() > DAY && n.user)
+        .slice(0, 8)
+        .map((n) => ({
+          title: n.title,
+          body: n.body,
+          who: n.user!.name,
+          whoId: n.user!.id,
+          role: n.user!.role as string,
+          age: age(n.createdAt),
+          href: n.href,
+        })),
     });
+  }
   if (failedDev > 0)
     findings.push({
       key: "devfail",

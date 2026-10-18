@@ -31,7 +31,10 @@ export async function startWorkAs(formData: FormData) {
     summary: `${dev.user.name} started working as ${target.name} (${target.role})`,
     metadata: { target: { id: target.id, name: target.name, role: target.role } },
   });
-  redirect("/app/dashboard");
+  /* Straight to the thing that needed doing, when asked — only ever a page in
+     the app, never a link to somewhere else. */
+  const next = String(formData.get("next") ?? "");
+  redirect(next.startsWith("/app/") && !next.startsWith("//") ? next : "/app/dashboard");
 }
 
 export async function stopWorkAs() {

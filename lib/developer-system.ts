@@ -104,11 +104,11 @@ export async function businessFindings() {
     }),
     prisma.invoice.count({ where: { status: "OVERDUE" } }),
   ]);
-  const out: { key: string; tone: "look" | "info"; title: string; detail: string }[] = [];
-  if (pay) out.push({ key: "pay", tone: "look", title: `${pay} payment${pay === 1 ? "" : "s"} waiting to be verified for over a day`, detail: "Money has been reported and nobody in Finance has checked it. The customer's bill still shows it as owing." });
-  if (uncheckedCleared) out.push({ key: "unchecked", tone: "look", title: `${uncheckedCleared} cleared consignment${uncheckedCleared === 1 ? "" : "s"} not checked in for 2+ days`, detail: "Storage is already running on them, but the Dar warehouse has not verified the goods." });
-  if (noBill) out.push({ key: "nobill", tone: "look", title: `${noBill} consignment${noBill === 1 ? "" : "s"} in Dar with no bill`, detail: "Landed for three days or more and nobody has priced them. The customer cannot be asked to pay." });
-  if (overdue) out.push({ key: "overdue", tone: "info", title: `${overdue} overdue bill${overdue === 1 ? "" : "s"}`, detail: "Past their due date and still owing." });
+  const out: { key: string; tone: "look" | "info"; title: string; detail: string; href?: string }[] = [];
+  if (pay) out.push({ key: "pay", tone: "look", title: `${pay} payment${pay === 1 ? "" : "s"} waiting to be verified for over a day`, detail: "Money has been reported and nobody in Finance has checked it. The customer's bill still shows it as owing.", href: "/app/finance/verify" });
+  if (uncheckedCleared) out.push({ key: "unchecked", tone: "look", title: `${uncheckedCleared} cleared consignment${uncheckedCleared === 1 ? "" : "s"} not checked in for 2+ days`, detail: "Storage is already running on them, but the Dar warehouse has not verified the goods.", href: "/app/receive/dar" });
+  if (noBill) out.push({ key: "nobill", tone: "look", title: `${noBill} consignment${noBill === 1 ? "" : "s"} in Dar with no bill`, detail: "Landed for three days or more and nobody has priced them. The customer cannot be asked to pay.", href: "/app/finance/prices" });
+  if (overdue) out.push({ key: "overdue", tone: "info", title: `${overdue} overdue bill${overdue === 1 ? "" : "s"}`, detail: "Past their due date and still owing.", href: "/app/finance/collections" });
   return out;
 }
 

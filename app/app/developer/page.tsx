@@ -5,6 +5,7 @@ import { AlertTriangle, BarChart3, Info, ScrollText, TriangleAlert } from "lucid
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
+import { startWorkAs } from "@/lib/actions/developer";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
 import { activityKpis, businessFindings, businessPulse, dataPulse, messagesPulse, peoplePulse, securityPulse, settingsPulse, speedPulse } from "@/lib/developer-system";
@@ -190,7 +191,7 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
             {[...need, ...good].map((f) => {
               const t = TONE[f.tone];
               return (
-                <details key={f.key} className={cn("group rounded-xl border px-4 py-3", t.ring)}>
+                <details key={f.key} open={f.tone !== "info" && Boolean(f.items?.length)} className={cn("group rounded-xl border px-4 py-3 lg:col-span-2", t.ring)}>
                   <summary className="flex cursor-pointer list-none items-center gap-3">
                     <t.icon className="size-5 shrink-0" />
                     <span className="min-w-0 flex-1">
@@ -199,6 +200,35 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
                     <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", t.badge)}>{T(t.label)}</span>
                   </summary>
                   <p className="mt-2 pl-8 text-sm text-muted-foreground">{f.detail}</p>
+                  {f.items?.length ? (
+                    <ul className="mt-3 space-y-2 pl-8">
+                      {f.items.map((it, i) => (
+                        <li key={i} className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/60 px-3 py-2.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{it.title}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {T("For")} {it.who} · {ROLE_LABELS[it.role as keyof typeof ROLE_LABELS]} · {it.age}
+                              {it.body ? ` — ${it.body}` : ""}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {it.href ? (
+                              <Link href={it.href} className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary">{T("Open")}</Link>
+                            ) : null}
+                            <form action={startWorkAs}>
+                              <input type="hidden" name="userId" value={it.whoId} />
+                              {it.href ? <input type="hidden" name="next" value={it.href} /> : null}
+                              <button type="submit" className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Work as")} {it.who.split(" ")[0]}</button>
+                            </form>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : f.href ? (
+                    <div className="mt-3 pl-8">
+                      <Link href={f.href} className="inline-flex rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-foreground hover:opacity-90">{T("Open it")} →</Link>
+                    </div>
+                  ) : null}
                 </details>
               );
             })}
