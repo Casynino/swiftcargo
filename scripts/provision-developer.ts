@@ -15,15 +15,39 @@
  * Against any database that is not on this machine it stops and asks for
  * --yes, naming the host it is about to change.
  */
-import { prisma } from "@/lib/prisma";
-import { provisionDeveloper } from "@/lib/developer";
+import { createInterface } from "node:readline";
+
+/** Ask one question. `secret` hides what is typed, so it never sits on screen. */
+function ask(question: string, secret = false): Promise<string> {
+  return new Promise((resolve) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+    if (secret) {
+      (rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput = (text) => {
+        if (text.includes(question)) process.stdout.write(text);
+      };
+    }
+    rl.question(question, (answer) => {
+      rl.close();
+      if (secret) process.stdout.write("\n");
+      resolve(answer.trim());
+    });
+  });
+}
 
 async function main() {
-  const email = process.env.DEVELOPER_EMAIL ?? "";
-  const name = process.env.DEVELOPER_NAME ?? "Developer";
-  const password = process.env.DEVELOPER_PASSWORD;
+  /* Anything not already in the environment is asked for, so nothing has to be
+     typed into a long command — and the password and the database address are
+     never echoed or left in the shell history. */
+  const email = process.env.DEVELOPER_EMAIL || (await ask("Developer email: "));
+  const name = process.env.DEVELOPER_NAME || (await ask("Developer name: ")) || "Developer";
   const reset = process.argv.includes("--reset-password");
   const yes = process.argv.includes("--yes");
+  if (!process.env.DATABASE_URL) process.env.DATABASE_URL = await ask("Database address (postgresql://…): ", true);
+  const password = process.env.DEVELOPER_PASSWORD || (await ask("Password (14+ characters): ", true)) || undefined;
+
+  /* The database client reads its address when it loads, so it loads now. */
+  const { prisma } = await import("@/lib/prisma");
+  const { provisionDeveloper } = await import("@/lib/developer");
 
   const url = process.env.DATABASE_URL ?? "";
   const host = /@([^/:?]+)/.exec(url)?.[1] ?? /\/\/([^/:?]+)/.exec(url)?.[1] ?? "unknown";
