@@ -7,6 +7,7 @@ import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
+import { businessFindings, businessPulse, dataPulse, securityPulse } from "@/lib/developer-system";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -56,17 +57,40 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
  * the sign-in log and the accounts, never kept. What needs attention comes
  * first, then the shape of the last two weeks.
  */
-export default async function DeveloperHome() {
+export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await primeLocale();
+  const sp = await searchParams;
+  const tab = ["business", "security", "data"].includes(sp.tab ?? "") ? (sp.tab as string) : "activity";
   const user = await requirePermission("developer.activity");
-  const [o, warehouses, people] = await Promise.all([
+  const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
+    businessFindings(),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
     prisma.user.findMany({
       where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
       orderBy: [{ role: "asc" }, { name: "asc" }],
       select: { id: true, name: true, role: true },
     }),
+  ]);
+
+  /* What the business is waiting on counts toward the health of the whole. */
+  const findings = [...o0.findings, ...extra.map((f) => ({ ...f }))] as Finding[];
+  const counts = {
+    fix: findings.filter((f) => f.tone === "fix").length,
+    look: findings.filter((f) => f.tone === "look").length,
+    info: findings.filter((f) => f.tone === "info").length,
+  };
+  const o = {
+    ...o0,
+    findings,
+    counts,
+    score: Math.max(0, Math.min(100, 100 - counts.fix * 35 - counts.look * 15 - Math.min(counts.info, 3) * 2)),
+  };
+
+  const [biz, sec, data] = await Promise.all([
+    tab === "business" ? businessPulse() : null,
+    tab === "security" ? securityPulse() : null,
+    tab === "data" ? dataPulse() : null,
   ]);
 
   const hello = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dar_es_Salaam" });
@@ -157,6 +181,20 @@ export default async function DeveloperHome() {
         ))}
       </div>
 
+      <nav className="flex flex-wrap gap-2">
+        {([["activity", "Activity"], ["business", "The business"], ["security", "Sign-ins & security"], ["data", "The data"]] as const).map(([k, label]) => (
+          <Link
+            key={k}
+            href={k === "activity" ? "/app/developer" : `/app/developer?tab=${k}`}
+            className={cn("rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
+          >
+            {T(label)}
+          </Link>
+        ))}
+      </nav>
+
+      {tab === "activity" ? (
+        <>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={T("Sign-ins per day")} hint={T("Last 14 days, coloured by who signed in. Hover a bar for exact numbers.")}>
           <StackedBars
@@ -223,6 +261,12 @@ export default async function DeveloperHome() {
           </Card>
         </div>
       </div>
+        </>
+      ) : null}
+
+      {biz ? <BusinessTab b={biz} /> : null}
+      {sec ? <SecurityTab s={sec} /> : null}
+      {data ? <DataTab d={data} /> : null}
     </div>
   );
 }
@@ -234,5 +278,132 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
       <dd className={cn("mt-1 text-3xl font-bold tnum", tone)}>{value}</dd>
       {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
     </div>
+  );
+}
+
+const tsh = (n: number) => `TSh ${Math.round(n).toLocaleString("en-US")}`;
+const when = (d: Date) => d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Dar_es_Salaam" });
+
+function Tile({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) {
+  return (
+    <div className="rounded-2xl border bg-card p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className={cn("mt-1 text-2xl font-bold tnum", tone)}>{value}</p>
+      {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
+    </div>
+  );
+}
+
+const one = (name: string, tone: string) => ({ data: (rows: { label: string; value: number }[]) => rows.map((r) => ({ label: r.label, parts: [{ key: name, value: r.value }] })), colors: { [name]: tone } });
+
+function BusinessTab({ b }: { b: Awaited<ReturnType<typeof businessPulse>> }) {
+  const cargo = one("Cargo", "bg-brand");
+  const bills = one("Bills", "bg-violet-500");
+  const money = one("Received", "bg-emerald-500");
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <Tile label="Still to collect" value={tsh(b.owed)} sub={`${b.owingCount} bills owing`} />
+        <Tile label="Received, 14 days" value={tsh(b.received14)} sub="verified payments" tone="text-success" />
+        <Tile label="Storage running" value={String(b.storageRunning)} sub={`${tsh(b.storageOwed)} owed on them`} tone={b.storageRunning ? "text-warning" : undefined} />
+        <Tile label="Payments to verify" value={String(b.pendingPayments)} sub={b.pendingPayments ? `oldest ${b.oldestPending} day(s)` : "none waiting"} tone={b.oldestPending >= 2 ? "text-warning" : undefined} />
+        <Tile label="Containers listed" value={String(b.containers.length)} sub="latest ten shown below" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
+        <Card title="Where the cargo is" hint="Every consignment, by where it stands now.">
+          <RankedBars rows={b.pipeline} />
+        </Card>
+        <Card title="Containers" hint="The latest ten, with what is on them.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr><th className="pb-2 font-medium">Reference</th><th className="pb-2 font-medium">Status</th><th className="pb-2 text-right font-medium">Cargo</th><th className="pb-2 font-medium">Vessel</th><th className="pb-2 text-right font-medium">Date</th></tr>
+              </thead>
+              <tbody className="divide-y">
+                {b.containers.map((c) => (
+                  <tr key={c.reference}>
+                    <td className="py-2 font-medium">{c.reference}</td>
+                    <td className="py-2 text-muted-foreground">{c.status.replaceAll("_", " ").toLowerCase()}</td>
+                    <td className="tnum py-2 text-right">{c.cargo}</td>
+                    <td className="py-2 text-muted-foreground">{c.vessel ?? "—"}</td>
+                    <td className="py-2 text-right text-muted-foreground">{c.date ? when(c.date).slice(0, 6) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card title="Cargo registered per day" hint="New consignments, last 14 days.">
+          <StackedBars data={cargo.data(b.cargoPerDay)} colors={cargo.colors} height={140} />
+        </Card>
+        <Card title="Bills issued per day" hint="Invoices sent to customers.">
+          <StackedBars data={bills.data(b.invoicesPerDay)} colors={bills.colors} height={140} />
+        </Card>
+        <Card title="Money received per day" hint="In thousands of shillings, after reversals.">
+          <StackedBars data={money.data(b.receivedPerDay)} colors={money.colors} height={140} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab({ s }: { s: Awaited<ReturnType<typeof securityPulse>> }) {
+  const failed = one("Failed", "bg-destructive");
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Tile label="Failed sign-ins, 14 days" value={String(s.failedTotal)} tone={s.failedTotal > 20 ? "text-warning" : undefined} sub="wrong password or blocked account" />
+        <Tile label="Successful sign-ins, 14 days" value={String(s.okLogins)} />
+        <Tile label="Locked out right now" value={String(s.lockedNow)} tone={s.lockedNow ? "text-destructive" : "text-success"} sub="10 wrong tries in 15 minutes" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card title="Failed sign-ins per day" hint="A few typing mistakes are normal. A spike means somebody is guessing.">
+          <StackedBars data={failed.data(s.failedPerDay)} colors={failed.colors} height={150} />
+        </Card>
+        <Card title="Failed tries by address" hint="Last 7 days. One address trying many accounts is a warning sign.">
+          {s.byIp.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">No failed sign-ins in the last 7 days.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th className="pb-2 font-medium">Address</th><th className="pb-2 text-right font-medium">Tries</th><th className="pb-2 text-right font-medium">Accounts</th><th className="pb-2 text-right font-medium">Last</th></tr></thead>
+              <tbody className="divide-y">
+                {s.byIp.map((r) => (
+                  <tr key={r.ip}><td className="py-2 font-mono text-xs">{r.ip}</td><td className="tnum py-2 text-right">{r.count}</td><td className={cn("tnum py-2 text-right", r.accounts > 2 && "font-semibold text-warning")}>{r.accounts}</td><td className="py-2 text-right text-muted-foreground">{when(r.last)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Card>
+      </div>
+      <Card title="Refused actions" hint="Somebody asked for something their role does not allow — through a button or straight at the endpoint.">
+        {s.denied.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">Nothing has been refused recently.</p>
+        ) : (
+          <ul className="divide-y text-sm">
+            {s.denied.map((d, i) => (
+              <li key={i} className="flex flex-wrap items-baseline justify-between gap-3 py-2"><span>{d.summary}</span><span className="text-xs text-muted-foreground">{when(d.createdAt)}</span></li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function DataTab({ d }: { d: Awaited<ReturnType<typeof dataPulse>> }) {
+  const max = Math.max(1, ...d.rows.map((r) => r.count));
+  return (
+    <Card title="What the system holds" hint={d.since ? `Records in the database. The audit log reaches back to ${when(d.since).slice(0, 6)}.` : "Records in the database."}>
+      <ul className="space-y-3">
+        {d.rows.map((r) => (
+          <li key={r.name}>
+            <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-medium">{r.name}</span><span className="tnum text-muted-foreground">{r.count.toLocaleString("en-US")}</span></div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(1, (r.count / max) * 100)}%` }} /></div>
+          </li>
+        ))}
+      </ul>
+    </Card>
   );
 }
