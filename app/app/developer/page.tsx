@@ -59,10 +59,8 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
  * the sign-in log and the accounts, never kept. What needs attention comes
  * first, then the shape of the last two weeks.
  */
-export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function DeveloperHome() {
   await primeLocale();
-  const sp = await searchParams;
-  const tab = ["business", "messages", "speed", "security", "settings", "people"].includes(sp.tab ?? "") ? (sp.tab as string) : "activity";
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
@@ -92,14 +90,15 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
   /* Always read: the tab badges say at a glance where something is wrong. */
   const speed = await speedPulse();
   const envMissing = ["AUTH_SECRET", "DATABASE_URL", "DIRECT_URL", "BLOB_READ_WRITE_TOKEN", "CRON_SECRET", "NEXT_PUBLIC_SITE_URL"].filter((n) => !process.env[n]?.trim()).length;
+  /* One page: everything is read, and each part has its own section. */
   const [biz, kpis, msgs, sec, set, ppl, data] = await Promise.all([
-    tab === "business" ? businessPulse() : null,
-    tab === "activity" ? activityKpis() : null,
-    tab === "messages" ? messagesPulse() : null,
-    tab === "security" ? securityPulse() : null,
-    tab === "settings" ? settingsPulse() : null,
-    tab === "people" ? peoplePulse() : null,
-    tab === "speed" ? dataPulse() : null,
+    businessPulse(),
+    activityKpis(),
+    messagesPulse(),
+    securityPulse(),
+    settingsPulse(),
+    peoplePulse(),
+    dataPulse(),
   ]);
 
   const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Africa/Dar_es_Salaam" })) % 24;
@@ -266,29 +265,9 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
         </section>
       )}
 
-      <nav className="flex flex-wrap gap-2">
-        {([
-          ["activity", "Activity", null],
-          ["speed", "Speed & size", `${speed.avg} ms`],
-          ["security", "Sign-ins & security", null],
-          ["settings", "Settings", envMissing > 0 ? String(envMissing) : null],
-          ["messages", "Messages", null],
-          ["people", "People & my actions", null],
-          ["business", "Business (read only)", null],
-        ] as const).map(([k, label, badge]) => (
-          <Link
-            key={k}
-            href={k === "activity" ? "/app/developer" : `/app/developer?tab=${k}`}
-            className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
-          >
-            {T(label)}
-            {badge ? <span className={cn("rounded-full px-1.5 text-[11px] tnum", k === "settings" ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground")}>{badge}</span> : null}
-          </Link>
-        ))}
-      </nav>
 
-      {tab === "activity" && kpis ? (
-        <>
+
+      <Section id="activity" title="Activity" hint="Who is using the system, and what they are doing.">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label="People signed in" value={String(kpis.people24)} caption="different people in 24 hours" tag="Live" tone="good"
               explain={`${kpis.people7} different people signed in over the last 7 days. If this drops to zero on a working day, check that sign-in still works.`} />
@@ -365,16 +344,45 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
           </Card>
         </div>
       </div>
-        </>
-      ) : null}
+      </Section>
 
-      {biz ? <BusinessTab b={biz} /> : null}
-      {msgs ? <MessagesTab m={msgs} /> : null}
-      {sec ? <SecurityTab s={sec} /> : null}
-      {set ? <SettingsTab s={set} /> : null}
-      {ppl ? <PeopleTab p={ppl} /> : null}
-      {data ? <SpeedTab d={data} speed={speed} /> : null}
+      <Section id="security" title="Sign-ins & security" hint="Failed tries, who is locked out, and what people were refused.">
+        <SecurityTab s={sec} />
+      </Section>
+
+      <Section id="speed" title="Speed & size" hint={`How fast the database answers (${speed.avg} ms now) and how much the system holds.`}>
+        <SpeedTab d={data} speed={speed} />
+      </Section>
+
+      <Section id="settings" title="Settings" hint="Whether everything the system needs to run is in place.">
+        <SettingsTab s={set} />
+      </Section>
+
+      <Section id="messages" title="Messages" hint="What the system has told customers.">
+        <MessagesTab m={msgs} />
+      </Section>
+
+      <Section id="people" title="People & my actions" hint="The team, and everything you have done as the developer.">
+        <PeopleTab p={ppl} />
+      </Section>
+
+      <Section id="business" title="Business, read only" hint="Cargo, money and containers, for looking at. Nothing here is yours to chase.">
+        <BusinessTab b={biz} />
+      </Section>
     </div>
+  );
+}
+
+/** One part of the page: a heading that says what it is for, then its contents. */
+function Section({ id, title, hint, children }: { id: string; title: string; hint: string; children: React.ReactNode }) {
+  return (
+    <section id={id} className="scroll-mt-6 space-y-4">
+      <div className="border-b pb-2">
+        <h2 className="text-xl font-bold tracking-tight">{T(title)}</h2>
+        <p className="text-sm text-muted-foreground">{T(hint)}</p>
+      </div>
+      {children}
+    </section>
   );
 }
 
