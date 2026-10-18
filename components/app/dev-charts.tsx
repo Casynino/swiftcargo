@@ -121,3 +121,44 @@ export function ScoreRing({ score }: { score: number }) {
     </div>
   );
 }
+
+/** A small filled line for a tile: the shape of the last days, not a chart to read numbers from. */
+export function Sparkline({ values, tone = "var(--brand, #7c3aed)" }: { values: number[]; tone?: string }) {
+  const w = 300;
+  const h = 44;
+  const max = Math.max(1, ...values);
+  const step = values.length > 1 ? w / (values.length - 1) : w;
+  const pts = values.map((v, i) => [i * step, h - 4 - (v / max) * (h - 12)] as const);
+  const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const flat = values.every((v) => v === 0);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-11 w-full" aria-hidden>
+      <defs>
+        <linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {flat ? (
+        <line x1="0" x2={w} y1={h - 4} y2={h - 4} stroke="currentColor" strokeOpacity="0.35" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      ) : (
+        <>
+          <path d={`${line} L${w},${h} L0,${h} Z`} fill="url(#spark-fill)" />
+          <path d={line} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+/** Six short bars, one per quick question put to the database. */
+export function PingBars({ values }: { values: number[] }) {
+  const max = Math.max(1, ...values);
+  return (
+    <div className="flex h-11 items-end gap-2" aria-hidden>
+      {values.map((v, i) => (
+        <span key={i} className="flex-1 rounded-sm bg-success" style={{ height: `${Math.max(12, (v / max) * 100)}%` }} />
+      ))}
+    </div>
+  );
+}

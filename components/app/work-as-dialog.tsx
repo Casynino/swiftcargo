@@ -31,7 +31,7 @@ export function WorkAsDialog({ people }: { people: Person[] }) {
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><LogIn className="size-5" /></span>
         <span>
           <span className="block text-sm font-semibold">Work as →</span>
-          <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Pick a name and open the system as that person. Recorded under you.</span>
+          <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Use the system as any person. Recorded under you.</span>
         </span>
       </button>
       {open ? (

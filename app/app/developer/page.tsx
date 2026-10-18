@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AlertTriangle, BarChart3, ChevronUp, CircleCheck, Info, ScrollText, TriangleAlert } from "lucide-react";
 
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
-import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
+import { Legend, PingBars, RankedBars, ScoreRing, Sparkline, StackedBars } from "@/components/app/dev-charts";
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { startWorkAs } from "@/lib/actions/developer";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -117,7 +117,7 @@ export default async function DeveloperHome() {
   const hello = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dar_es_Salaam" });
   const need = o.findings.filter((f) => f.tone !== "info");
   const good = o.findings.filter((f) => f.tone === "info");
-  const verdict = o.counts.fix > 0 ? "Something is broken" : o.counts.look > 0 ? "Working, with a few things to look at" : "Everything is working";
+  const verdict = o.counts.fix > 0 ? "Something is broken" : o.counts.look > 0 ? "Working, with a few things to look at" : "Everything is healthy";
 
   return (
     <div className="space-y-6">
@@ -165,31 +165,62 @@ export default async function DeveloperHome() {
 
 
 
-      <section className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="flex items-center gap-6">
-          <ScoreRing score={o.score} />
-          <div>
-            <h2 className="text-xl font-semibold">{T(verdict)}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+      <section className="rounded-2xl border bg-card p-6">
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex shrink-0 flex-col items-center gap-2">
+            <ScoreRing score={o.score} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{T("Health score")}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className={cn("text-2xl font-semibold", o.counts.fix > 0 ? "text-destructive" : o.counts.look > 0 ? "text-warning" : "text-success")}>{T(verdict)}</h2>
+            <p className="mt-1.5 text-muted-foreground">
               {o.counts.fix === 0 && o.counts.look === 0
-                ? T("Nothing needs you.")
+                ? T("The database is fast, every required setting is in place and nothing has crashed.")
                 : o.counts.fix > 0
                   ? T("Fix the red items first.")
                   : `${o.counts.look} ${T("thing(s) worth a look. Nothing is broken.")}`}
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-secondary px-3 py-1">{o.counts.fix} {T("to fix now")}</span>
-              <span className="rounded-full bg-warning/15 px-3 py-1 text-warning">{o.counts.look} {T("to look at")}</span>
-              <span className="rounded-full bg-secondary px-3 py-1">{o.counts.info} {T("for information")}</span>
+              <span className="rounded-full border bg-secondary/50 px-3 py-1">{o.counts.fix} {T("to fix now")}</span>
+              <span className="rounded-full border bg-secondary/50 px-3 py-1">{o.counts.look} {T("to look at")}</span>
+              <span className="rounded-full border bg-secondary/50 px-3 py-1">{o.counts.info} {T("for information")}</span>
             </div>
           </div>
         </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <Stat label="Database" value={o.db.ok ? "Online" : "Down"} tone={o.db.ok ? "text-success" : "text-destructive"} sub={`${o.db.ms} ms`} />
-          <Stat label="Signed in today" value={String(o.signedInToday)} sub={T("different people")} />
-          <Stat label="Actions today" value={String(o.actionsToday)} sub={T("saved in 24 hours")} />
-          <Stat label="Server errors" value={String(o.errors24)} tone={o.errors24 ? "text-warning" : undefined} sub={T("in 24 hours")} />
-        </dl>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="flex flex-col justify-between rounded-xl border bg-background/40 p-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{T("Database")}</p>
+              <p className={cn("mt-1 text-3xl font-bold", o.db.ok ? "text-success" : "text-destructive")}>{o.db.ok ? T("Online") : T("Down")}</p>
+              <p className="text-xs text-muted-foreground">{o.db.ms} ms{o.db.pooled ? ` · ${T("pooled")}` : ""}</p>
+            </div>
+            <div className="mt-3">{o.db.pings.length ? <PingBars values={o.db.pings} /> : null}</div>
+          </div>
+          <div className="flex flex-col justify-between rounded-xl border bg-background/40 p-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{T("Signed in today")}</p>
+              <p className="mt-1 text-3xl font-bold tnum">{o.signedInToday}</p>
+              <p className="text-xs text-muted-foreground">{T("different people")}</p>
+            </div>
+            <div className="mt-3 text-brand"><Sparkline values={o.signinsPerDay.map((d) => d.total)} /></div>
+          </div>
+          <div className="flex flex-col justify-between rounded-xl border bg-background/40 p-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{T("Actions today")}</p>
+              <p className="mt-1 text-3xl font-bold tnum">{o.actionsToday}</p>
+              <p className="text-xs text-muted-foreground">{T("saved in 24 hours")}</p>
+            </div>
+            <div className="mt-3 text-brand"><Sparkline values={o.actionsPerDay.map((d) => d.team + d.developer)} /></div>
+          </div>
+          <div className="flex flex-col justify-between rounded-xl border bg-background/40 p-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{T("Crashes today")}</p>
+              <p className={cn("mt-1 text-3xl font-bold tnum", o.errors24 ? "text-warning" : "")}>{o.errors24}</p>
+              <p className="text-xs text-muted-foreground">{o.errors24 ? T("in 24 hours") : T("nothing broke")}</p>
+            </div>
+            <div className={cn("mt-3", o.errors24 ? "text-warning" : "text-muted-foreground")}><Sparkline values={o.errorsPerDay} /></div>
+          </div>
+        </div>
       </section>
 
       <AttentionPanel need={need} good={good} checks={checks} dbMs={o.db.ms} people={people} />
@@ -645,7 +676,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
   const fix = need.filter((f) => f.tone === "fix").length;
   const sorted = [...checks].sort((a, b) => ORDER[a.status] - ORDER[b.status]);
   const all = [...need, ...good];
-  const badge = fix > 0 ? { t: `${fix} ${T("to fix now")}`, c: "text-destructive" } : need.length > 0 ? { t: `${need.length} ${T("to look at")}`, c: "text-warning" } : { t: T("All clear"), c: "text-success" };
+  const badge = fix > 0 ? { t: `${fix} ${T("to fix now")}`, c: "bg-destructive/15 text-destructive" } : need.length > 0 ? { t: `${need.length} ${T("to look at")}`, c: "bg-warning/15 text-warning" } : { t: T("All clear"), c: "bg-success/15 text-success" };
   return (
     <section className="overflow-hidden rounded-2xl border bg-card">
       <div className="flex items-start justify-between gap-4 px-5 py-4">
@@ -653,7 +684,7 @@ function AttentionPanel({ need, good, checks, dbMs, people }: { need: Finding[];
           <h2 className="font-semibold">{T("Needs your attention")}</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">{T("Checked just now. Tap a card to see what it means and what to do.")}</p>
         </div>
-        <span className={cn("shrink-0 text-sm font-medium", badge.c)}>{badge.t}</span>
+        <span className={cn("shrink-0 rounded-full px-3 py-1 text-xs font-semibold", badge.c)}>{badge.t}</span>
       </div>
 
       {all.length === 0 ? (

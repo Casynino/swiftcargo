@@ -48,10 +48,11 @@ export async function developerOverview(): Promise<{
   score: number;
   counts: { fix: number; look: number; info: number };
   findings: Finding[];
-  db: { ok: boolean; ms: number };
+  db: { ok: boolean; ms: number; pings: number[]; pooled: boolean };
   signedInToday: number;
   actionsToday: number;
   errors24: number;
+  errorsPerDay: number[];
   signinsPerDay: { day: string; label: string; by: Partial<Record<Group, number>>; total: number }[];
   actionsPerDay: { day: string; label: string; team: number; developer: number }[];
   hours: number[];
@@ -65,16 +66,22 @@ export async function developerOverview(): Promise<{
   const since7 = new Date(now - 7 * DAY);
   const since24 = new Date(now - DAY);
 
-  const t0 = Date.now();
+  /* Six quick questions, so the tile can show a rhythm and not one lucky number. */
   let dbOk = true;
+  const pings: number[] = [];
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    for (let i = 0; i < 6; i++) {
+      const t = Date.now();
+      await prisma.$queryRaw`SELECT 1`;
+      pings.push(Date.now() - t);
+    }
   } catch {
     dbOk = false;
   }
-  const ms = Date.now() - t0;
+  const ms = pings.length ? Math.round(pings.reduce((x, y) => x + y, 0) / pings.length) : 0;
+  const pooled = /-pooler\./.test(process.env.DATABASE_URL ?? "");
 
-  const [logins, actions, recent, unread, failedDev, pending, idleUsers, statusSplit, errors24] = await Promise.all([
+  const [logins, actions, recent, unread, failedDev, pending, idleUsers, statusSplit, errorRows] = await Promise.all([
     prisma.loginEvent.findMany({
       where: { ok: true, createdAt: { gte: since14 } },
       select: { createdAt: true, userId: true, user: { select: { role: true } } },
@@ -103,8 +110,9 @@ export async function developerOverview(): Promise<{
       select: { name: true, role: true, lastLoginAt: true },
     }),
     prisma.user.count({ where: { role: { notIn: ["CUSTOMER", "DEVELOPER"] }, active: true, status: "ACTIVE" } }),
-    prisma.systemEvent.count({ where: { kind: "ERROR", createdAt: { gte: since24 } } }),
+    prisma.systemEvent.findMany({ where: { kind: "ERROR", createdAt: { gte: since14 } }, select: { createdAt: true } }),
   ]);
+  const errors24 = errorRows.filter((e) => e.createdAt >= since24).length;
   void statusSplit;
   void pending;
   void unread;
@@ -178,10 +186,11 @@ export async function developerOverview(): Promise<{
     score,
     counts,
     findings,
-    db: { ok: dbOk, ms },
+    db: { ok: dbOk, ms, pings, pooled },
     signedInToday,
     actionsToday,
     errors24,
+    errorsPerDay: days.map((day) => errorRows.filter((e) => darDay(e.createdAt) === day).length),
     signinsPerDay,
     actionsPerDay,
     hours,

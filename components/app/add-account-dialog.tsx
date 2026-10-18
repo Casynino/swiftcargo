@@ -92,7 +92,7 @@ export function AddAccountDialog({
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand"><UserPlus className="size-5" /></span>
           <span>
             <span className="block text-sm font-semibold">Add an account →</span>
-            <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Open an account for anyone on the team. They can sign in straight away.</span>
+            <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">Staff, manager or owner. They sign in straight away.</span>
           </span>
         </button>
       ) : (
