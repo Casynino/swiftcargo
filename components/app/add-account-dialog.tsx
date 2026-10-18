@@ -116,9 +116,9 @@ export function AddAccountDialog({
               </div>
               <dl className="space-y-2 rounded-xl border p-4 text-sm">
                 <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="font-medium">{done.email}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Temporary password</dt><dd className="font-mono font-medium">{done.password}</dd></div>
+                <div><dt className="text-xs text-muted-foreground">Password</dt><dd className="font-mono font-medium">{done.password}</dd></div>
               </dl>
-              <p className="text-xs text-muted-foreground">Give these to them in person. This is the only time the password is shown.</p>
+              <p className="text-xs text-muted-foreground">Give these to them. This is the only time the password is shown. They can change it whenever they like.</p>
               <div className="flex gap-2">
                 <button type="button" onClick={() => copy(`${done.email}\n${done.password}`)} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border text-sm font-medium hover:bg-secondary">
                   {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
@@ -180,7 +180,7 @@ export function AddAccountDialog({
               ) : null}
 
               <div className="space-y-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Temporary password</span>
+                <span className="text-xs font-medium text-muted-foreground">Password</span>
                 <div className="flex gap-2">
                   <input
                     name="password"
@@ -198,7 +198,7 @@ export function AddAccountDialog({
                     <RefreshCw className="size-4" />
                   </button>
                 </div>
-                <p className="text-xs text-muted-foreground">Made for you. They should change it after their first sign-in.</p>
+                <p className="text-xs text-muted-foreground">Made for you. They sign in with it straight away and can change it whenever they like from their profile.</p>
               </div>
 
               {state.error ? <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p> : null}
