@@ -7,7 +7,7 @@ import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
-import { businessFindings, businessPulse, dataPulse, securityPulse } from "@/lib/developer-system";
+import { activityKpis, businessFindings, businessPulse, dataPulse, messagesPulse, peoplePulse, securityPulse, settingsPulse, speedPulse } from "@/lib/developer-system";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -60,7 +60,7 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
 export default async function DeveloperHome({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   await primeLocale();
   const sp = await searchParams;
-  const tab = ["activity", "security", "data"].includes(sp.tab ?? "") ? (sp.tab as string) : "business";
+  const tab = ["activity", "messages", "speed", "security", "settings", "people"].includes(sp.tab ?? "") ? (sp.tab as string) : "business";
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
@@ -87,10 +87,17 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
     score: Math.max(0, Math.min(100, 100 - counts.fix * 35 - counts.look * 15 - Math.min(counts.info, 3) * 2)),
   };
 
-  const [biz, sec, data] = await Promise.all([
+  /* Always read: the tab badges say at a glance where something is wrong. */
+  const speed = await speedPulse();
+  const envMissing = ["AUTH_SECRET", "DATABASE_URL", "DIRECT_URL", "BLOB_READ_WRITE_TOKEN", "CRON_SECRET", "NEXT_PUBLIC_SITE_URL"].filter((n) => !process.env[n]?.trim()).length;
+  const [biz, kpis, msgs, sec, set, ppl, data] = await Promise.all([
     tab === "business" ? businessPulse() : null,
+    tab === "activity" ? activityKpis() : null,
+    tab === "messages" ? messagesPulse() : null,
     tab === "security" ? securityPulse() : null,
-    tab === "data" ? dataPulse() : null,
+    tab === "settings" ? settingsPulse() : null,
+    tab === "people" ? peoplePulse() : null,
+    tab === "speed" ? dataPulse() : null,
   ]);
 
   const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Africa/Dar_es_Salaam" })) % 24;
@@ -208,19 +215,38 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
       )}
 
       <nav className="flex flex-wrap gap-2">
-        {([["business", "Cargo & money"], ["activity", "Activity"], ["security", "Sign-ins & security"], ["data", "The data"]] as const).map(([k, label]) => (
+        {([
+          ["business", "Cargo & money", null],
+          ["activity", "Activity", null],
+          ["messages", "Messages", null],
+          ["speed", "Speed & size", `${speed.avg} ms`],
+          ["security", "Sign-ins & security", null],
+          ["settings", "Settings", envMissing > 0 ? String(envMissing) : null],
+          ["people", "People & my actions", null],
+        ] as const).map(([k, label, badge]) => (
           <Link
             key={k}
             href={k === "business" ? "/app/developer" : `/app/developer?tab=${k}`}
-            className={cn("rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
+            className={cn("inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium", tab === k ? "border-foreground/60 bg-secondary" : "bg-card text-muted-foreground hover:text-foreground")}
           >
             {T(label)}
+            {badge ? <span className={cn("rounded-full px-1.5 text-[11px] tnum", k === "settings" ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground")}>{badge}</span> : null}
           </Link>
         ))}
       </nav>
 
-      {tab === "activity" ? (
+      {tab === "activity" && kpis ? (
         <>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Kpi label="People signed in" value={String(kpis.people24)} caption="different people in 24 hours" tag="Live" tone="good"
+              explain={`${kpis.people7} different people signed in over the last 7 days. If this drops to zero on a working day, check that sign-in still works.`} />
+            <Kpi label="Actions by the team" value={String(kpis.actions24)} caption="saved by staff in 24 hours" tag="Activity" tone="info"
+              explain={`Each payment, price, check-in, clearance or release counts as one action.${kpis.peak !== null ? ` Busiest hour: ${kpis.peak}:00 (Tanzania time).` : ""}`} />
+            <Kpi label="Sign-ins" value={String(kpis.signins24)} caption="successful sign-ins in 24 hours" tag="Sign-ins" tone="warn"
+              explain="Each time someone signs in with the right password. The chart below shows which roles they were." />
+            <Kpi label="Failed sign-ins" value={String(kpis.failed24)} caption="wrong tries in 24 hours" tag={kpis.failed24 >= 10 ? "Look" : "Quiet"} tone={kpis.failed24 >= 10 ? "bad" : "good"}
+              explain="A few typing mistakes are normal. Many in a day can mean someone is guessing passwords. The details are on the Sign-ins & security tab." />
+          </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={T("Sign-ins per day")} hint={T("Last 14 days, coloured by who signed in. Hover a bar for exact numbers.")}>
           <StackedBars
@@ -291,8 +317,11 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
       ) : null}
 
       {biz ? <BusinessTab b={biz} /> : null}
+      {msgs ? <MessagesTab m={msgs} /> : null}
       {sec ? <SecurityTab s={sec} /> : null}
-      {data ? <DataTab d={data} /> : null}
+      {set ? <SettingsTab s={set} /> : null}
+      {ppl ? <PeopleTab p={ppl} /> : null}
+      {data ? <SpeedTab d={data} speed={speed} /> : null}
     </div>
   );
 }
@@ -310,12 +339,26 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
 const tsh = (n: number) => `TSh ${Math.round(n).toLocaleString("en-US")}`;
 const when = (d: Date) => d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Dar_es_Salaam" });
 
-function Tile({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) {
+const KPI_TAG: Record<string, string> = {
+  good: "bg-success/15 text-success",
+  info: "bg-sky-500/15 text-sky-500",
+  warn: "bg-warning/15 text-warning",
+  bad: "bg-destructive/15 text-destructive",
+};
+
+/** A number, what it counts, and — underneath — what it means and when to worry. */
+function Kpi({ label, value, caption, tag, tone = "info", explain }: { label: string; value: string; caption?: string; tag?: string; tone?: "good" | "info" | "warn" | "bad"; explain: string }) {
   return (
-    <div className="rounded-2xl border bg-card p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-2xl font-bold tnum", tone)}>{value}</p>
-      {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
+    <div className="overflow-hidden rounded-2xl border bg-card">
+      <div className="p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="mt-2 text-3xl font-bold tnum">{value}</p>
+        {caption ? <p className="mt-0.5 text-xs text-muted-foreground">{caption}</p> : null}
+      </div>
+      <div className="border-t bg-secondary/30 p-4">
+        {tag ? <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", KPI_TAG[tone])}>{tag}</span> : null}
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{explain}</p>
+      </div>
     </div>
   );
 }
@@ -328,12 +371,15 @@ function BusinessTab({ b }: { b: Awaited<ReturnType<typeof businessPulse>> }) {
   const money = one("Received", "bg-emerald-500");
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Tile label="Still to collect" value={tsh(b.owed)} sub={`${b.owingCount} bills owing`} />
-        <Tile label="Received, 14 days" value={tsh(b.received14)} sub="verified payments" tone="text-success" />
-        <Tile label="Storage running" value={String(b.storageRunning)} sub={`${tsh(b.storageOwed)} owed on them`} tone={b.storageRunning ? "text-warning" : undefined} />
-        <Tile label="Payments to verify" value={String(b.pendingPayments)} sub={b.pendingPayments ? `oldest ${b.oldestPending} day(s)` : "none waiting"} tone={b.oldestPending >= 2 ? "text-warning" : undefined} />
-        <Tile label="Containers listed" value={String(b.containers.length)} sub="latest ten shown below" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Kpi label="Still to collect" value={tsh(b.owed)} caption={`${b.owingCount} bills owing`} tag="Money" tone="info"
+          explain="Everything customers owe on bills already sent. It becomes income only when the payment is verified." />
+        <Kpi label="Received, 14 days" value={tsh(b.received14)} caption="verified payments" tag="Income" tone="good"
+          explain="Payments Finance has verified, after reversals and without the transport fare passed on to drivers." />
+        <Kpi label="Storage running" value={String(b.storageRunning)} caption={`${tsh(b.storageOwed)} owed on them`} tag={b.storageRunning ? "Look" : "Clear"} tone={b.storageRunning ? "warn" : "good"}
+          explain="Consignments cleared and past their free days, still uncollected. Storage is added to their bill each night until pickup." />
+        <Kpi label="Payments to verify" value={String(b.pendingPayments)} caption={b.pendingPayments ? `oldest ${b.oldestPending} day(s)` : "none waiting"} tag={b.oldestPending >= 2 ? "Look" : "Quiet"} tone={b.oldestPending >= 2 ? "warn" : "good"}
+          explain="Money reported by a customer or a desk that Finance has not yet checked. Until it is verified, the bill still shows it owing." />
       </div>
       <div className="grid gap-4 lg:grid-cols-[1fr_1.4fr]">
         <Card title="Where the cargo is" hint="Every consignment, by where it stands now.">
@@ -380,9 +426,12 @@ function SecurityTab({ s }: { s: Awaited<ReturnType<typeof securityPulse>> }) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Tile label="Failed sign-ins, 14 days" value={String(s.failedTotal)} tone={s.failedTotal > 20 ? "text-warning" : undefined} sub="wrong password or blocked account" />
-        <Tile label="Successful sign-ins, 14 days" value={String(s.okLogins)} />
-        <Tile label="Locked out right now" value={String(s.lockedNow)} tone={s.lockedNow ? "text-destructive" : "text-success"} sub="10 wrong tries in 15 minutes" />
+        <Kpi label="Failed sign-ins" value={String(s.failedTotal)} caption="in 14 days" tag={s.failedTotal > 20 ? "Look" : "Quiet"} tone={s.failedTotal > 20 ? "warn" : "good"}
+          explain="Wrong password or a blocked account. A few are typing mistakes; a spike on one day, or many tries from one address, means someone is guessing." />
+        <Kpi label="Successful sign-ins" value={String(s.okLogins)} caption="in 14 days" tag="Sign-ins" tone="info"
+          explain="Each time someone signed in with the right password, staff and customers together." />
+        <Kpi label="Locked out now" value={String(s.lockedNow)} caption="10 wrong tries in 15 minutes" tag={s.lockedNow ? "Locked" : "None"} tone={s.lockedNow ? "bad" : "good"}
+          explain="An address is refused for 15 minutes after ten wrong passwords, even if the right one is tried next. It opens again by itself." />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Failed sign-ins per day" hint="A few typing mistakes are normal. A spike means somebody is guessing.">
@@ -418,18 +467,127 @@ function SecurityTab({ s }: { s: Awaited<ReturnType<typeof securityPulse>> }) {
   );
 }
 
-function DataTab({ d }: { d: Awaited<ReturnType<typeof dataPulse>> }) {
+function MessagesTab({ m }: { m: Awaited<ReturnType<typeof messagesPulse>> }) {
+  const sent = one("Messages", "bg-brand");
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kpi label="Told to customers" value={String(m.total)} caption="messages in 14 days" tag="Customers" tone="info"
+          explain="Every message the system sent to a customer's portal — cargo received, on the way, arrived, cleared, bill issued, ready for pickup." />
+        <Kpi label="Opened" value={m.total ? `${Math.round((m.read / m.total) * 100)}%` : "—"} caption={`${m.read} of ${m.total} read`} tag="Reach" tone="good"
+          explain="How many of those messages the customer has actually opened. A low figure means customers are not looking at the portal." />
+        <Kpi label="Staff alerts waiting" value={String(m.unreadStaff)} caption="unread by the team" tag={m.unreadStaff > 10 ? "Look" : "Quiet"} tone={m.unreadStaff > 10 ? "warn" : "good"}
+          explain="Alerts sent to staff — a payment to verify, cargo to check in — that nobody has opened yet." />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <Card title="Messages to customers per day" hint="Last 14 days.">
+          <StackedBars data={sent.data(m.perDay)} colors={sent.colors} height={150} />
+        </Card>
+        <Card title="What they were about" hint="The kinds of message sent.">
+          <RankedBars rows={m.kinds} />
+        </Card>
+      </div>
+      <Card title="Latest messages" hint="The newest eight sent to customers.">
+        <ul className="divide-y text-sm">
+          {m.recent.map((r, i) => (
+            <li key={i} className="flex flex-wrap items-baseline justify-between gap-3 py-2"><span className="min-w-0 truncate">{r.title}</span><span className="shrink-0 text-xs text-muted-foreground">{r.readAt ? "read" : "unread"} · {when(r.createdAt)}</span></li>
+          ))}
+          {m.recent.length === 0 ? <li className="py-4 text-center text-muted-foreground">No messages in 14 days.</li> : null}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function SettingsTab({ s }: { s: Awaited<ReturnType<typeof settingsPulse>> }) {
+  const row = (label: string, value: string, ok: boolean | null, note: string) => (
+    <li className="flex flex-wrap items-start justify-between gap-3 py-3">
+      <div className="min-w-0 flex-1"><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{note}</p></div>
+      <span className={cn("shrink-0 text-sm font-semibold tnum", ok === false ? "text-destructive" : ok ? "text-success" : "")}>{value}</span>
+    </li>
+  );
+  const c = s.company;
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card title="How the business is set up" hint="The numbers prices and bills are worked out from.">
+        <ul className="divide-y">
+          {row("Exchange rate (USD → TZS)", s.rate ? s.rate.toLocaleString("en-US") : "not set", s.rate ? (s.rateAge! <= 7 ? true : false) : false, s.rate ? `Set ${s.rateAge} day(s) ago. A rate older than a week is worth refreshing.` : "Bills cannot be issued without one.")}
+          {row("Free storage days", String(c?.freeStorageDays ?? "—"), true, "Days after clearance before storage is charged.")}
+          {row("Storage per day", c && Number(c.storagePerDay) > 0 ? `${c.storageCurrency} ${Number(c.storagePerDay)}` : "not charged", c ? Number(c.storagePerDay) > 0 : false, "At 0 nothing is ever charged for storage.")}
+          {row("VAT", `${Number(c?.vatPercent ?? 0)}%${c?.pricesIncludeVat ? " · inside prices" : " · on top"}`, null, "Applied to new invoices.")}
+          {row("Payment accounts open", String(s.accounts), s.accounts > 0, "Banks, mobile money and cash tins customers can pay into.")}
+          {row("Warehouses open", String(s.warehouses), s.warehouses > 0, "Guangzhou and Dar floors.")}
+          {row("Last automatic storage charge", s.lastCharge ? when(s.lastCharge) : "never", null, "The nightly job adds storage to bills past their free days. Nothing here yet is normal if no goods have run past them.")}
+        </ul>
+      </Card>
+      <div className="space-y-4">
+        <Card title="What the system needs to run" hint="Whether each required setting is present. Values are never shown.">
+          <ul className="divide-y">
+            {s.env.map((e) => row(e.name, e.set ? "set" : "missing", e.set, e.set ? "" : "Required. Parts of the system will not work without it."))}
+          </ul>
+        </Card>
+        <Card title="Who is on the team" hint="Active accounts by role.">
+          <RankedBars rows={s.roles.map((r) => ({ name: ROLE_LABELS[r.role as keyof typeof ROLE_LABELS] ?? r.role, count: r.count }))} tone="bg-violet-500" />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function PeopleTab({ p }: { p: Awaited<ReturnType<typeof peoplePulse>> }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <Card title="The team" hint="Everyone with a staff account, what they did this week, and when they last signed in.">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th className="pb-2 font-medium">Person</th><th className="pb-2 font-medium">Role</th><th className="pb-2 text-right font-medium">Actions, 7 days</th><th className="pb-2 text-right font-medium">Last in</th></tr></thead>
+            <tbody className="divide-y">
+              {p.staff.map((x) => (
+                <tr key={x.id}>
+                  <td className="py-2 font-medium">{x.name}{x.status !== "ACTIVE" ? <span className="ml-2 text-xs text-destructive">{x.status.toLowerCase()}</span> : null}</td>
+                  <td className="py-2 text-muted-foreground">{ROLE_LABELS[x.role]}</td>
+                  <td className="tnum py-2 text-right">{x.actions7}</td>
+                  <td className="py-2 text-right text-muted-foreground">{x.lastLoginAt ? when(x.lastLoginAt) : "never"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      <Card title="My recent actions" hint="What you did as the developer — these lines can never be edited or deleted.">
+        <ul className="divide-y text-sm">
+          {p.mine.map((m, i) => (
+            <li key={i} className="py-2"><p>{m.summary}</p><p className="text-xs text-muted-foreground">{when(m.createdAt)}</p></li>
+          ))}
+          {p.mine.length === 0 ? <li className="py-4 text-center text-muted-foreground">Nothing yet.</li> : null}
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+function SpeedTab({ d, speed }: { d: Awaited<ReturnType<typeof dataPulse>>; speed: Awaited<ReturnType<typeof speedPulse>> }) {
   const max = Math.max(1, ...d.rows.map((r) => r.count));
   return (
-    <Card title="What the system holds" hint={d.since ? `Records in the database. The audit log reaches back to ${when(d.since).slice(0, 6)}.` : "Records in the database."}>
-      <ul className="space-y-3">
-        {d.rows.map((r) => (
-          <li key={r.name}>
-            <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-medium">{r.name}</span><span className="tnum text-muted-foreground">{r.count.toLocaleString("en-US")}</span></div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(1, (r.count / max) * 100)}%` }} /></div>
-          </li>
-        ))}
-      </ul>
-    </Card>
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kpi label="Database answer" value={`${speed.avg} ms`} caption={`slowest of 5: ${speed.max} ms`} tag={speed.avg >= 400 ? "Slow" : speed.avg >= 150 ? "Look" : "Fast"} tone={speed.avg >= 400 ? "bad" : speed.avg >= 150 ? "warn" : "good"}
+          explain="How long the database takes to answer the simplest question, measured just now five times. Under 150 ms is fast; over 400 ms, pages will feel slow." />
+        <Kpi label="Cargo list" value={`${speed.list} ms`} caption="the newest 50 consignments" tag={speed.list >= 600 ? "Slow" : "Fine"} tone={speed.list >= 600 ? "bad" : "good"}
+          explain="How long a real screen's query takes. If this grows far above the figure beside it as data grows, the screen needs an index or a smaller page." />
+        <Kpi label="Audit lines" value={(d.rows.find((r) => r.name === "Audit lines")?.count ?? 0).toLocaleString("en-US")} caption="in the permanent diary" tag="Size" tone="info"
+          explain="Every action is kept for good, so this only grows. It is cheap to keep, but it is the table to watch first." />
+      </div>
+      <Card title="What the system holds" hint={d.since ? `Records in the database. The audit log reaches back to ${when(d.since).slice(0, 6)}.` : "Records in the database."}>
+        <ul className="space-y-3">
+          {d.rows.map((r) => (
+            <li key={r.name}>
+              <div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-medium">{r.name}</span><span className="tnum text-muted-foreground">{r.count.toLocaleString("en-US")}</span></div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-brand" style={{ width: `${Math.max(1, (r.count / max) * 100)}%` }} /></div>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
   );
 }
