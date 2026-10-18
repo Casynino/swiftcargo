@@ -252,6 +252,23 @@ model DeveloperSession {
   @@index([userId, mode])
 }
 
+/// A server error, written down when it happens, so the developer sees what
+/// is going wrong without anyone having to report it. Never holds a request
+/// body, a cookie or a header — only what failed and where.
+model SystemEvent {
+  id String @id @default(cuid())
+
+  kind    String // "ERROR"
+  message String
+  path    String?
+  route   String?
+  digest  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+}
+
 // ---------------------------------------------------------------------------
 // Customers and suppliers
 // ---------------------------------------------------------------------------

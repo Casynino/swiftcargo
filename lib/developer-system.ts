@@ -87,7 +87,7 @@ export async function businessPulse() {
 }
 
 /** Things in the business that have waited too long — added to "Needs your attention". */
-export async function businessFindings() {
+export async function businessFindings(): Promise<{ key: string; tone: "look" | "info"; title: string; detail: string; href?: string; fix?: string }[]> {
   const now = Date.now();
   const [pay, uncheckedCleared, noBill, overdue] = await Promise.all([
     prisma.payment.count({ where: { status: "PENDING", createdAt: { lt: new Date(now - DAY) } } }),
@@ -104,11 +104,11 @@ export async function businessFindings() {
     }),
     prisma.invoice.count({ where: { status: "OVERDUE" } }),
   ]);
-  const out: { key: string; tone: "look" | "info"; title: string; detail: string; href?: string }[] = [];
-  if (pay) out.push({ key: "pay", tone: "look", title: `${pay} payment${pay === 1 ? "" : "s"} waiting to be verified for over a day`, detail: "Money has been reported and nobody in Finance has checked it. The customer's bill still shows it as owing.", href: "/app/finance/verify" });
-  if (uncheckedCleared) out.push({ key: "unchecked", tone: "look", title: `${uncheckedCleared} cleared consignment${uncheckedCleared === 1 ? "" : "s"} not checked in for 2+ days`, detail: "Storage is already running on them, but the Dar warehouse has not verified the goods.", href: "/app/receive/dar" });
-  if (noBill) out.push({ key: "nobill", tone: "look", title: `${noBill} consignment${noBill === 1 ? "" : "s"} in Dar with no bill`, detail: "Landed for three days or more and nobody has priced them. The customer cannot be asked to pay.", href: "/app/finance/prices" });
-  if (overdue) out.push({ key: "overdue", tone: "info", title: `${overdue} overdue bill${overdue === 1 ? "" : "s"}`, detail: "Past their due date and still owing.", href: "/app/finance/collections" });
+  const out: { key: string; tone: "look" | "info"; title: string; detail: string; href?: string; fix?: string }[] = [];
+  if (pay) out.push({ key: "pay", tone: "look", title: `${pay} payment${pay === 1 ? "" : "s"} waiting to be verified for over a day`, detail: "Money has been reported and nobody in Finance has checked it. The customer's bill still shows it as owing.", href: "/app/finance/verify", fix: "Ask Finance to open the list and verify or reject each one — or work as Finance and do it." });
+  if (uncheckedCleared) out.push({ key: "unchecked", tone: "look", title: `${uncheckedCleared} cleared consignment${uncheckedCleared === 1 ? "" : "s"} not checked in for 2+ days`, detail: "Storage is already running on them, but the Dar warehouse has not verified the goods.", href: "/app/receive/dar", fix: "Ask the Dar warehouse to check the goods in on the Receiving dock." });
+  if (noBill) out.push({ key: "nobill", tone: "look", title: `${noBill} consignment${noBill === 1 ? "" : "s"} in Dar with no bill`, detail: "Landed for three days or more and nobody has priced them. The customer cannot be asked to pay.", href: "/app/finance/prices", fix: "Ask Finance to confirm the prices on the Confirm prices page." });
+  if (overdue) out.push({ key: "overdue", tone: "info", title: `${overdue} overdue bill${overdue === 1 ? "" : "s"}`, detail: "Past their due date and still owing.", href: "/app/finance/collections", fix: "Finance should follow these customers up; Support can call them." });
   return out;
 }
 

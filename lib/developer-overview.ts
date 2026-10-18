@@ -20,6 +20,10 @@ export type Finding = {
   detail: string;
   /** Where to go and deal with it — the developer's permissions open any screen. */
   href?: string;
+  /** What to do about it, in plain words. */
+  fix?: string;
+  /** Plain examples behind a count — the first few of what is wrong. */
+  lines?: string[];
   /** The individual things behind a count, so the card says what they are. */
   items?: { title: string; body: string | null; who: string; whoId: string; role: string; age: string; href: string | null }[];
 };

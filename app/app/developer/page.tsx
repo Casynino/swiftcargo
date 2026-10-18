@@ -8,7 +8,8 @@ import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { startWorkAs } from "@/lib/actions/developer";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
-import { activityKpis, businessFindings, businessPulse, dataPulse, messagesPulse, peoplePulse, securityPulse, settingsPulse, speedPulse } from "@/lib/developer-system";
+import { systemChecks } from "@/lib/developer-checks";
+import { activityKpis, businessPulse, dataPulse, messagesPulse, peoplePulse, securityPulse, settingsPulse, speedPulse } from "@/lib/developer-system";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -65,7 +66,7 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
   const user = await requirePermission("developer.activity");
   const [o0, extra, warehouses, people] = await Promise.all([
     developerOverview(),
-    businessFindings(),
+    systemChecks(),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
     prisma.user.findMany({
       where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
@@ -191,7 +192,7 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
             {[...need, ...good].map((f) => {
               const t = TONE[f.tone];
               return (
-                <details key={f.key} open={f.tone !== "info" && Boolean(f.items?.length)} className={cn("group rounded-xl border px-4 py-3 lg:col-span-2", t.ring)}>
+                <details key={f.key} open={f.tone !== "info"} className={cn("group rounded-xl border px-4 py-3 lg:col-span-2", t.ring)}>
                   <summary className="flex cursor-pointer list-none items-center gap-3">
                     <t.icon className="size-5 shrink-0" />
                     <span className="min-w-0 flex-1">
@@ -200,6 +201,14 @@ export default async function DeveloperHome({ searchParams }: { searchParams: Pr
                     <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide", t.badge)}>{T(t.label)}</span>
                   </summary>
                   <p className="mt-2 pl-8 text-sm text-muted-foreground">{f.detail}</p>
+                  {f.lines?.length ? (
+                    <ul className="mt-2 space-y-0.5 pl-8 text-xs text-muted-foreground">
+                      {f.lines.map((l, i) => <li key={i} className="truncate font-mono">• {l}</li>)}
+                    </ul>
+                  ) : null}
+                  {f.fix ? (
+                    <p className="mt-3 pl-8 text-sm"><span className="font-semibold">{T("What to do:")}</span> {f.fix}</p>
+                  ) : null}
                   {f.items?.length ? (
                     <ul className="mt-3 space-y-2 pl-8">
                       {f.items.map((it, i) => (
