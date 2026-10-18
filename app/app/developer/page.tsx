@@ -4,6 +4,7 @@ import { AlertTriangle, BarChart3, Info, ScrollText, ShieldCheck, TriangleAlert 
 
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, RankedBars, ScoreRing, StackedBars } from "@/components/app/dev-charts";
+import { WorkAsDialog } from "@/components/app/work-as-dialog";
 import { ROLE_LABELS } from "@/lib/constants";
 import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overview";
 import { prisma } from "@/lib/prisma";
@@ -58,9 +59,14 @@ const Card = ({ title, hint, children, className }: { title: string; hint?: stri
 export default async function DeveloperHome() {
   await primeLocale();
   const user = await requirePermission("developer.activity");
-  const [o, warehouses] = await Promise.all([
+  const [o, warehouses, people] = await Promise.all([
     developerOverview(),
     prisma.warehouse.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, kind: true } }),
+    prisma.user.findMany({
+      where: { active: true, status: "ACTIVE", role: { notIn: ["CUSTOMER", "DEVELOPER"] } },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, role: true },
+    }),
   ]);
 
   const hello = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Africa/Dar_es_Salaam" });
@@ -81,7 +87,10 @@ export default async function DeveloperHome() {
         </h1>
         <p className="mt-1 text-sm text-white/90">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
         </div>
-        <AddAccountDialog warehouses={warehouses} tone="light" />
+        <div className="flex flex-wrap items-center gap-2">
+          <WorkAsDialog people={people} />
+          <AddAccountDialog warehouses={warehouses} tone="light" />
+        </div>
       </section>
 
       <section className="grid gap-6 rounded-2xl border bg-card p-6 lg:grid-cols-[1.4fr_1fr]">
