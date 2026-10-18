@@ -305,14 +305,14 @@ export default async function DeveloperHome() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <Card title={T("Recent sign-ins")} hint={T("The last 12 successful sign-ins: who, on what device, from where.")}>
+        <Card title={T("Recent sign-ins")} hint={T("The last 9 successful sign-ins: who, on what device, from where.")}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <tr><th className="pb-2 font-medium">{T("Person")}</th><th className="pb-2 font-medium">{T("Device")}</th><th className="pb-2 font-medium">{T("From")}</th><th className="pb-2 text-right font-medium">{T("When")}</th></tr>
               </thead>
               <tbody className="divide-y">
-                {o.recent.map((r, i) => (
+                {o.recent.slice(0, 9).map((r, i) => (
                   <tr key={i}>
                     <td className="py-2.5"><span className="font-medium">{r.name}</span><span className="block text-xs text-muted-foreground">{r.role ? ROLE_LABELS[r.role as keyof typeof ROLE_LABELS] : ""}</span></td>
                     <td className="py-2.5 text-muted-foreground">{r.device}</td>
@@ -327,6 +327,12 @@ export default async function DeveloperHome() {
         <div className="space-y-4">
           <Card title={T("Most active people")} hint={T("Actions saved in the last 7 days.")}>
             <RankedBars rows={o.active} tone="bg-violet-500" />
+          </Card>
+          <Card title={T("Who signs in")} hint={T("Sign-ins in the last 14 days, by kind of account.")}>
+            <RankedBars
+              rows={GROUPS.map((g) => ({ name: g, count: o.signinsPerDay.reduce((n, d) => n + (d.by[g] ?? 0), 0) })).filter((r) => r.count > 0).sort((a, b) => b.count - a.count)}
+              tone="bg-sky-500"
+            />
           </Card>
           <Card title={T("Not using the system")} hint={T("Active accounts that never signed in, or not for 30+ days.")}>
             {o.idle.length === 0 ? (
