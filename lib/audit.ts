@@ -51,6 +51,10 @@ export function withNote(summary: string, note?: string | null) {
  */
 export async function recordAudit(input: AuditInput, tx?: TxClient) {
   const client = tx ?? prisma;
+  /* The developer leaves a track only when something is changed, added or
+     removed. An attempt that was refused or failed changed nothing, so it is
+     not written down — signing in, looking and trying are not changes. */
+  if ((input.actor?.role === "DEVELOPER" || input.actor?.impersonatedBy) && (input.outcome ?? "SUCCESS") !== "SUCCESS") return;
   await client.auditLog.create({
     data: {
       /* The actor is whoever the server authenticated — it is never read from

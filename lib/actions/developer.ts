@@ -24,14 +24,8 @@ export async function startWorkAs(formData: FormData) {
   const targetId = String(formData.get("userId") ?? "");
   const target = await startWorkingAs(dev.user.id, dev.sid, targetId);
   if (!target) redirect("/app/developer/users?refused=1");
-  await recordAudit({
-    actor: dev.user,
-    action: "developer.work_as.start",
-    entity: "User",
-    entityId: target.id,
-    summary: `${dev.user.name} started working as ${target.name} (${target.role})`,
-    metadata: { target: { id: target.id, name: target.name, role: target.role } },
-  });
+  /* Starting is not a change, so it leaves no line; what is done while
+     working as the person is recorded, under the developer, as it happens. */
   /* Straight to the thing that needed doing, when asked — only ever a page in
      the app, never a link to somewhere else. */
   const next = String(formData.get("next") ?? "");
@@ -41,15 +35,7 @@ export async function startWorkAs(formData: FormData) {
 export async function stopWorkAs() {
   const dev = await realDeveloper();
   if (!dev) redirect("/login");
-  const target = await workingAs(dev.user.id, dev.sid);
   await stopWorkingAs(dev.user.id, dev.sid);
-  await recordAudit({
-    actor: dev.user,
-    action: "developer.work_as.stop",
-    entity: "User",
-    entityId: target?.id ?? null,
-    summary: `${dev.user.name} stopped working as ${target?.name ?? "a staff member"}`,
-  });
   redirect("/app/developer/users");
 }
 

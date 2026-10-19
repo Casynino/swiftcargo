@@ -95,7 +95,19 @@ export default async function AuditPage({
   const from = darDay(params.from, false);
   const to = darDay(params.to, true);
 
+  /* The developer's track belongs to the developer and the owner, and to the
+     owner only where something was changed. Nobody else reads it. Lines from
+     before sign-ins stopped being recorded are left out for the owner too. */
+  const NOT_CHANGES = ["auth.login", "auth.login.failed", "auth.logout", "developer.work_as.start", "developer.work_as.stop"];
+  const developerFilter: Prisma.AuditLogWhereInput =
+    user.role === "DEVELOPER"
+      ? {}
+      : user.role === "ADMIN"
+        ? { NOT: { actorType: "DEVELOPER", action: { in: NOT_CHANGES } } }
+        : { NOT: { actorType: "DEVELOPER" } };
+
   const where: Prisma.AuditLogWhereInput = {
+    ...developerFilter,
     ...(params.who ? { actorId: params.who } : {}),
     ...(params.entity ? { entity: params.entity } : {}),
     ...(from || to
@@ -125,7 +137,7 @@ export default async function AuditPage({
     /* Only people who have a line in the log. A name in the picker that can
        only ever return "Nothing recorded" is a question already answered. */
     prisma.user.findMany({
-      where: { auditLogs: { some: {} } },
+      where: { auditLogs: { some: developerFilter }, ...(user.role === "DEVELOPER" ? {} : { role: { not: "DEVELOPER" as const } }) },
       orderBy: { name: "asc" },
       select: { id: true, name: true, role: true },
     }),

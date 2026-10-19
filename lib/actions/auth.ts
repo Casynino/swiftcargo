@@ -58,13 +58,15 @@ export async function logout() {
     /* Signing out ends the developer's server-side session too, so the cookie
        is worth nothing the moment after, whoever still holds a copy. */
     if (who.user.role === "DEVELOPER") await endDeveloperSession(who.user.id, who.sid, "signed-out");
-    await recordAudit({
-      actor: who.user,
-      action: "auth.logout",
-      entity: "User",
-      entityId: who.user.id,
-      summary: `${who.user.name} signed out`,
-    });
+    if (who.user.role !== "DEVELOPER") {
+      await recordAudit({
+        actor: who.user,
+        action: "auth.logout",
+        entity: "User",
+        entityId: who.user.id,
+        summary: `${who.user.name} signed out`,
+      });
+    }
   }
   await signOut({ redirectTo: "/login" });
 }
