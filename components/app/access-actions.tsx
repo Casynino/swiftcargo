@@ -4,7 +4,7 @@ import { useActionState, useCallback, useEffect, useState } from "react";
 import { Trash2, UserRoundX, UserRoundCheck } from "lucide-react";
 
 import { Modal } from "@/components/app/modal";
-import { deleteAccount, reactivateAccount, suspendAccount, type AccessState } from "@/lib/actions/developer";
+import { deleteAccount, deleteCustomerAccount, reactivateAccount, suspendAccount, type AccessState } from "@/lib/actions/developer";
 
 /** One question, two buttons: nothing to type. */
 function ConfirmDialog({
@@ -15,6 +15,7 @@ function ConfirmDialog({
   confirmLabel,
   userId,
   action,
+  field = "userId",
 }: {
   trigger: React.ReactNode;
   tone: "neutral" | "danger";
@@ -23,6 +24,7 @@ function ConfirmDialog({
   confirmLabel: string;
   userId: string;
   action: (prev: AccessState, formData: FormData) => Promise<AccessState>;
+  field?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState<AccessState, FormData>(action, {});
@@ -39,7 +41,7 @@ function ConfirmDialog({
         <Modal title={title} onClose={close} className="max-w-md">
           <p className="text-sm text-muted-foreground">{body}</p>
           <form action={formAction} className="space-y-3">
-            <input type="hidden" name="userId" value={userId} />
+            <input type="hidden" name={field} value={userId} />
             {state.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={close} className="h-10 rounded-lg border px-4 text-sm font-medium hover:bg-secondary">Cancel</button>
@@ -92,6 +94,21 @@ export function DeleteForm({ userId, name }: { userId: string; name: string }) {
       confirmLabel="Confirm"
       userId={userId}
       action={deleteAccount}
+    />
+  );
+}
+
+export function DeleteCustomerForm({ customerId, name }: { customerId: string; name: string }) {
+  return (
+    <ConfirmDialog
+      trigger={<><Trash2 className="size-4" />Delete</>}
+      tone="danger"
+      title={`Delete ${name}?`}
+      body="They can no longer sign in or be chosen for new cargo. Their cargo, bills and payments stay, under their name."
+      confirmLabel="Confirm"
+      userId={customerId}
+      field="customerId"
+      action={deleteCustomerAccount}
     />
   );
 }

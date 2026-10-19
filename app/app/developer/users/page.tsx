@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, Warehouse } from "lucide-react";
+import { AlertTriangle, BadgeDollarSign, Headset, Lock, LogIn, Package, ShieldCheck, UserRoundX, Warehouse } from "lucide-react";
 
-import { DeleteForm, ReactivateForm, SuspendForm } from "@/components/app/access-actions";
+import { DeleteCustomerForm, DeleteForm, ReactivateForm, SuspendForm } from "@/components/app/access-actions";
 import { AccessSearch } from "@/components/app/access-search";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -115,12 +115,14 @@ export default async function AccessPage({ searchParams }: { searchParams: Promi
                       <p className="truncate text-xs text-muted-foreground">{c.businessName ? `${c.fullName} · ` : ""}{c.phone} · {c.code}</p>
                       <p className="text-xs text-muted-foreground">{login ? `${login.email} · ${T("Last signed in")} ${ago(login.lastLoginAt)}` : T("No sign-in account")}</p>
                     </div>
-                    {login ? (
-                      <div className="flex items-center gap-2">
-                        {suspended ? (mine.has(login.id) ? <ReactivateForm userId={login.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={login.id} name={c.businessName || c.fullName} />}
-                        <DeleteForm userId={login.id} name={c.businessName || c.fullName} />
-                      </div>
-                    ) : null}
+                    <div className="flex items-center gap-2">
+                      {login ? (
+                        suspended ? (mine.has(login.id) ? <ReactivateForm userId={login.id} /> : <span className="text-xs text-muted-foreground">{T("Suspended by someone else")}</span>) : <SuspendForm userId={login.id} name={c.businessName || c.fullName} />
+                      ) : (
+                        <span title={T("Suspend blocks a sign-in, and this customer has none.")} className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-muted-foreground/50"><UserRoundX className="size-4" />{T("Suspend")}</span>
+                      )}
+                      <DeleteCustomerForm customerId={c.id} name={c.businessName || c.fullName} />
+                    </div>
                   </div>
                 );
               })}

@@ -143,3 +143,39 @@ export async function deleteAccount(_prev: AccessState, formData: FormData): Pro
   revalidatePath("/app/developer/users");
   return { ok: `${target.name}'s account is deleted. What they recorded is kept.` };
 }
+
+/**
+ * DELETE A CUSTOMER: THEY LOSE THEIR WAY IN, THEIR HISTORY STAYS.
+ *
+ * The customer is taken off the books the way the customers screen does it —
+ * archived, so lists and search stop offering them for new cargo — and their
+ * portal sign-in, if any, is closed. Unlike the customers screen it is not
+ * refused for cargo or bills on record: nothing is removed, so every
+ * consignment, bill and payment still names them.
+ */
+export async function deleteCustomerAccount(_prev: AccessState, formData: FormData): Promise<AccessState> {
+  const dev = await realDeveloper();
+  if (!dev) return { error: "Not allowed." };
+  if (await workingAs(dev.user.id, dev.sid)) return { error: "Stop working as someone first." };
+  const id = String(formData.get("customerId") ?? "");
+  const customer = await prisma.customer.findFirst({
+    where: { id, deletedAt: null },
+    select: { id: true, code: true, fullName: true, businessName: true, login: { select: { id: true } } },
+  });
+  if (!customer) return { error: "That customer is already gone." };
+  await prisma.$transaction(async (tx) => {
+    await tx.customer.update({ where: { id: customer.id }, data: { deletedAt: new Date() } });
+    if (customer.login) await removeAccess(tx, customer.login.id);
+  });
+  const name = customer.businessName || customer.fullName;
+  await recordAudit({
+    actor: dev.user,
+    action: "developer.delete_customer",
+    entity: "Customer",
+    entityId: customer.id,
+    summary: `${dev.user.name} deleted the customer ${name} (${customer.code})`,
+  });
+  revalidatePath("/app/developer/users");
+  revalidatePath("/app/customers");
+  return { ok: `${name} is deleted. Their cargo and bills are kept.` };
+}
