@@ -141,7 +141,7 @@ export default async function AuditPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true, role: true },
     }),
-    prisma.auditLog.groupBy({ by: ["entity"], orderBy: { entity: "asc" } }),
+    prisma.auditLog.groupBy({ by: ["entity"], where: developerFilter, orderBy: { entity: "asc" } }),
   ]);
 
   /* Which consignment a bill belongs to is the first thing anybody asks of a

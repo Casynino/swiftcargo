@@ -166,19 +166,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               )
             : undefined;
 
-        await prisma.auditLog.create({
-          data: {
-            ...auditIdentity(user),
-            action: "auth.login",
-            entity: "User",
-            entityId: user.id,
-            summary:
-              user.role === "DEVELOPER"
-                ? `${user.name} signed in to the developer account`
-                : `${user.name} signed in`,
-            requestId: head.get("x-vercel-id") ?? undefined,
-          },
-        });
+        /* Signing in is not a change: the developer's sign-ins live in the
+           sign-in log and leave no line in the audit trail. */
+        if (user.role !== "DEVELOPER") {
+          await prisma.auditLog.create({
+            data: {
+              ...auditIdentity(user),
+              action: "auth.login",
+              entity: "User",
+              entityId: user.id,
+              summary: `${user.name} signed in`,
+              requestId: head.get("x-vercel-id") ?? undefined,
+            },
+          });
+        }
 
         return {
           id: user.id,
