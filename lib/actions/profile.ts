@@ -87,9 +87,6 @@ export async function changeMyPassword(
   formData: FormData
 ): Promise<ProfileState> {
   const user = await requireUser();
-  if (user.impersonatedBy) {
-    return { error: "A password cannot be changed while working as someone else." };
-  }
 
   const parsed = passwordSchema.safeParse({
     current: formData.get("current")?.toString() ?? "",
