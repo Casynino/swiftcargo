@@ -1,5 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 
+import { withRetry } from "@/lib/db-retry";
+
 /**
  * One client per process. Next.js reloads modules on every edit in development,
  * and a new pool per reload exhausts Postgres connections within a few minutes.
@@ -15,11 +17,18 @@ import { PrismaClient, Prisma } from "@prisma/client";
  */
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ??
+/* A sleeping Neon database fails the first request with P1001; asking again a
+   moment later is answered. Typed as the plain client so nothing else changes. */
+const create = () =>
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-  });
+  }).$extends({
+    query: {
+      $allOperations: ({ args, query }) => withRetry(() => query(args)),
+    },
+  }) as unknown as PrismaClient;
+
+export const prisma = globalForPrisma.prisma ?? create();
 
 globalForPrisma.prisma = prisma;
 
