@@ -2,6 +2,8 @@ import "server-only";
 
 import { jsPDF } from "jspdf";
 
+import { latinOnly } from "@/lib/pdf-latin";
+
 import type { PayrollFigure } from "@/lib/payroll";
 
 type RGB = [number, number, number];
@@ -54,6 +56,7 @@ export type PayslipInput = {
  */
 export function renderPayslipsPdf(slips: PayslipInput[]): Uint8Array {
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: "portrait", compress: true });
+  latinOnly(doc);
   const W = doc.internal.pageSize.getWidth();
   const CONTENT = W - MARGIN * 2;
 

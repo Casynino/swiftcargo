@@ -2,6 +2,8 @@ import "server-only";
 
 import { jsPDF } from "jspdf";
 
+import { latinOnly } from "@/lib/pdf-latin";
+
 import type { Cell, ReportTable } from "@/lib/report-tables";
 
 type RGB = [number, number, number];
@@ -48,6 +50,7 @@ export function renderReportPdf(
 ): Uint8Array {
   const landscape = report.columns.length > 6;
   const doc = new jsPDF({ unit: "pt", format: "a4", orientation: landscape ? "landscape" : "portrait", compress: true });
+  latinOnly(doc);
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const CONTENT = W - MARGIN * 2;

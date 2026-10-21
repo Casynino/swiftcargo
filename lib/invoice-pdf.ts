@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 
+import { latinOnly } from "@/lib/pdf-latin";
+
 /**
  * THE INVOICE AS A FILE.
  *
@@ -162,6 +164,7 @@ export function latinLabel(text: string, fallback: string): string {
 
 export function renderInvoicePdf(input: InvoicePdfInput): Uint8Array {
   const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+  latinOnly(doc);
 
   const ink = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
   const fill = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);

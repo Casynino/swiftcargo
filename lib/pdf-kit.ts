@@ -2,6 +2,8 @@ import "server-only";
 
 import { jsPDF } from "jspdf";
 
+import { latinOnly } from "@/lib/pdf-latin";
+
 /**
  * THE PIECES EVERY DOCUMENT WE HAND OUT IS BUILT FROM.
  *
@@ -53,6 +55,7 @@ export function sheet(
     orientation: "portrait",
     compress: true,
   });
+  latinOnly(doc);
   const w = doc.internal.pageSize.getWidth();
   const h = doc.internal.pageSize.getHeight();
   return { doc, w, h, margin, right: w - margin, bottom: h - margin };
