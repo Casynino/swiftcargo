@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as Icons from "lucide-react";
-import { Bell, ChevronRight, Globe, LogOut, Menu, X } from "lucide-react";
+import { Bell, ChevronDown, ChevronRight, Globe, LogOut, Menu, X } from "lucide-react";
 import type { Role } from "@prisma/client";
 
 import { MobileTabbar } from "@/components/app/mobile-tabbar";
@@ -85,6 +85,22 @@ export function AppShell({
     .sort((a, b) => b.length - a.length)[0];
   const isActive = (href: string) => href === current;
 
+  /* WHICH SECTIONS ARE UNFOLDED.
+
+     The one holding the page you are on opens by itself, and opens again when
+     you move to another; the rest stay folded until pressed, so a desk with
+     five departments shows five lines, not thirty. What was pressed is
+     remembered for as long as the page is open. On Home, the first section is
+     the one shown. */
+  const [pressed, setPressed] = useState<Record<string, boolean>>({});
+  const labelled = sections.filter((s) => s.label);
+  const here = sections.find((s) => s.label && s.items.some((i) => i.href === current))?.label;
+  const isOpen = (s: NavSection) => (s.label in pressed ? pressed[s.label] : s.label === (here ?? labelled[0]?.label));
+  const toggle = (s: NavSection) => setPressed((p) => ({ ...p, [s.label]: !isOpen(s) }));
+  useEffect(() => {
+    if (here) setPressed((p) => (p[here] === true ? p : { ...p, [here]: true }));
+  }, [here]);
+
   const row = (item: { href: string; icon: string; label: string }) => (
     <Link
       href={item.href}
@@ -102,30 +118,42 @@ export function AppShell({
   );
 
   const nav = (
-    <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4">
+    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
       {/* Home stands on its own above everything, because every desk starts and
           returns here and it belongs to no department. */}
       <div>{row(home)}</div>
 
-      {sections.map((section) => (
-        <div key={section.label || "top"}>
-          {/* A section with no heading is the desk's own top rows, standing
-              with Home rather than grouped under a name. */}
-          {section.label ? (
-            <p className="flex items-center gap-2 px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              <Glyph name={section.icon} className="size-3.5 shrink-0" />
-              {tr(section.label)}
-            </p>
-          ) : null}
-          {/* The rule down the left is what makes a section read as a group
-              rather than a heading followed by unrelated rows. */}
-          <ul className={section.label ? "ml-[1.1rem] space-y-0.5 border-l pl-2" : "space-y-0.5"}>
-            {section.items.map((item) => (
-              <li key={item.href}>{row(item)}</li>
-            ))}
-          </ul>
-        </div>
-      ))}
+      {sections.map((section) => {
+        /* A section with no heading is the desk's own top rows, standing with
+           Home rather than grouped under a name, and so is never folded away. */
+        const folds = !!section.label;
+        const shown = !folds || isOpen(section);
+        return (
+          <div key={section.label || "top"}>
+            {folds ? (
+              <button
+                type="button"
+                onClick={() => toggle(section)}
+                aria-expanded={shown}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+              >
+                <Glyph name={section.icon} className="size-4 shrink-0" />
+                <span className="flex-1 truncate">{tr(section.label)}</span>
+                <ChevronDown className={cn("size-4 shrink-0 transition-transform", !shown && "-rotate-90")} />
+              </button>
+            ) : null}
+            {/* The rule down the left is what makes a section read as a group
+                rather than a heading followed by unrelated rows. */}
+            {shown ? (
+              <ul className={folds ? "ml-[1.35rem] mt-0.5 space-y-0.5 border-l pl-2" : "space-y-0.5"}>
+                {section.items.map((item) => (
+                  <li key={item.href}>{row(item)}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        );
+      })}
     </nav>
   );
 
