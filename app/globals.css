@@ -188,6 +188,15 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
   }
+  /* The page never scrolls or zooms sideways: whatever is too wide scrolls
+     inside its own box (a table, a chart), and an invisible element out to the
+     right can no longer make the phone shrink the whole screen to fit it.
+     `clip`, not `hidden`, so the sticky header keeps working. */
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
   a,
   button,
   [role="button"],

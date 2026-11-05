@@ -131,7 +131,7 @@ export function AppShell({
 
   return (
     <LocaleProvider locale={locale}>
-    <div className="flex min-h-dvh bg-surface-2">
+    <div className="flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2">
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex print:!hidden">
         <div className="flex h-16 items-center border-b px-4">
@@ -226,7 +226,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 print:p-0">
+        <main className="min-w-0 flex-1 px-4 py-6 lg:px-8 lg:py-8 print:p-0">
           {/* Records where the reader walked, for every back control. */}
           <Suspense fallback={null}>
             <NavTrail />

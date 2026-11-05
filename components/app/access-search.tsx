@@ -53,7 +53,7 @@ export function AccessSearch({ initial = "" }: { initial?: string }) {
         onKeyDown={(e) => {
           if (e.key === "Enter") e.preventDefault();
         }}
-        placeholder={tx("Search by name, email or role — or a customer’s name or phone")}
+        placeholder={tx("Search staff or customers")}
         className="h-full w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
       />
     </label>
