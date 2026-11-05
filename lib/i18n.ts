@@ -7666,6 +7666,8 @@ const ZH: Record<string, string> = {
   "consignments with us": "票货物在我们这里",
   "photos ready": "张照片已就绪",
   "Admin": "管理",
+  "Customers & support": "客户与客服",
+  "Website & markets": "网站与市场",
   "Administrator": "管理员",
   "Arrived Tanzania": "已抵达坦桑尼亚",
   "Arrived containers": "已到港集装箱",

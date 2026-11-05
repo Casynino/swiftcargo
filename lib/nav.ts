@@ -376,7 +376,7 @@ const MANAGER_SECTIONS: NavSection[] = [
  */
 const ADMIN_SECTIONS: NavSection[] = [
   {
-    label: "Cargo operations",
+    label: "Cargo",
     icon: "Boxes",
     items: [
       { label: "Search", href: "/app/search", icon: "Search", permissions: ["search.global"] },
@@ -417,9 +417,10 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Support and issues",
-    icon: "MessageSquare",
+    label: "Customers & support",
+    icon: "Users",
     items: [
+      { label: "Customers", href: "/app/customers", icon: "Users", permissions: ["customer.view"] },
       { label: "Tickets", href: "/app/support/tickets", icon: "MessageSquare", permissions: ["conversation.view"] },
       /* "Support home", not "Home" — this menu already has one, and a bare Home
          here would read as the owner's own dashboard. */
@@ -428,14 +429,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Customers",
-    icon: "Users",
-    items: [
-      { label: "Customers", href: "/app/customers", icon: "Users", permissions: ["customer.view"] },
-    ],
-  },
-  {
-    label: "Business",
+    label: "Website & markets",
     icon: "Store",
     items: [
       /* The editor, not the support desk's read view: this is the menu of the
@@ -446,7 +440,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Administration",
+    label: "Admin",
     icon: "SlidersHorizontal",
     items: [
       { label: "Staff", href: "/app/admin/users", icon: "UserCog", permissions: ["user.manage"] },
@@ -459,11 +453,11 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    /* No heading, same as the air desk: the logs are where an argument is
-       settled, not a kind of work. Every money action, and beside it every
-       privileged action. */
-    label: "",
-    icon: "",
+    /* The logs are where an argument is settled, not a kind of work: every
+       money action, and beside it every privileged action. Under a heading of
+       their own so the menu has no loose rows below its sections. */
+    label: "Audit",
+    icon: "History",
     items: [
       { label: "Money audit", href: "/app/finance/audit", icon: "History", permissions: ["accounting.view"] },
       { label: "Audit log", href: "/app/admin/audit", icon: "History", permissions: ["audit.view"] },
