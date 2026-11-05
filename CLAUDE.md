@@ -117,15 +117,17 @@ deploy.
 a form field or a request body. Changing a number in an address bar is the whole
 attack, and the only defence that works is never reading the number.
 
-**A customer on the books opens their login with the office's code, never with
-their phone number.** A number is written on every box and delivery note, so it
-proves nothing. Support, the manager or the owner (`customer.activate`) gives a
-six-digit one-time code (`lib/customer-activation.ts`: 15 minutes, once, five
-guesses, only a hash kept); the customer enters phone, code, email and a
-password and the login attaches to the existing Customer — never a second
-record. The same code resets a forgotten password. An unknown number registers
-as new. There is no SMS or email provider yet; when one is added it replaces
-the person reading the code out, not the rules above.
+**A customer on the books opens their own login: phone, then email and a
+password.** By the owner's decision there is no code for activation — a number
+on our books is enough — and the login attaches to the existing Customer, never
+a second record. The price is that anyone who knows a number can open that
+customer's login first, so Support is notified every time one is opened and the
+customer page shows the email that took it. A forgotten password is different:
+a phone number alone must never be able to take one back, so a reset needs the
+six-digit one-time code Support, the manager or the owner (`customer.activate`)
+gives (`lib/customer-activation.ts`: 15 minutes, once, five guesses, only a
+hash kept). An unknown number registers as new. There is no SMS or email
+provider yet; when one is added it replaces the person reading the code out.
 
 **Release is computed, not asserted.** No permission grants "this may go" —
 `release.execute` is only the authority to act on the answer. A warehouse never

@@ -57,7 +57,7 @@ export function PortalAccess({ mode }: { mode: "register" | "reset" }) {
         title={phone.step === "activate" ? "You have not opened your account yet" : "We could not find that number"}
         body={
           phone.step === "activate"
-            ? "Your customer profile is ready. Open your account first, with the code from our office."
+            ? "Your customer profile is ready. Activate your account first, with your email and a password."
             : "That number is not on our books. You can create a new account."
         }
         action={<Link href="/register" className={link}>Create or open my account</Link>}
@@ -115,17 +115,12 @@ function ActivateForm({ phone }: { phone: string }) {
       </div>
       <input type="hidden" name="phone" value={phone} />
       <div className="space-y-2">
-        <Label htmlFor="code">Code from our office</Label>
-        <Input id="code" name="code" required inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="\d{6}" placeholder="6 digits" className="tracking-[0.4em]" />
-        <p className="text-sm text-white/75">Call or message our office and we will give you a 6-digit code. It works for 15 minutes.</p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" required autoComplete="email" />
+        <Label htmlFor="email">Your email</Label>
+        <Input id="email" name="email" type="email" required autoComplete="email" autoFocus />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Choose a password</Label>
           <PasswordInput id="password" name="password" required minLength={8} autoComplete="new-password" />
         </div>
         <div className="space-y-2">
@@ -135,7 +130,7 @@ function ActivateForm({ phone }: { phone: string }) {
       </div>
       <FormMessage error={state.error} />
       <SubmitButton className="w-full" size="lg" pendingLabel="Opening…">
-        Open my account
+        Activate my account
       </SubmitButton>
       <p className="text-sm text-white/75">
         Wrong number?{" "}

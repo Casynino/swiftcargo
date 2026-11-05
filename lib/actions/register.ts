@@ -107,14 +107,14 @@ export async function registerCustomer(
       /*
         A PHONE NUMBER IS NOT PROOF OF WHO YOU ARE.
 
-        A number is written on every box and every delivery note, so anybody can
-        learn it. A customer already on the books opens their login with the
-        one-time code the office gives them (lib/actions/customer-access.ts),
-        never by typing their number here.
+        A customer already on the books opens their login through the phone
+        step (lib/actions/customer-access.ts), which attaches it to THEIR
+        record. This form only ever mints a new customer, so it refuses a
+        number that already has one rather than create a second record.
       */
       if (existing) {
         throw new Error(
-          "That phone number is already on our books. Choose “I have shipped with you before” and use the code from our office."
+          "That phone number is already on our books. Go back to the first step and enter it there to activate your account."
         );
       }
 

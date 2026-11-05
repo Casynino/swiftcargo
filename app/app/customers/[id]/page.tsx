@@ -197,12 +197,15 @@ export default async function CustomerPage({
                     ) : (
                       <span className="text-muted-foreground">{T("Waiting to be opened")}</span>
                     )}
-                    {can(user.role, "customer.activate") && (!customer.login || customer.login.status === "ACTIVE") ? (
+                    {customer.login?.email ? (
+                      <p className="mt-1 text-xs text-muted-foreground">{customer.login.email}</p>
+                    ) : null}
+                    {can(user.role, "customer.activate") && customer.login?.status === "ACTIVE" ? (
                       <div>
                         <CustomerCodeButton
                           customerId={customer.id}
                           name={customer.businessName || customer.fullName}
-                          hasLogin={!!customer.login}
+                          hasLogin
                         />
                       </div>
                     ) : null}

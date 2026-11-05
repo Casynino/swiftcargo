@@ -6,6 +6,7 @@ import { z } from "zod";
 import { signIn } from "@/auth";
 import { recordAudit } from "@/lib/audit";
 import { consumeCode, issueCode } from "@/lib/customer-activation";
+import { notifyStaff, staffInDepartment } from "@/lib/notify";
 import { normaliseTzPhone, tzPhoneProblem } from "@/lib/phone";
 import { prisma } from "@/lib/prisma";
 import { authorize } from "@/lib/session";
@@ -33,14 +34,18 @@ export async function issueCustomerCode(_prev: CodeState, formData: FormData): P
   if (customer.login && (customer.login.status !== "ACTIVE" || !customer.login.active)) {
     return { error: "This customer's login is suspended, so no code can be given. Re-activate it first." };
   }
-  const purpose = customer.login ? "RESET" : "ACTIVATE";
+  /* A customer with no login opens it themselves, with no code. A code is only
+     for taking a forgotten password back — the one step a phone number alone
+     must never be able to do. */
+  if (!customer.login) return { error: "This customer has not opened their account yet. They can do it themselves on the website." };
+  const purpose = "RESET" as const;
   const { code, expiresAt } = await prisma.$transaction((tx) => issueCode(tx, customer.id, purpose, actor.id));
   await recordAudit({
     actor,
-    action: purpose === "ACTIVATE" ? "customer.activation_code" : "customer.reset_code",
+    action: "customer.reset_code",
     entity: "Customer",
     entityId: customer.id,
-    summary: `${purpose === "ACTIVATE" ? "Gave an activation code to" : "Gave a password-reset code to"} ${customer.businessName || customer.fullName} (${customer.code})`,
+    summary: `Gave a password-reset code to ${customer.businessName || customer.fullName} (${customer.code})`,
   });
   return { ok: "Code ready.", code, purpose, expiresAt: expiresAt.toISOString() };
 }
@@ -71,7 +76,12 @@ const BAD_CODE = "That code is not right, or it has run out. Ask our office for 
 
 export type ActivateState = { error?: string; phone?: string };
 
-/** Public: a customer on the books, with no login yet, opens it with the office's code. */
+/**
+ * Public: a customer on the books, with no login yet, opens it with an email
+ * and a password of their choosing. By the owner's decision there is no code
+ * for this step — the number on our books is enough — so Support is told every
+ * time one is opened and can see which email took it.
+ */
 export async function activateAccount(_prev: ActivateState, formData: FormData): Promise<ActivateState> {
   const phone = normaliseTzPhone(String(formData.get("phone") ?? ""));
   if (!phone) return { error: "Check the phone number." };
@@ -79,13 +89,12 @@ export async function activateAccount(_prev: ActivateState, formData: FormData):
   if (!email.success) return { error: "That is not an email address.", phone };
   const pw = passwordRules.safeParse({ password: formData.get("password"), confirmPassword: formData.get("confirmPassword") });
   if (!pw.success) return { error: pw.error.issues[0]?.message ?? "Check the password.", phone };
-  const code = String(formData.get("code") ?? "");
 
   const customer = await prisma.customer.findFirst({
     where: { phone, deletedAt: null },
     select: { id: true, fullName: true, businessName: true, email: true, login: { select: { id: true } } },
   });
-  if (!customer) return { error: BAD_CODE, phone };
+  if (!customer) return { error: "We could not find that number. Go back and check it.", phone };
   if (customer.login) return { error: "This number already has an account. Please sign in.", phone };
 
   const taken = await prisma.user.findUnique({ where: { email: email.data }, select: { id: true } });
@@ -96,30 +105,42 @@ export async function activateAccount(_prev: ActivateState, formData: FormData):
   if (taken || emailOwner) return { error: "That email is already used by another account. Use your own email.", phone };
 
   const passwordHash = await bcrypt.hash(pw.data.password, 12);
-  const done = await prisma.$transaction(async (tx) => {
-    if (!(await consumeCode(tx, customer.id, "ACTIVATE", code))) return false;
-    await tx.user.create({
-      data: {
-        name: customer.fullName,
-        email: email.data,
-        phone,
-        role: "CUSTOMER",
-        department: null,
-        passwordHash,
-        customerId: customer.id,
-      },
+  try {
+    await prisma.$transaction(async (tx) => {
+      /* customerId is unique on a login, so two people pressing at once cannot both win. */
+      await tx.user.create({
+        data: {
+          name: customer.fullName,
+          email: email.data,
+          phone,
+          role: "CUSTOMER",
+          department: null,
+          passwordHash,
+          customerId: customer.id,
+        },
+      });
+      if (!customer.email) await tx.customer.update({ where: { id: customer.id }, data: { email: email.data } });
+      await notifyStaff(
+        await staffInDepartment("CUSTOMER_SUPPORT", tx),
+        {
+          kind: "customer.activated",
+          title: `${customer.businessName || customer.fullName} opened their portal account`,
+          body: `${phone} · ${email.data}`,
+          href: `/app/customers/${customer.id}`,
+        },
+        tx
+      );
     });
-    if (!customer.email) await tx.customer.update({ where: { id: customer.id }, data: { email: email.data } });
-    return true;
-  });
-  if (!done) return { error: BAD_CODE, phone };
+  } catch {
+    return { error: "This number already has an account. Please sign in.", phone };
+  }
 
   await recordAudit({
     actor: null,
     action: "customer.activate",
     entity: "Customer",
     entityId: customer.id,
-    summary: `${customer.businessName || customer.fullName} opened their portal login`,
+    summary: `${customer.businessName || customer.fullName} opened their portal account with ${email.data}`,
   });
   await signIn("credentials", { email: email.data, password: pw.data.password, redirectTo: "/portal" });
   return {};
