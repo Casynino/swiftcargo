@@ -96,6 +96,7 @@ const NO_TRAIL_NEEDED: Record<string, string> = {
   "auth.ts:logout": "ends a session",
   "developer.ts:startWorkAs": "opens a session as someone, changes no record; what is done while working as them is audited under the developer",
   "developer.ts:stopWorkAs": "ends that session, changes no record",
+  "customer-access.ts:checkPhone": "a read — says which step a phone number needs, changes nothing",
   "containers.ts:closeSailing": "each step it calls audits itself — the move writes a FieldChange and a case, reporting missing opens one, and the close is a ContainerEvent with the reason",
   "clearance.ts:markCargoCleared": "lib/clearance.ts clearCargo writes a FieldChange and an AuditLog row per consignment it clears",
   "clearance.ts:markContainerCleared": "lib/clearance.ts clearCargo writes a FieldChange and an AuditLog row per consignment it clears",

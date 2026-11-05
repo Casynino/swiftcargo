@@ -10,7 +10,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { TzPhoneInput } from "@/components/tz-phone-input";
 
-export function RegisterForm() {
+export function RegisterForm({ initialPhone }: { initialPhone?: string }) {
   const [state, action] = useActionState<ActionState, FormData>(
     registerCustomer,
     {}
@@ -33,7 +33,7 @@ export function RegisterForm() {
 
       <div className="space-y-2">
         <Label htmlFor="phone">Phone number</Label>
-        <TzPhoneInput key={state.values?.phone} id="phone" name="phone" required defaultValue={state.values?.phone} />
+        <TzPhoneInput key={state.values?.phone ?? initialPhone} id="phone" name="phone" required defaultValue={state.values?.phone ?? initialPhone} />
       </div>
 
       <div className="space-y-2">

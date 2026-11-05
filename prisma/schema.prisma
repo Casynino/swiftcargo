@@ -147,6 +147,7 @@ model User {
   createdUsers User[]  @relation("UserCreatedBy")
 
   auditLogs          AuditLog[]
+  issuedActivationCodes ActivationCode[] @relation("ActivationCodeIssuedBy")
   developerSessions  DeveloperSession[]
   loginEvents        LoginEvent[]
   notifications      Notification[]
@@ -322,6 +323,8 @@ model Customer {
   deletedAt DateTime?
 
   login User?
+
+  activationCodes ActivationCode[]
 
   cargoSent     Cargo[] @relation("CargoSender")
   cargoReceived Cargo[] @relation("CargoReceiver")
@@ -3068,4 +3071,30 @@ enum TermSource {
   STAFF
   /// Returned by a translation service.
   MACHINE
+}
+
+/// A one-time code the office reads to a customer so they can open their portal
+/// login (ACTIVATE) or set a new password (RESET). Only a hash is kept; the code
+/// itself is shown to staff once. Never deleted by the app except to replace an
+/// unused one.
+model ActivationCode {
+  id String @id @default(cuid())
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  /// "ACTIVATE" or "RESET".
+  purpose  String
+  codeHash String
+
+  issuedById String?
+  issuedBy   User?   @relation("ActivationCodeIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+
+  expiresAt DateTime
+  usedAt    DateTime?
+  /// Wrong guesses so far. The code dies at five.
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([customerId, purpose, createdAt])
 }

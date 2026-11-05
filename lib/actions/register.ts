@@ -107,20 +107,14 @@ export async function registerCustomer(
       /*
         A PHONE NUMBER IS NOT PROOF OF WHO YOU ARE.
 
-        Attaching a login to the existing record hands whoever typed the number
-        that customer's cargo, bills, photographs and the right to ask for their
-        goods to be delivered. A number is written on every box and every
-        delivery note, so it is the easiest thing in the building to learn. The
-        record is attached only when the email typed here is the one the office
-        already holds for that customer; otherwise the office opens the account,
-        having spoken to the person.
+        A number is written on every box and every delivery note, so anybody can
+        learn it. A customer already on the books opens their login with the
+        one-time code the office gives them (lib/actions/customer-access.ts),
+        never by typing their number here.
       */
-      if (
-        existing &&
-        (!existing.email || existing.email.trim().toLowerCase() !== data.email)
-      ) {
+      if (existing) {
         throw new Error(
-          "That phone number is already on our books. Contact our office and we will open your account for you."
+          "That phone number is already on our books. Choose “I have shipped with you before” and use the code from our office."
         );
       }
 
@@ -129,7 +123,6 @@ export async function registerCustomer(
         where: {
           email: { equals: data.email, mode: "insensitive" },
           deletedAt: null,
-          ...(existing ? { id: { not: existing.id } } : {}),
         },
         select: { id: true },
       });
@@ -139,22 +132,18 @@ export async function registerCustomer(
         );
       }
 
-      const customer =
-        existing ??
-        (await (async () => {
-          const code = await nextCustomerCode(tx);
-          return tx.customer.create({
-            data: {
-              code,
-              fullName: data.fullName,
-              businessName: data.businessName || null,
-              phone,
-              email: data.email,
-              country: "Tanzania",
-              shippingMark: await shippingMarkFor(tx, data.fullName, code),
-            },
-          });
-        })());
+      const code = await nextCustomerCode(tx);
+      const customer = await tx.customer.create({
+        data: {
+          code,
+          fullName: data.fullName,
+          businessName: data.businessName || null,
+          phone,
+          email: data.email,
+          country: "Tanzania",
+          shippingMark: await shippingMarkFor(tx, data.fullName, code),
+        },
+      });
 
       await tx.user.create({
         data: {

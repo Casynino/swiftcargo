@@ -196,6 +196,10 @@ export type Permission =
   /// owner's decision. Every other desk edits.
   | "customer.delete"
   | "customer.merge"
+  /// Hand a customer the one-time code that opens their portal login or resets
+  /// their password. A code is a way into somebody's cargo and bills, so it is
+  /// Support's, the manager's and the owner's — not every desk's.
+  | "customer.activate"
   | "conversation.view"
   | "conversation.reply"
   | "conversation.assign"
@@ -380,6 +384,7 @@ const DAR_WAREHOUSE: Permission[] = [
  * release a box.
  */
 const CUSTOMER_SUPPORT: Permission[] = [
+  "customer.activate",
   "cargo.view",
   "cargo.viewAll",
   "cargo.photo",

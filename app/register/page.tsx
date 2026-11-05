@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AuthScene } from "@/components/site/auth-scene";
-import { RegisterForm } from "@/components/site/register-form";
+import { PortalAccess } from "@/components/site/portal-access";
 
 export const metadata: Metadata = {
   title: "Create an account",
@@ -10,7 +10,8 @@ export const metadata: Metadata = {
     "Register with Swift Cargo to get your shipping mark and our Guangzhou warehouse address.",
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
+  const reset = (await searchParams).mode === "reset";
   return (
     <AuthScene
       photo="portYard"
@@ -28,13 +29,17 @@ export default function RegisterPage() {
         "Invoices and receipts in one place",
       ]}
     >
-      <h1 className="font-display text-3xl font-bold tracking-tight text-white">Create your account</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight text-white">
+        {reset ? "Forgot your password?" : "Open your account"}
+      </h1>
       <p className="mt-2 text-sm text-white/85">
-        You will get a shipping mark and our Guangzhou warehouse address straight away.
+        {reset
+          ? "Enter your phone number, then the 6-digit code our office gives you, and choose a new password."
+          : "Shipped with us before? We will find your profile. New? You will get your shipping mark and our Guangzhou address straight away."}
       </p>
 
       <div className="mt-7">
-        <RegisterForm />
+        <PortalAccess mode={reset ? "reset" : "register"} />
       </div>
 
       <p className="mt-8 text-sm text-white/85">
