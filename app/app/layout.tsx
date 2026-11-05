@@ -44,20 +44,33 @@ export default async function AppLayout({
           : null,
       }}
     >
-      {/* Working as somebody: a small pill in the corner, out of the way, with
-          the one thing needed — Stop. Hover for who is really behind it. */}
+      {/* Working as somebody. On a computer: a small pill in the corner, out of
+          the way. On a phone a floating pill sat on top of the page and the
+          bottom bar, so there it is a slim bar at the top of the page, in the
+          flow, that pushes the content down instead of covering it. Either way
+          the one thing needed is Stop. */}
       {user.impersonatedBy ? (
-        <div
-          title={`Everything you do is recorded as ${user.impersonatedBy.name} (Developer)`}
-          className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-warning py-1 pl-3 pr-1 text-xs font-medium text-white shadow-lg lg:bottom-4"
-        >
-          <span>Working as {user.name}</span>
-          <form action={stopWorkAs}>
-            <button type="submit" className="rounded-full bg-white/25 px-2.5 py-1 font-semibold hover:bg-white/35">
-              Stop
-            </button>
-          </form>
-        </div>
+        <>
+          <div
+            title={`Everything you do is recorded as ${user.impersonatedBy.name} (Developer)`}
+            className="hidden lg:fixed lg:bottom-4 lg:right-4 lg:z-40 lg:flex lg:items-center lg:gap-2 lg:rounded-full lg:bg-warning lg:py-1 lg:pl-3 lg:pr-1 lg:text-xs lg:font-medium lg:text-white lg:shadow-lg"
+          >
+            <span>Working as {user.name}</span>
+            <form action={stopWorkAs}>
+              <button type="submit" className="rounded-full bg-white/25 px-2.5 py-1 font-semibold hover:bg-white/35">
+                Stop
+              </button>
+            </form>
+          </div>
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl bg-warning px-3 py-2 text-sm font-medium text-white lg:hidden">
+            <span className="min-w-0 truncate">Working as {user.name}</span>
+            <form action={stopWorkAs} className="shrink-0">
+              <button type="submit" className="rounded-full bg-white/25 px-3 py-1 text-xs font-semibold">
+                Stop
+              </button>
+            </form>
+          </div>
+        </>
       ) : null}
       {children}
     </AppShell>
