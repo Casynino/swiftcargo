@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { CargoSticker, LABEL_MM, type StickerData } from "@/components/app/cargo-sticker";
+import { LabelPaper } from "@/components/app/label-paper";
 import { PrintButton } from "@/components/app/print-button";
 import { recordAudit } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
@@ -94,6 +95,7 @@ export default async function CargoLabelPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 print:max-w-none print:space-y-0">
+      <LabelPaper />
       {received ? (
         <div className="rounded-2xl border border-success/40 bg-success/10 p-4 print:hidden">
           <p className="flex items-center gap-2 font-semibold text-success">
