@@ -106,7 +106,7 @@ export function AppShell({
       href={item.href}
       onClick={() => setOpen(false)}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+        "flex items-center gap-3 rounded-lg px-3 py-1.5 text-[13px] transition-colors",
         isActive(item.href)
           ? "bg-secondary font-medium text-foreground"
           : "text-foreground/70 hover:bg-secondary/60 hover:text-foreground"
@@ -135,11 +135,11 @@ export function AppShell({
                 type="button"
                 onClick={() => toggle(section)}
                 aria-expanded={shown}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
               >
                 <Glyph name={section.icon} className="size-4 shrink-0" />
-                <span className="flex-1 truncate">{tr(section.label)}</span>
-                <ChevronDown className={cn("size-4 shrink-0 transition-transform", !shown && "-rotate-90")} />
+                <span className="min-w-0 flex-1 truncate">{tr(section.label)}</span>
+                <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", !shown && "-rotate-90")} />
               </button>
             ) : null}
             {/* The rule down the left is what makes a section read as a group
