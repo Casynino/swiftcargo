@@ -267,7 +267,7 @@ const SUPPORT_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Customer support",
+    label: "Support",
     icon: "MessageSquare",
     items: [
       { label: "Tickets", href: "/app/support/tickets", icon: "MessageSquare", permissions: ["conversation.view"] },
@@ -276,7 +276,7 @@ const SUPPORT_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "China services",
+    label: "China",
     icon: "Store",
     items: [
       { label: "China markets", href: "/app/support/markets", icon: "Store", permissions: ["conversation.view"] },
@@ -322,7 +322,7 @@ const MANAGER_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Money out",
+    label: "Money",
     icon: "Wallet",
     items: [
       { label: "Credit", href: "/app/finance/credit", icon: "CalendarClock", permissions: ["finance.view"] },
@@ -417,7 +417,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Customers & support",
+    label: "Customers",
     icon: "Users",
     items: [
       { label: "Customers", href: "/app/customers", icon: "Users", permissions: ["customer.view"] },
@@ -429,14 +429,13 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Website & markets",
+    label: "Sourcing",
     icon: "Store",
     items: [
       /* The editor, not the support desk's read view: this is the menu of the
          person who changes what customers are told. */
       { label: "China markets", href: "/app/admin/markets", icon: "Store", permissions: ["content.manage"] },
       { label: "Sourcing requests", href: "/app/support/sourcing", icon: "ShoppingBag", permissions: ["conversation.view"] },
-      { label: "Website content", href: "/app/admin/content", icon: "Globe", permissions: ["content.manage"] },
     ],
   },
   {
@@ -444,6 +443,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     icon: "SlidersHorizontal",
     items: [
       { label: "Staff", href: "/app/admin/users", icon: "UserCog", permissions: ["user.manage"] },
+      { label: "Website content", href: "/app/admin/content", icon: "Globe", permissions: ["content.manage"] },
       { label: "Deleted records", href: "/app/admin/deleted", icon: "Trash2", permissions: ["records.viewDeleted"] },
       { label: "Company settings", href: "/app/admin/settings", icon: "SlidersHorizontal", permissions: ["settings.manage"] },
       /* Both ends of the route, and the address a customer forwards to their
