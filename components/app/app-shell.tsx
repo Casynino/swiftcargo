@@ -91,11 +91,17 @@ export function AppShell({
      you move to another; the rest stay folded until pressed, so a desk with
      five departments shows five lines, not thirty. What was pressed is
      remembered for as long as the page is open. On Home, the first section is
-     the one shown. */
+     the one shown.
+
+     A short menu is not folded at all: a floor clerk with ten rows in all
+     should see every one of them without pressing anything, because the row
+     they need ten times an hour — Receive cargo — must never be behind a fold. */
   const [pressed, setPressed] = useState<Record<string, boolean>>({});
   const labelled = sections.filter((s) => s.label);
+  const shortMenu = sections.reduce((n, s) => n + s.items.length, 0) <= 14;
   const here = sections.find((s) => s.label && s.items.some((i) => i.href === current))?.label;
-  const isOpen = (s: NavSection) => (s.label in pressed ? pressed[s.label] : s.label === (here ?? labelled[0]?.label));
+  const isOpen = (s: NavSection) =>
+    s.label in pressed ? pressed[s.label] : shortMenu || s.label === (here ?? labelled[0]?.label);
   const toggle = (s: NavSection) => setPressed((p) => ({ ...p, [s.label]: !isOpen(s) }));
   useEffect(() => {
     if (here) setPressed((p) => (p[here] === true ? p : { ...p, [here]: true }));
