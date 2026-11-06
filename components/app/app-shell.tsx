@@ -159,7 +159,7 @@ export function AppShell({
 
   return (
     <LocaleProvider locale={locale}>
-    <div className="flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2">
+    <div className="flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2 print:max-w-none print:overflow-visible">
       {/* Desktop rail */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex print:!hidden">
         <div className="flex h-16 items-center border-b px-4">

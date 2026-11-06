@@ -296,6 +296,14 @@
   body {
     background: #fff;
   }
+
+  /* The phone's rule that nothing scrolls sideways has no place on paper: a
+     page must be free to run as long and as wide as the label or note it holds. */
+  html,
+  body {
+    max-width: none;
+    overflow: visible;
+  }
 }
 
 @keyframes update-drop {
