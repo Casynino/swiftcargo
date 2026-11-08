@@ -32,15 +32,15 @@ const TONES: Record<NonNullable<ActionPill["tone"]>, string> = {
   plain: "border bg-card text-foreground hover:bg-secondary",
 };
 
-/* The same kinds of work, as the soft tinted square behind a phone icon. */
+/* The same kinds of work, as the colour of a bare icon on a phone. */
 const CHIP: Record<NonNullable<ActionPill["tone"]>, string> = {
-  brand: "bg-brand/15 text-brand",
-  marine: "bg-marine/15 text-marine",
-  signal: "bg-signal/15 text-signal",
-  success: "bg-success/15 text-success",
-  warning: "bg-warning/15 text-warning",
-  danger: "bg-destructive/15 text-destructive",
-  plain: "bg-foreground/10 text-foreground/70",
+  brand: "text-brand",
+  marine: "text-marine",
+  signal: "text-signal",
+  success: "text-success",
+  warning: "text-warning",
+  danger: "text-destructive",
+  plain: "text-foreground/70",
 };
 
 export async function ActionPills({ pills }: { pills: ActionPill[] }) {
@@ -72,10 +72,8 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
               href={pill.href}
               className="focus-ring flex snap-start flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-transform active:scale-95 active:bg-foreground/5"
             >
-              <span className={cn("grid size-[3.1rem] place-items-center rounded-[18px]", CHIP[pill.tone ?? "plain"])}>
-                {Icon ? <Icon className="size-6" strokeWidth={1.7} /> : null}
-              </span>
-              <span className="line-clamp-2 min-h-[2.1em] [overflow-wrap:anywhere] text-xs leading-tight text-foreground/75">{t(pill.short ?? pill.label)}</span>
+              {Icon ? <Icon className={cn("size-7", CHIP[pill.tone ?? "plain"])} strokeWidth={1.6} /> : null}
+              <span className="line-clamp-2 min-h-[2.1em] [overflow-wrap:anywhere] text-[11px] font-medium leading-tight text-foreground/85">{t(pill.short ?? pill.label)}</span>
             </Link>
           );
         })}
