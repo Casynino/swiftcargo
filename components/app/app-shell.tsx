@@ -173,7 +173,7 @@ export function AppShell({
       href={item.href}
       onClick={() => setOpen(false)}
       className={cn(
-        "relative flex items-center gap-3 rounded-xl px-3 py-1.5 text-[13px] transition-all",
+        "relative flex items-center gap-3 rounded-xl px-3 py-1 text-[13px] transition-all",
         isActive(item.href)
           ? "bg-foreground/5 font-medium text-foreground before:absolute before:inset-y-1.5 before:-left-3 before:w-[3px] before:rounded-full before:bg-[#e3b341]"
           : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
@@ -187,7 +187,7 @@ export function AppShell({
   /* The box at the top of the menu. */
   const searchBox = (ref?: React.Ref<HTMLInputElement>, hint = false) => (
     <div className="px-3 pt-3">
-      <label className="flex h-10 items-center gap-2.5 border-b border-border/60 px-1 text-sm transition-colors focus-within:border-[#e3b341]/70">
+      <label className="flex h-9 items-center gap-2.5 border-b border-border/60 px-1 text-sm transition-colors focus-within:border-[#e3b341]/70">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
           ref={ref}
@@ -261,7 +261,7 @@ export function AppShell({
                   type="button"
                   onClick={() => toggle(section)}
                   aria-expanded={shown}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-left text-[13px] font-medium text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground"
                 >
                   <Glyph name={section.icon} className="size-4 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">{tr(section.label)}</span>
@@ -331,7 +331,7 @@ export function AppShell({
       <aside
         className={cn(
           "sticky top-0 hidden h-dvh shrink-0 p-3 transition-[width] duration-300 ease-out lg:block print:!hidden",
-          collapsed ? "w-[5.5rem]" : "w-[18.5rem]"
+          collapsed ? "w-[5.5rem]" : "w-[15.5rem]"
         )}
       >
         <div className="relative flex h-full flex-col rounded-[28px] border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.18),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.82))] shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.28),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
@@ -344,7 +344,7 @@ export function AppShell({
           >
             <ChevronLeft className={cn("size-4 transition-transform", collapsed && "rotate-180")} />
           </button>
-          <div className={cn("flex h-16 shrink-0 items-center", collapsed ? "justify-center px-2" : "px-4")}>
+          <div className={cn("flex h-14 shrink-0 items-center", collapsed ? "justify-center px-2" : "px-4")}>
             <Link href={home.href} aria-label={tr(home.label)}>
               <BrandMark size={32} showWordmark={!collapsed} />
             </Link>

@@ -4,6 +4,7 @@ import { AlertTriangle, BarChart3, ChevronDown, ChevronRight, CircleCheck, Info,
 
 import { BannerControls } from "@/components/app/banner-controls";
 import { CleanBanner } from "@/components/app/clean-banner";
+import { twoClocks } from "@/lib/clocks";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, PingBars, RankedBars, ScoreRing, Sparkline, StackedBars } from "@/components/app/dev-charts";
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
@@ -123,7 +124,19 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <CleanBanner controls={<BannerControls />} title={user.name.split(" ")[0]} kicker={T("Developer")} line={hello} image="/photos/port-cranes.jpg" />
+      <CleanBanner controls={<BannerControls />} title={user.name.split(" ")[0]} kicker={T("Developer")} line={
+          <>
+            {hello}
+            {twoClocks().map((c) => (
+              <span key={c.place} className="hidden sm:inline">
+                {"  ·  "}
+                {c.place} <span className="font-semibold text-white">{c.time}</span>
+              </span>
+            ))}
+          </>
+        }
+        image="/photos/port-cranes.jpg"
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <WorkAsDialog people={people} />
