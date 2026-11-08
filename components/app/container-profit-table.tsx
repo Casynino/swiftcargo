@@ -57,13 +57,13 @@ export function ContainerProfitTable({
   const flags = (c: ContainerProfit) => (
     <>
       {!c.hasCosts ? (
-        <span className="inline-flex items-center gap-1 rounded bg-signal/10 px-1.5 py-0.5 text-[11px] text-signal">
+        <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-signal/10 px-1.5 py-0.5 text-[11px] text-signal">
           <TriangleAlert className="size-3" />
           {t(locale, "no costs recorded")}
         </span>
       ) : null}
       {c.unconfirmed > 0 ? (
-        <span className="rounded bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning">
+        <span className="whitespace-nowrap rounded bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning">
           {c.unconfirmed} {t(locale, "still a draft")}
         </span>
       ) : null}

@@ -83,7 +83,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
       {groups.length > 1 ? (
-      <div className="flex flex-wrap gap-2 border-b px-3 py-2.5">
+      <div className="flex flex-wrap gap-1.5 border-b px-3 py-2">
         {["All", ...groups].map((group) => {
           const count =
             group === "All"
@@ -95,7 +95,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
               type="button"
               onClick={() => setActive(group)}
               className={cn(
-                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-px text-[11px] font-medium transition-colors",
                 active === group
                   ? "border-brand bg-brand text-brand-foreground"
                   : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -111,14 +111,14 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
       {/* Three rows show; the rest scroll inside the panel, which is the same
           height whether the desk has three things or thirty. */}
-      <ul className="max-h-[10.5rem] divide-y overflow-y-auto">
+      <ul className="max-h-[8.6rem] divide-y overflow-y-auto">
         {shown.map((item) => (
           <li key={item.id}>
             <Link
               href={item.href}
-              className="flex items-center gap-2.5 px-4 py-2 transition-colors hover:bg-secondary/50"
+              className="flex items-center gap-2.5 px-3.5 py-1.5 transition-colors hover:bg-secondary/50"
             >
-              <span aria-hidden className={cn("h-7 w-0.5 shrink-0 rounded-full", BAR[item.tone])} />
+              <span aria-hidden className={cn("h-6 w-0.5 shrink-0 rounded-full", BAR[item.tone])} />
               {item.tone === "neutral" ? (
                 <Info className={cn("size-3.5 shrink-0", ICON[item.tone])} />
               ) : (
@@ -128,26 +128,26 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
                 <span className="block truncate text-[13px] font-semibold leading-tight">
                   {titleIn(item.title, t)}
                 </span>
-                <span className="mt-0.5 block truncate text-xs leading-tight text-muted-foreground">
+                <span className="mt-px block truncate text-[11px] leading-tight text-muted-foreground">
                   {t(item.detail)}
                 </span>
               </span>
               {item.meta ? (
                 <span className="shrink-0 text-right">
-                  <span className="block font-mono text-xs font-semibold tabular-nums">{t(item.meta)}</span>
+                  <span className="block font-mono text-[11px] font-semibold tabular-nums">{t(item.meta)}</span>
                   {item.metaSub ? (
-                    <span className="block font-mono text-xs tabular-nums text-muted-foreground">{t(item.metaSub)}</span>
+                    <span className="block font-mono text-[10px] tabular-nums text-muted-foreground">{t(item.metaSub)}</span>
                   ) : null}
                 </span>
               ) : null}
-              <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" />
+              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
             </Link>
           </li>
         ))}
       </ul>
 
       {shown.length > 3 ? (
-        <p className="flex items-center justify-center gap-1.5 border-t py-1.5 text-center text-xs text-muted-foreground">
+        <p className="flex items-center justify-center gap-1.5 border-t py-1 text-center text-[11px] text-muted-foreground">
           <ChevronDown className="size-3.5" />
           {t("scroll for")} {shown.length - 3} {t("more")}
         </p>
