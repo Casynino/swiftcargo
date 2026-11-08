@@ -3,7 +3,7 @@ import { Search, type LucideIcon } from "lucide-react";
 
 import { CleanBanner } from "@/components/app/clean-banner";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import { t } from "@/lib/i18n";
 import { viewerLocale } from "@/lib/viewer-locale";
 
@@ -74,52 +74,61 @@ export async function DeskHero({
   const locale = await viewerLocale();
   const tr = (text: string) => t(locale, text);
 
-  const pill = "h-8 rounded-full px-3.5 text-xs";
-  const buttons = [
-    ...(action && !actions?.some((a) => a.href === action.href) ? [{ href: action.href, label: action.label, icon: undefined }] : []),
-    ...(actions ?? []),
-  ];
+  /* `action` (the one thing a desk does most) is already the first coloured
+     shortcut under the banner, so it is not offered a second time here. */
+  void action;
+  const buttons = actions ?? [];
 
+  /* What Target's banner does: the page's own name, set wide, with only the
+     company and the day under it — and the search box on its own line below,
+     where the eye goes next. No greeting, no sentence, no row of buttons. */
   return (
-    <CleanBanner
-      title={`${tr(greeting)}, ${name}`}
-      kicker={`Swift Cargo · ${tr(department)}`}
-      line={
-        <>
-          {today}
-          {clocks.map((clock) => (
-            <span key={clock.place}>
-              {"  ·  "}
-              {tr(clock.place)} <span className="font-semibold text-white">{clock.time}</span>
-            </span>
-          ))}
-        </>
-      }
-    >
-      {buttons.map((item, index) => {
-        const Icon = item.icon;
-        return (
-          <Button
-            key={item.href}
-            asChild
-            size="sm"
-            className={cn(pill, index === 0 ? "bg-white text-ink hover:bg-white/90" : "border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20")}
-          >
-            <Link href={item.href}>
-              {Icon ? <Icon className="size-3.5" /> : null}
-              {tr(item.label)}
-            </Link>
-          </Button>
-        );
-      })}
-      {/* The search box that used to sit in the banner is one press away here,
-          and in the menu: it opens the same search page. */}
-      <Button asChild size="sm" className={cn(pill, "border border-white/25 bg-transparent text-white hover:bg-white/10")}>
-        <Link href={searchAction}>
-          <Search className="size-3.5" />
+    <div className="space-y-4">
+      <CleanBanner
+        title={tr(department)}
+        kicker="Swift Cargo"
+        image="/photos/port-cranes.jpg"
+        line={
+          <>
+            {today}
+            {clocks.map((clock) => (
+              <span key={clock.place}>
+                {"  ·  "}
+                {tr(clock.place)} <span className="font-semibold text-white">{clock.time}</span>
+              </span>
+            ))}
+          </>
+        }
+      />
+      <form action={searchAction} className="flex max-w-2xl gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            name="q"
+            placeholder={tr(searchPlaceholder)}
+            aria-label={tr("Search")}
+            className="h-11 rounded-full pl-11 text-sm"
+          />
+        </div>
+        <Button type="submit" className="h-11 rounded-full px-5">
           {tr("Search")}
-        </Link>
-      </Button>
-    </CleanBanner>
+        </Button>
+      </form>
+      {buttons.length ? (
+        <div className="flex flex-wrap gap-2">
+          {buttons.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <Button key={item.href} asChild size="sm" variant={index === 0 ? "default" : "outline"} className="h-8 rounded-full px-3.5 text-xs">
+                <Link href={item.href}>
+                  {Icon ? <Icon className="size-3.5" /> : null}
+                  {tr(item.label)}
+                </Link>
+              </Button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }

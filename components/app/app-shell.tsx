@@ -229,32 +229,41 @@ export function AppShell({
       ) : (
         <>
           {/* Home stands on its own above everything, because every desk starts and
-              returns here and it belongs to no department. */}
+              returns here and it belongs to no department. A section with no
+              heading is the desk's own top rows and stands with it. */}
+          <p className="px-3 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">{tr("Main")}</p>
           <div>{row(home)}</div>
+          {sections
+            .filter((section) => !section.label)
+            .map((section) => (
+              <ul key="top" className="space-y-0.5">
+                {section.items.map((item) => (
+                  <li key={item.href}>{row(item)}</li>
+                ))}
+              </ul>
+            ))}
 
-          {sections.map((section) => {
-            /* A section with no heading is the desk's own top rows, standing with
-               Home rather than grouped under a name, and so is never folded away. */
-            const folds = !!section.label;
-            const shown = !folds || isOpen(section);
+          {labelled.length > 0 ? (
+            <p className="mt-3 px-3 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">{tr("Workspace")}</p>
+          ) : null}
+          {labelled.map((section) => {
+            const shown = isOpen(section);
             return (
-              <div key={section.label || "top"}>
-                {folds ? (
-                  <button
-                    type="button"
-                    onClick={() => toggle(section)}
-                    aria-expanded={shown}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
-                  >
-                    <Glyph name={section.icon} className="size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{tr(section.label)}</span>
-                    <ChevronDown className={cn("size-3.5 shrink-0 transition-transform", !shown && "-rotate-90")} />
-                  </button>
-                ) : null}
+              <div key={section.label}>
+                <button
+                  type="button"
+                  onClick={() => toggle(section)}
+                  aria-expanded={shown}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-medium text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                >
+                  <Glyph name={section.icon} className="size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate">{tr(section.label)}</span>
+                  <ChevronDown className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", !shown && "-rotate-90")} />
+                </button>
                 {/* The rule down the left is what makes a section read as a group
                     rather than a heading followed by unrelated rows. */}
                 {shown ? (
-                  <ul className={folds ? "ml-[1.35rem] mt-0.5 space-y-0.5 border-l border-border/60 pl-2" : "space-y-0.5"}>
+                  <ul className="ml-[1.35rem] mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
                     {section.items.map((item) => (
                       <li key={item.href}>{row(item)}</li>
                     ))}
@@ -476,65 +485,66 @@ function UserFooter({
   locale: Locale;
   compact?: boolean;
 }) {
-  if (compact) {
-    return (
-      <div className="flex shrink-0 flex-col items-center gap-1.5 p-2 pb-3">
-        <span aria-hidden className="mb-1 h-px w-6 bg-border/70" />
-        <ThemeToggle />
-        <form action={logout}>
-          <button
-            type="submit"
-            title={t(locale, "Sign out")}
-            aria-label={t(locale, "Sign out")}
-            className="grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
-          >
-            <LogOut className="size-[18px]" />
-          </button>
-        </form>
-        <Link
-          href="/app/profile"
-          title={user.name}
-          aria-label={user.name}
-          className="relative grid size-10 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground"
-        >
-          {initials(user.name)}
-          <span aria-hidden className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-card bg-emerald-500" />
-        </Link>
-      </div>
-    );
-  }
+  const [menu, setMenu] = useState(false);
+  const tr = (text: string) => t(locale, text);
+  const avatar = (
+    <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
+      {initials(user.name)}
+      <span aria-hidden className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-card bg-emerald-500" />
+    </span>
+  );
   return (
-    <div className="shrink-0 p-3">
-      <div className="rounded-2xl border border-border/60 bg-background/40 p-2 dark:border-white/10">
-        {/* Your own name is where everybody looks for their own settings, so it
-            is the way in rather than a menu item somebody has to find. */}
-        <Link
-          href="/app/profile"
-          className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 transition-colors hover:bg-foreground/5"
-        >
-          <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-            {initials(user.name)}
-            <span aria-hidden className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-card bg-emerald-500" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{user.name}</span>
-            <span className="block truncate text-xs text-muted-foreground">{t(locale, user.roleLabel)}</span>
-          </span>
-          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-        </Link>
-        <div className="mt-1 flex items-center gap-1">
-          <form action={logout} className="flex-1">
-            <Button type="submit" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
-              <LogOut />
-              {t(locale, "Sign out")}
-            </Button>
-          </form>
-          <ThemeToggle />
-        </div>
-        {/* English or 中文, one press away on every screen — labelled each in its
-            own language, so it is legible to whoever needs it. */}
-        <LanguageSwitch current={locale} className="mt-1.5 w-full [&>button]:flex-1 [&>button]:justify-center" />
-      </div>
+    <div className="relative shrink-0 border-t border-border/50 p-2.5">
+      {menu ? (
+        <>
+          <button type="button" aria-label={tr("Close menu")} className="fixed inset-0 z-40 cursor-default" onClick={() => setMenu(false)} />
+          {/* Everything that is not a page lives here, so the menu itself stays
+              a list of pages: your profile, the theme, the language, the way out. */}
+          <div
+            className={cn(
+              "absolute z-50 w-60 rounded-2xl border border-border/70 bg-popover p-2 text-popover-foreground shadow-2xl",
+              compact ? "bottom-2 left-full ml-3" : "bottom-full left-2.5 right-2.5 mb-2 w-auto"
+            )}
+          >
+            <p className="px-2 pb-1.5 pt-1 text-xs text-muted-foreground">
+              {user.name} · {tr(user.roleLabel)}
+            </p>
+            <Link href="/app/profile" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
+              {tr("Profile")}
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <div className="flex items-center justify-between rounded-xl px-2 py-1 text-sm">
+              {tr("Theme")}
+              <ThemeToggle />
+            </div>
+            <LanguageSwitch current={locale} className="my-1 w-full [&>button]:flex-1 [&>button]:justify-center" />
+            <form action={logout}>
+              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10">
+                <LogOut className="size-4" />
+                {tr("Sign out")}
+              </button>
+            </form>
+          </div>
+        </>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => setMenu((m) => !m)}
+        aria-expanded={menu}
+        title={user.name}
+        className={cn(
+          "flex w-full items-center gap-2.5 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-foreground/5",
+          compact && "justify-center px-0"
+        )}
+      >
+        {avatar}
+        {compact ? null : (
+          <>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">{user.name}</span>
+            <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", !menu && "-rotate-90")} />
+          </>
+        )}
+      </button>
     </div>
   );
 }

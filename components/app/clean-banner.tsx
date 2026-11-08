@@ -16,6 +16,7 @@ export function CleanBanner({
   kicker,
   line,
   children,
+  image,
   className,
 }: {
   title: React.ReactNode;
@@ -25,12 +26,14 @@ export function CleanBanner({
   line?: React.ReactNode;
   /** A button or two, centred under the lines. */
   children?: React.ReactNode;
+  /** A photo that fades in from the right edge, from /public/photos. */
+  image?: string;
   className?: string;
 }) {
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-3xl border border-white/10 bg-ink px-5 py-6 text-center text-white shadow-raised sm:px-8 sm:py-8",
+        "relative overflow-hidden rounded-3xl border border-white/10 bg-ink px-5 py-7 text-center text-white shadow-raised sm:px-8 sm:py-9",
         className
       )}
     >
@@ -38,10 +41,17 @@ export function CleanBanner({
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_90%_130%,hsl(var(--brand)/0.55),transparent_55%),radial-gradient(ellipse_at_0%_-20%,hsl(var(--signal)/0.22),transparent_50%),radial-gradient(ellipse_at_50%_-40%,hsl(var(--marine)/0.35),transparent_60%)]"
       />
+      {image ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-cover bg-center opacity-80 [mask-image:linear-gradient(to_right,transparent,black_55%)] md:block"
+          style={{ backgroundImage: `url(${image})` }}
+        />
+      ) : null}
       <div className="relative">
         <div className="flex items-center justify-center gap-4">
           <span aria-hidden className="hidden h-px w-10 bg-signal/70 sm:block" />
-          <h1 className="min-w-0 text-balance text-xl font-semibold uppercase tracking-[0.18em] sm:text-3xl">{title}</h1>
+          <h1 className="min-w-0 text-balance text-xl font-semibold uppercase tracking-[0.3em] sm:text-4xl">{title}</h1>
           <span aria-hidden className="hidden h-px w-10 bg-signal/70 sm:block" />
         </div>
         {kicker ? (

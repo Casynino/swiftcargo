@@ -122,11 +122,7 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <CleanBanner
-        title={`${greeting}, ${user.name.split(" ")[0]}`}
-        kicker={`Swift Cargo · ${T("Developer")}`}
-        line={hello}
-      />
+      <CleanBanner title={T("Developer")} kicker="Swift Cargo" line={hello} image="/photos/port-cranes.jpg" />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <WorkAsDialog people={people} />
