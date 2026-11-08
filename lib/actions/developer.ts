@@ -36,7 +36,9 @@ export async function stopWorkAs() {
   const dev = await realDeveloper();
   if (!dev) redirect("/login");
   await stopWorkingAs(dev.user.id, dev.sid);
-  redirect("/app/developer/users");
+  /* Back to the developer's own Home, not the list of accounts: stopping is
+     leaving the desk, not choosing the next one. */
+  redirect("/app/developer");
 }
 
 export type AccessState = { error?: string; ok?: string };
