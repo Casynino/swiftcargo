@@ -63,6 +63,15 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
     );
   };
 
+  /* A faint wash of the figure's own colour, so a row of tiles reads as four
+     different things before a word is read. */
+  const TINT: Record<string, string> = {
+    "text-marine": "from-marine/10",
+    "text-success": "from-success/10",
+    "text-signal": "from-signal/10",
+    "text-destructive": "from-destructive/10",
+  };
+
   const Tile = ({
     icon: Icon,
     label,
@@ -78,7 +87,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
     foot: React.ReactNode;
     ring?: React.ReactNode;
   }) => (
-    <div className="relative min-w-0 rounded-xl border bg-card p-4 shadow-soft">
+    <div className={cn("relative min-w-0 rounded-xl border bg-card bg-gradient-to-br to-transparent p-4 shadow-soft", TINT[tone] ?? "from-secondary/40")}>
       <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
         <span className="grid size-8 place-items-center rounded-lg bg-secondary">
           <Icon className="size-4" />
