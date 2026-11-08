@@ -1167,34 +1167,49 @@ export default async function ContainerPage({
         <SectionLabel>{T("History")}</SectionLabel>
         <Card>
           <CardContent className="py-5">
-            <ol className="flex flex-wrap gap-x-10 gap-y-5">
-              {[...container.events].reverse().map((event, index) => (
-                <li key={event.id} className="relative min-w-[10rem] flex-1">
-                  <div className="flex items-center gap-2">
+            <ol className="max-w-3xl">
+              {[...container.events].reverse().map((event, index) => {
+                const latest = index === container.events.length - 1;
+                /* A loading note carries every consignment reference on the
+                   box. The line says what happened; the list is one press away. */
+                const note = event.note ?? "";
+                const cut = note.indexOf(":");
+                const long = note.length > 90 && cut > 0;
+                const short = long ? note.slice(0, cut) : note;
+                return (
+                  <li
+                    key={event.id}
+                    className="relative pb-5 pl-7 last:pb-0 before:absolute before:bottom-0 before:left-[5px] before:top-4 before:w-px before:bg-border last:before:hidden"
+                  >
                     <span
                       className={cn(
-                        "size-2.5 shrink-0 rounded-full",
-                        index === container.events.length - 1
-                          ? "bg-brand"
-                          : "bg-border",
+                        "absolute left-0 top-1.5 size-[11px] rounded-full ring-4 ring-card",
+                        latest ? "bg-brand" : "bg-border",
                       )}
                     />
-                    <p className="text-sm font-medium">
-                      {T(CONTAINER_STATUS_LABELS[event.to])}
-                    </p>
-                  </div>
-                  <p className="mt-1 pl-[1.125rem] text-xs text-muted-foreground">
-                    {formatDateTime(event.createdAt)}
-                  </p>
-                  {event.actor || event.note ? (
-                    <p className="pl-[1.125rem] text-xs text-muted-foreground">
-                      {[event.actor?.name, event.note]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+                      <p className="text-sm font-medium">{T(CONTAINER_STATUS_LABELS[event.to])}</p>
+                      <p className="tnum text-xs text-muted-foreground">{formatDateTime(event.createdAt)}</p>
+                    </div>
+                    {event.actor || short ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {[event.actor?.name, short].filter(Boolean).join(" · ")}
+                      </p>
+                    ) : null}
+                    {long ? (
+                      <details className="group mt-1">
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-medium text-brand hover:underline [&::-webkit-details-marker]:hidden">
+                          <span className="group-open:hidden">{T("Show the list")}</span>
+                          <span className="hidden group-open:inline">{T("Hide the list")}</span>
+                        </summary>
+                        <p className="mt-1.5 max-h-40 overflow-y-auto rounded-lg bg-muted/40 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground">
+                          {note.slice(cut + 1).trim()}
+                        </p>
+                      </details>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ol>
           </CardContent>
         </Card>

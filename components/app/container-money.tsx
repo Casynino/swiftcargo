@@ -519,7 +519,9 @@ export async function ContainerMoney({
 
   const timelineRows: TimelineRow[] = container.events.map((e) => ({
     id: e.id,
-    title: e.note ?? e.to.replace(/_/g, " ").toLowerCase(),
+    /* A loading note carries every consignment reference on the box; the
+       timeline line says what happened and stops at the colon. */
+    title: e.note ? (e.note.length > 90 && e.note.includes(":") ? e.note.slice(0, e.note.indexOf(":")) : e.note) : e.to.replace(/_/g, " ").toLowerCase(),
     at: formatDate(e.createdAt),
     by: e.actor?.name ?? "—",
   }));
