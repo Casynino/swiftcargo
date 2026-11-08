@@ -176,16 +176,15 @@ export async function CommandCentre({ user }: { user: SessionUser }) {
         greeting="Habari"
         name={user.name.split(" ")[0]}
         department={ROLE_LABELS[user.role]}
+        title={user.name}
+        kicker={user.role === "ADMIN" ? "CEO" : "Director"}
+        search={false}
         subtitle={t(
           locale,
           user.role === "ADMIN"
             ? "Here is what is happening at Swift Cargo today."
             : "Here is the whole business, and what is waiting on you."
         )}
-        actions={[
-          { href: "/app/receive/new", label: t(locale, "Receive cargo"), icon: PackagePlus },
-          { href: "/app/scan", label: t(locale, "Scan & release"), icon: ScanLine },
-        ]}
       />
 
       <ActionPills pills={pillsFor(user.role)} />

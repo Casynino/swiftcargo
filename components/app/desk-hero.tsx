@@ -26,6 +26,9 @@ export async function DeskHero({
   subtitle,
   searchAction = "/app/search",
   searchPlaceholder = "Cargo reference, shipping mark, customer, phone, container or invoice",
+  title,
+  kicker,
+  search = true,
   action,
   actions,
 }: {
@@ -35,6 +38,12 @@ export async function DeskHero({
   subtitle: string;
   searchAction?: string;
   searchPlaceholder?: string;
+  /** The banner's heading, when it is not the desk's own name (management reads "Management"). */
+  title?: string;
+  /** The small line under the title; the company by default. Management reads "CEO" or "Director". */
+  kicker?: string;
+  /** Management watches rather than looks things up: no search box under the banner. */
+  search?: boolean;
   /** The one thing this desk does most, offered where they land. */
   action?: { href: string; label: string };
   /** A desk that starts more than one kind of job offers each, in order of use. */
@@ -85,8 +94,8 @@ export async function DeskHero({
   return (
     <div className="space-y-4">
       <CleanBanner
-        title={tr(department)}
-        kicker="Swift Cargo"
+        title={title ?? tr(department)}
+        kicker={kicker ? tr(kicker) : "Swift Cargo"}
         image="/photos/port-cranes.jpg"
         line={
           <>
@@ -100,6 +109,7 @@ export async function DeskHero({
           </>
         }
       />
+      {search ? (
       <form action={searchAction} className="flex max-w-2xl gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -114,6 +124,7 @@ export async function DeskHero({
           {tr("Search")}
         </Button>
       </form>
+      ) : null}
       {buttons.length ? (
         <div className="flex flex-wrap gap-2">
           {buttons.map((item, index) => {

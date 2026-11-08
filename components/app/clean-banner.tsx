@@ -51,7 +51,17 @@ export function CleanBanner({
       <div className="relative">
         <div className="flex items-center justify-center gap-4">
           <span aria-hidden className="hidden h-px w-10 bg-signal/70 sm:block" />
-          <h1 className="min-w-0 text-balance text-xl font-semibold uppercase tracking-[0.3em] sm:text-4xl">{title}</h1>
+          <h1
+            className={cn(
+              "min-w-0 text-balance font-semibold uppercase",
+              /* A long name keeps its size down so it stays on one or two lines. */
+              typeof title === "string" && title.length > 13
+                ? "text-lg tracking-[0.2em] sm:text-3xl sm:tracking-[0.24em]"
+                : "text-xl tracking-[0.3em] sm:text-4xl"
+            )}
+          >
+            {title}
+          </h1>
           <span aria-hidden className="hidden h-px w-10 bg-signal/70 sm:block" />
         </div>
         {kicker ? (

@@ -145,11 +145,11 @@ async function withVat(tx: Prisma.TransactionClient, amount: string) {
 }
 
 describe("confirming prices a list at a time", () => {
-  test("Support, Finance, the Manager and the owner may confirm; the floors may not", () => {
-    for (const role of ["CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"] as const) {
+  test("Support, Finance and the Manager may confirm; the floors and the owner's account may not", () => {
+    for (const role of ["CUSTOMER_SUPPORT", "FINANCE", "MANAGER"] as const) {
       assert.ok(rbac.can(role, "invoice.priceConfirm"), role);
     }
-    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER"] as const) {
+    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "ADMIN", "CUSTOMER"] as const) {
       assert.ok(!rbac.can(role, "invoice.priceConfirm"), role);
     }
   });

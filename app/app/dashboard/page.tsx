@@ -193,6 +193,10 @@ export default async function DashboardPage() {
      admin get it too, because "how is the China floor doing" is their question
      as much as anybody's. */
   const chinaDesk = can(user.role, "receiving.china");
+  /* Seeing how the Guangzhou floor is doing is not the same as working it:
+     the owner and the manager read these panels without holding any of the
+     floor's actions. */
+  const chinaPanels = chinaDesk || oversight;
   const money = can(user.role, "accounting.view");
   const seesBills = can(user.role, "finance.view");
 
@@ -225,12 +229,12 @@ export default async function DashboardPage() {
     money ? receivablesAgeing() : null,
     oversight ? recentActivity() : null,
     seesBills ? moneyPosition() : null,
-    chinaDesk ? chinaFloor() : null,
-    chinaDesk ? chinaFlow() : null,
-    chinaDesk ? chinaAgeing() : null,
-    chinaDesk ? chinaMix() : null,
-    chinaDesk ? chinaVolumeByMonth() : null,
-    chinaDesk ? chinaContainers() : null,
+    chinaPanels ? chinaFloor() : null,
+    chinaPanels ? chinaFlow() : null,
+    chinaPanels ? chinaAgeing() : null,
+    chinaPanels ? chinaMix() : null,
+    chinaPanels ? chinaVolumeByMonth() : null,
+    chinaPanels ? chinaContainers() : null,
     myActivity(user.id),
   ]);
 

@@ -154,9 +154,15 @@ describe("the support desk explains; it does not do", () => {
        lading, Support with the clearing agent on the phone, the manager, the
        owner. Clearing has a permission of its own so that holding it carries
        no authority over what the boxes are. Guangzhou holds neither. */
-    for (const role of ["DAR_WAREHOUSE", "FINANCE", "CUSTOMER_SUPPORT", "MANAGER", "ADMIN"] as Role[]) {
+    for (const role of ["DAR_WAREHOUSE", "FINANCE", "CUSTOMER_SUPPORT"] as Role[]) {
       assert.ok(can(role, "container.arrive"), `${role} marks arrival`);
       assert.ok(can(role, "cargo.clear"), `${role} marks clearance`);
+    }
+    /* The manager and the owner see the port steps and answer for them; they do
+       not mark them. */
+    for (const role of ["MANAGER", "ADMIN"] as Role[]) {
+      assert.equal(can(role, "container.arrive"), false, role);
+      assert.equal(can(role, "cargo.clear"), false, role);
     }
     assert.equal(can("CHINA_WAREHOUSE", "container.arrive"), false);
     assert.equal(can("CHINA_WAREHOUSE", "cargo.clear"), false);
@@ -181,12 +187,17 @@ describe("the support desk explains; it does not do", () => {
   });
 
   test("every desk adds and edits customers; only Finance, the manager and the owner delete", () => {
-    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE", "MANAGER", "ADMIN"] as Role[]) {
+    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "CUSTOMER_SUPPORT", "FINANCE"] as Role[]) {
       assert.ok(can(role, "customer.create"), role);
       assert.ok(can(role, "customer.manage"), role);
     }
+    /* The manager corrects a customer's record; registering one is a desk's work. */
+    assert.ok(can("MANAGER", "customer.manage"));
+    assert.equal(can("MANAGER", "customer.create"), false);
+    assert.equal(can("ADMIN", "customer.create"), false);
+    assert.equal(can("ADMIN", "customer.manage"), false);
     const deleters = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter((r) => can(r, "customer.delete"));
-    assert.deepEqual(deleters.sort(), ["ADMIN", "FINANCE", "MANAGER"]);
+    assert.deepEqual(deleters.sort(), ["FINANCE", "MANAGER"]);
     assert.equal(can("CUSTOMER", "customer.manage"), false);
   });
 
@@ -194,7 +205,7 @@ describe("the support desk explains; it does not do", () => {
     const holders = (Object.keys(ROLE_PERMISSIONS) as Role[]).filter((r) =>
       can(r, "payment.verify")
     );
-    assert.deepEqual(holders.sort(), ["ADMIN", "FINANCE", "MANAGER"]);
+    assert.deepEqual(holders.sort(), ["FINANCE"]);
   });
 });
 
@@ -297,7 +308,7 @@ describe("putting a landed container back at sea", () => {
        owner's decision that is Finance, the manager and the owner. */
     assert.ok(can("FINANCE", "container.undoCountedArrival"));
     assert.ok(can("MANAGER", "container.undoCountedArrival"));
-    assert.ok(can("ADMIN", "container.undoCountedArrival"));
+    assert.equal(can("ADMIN", "container.undoCountedArrival"), false);
     assert.equal(can("DAR_WAREHOUSE", "container.undoCountedArrival"), false);
     assert.equal(can("CUSTOMER_SUPPORT", "container.undoCountedArrival"), false);
     assert.equal(can("CHINA_WAREHOUSE", "container.undoCountedArrival"), false);

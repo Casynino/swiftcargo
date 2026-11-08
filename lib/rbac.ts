@@ -573,6 +573,56 @@ const ALL: Permission[] = Array.from(
 );
 
 /**
+ * DAILY WORK: THE ACTIONS A DESK PERFORMS, THAT NEITHER THE OWNER NOR THE
+ * MANAGER DOES.
+ *
+ * Receiving and checking cargo, scanning, loading, sealing and sending
+ * containers, releasing goods, recording and verifying payments, issuing bills
+ * and receipts, preparing payroll, answering customers. Each has a desk that
+ * owns it (China, Dar, Finance, Support) and that desk keeps it exactly as it
+ * was. The manager and the owner watch these — every view permission stays —
+ * and answer for them, but a manager who received cargo or verified a payment
+ * would be marking their own homework.
+ */
+const DAILY_WORK: Permission[] = [
+  "receiving.china",
+  "receiving.dar",
+  "receiving.verify",
+  "cargo.create",
+  "cargo.scan",
+  "cargo.hold",
+  "cargo.clear",
+  "cargo.photo",
+  "container.create",
+  "container.edit",
+  "container.load",
+  "container.seal",
+  "container.depart",
+  "container.arrive",
+  "deliveryNote.issue",
+  "packingList.issue",
+  "shipment.edit",
+  "shipment.document",
+  "release.execute",
+  "delivery.manage",
+  "payment.record",
+  "payment.submit",
+  "payment.verify",
+  "receipt.issue",
+  "invoice.create",
+  "invoice.edit",
+  "invoice.issue",
+  "invoice.cancel",
+  "expense.record",
+  "payroll.prepare",
+  "accounting.manage",
+  "conversation.reply",
+  "notification.send",
+  "request.manage",
+  "customer.create",
+];
+
+/**
  * The manager runs the business; the owner owns it.
  *
  * Everything except the things that would let an operator rewrite the rules
@@ -597,8 +647,53 @@ const MANAGER: Permission[] = ALL.filter(
        owner's — the people who answer for the books. */
     p !== "fx.manage" &&
     p !== "warehouse.manage" &&
-    p !== "container.delete"
+    p !== "container.delete" &&
+    !DAILY_WORK.includes(p)
 );
+
+/**
+ * THE OWNER ADMINISTERS AND WATCHES; THE DESKS DO THE WORK.
+ *
+ * The administrator account sees everything and runs the system — staff,
+ * settings, warehouses, the website, the exchange rate, the audit trail — and
+ * signs off the money that needs the owner's name (expenses, payroll). It does
+ * not do any desk's job and it does not correct a desk's record: a correction
+ * is the manager's, or the desk's own. Viewing is untouched — every `*.view`
+ * permission is still held, so the owner can open any cargo, container, bill
+ * or case and read its whole history.
+ *
+ * What it leaves to the manager (corrections and management decisions, kept
+ * there by the owner's decision) is listed apart from the daily work above so
+ * the two reasons read separately.
+ */
+const ADMIN_LEAVES_TO_MANAGER: Permission[] = [
+  "cargo.amendChina",
+  "cargo.amendDar",
+  "cargo.edit",
+  "cargo.delete",
+  "cbm.override",
+  "container.amendArrived",
+  "container.confirmUnchecked",
+  "container.close",
+  "container.undoCountedArrival",
+  "invoice.priceConfirm",
+  "invoice.discount",
+  "customer.manage",
+  "customer.delete",
+  "customer.merge",
+  "customer.activate",
+  "exception.assign",
+  "exception.approve",
+  "exception.close",
+  "exception.resolve",
+  "conversation.assign",
+];
+const ADMIN: Permission[] = ALL.filter(
+  (p) => !DAILY_WORK.includes(p) && !ADMIN_LEAVES_TO_MANAGER.includes(p)
+);
+
+/** Every permission that exists — what a "who can do what" check lists. */
+export const ALL_PERMISSIONS: Permission[] = ALL;
 
 /**
  * A customer holds NO staff permission at all.
@@ -653,7 +748,7 @@ const DEVELOPER: Permission[] = [
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  ADMIN: ALL,
+  ADMIN,
   DEVELOPER,
   MANAGER,
   CUSTOMER_SUPPORT,

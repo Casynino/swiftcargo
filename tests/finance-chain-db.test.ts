@@ -1075,11 +1075,11 @@ describe("who may touch the money", () => {
     assert.ok(!rbac.can("CUSTOMER_SUPPORT", "rate.manage"));
   });
 
-  test("verifying money is Finance's and management's, and nobody else's", () => {
-    for (const role of ["FINANCE", "MANAGER", "ADMIN"] as const) {
-      assert.ok(rbac.can(role, "payment.verify"), role);
-    }
+  test("verifying money is Finance's, and nobody else's — the manager and owner watch it", () => {
+    assert.ok(rbac.can("FINANCE", "payment.verify"));
     for (const role of [
+      "MANAGER",
+      "ADMIN",
       "CHINA_WAREHOUSE",
       "DAR_WAREHOUSE",
       "CUSTOMER_SUPPORT",

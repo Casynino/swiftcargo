@@ -12,7 +12,7 @@ import { developerOverview, GROUPS, type Finding } from "@/lib/developer-overvie
 import { runChecks, type CheckResult } from "@/lib/developer-checks";
 import { activityKpis, businessPulse, dataPulse, dbSize, deployment, errorList, jobsTable, messagesPulse, peoplePulse, securityExtras, securityPulse, settingsPulse, timings } from "@/lib/developer-system";
 import { WhoCanDo } from "@/components/app/who-can-do";
-import { ROLE_PERMISSIONS } from "@/lib/rbac";
+import { ALL_PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/session";
 import { primeLocale, T } from "@/lib/server-t";
@@ -111,7 +111,7 @@ export default async function DeveloperHome() {
   const fine = checks.filter((c) => c.status === "ok").length;
   const staffRoles = Array.from(new Set(people.map((p) => p.role)));
   const grants = Object.fromEntries(staffRoles.map((r) => [r, ROLE_PERMISSIONS[r as keyof typeof ROLE_PERMISSIONS] as string[]]));
-  const allPermissions = [...ROLE_PERMISSIONS.ADMIN] as string[];
+  const allPermissions = [...ALL_PERMISSIONS] as string[];
 
   const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Africa/Dar_es_Salaam" })) % 24;
   const greeting = hour >= 5 && hour < 12 ? T("Good morning") : hour >= 12 && hour < 17 ? T("Good afternoon") : T("Good evening");

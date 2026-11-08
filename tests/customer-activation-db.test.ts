@@ -95,9 +95,9 @@ describe("activation codes", () => {
 });
 
 describe("who may give a code", () => {
-  test("Support, the manager and the owner — nobody on the floor or in Finance", async () => {
+  test("Support and the manager — nobody on the floor, in Finance, or the owner's account", async () => {
     const { can } = await import("@/lib/rbac");
-    for (const role of ["CUSTOMER_SUPPORT", "MANAGER", "ADMIN"] as const) assert.ok(can(role, "customer.activate"), role);
-    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "FINANCE", "CUSTOMER", "DEVELOPER"] as const) assert.ok(!can(role, "customer.activate"), role);
+    for (const role of ["CUSTOMER_SUPPORT", "MANAGER"] as const) assert.ok(can(role, "customer.activate"), role);
+    for (const role of ["CHINA_WAREHOUSE", "DAR_WAREHOUSE", "FINANCE", "ADMIN", "CUSTOMER", "DEVELOPER"] as const) assert.ok(!can(role, "customer.activate"), role);
   });
 });

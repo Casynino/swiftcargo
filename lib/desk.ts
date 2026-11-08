@@ -54,7 +54,7 @@ export function pillsFor(role: Role): ActionPill[] {
       return [
         { label: "Pending approvals", href: "/app/manager/approvals", icon: "BadgeCheck", tone: "brand" },
         { label: "Reconciliation", href: "/app/manager/reconciliation", icon: "Scale", tone: "signal" },
-        { label: "Payroll", href: "/app/finance/payroll", icon: "Wallet", tone: "success" },
+        { label: "Payroll approval", href: "/app/manager/payroll", icon: "Wallet", tone: "success" },
         { label: "Issues & claims", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
         { label: "Management report", href: "/app/manager/reports", icon: "FileText", tone: "marine" },
       ];
@@ -64,12 +64,12 @@ export function pillsFor(role: Role): ActionPill[] {
          of a container's life, and the one register nobody else can read. The
          manager view is not here — this home IS that screen. */
       return [
-        { label: "General ledger", href: "/app/finance/ledger", icon: "Landmark", tone: "signal" },
-        { label: "Verify payments", href: "/app/finance/collections/verify", icon: "ShieldCheck", tone: "brand" },
+        { label: "The ledger", href: "/app/finance/ledger", icon: "Landmark", tone: "signal" },
+        { label: "Accounts", href: "/app/finance/accounts", icon: "Wallet", tone: "brand" },
+        { label: "Profit & loss", href: "/app/finance/reports", icon: "TrendingUp", tone: "success" },
+        { label: "Approvals", href: "/app/manager/approvals", icon: "BadgeCheck", tone: "marine" },
         { label: "Issues & claims", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
-        { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", tone: "marine" },
-        { label: "Loading containers", href: "/app/containers/loading", icon: "Boxes" },
-        { label: "Deleted records", href: "/app/admin/deleted", icon: "Trash2", tone: "success" },
+        { label: "Deleted records", href: "/app/admin/deleted", icon: "Trash2" },
       ];
     default:
       return [];

@@ -113,6 +113,19 @@ a customer is holding.
 **VAT is on `CompanySetting`, not in code.** A tax rate changes by law, not by
 deploy.
 
+**The owner watches and administers; the manager supervises; the desks do the
+work.** ADMIN (the CEO) and MANAGER (the Director) hold every `*.view`
+permission and none of `DAILY_WORK` in `lib/rbac.ts` — receiving, scanning,
+loading and sending containers, releasing cargo, recording and verifying
+payments, billing, preparing payroll, answering customers. Those belong to China,
+Dar, Finance and Support, unchanged. The manager alone keeps the management-level
+corrections and decisions (confirming prices and discounts, correcting a
+consignment or CBM, closing or undoing a container's count, deleting cargo or a
+customer, assigning and closing cases); ADMIN keeps staff, settings, warehouses,
+website, exchange rate, audit and the expense and payroll sign-off. A page that
+only *shows* progress must be gated on a view permission, never on a desk's
+action. To do a desk's job, work as the person who holds it.
+
 **The customer gate is `customerId` from the session.** Never an id from a URL,
 a form field or a request body. Changing a number in an address bar is the whole
 attack, and the only defence that works is never reading the number.
