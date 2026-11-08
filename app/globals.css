@@ -910,3 +910,11 @@
     animation: none;
   }
 }
+
+
+/* The shell's own back control on a computer is for a page that has none. A page
+   that draws its own — whenever it arrives — takes it away, so there is never a
+   pair of them. */
+main:has(a > svg.lucide-chevron-left, [data-smart-back]) [data-shell-back] {
+  display: none !important;
+}

@@ -8,6 +8,7 @@ import { CargoDetailsEdit } from "@/components/app/cargo-details-edit";
 import { ChinaReceivePanel } from "@/components/app/china-receive-panel";
 import { CopyField } from "@/components/app/copy-field";
 import { DarCountCorrection } from "@/components/app/dar-count-correction";
+import { DarTakeOut } from "@/components/app/dar-take-out";
 import { DeliveryNoteButton } from "@/components/app/delivery-note-button";
 import { DeleteCargoButton } from "@/components/app/delete-cargo-button";
 import { Field } from "@/components/app/field";
@@ -686,6 +687,13 @@ export default async function CargoDetailPage({
                       weightKg: dar.weightKg?.toString() ?? null,
                       cbm: dar.cbm?.toString() ?? null,
                     }}
+                  />
+                ) : null}
+                {can(user.role, "receiving.dar") && (cargo.status === "RECEIVED_DAR" || cargo.status === "READY_FOR_RELEASE") ? (
+                  <DarTakeOut
+                    cargoId={cargo.id}
+                    locale={locale}
+                    billed={cargo.invoices.some((i) => i.status !== "CANCELLED" && i.status !== "DRAFT")}
                   />
                 ) : null}
               </CardContent>

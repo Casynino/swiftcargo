@@ -24,6 +24,7 @@ import {
   setWaitingCargoType,
 } from "@/lib/price-confirmation";
 import { acceptAsExpectedBy } from "@/lib/accept-as-expected";
+import { formMessage } from "@/lib/safe-error";
 import { authorize } from "@/lib/session";
 import { store, UploadError } from "@/lib/storage";
 import { cargoTypeOptions } from "@/lib/valuation";
@@ -1063,4 +1064,153 @@ export async function setCheckInCargoType(
     if (error instanceof PriceListRefused) return { error: error.message };
     throw error;
   }
+}
+
+/**
+ * TAKE GOODS OUT OF THE DAR WAREHOUSE.
+ *
+ * A consignment was booked in by mistake, or does not belong on this floor.
+ * Nothing is erased: the consignment goes to "missing at Dar", the way goods
+ * that are not on the floor always are, the receiving record and every figure
+ * on it stay, and a case is opened with the reason so somebody follows it up.
+ * Booking it in again later — it turned up, or it was a slip — puts it back on
+ * the floor through the ordinary check-in.
+ *
+ * Money is not touched by a measurement. A draft bill is cancelled, because it
+ * priced goods that are no longer here; a bill already issued is left exactly
+ * as it is and Finance is told, because only Finance moves an issued bill.
+ */
+export async function removeFromDarFloor(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("receiving.dar");
+
+  const cargoId = String(formData.get("cargoId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
+  if (reason.length < 3) return { error: "Say why it is being taken out." };
+
+  const cargo = await prisma.cargo.findFirst({
+    where: { id: cargoId, deletedAt: null },
+    include: {
+      darReceiving: { select: { id: true } },
+      pickupNote: { select: { noteNumber: true, status: true } },
+      invoices: {
+        where: { status: { not: "CANCELLED" } },
+        select: { id: true, number: true, status: true },
+      },
+      containerLines: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { containerId: true, container: { select: { reference: true } } },
+      },
+    },
+  });
+  if (!cargo) return { error: "That cargo no longer exists." };
+  if (!cargo.darReceiving) {
+    return { error: `${cargo.reference} has not been booked in at Dar. If it did not come off the box, report it missing instead.` };
+  }
+  if (cargo.status !== "RECEIVED_DAR" && cargo.status !== "READY_FOR_RELEASE") {
+    return { error: `${cargo.reference} is not on the Dar floor (${cargo.status.replace(/_/g, " ").toLowerCase()}), so there is nothing to take out.` };
+  }
+  if (cargo.pickupNote && cargo.pickupNote.status === "ACTIVE") {
+    return { error: `${cargo.reference} has a pickup note (${cargo.pickupNote.noteNumber}) out. Finance withdraws it first.` };
+  }
+
+  const issued = cargo.invoices.filter((i) => i.status !== "DRAFT");
+  const drafts = cargo.invoices.filter((i) => i.status === "DRAFT");
+  const line = cargo.containerLines.at(0);
+
+  let caseRef: string;
+  try {
+    caseRef = await prisma.$transaction(async (tx) => {
+      const claim = await tx.cargo.updateMany({
+        where: { id: cargo.id, status: { in: ["RECEIVED_DAR", "READY_FOR_RELEASE"] } },
+        data: { status: "MISSING_AT_DAR" },
+      });
+      if (claim.count === 0) throw new Error("Its status changed while you were pressing. Look again.");
+
+      await tx.cargoStatusHistory.create({
+        data: { cargoId: cargo.id, from: cargo.status, to: "MISSING_AT_DAR", reason: `Taken out of the Dar warehouse: ${reason}`, actorId: actor.id },
+      });
+
+      /* A draft priced goods that are no longer here. Cancelled, not deleted,
+         and its hold on the sailing is released so booking the goods in again
+         can raise a fresh one. */
+      for (const draft of drafts) {
+        await tx.invoice.update({
+          where: { id: draft.id },
+          data: { status: "CANCELLED", cancelledAt: new Date(), cancelledReason: `Goods taken out of the Dar warehouse: ${reason}`, containerCargoId: null },
+        });
+      }
+
+      if (line?.containerId) {
+        await tx.containerEvent.create({
+          data: {
+            containerId: line.containerId,
+            from: "ARRIVED",
+            to: "ARRIVED",
+            note: `${cargo.reference} taken out of the Dar warehouse: ${reason}`,
+            actorId: actor.id,
+          },
+        });
+      }
+
+      const reference = await nextExceptionReference(tx);
+      const created = await tx.exceptionCase.create({
+        data: {
+          reference,
+          type: "OTHER",
+          priority: issued.length > 0 ? "URGENT" : "HIGH",
+          cargoId: cargo.id,
+          customerId: cargo.receiverId,
+          containerId: line?.containerId ?? null,
+          department: "DAR_WAREHOUSE",
+          title: `${cargo.reference} was taken out of the Dar warehouse`,
+          description:
+            reason +
+            (issued.length > 0 ? ` Bill${issued.length > 1 ? "s" : ""} already issued: ${issued.map((i) => i.number).join(", ")} — Finance to correct.` : ""),
+          raisedById: actor.id,
+        },
+        select: { id: true, reference: true },
+      });
+      await tx.exceptionEvent.create({
+        data: { caseId: created.id, to: "OPEN", note: "Taken out of the Dar warehouse.", actorId: actor.id },
+      });
+
+      await notifyStaff(
+        [
+          ...(await staffInDepartment("MANAGEMENT", tx)),
+          ...(await staffInDepartment("CUSTOMER_SUPPORT", tx)),
+          ...(issued.length > 0 ? await staffInDepartment("FINANCE", tx) : []),
+        ],
+        {
+          kind: "exception.raised",
+          title: `${cargo.reference} was taken out of the Dar warehouse`,
+          body: issued.length > 0 ? `${reason} It is already billed on ${issued.map((i) => i.number).join(", ")}; Finance to correct the bill.` : reason,
+          href: "/app/exceptions",
+        },
+        tx
+      );
+      return created.reference;
+    });
+  } catch (error) {
+    return { error: formMessage(error, "That did not work.") };
+  }
+
+  await recordAudit({
+    actor,
+    action: "cargo.removedFromDar",
+    entity: "Cargo",
+    entityId: cargo.id,
+    summary: `${cargo.reference} taken out of the Dar warehouse — case ${caseRef}: ${reason}`,
+    metadata: { draftsCancelled: drafts.map((d) => d.number), issuedLeftForFinance: issued.map((i) => i.number) },
+  });
+
+  revalidatePath("/app/receive/dar");
+  revalidatePath("/app/inventory");
+  revalidatePath("/app/exceptions");
+  revalidatePath("/app/finance/collections");
+  revalidatePath(`/app/cargo/${cargo.id}`);
+  return { ok: `Taken out. Case ${caseRef} is open; book it in again if it turns up.` };
 }

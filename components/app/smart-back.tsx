@@ -138,7 +138,7 @@ export function MobileBack({ desktop = false }: { desktop?: boolean }) {
   const [headerHasOne, setHeaderHasOne] = useState(false);
   useEffect(() => {
     if (!desktop) return;
-    const id = window.setTimeout(() => setHeaderHasOne(!!document.querySelector("[data-smart-back]")), 50);
+    const id = window.setTimeout(() => setHeaderHasOne(!!document.querySelector("main [data-smart-back], main a > svg.lucide-chevron-left")), 50);
     return () => window.clearTimeout(id);
   }, [desktop, pathname]);
 
@@ -151,6 +151,7 @@ export function MobileBack({ desktop = false }: { desktop?: boolean }) {
   return (
     <button
       type="button"
+      data-shell-back={desktop ? "" : undefined}
       onClick={() => router.push(dest.href)}
       className={cn(
         "-ml-1 h-11 max-w-[10rem] items-center gap-0.5 rounded-md pl-1 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary print:hidden",

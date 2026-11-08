@@ -194,6 +194,7 @@ const OWNERS_LIST: [string, string, string][] = [
   ["the packing list issued", "containers.ts", "issuePackingList"],
   ["the box sealed", "containers.ts", "sealContainer"],
   ["the box taken back to loading", "containers.ts", "takeContainerBack"],
+  ["goods taken out of the Dar warehouse", "dar.ts", "removeFromDarFloor"],
   ["the voyage recorded", "containers.ts", "updateVoyage"],
   ["sailed, landed and closed", "containers.ts", "advanceContainer"],
   ["received in Dar", "dar.ts", "receiveInDar"],
