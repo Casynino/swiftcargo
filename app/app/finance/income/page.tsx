@@ -222,12 +222,12 @@ export default async function IncomePage({
           ))}
           {/* A window nobody thought to offer. Plain GET, so it survives a
               reload and can be sent to somebody as a link. */}
-          <form className="flex items-center gap-1.5 text-xs" action="/app/finance/income">
+          <form className="flex flex-wrap items-center gap-1.5 text-xs" action="/app/finance/income">
             {search ? <input type="hidden" name="q" value={search} /> : null}
             {accountId ? <input type="hidden" name="account" value={accountId} /> : null}
-            <input type="date" name="from" aria-label={T("From")} defaultValue={sp.from ?? ""} className="h-8 rounded-lg border bg-card px-2" />
+            <input type="date" name="from" aria-label={T("From")} defaultValue={sp.from ?? ""} className="h-8 w-[8.5rem] min-w-0 rounded-lg border bg-card px-2" />
             <span className="text-muted-foreground">→</span>
-            <input type="date" name="to" aria-label={T("To")} defaultValue={sp.to ?? ""} className="h-8 rounded-lg border bg-card px-2" />
+            <input type="date" name="to" aria-label={T("To")} defaultValue={sp.to ?? ""} className="h-8 w-[8.5rem] min-w-0 rounded-lg border bg-card px-2" />
             <button className="h-8 rounded-lg bg-foreground px-3 font-medium text-background">{T("Show")}</button>
           </form>
         </div>

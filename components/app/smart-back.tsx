@@ -55,6 +55,7 @@ export function SmartBack({
   return (
     <Link
       href={target.href}
+      data-smart-back
       className={cn(
         "-ml-1 hidden max-w-full items-center gap-1 rounded-md pl-1 pr-2 text-sm text-muted-foreground transition-colors hover:text-foreground lg:inline-flex print:hidden",
         className
@@ -121,7 +122,7 @@ const ROOTS = new Set([
  * carries its own control in the top bar: the page walked from, else the
  * page's parent section, else Home. Hidden at the top of a desk.
  */
-export function MobileBack() {
+export function MobileBack({ desktop = false }: { desktop?: boolean }) {
   const t = useT();
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -132,7 +133,17 @@ export function MobileBack() {
     setWalked(back ? { href: back, label: backLabel(back) } : null);
   }, [pathname]);
 
+  /* On a computer the page header may already carry its own back link, named
+     for that page's parent; this one is only for a page that has none. */
+  const [headerHasOne, setHeaderHasOne] = useState(false);
+  useEffect(() => {
+    if (!desktop) return;
+    const id = window.setTimeout(() => setHeaderHasOne(!!document.querySelector("[data-smart-back]")), 50);
+    return () => window.clearTimeout(id);
+  }, [desktop, pathname]);
+
   if (ROOTS.has(pathname)) return null;
+  if (desktop && headerHasOne) return null;
 
   const match = PARENTS.find((p) => pathname.startsWith(p.prefix) && pathname !== p.parent);
   const dest = walked ?? (match ? { href: match.parent, label: match.label } : { href: "/app/dashboard", label: "Home" });
@@ -141,7 +152,10 @@ export function MobileBack() {
     <button
       type="button"
       onClick={() => router.push(dest.href)}
-      className="-ml-1 inline-flex h-11 max-w-[10rem] items-center gap-0.5 rounded-md pl-1 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary print:hidden"
+      className={cn(
+        "-ml-1 h-11 max-w-[10rem] items-center gap-0.5 rounded-md pl-1 pr-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary print:hidden",
+        desktop ? "mb-2 hidden lg:inline-flex" : "inline-flex"
+      )}
     >
       <ChevronLeft className="size-5 shrink-0" />
       <span className="truncate">{t(dest.label)}</span>

@@ -116,12 +116,14 @@ export function AppShell({
 
   /* THE RAIL CAN SHRINK TO ICONS. What was chosen is kept in this browser, and
      the page always starts wide so the first paint matches the server's. */
-  const [collapsed, setCollapsed] = useState(false);
+  /* The menu starts as the slim icon rail on a computer and stays wide only
+     once somebody has opened it. */
+  const [collapsed, setCollapsed] = useState(true);
   useEffect(() => {
     try {
-      if (localStorage.getItem("swift.sidebar") === "collapsed") setCollapsed(true);
+      if (localStorage.getItem("swift.sidebar") === "wide") setCollapsed(false);
     } catch {
-      /* private window or blocked storage: it simply starts wide */
+      /* private window or blocked storage: it simply starts slim */
     }
   }, []);
   const setRail = (next: boolean) => {
@@ -446,6 +448,7 @@ export function AppShell({
           <Suspense fallback={null}>
             <NavTrail />
           </Suspense>
+          <MobileBack desktop />
           {/* Offered, never forced: a clerk half-way through a consignment must
               not have the form pulled out from under them. */}
           <NewVersionNotice build={BUILD_ID} />

@@ -9,6 +9,7 @@ import { DeskHero } from "@/components/app/desk-hero";
 import { MoneyFlowChart } from "@/components/app/manager-bento";
 import { SectionLabel } from "@/components/app/section-label";
 import { AreaChart } from "@/components/charts/area-chart";
+import { BarChart } from "@/components/charts/bar-chart";
 import { Donut, DonutLegend, type DonutSlice } from "@/components/charts/donut";
 import { Ring } from "@/components/charts/ring";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -16,6 +17,7 @@ import { formatCurrency } from "@/lib/currency";
 import { pillsFor } from "@/lib/desk";
 import { chinaVolumeByMonth } from "@/lib/dashboard";
 import { t } from "@/lib/i18n";
+import { managementAnalytics } from "@/lib/management-analytics";
 import { managerOverview } from "@/lib/manager-overview";
 import type { SessionUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -34,7 +36,7 @@ import { localeOf } from "@/lib/viewer-locale";
  */
 export async function ManagementHome({ user }: { user: SessionUser }) {
   const locale = await localeOf(user.id);
-  const [o, volume] = await Promise.all([managerOverview(locale), chinaVolumeByMonth()]);
+  const [o, volume, more] = await Promise.all([managerOverview(locale), chinaVolumeByMonth(), managementAnalytics()]);
   const tr = (text: string) => t(locale, text);
   const tzs = (n: number) => formatCurrency(n, "TZS");
   const count = (n: number) => n.toLocaleString("en-US");
@@ -117,6 +119,54 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
   const volumeThis = volume.thisYear.values.reduce((s, n) => s + n, 0);
   const yearIn = o.flow.reduce((s, m) => s + m.in, 0);
   const yearOut = o.flow.reduce((s, m) => s + m.out, 0);
+
+  /* ----------------------------------------------------------- more analysis */
+  const STAGES: [string, string, DonutSlice["tone"]][] = [
+    ["OPEN", "Open", 2],
+    ["LOADING", "Loading", 2],
+    ["LOADED", "Loaded", 2],
+    ["SEALED", "Sealed", 1],
+    ["DEPARTED", "Departed", 1],
+    ["IN_TRANSIT", "At sea", 1],
+    ["ARRIVED", "Arrived", 4],
+    ["CLOSED", "Closed", 6],
+  ];
+  const stageRows = STAGES.map(([key, label, tone]) => ({
+    label: tr(label),
+    tone,
+    value: more.containers.find((c) => c.status === key)?.count ?? 0,
+  })).filter((r) => r.value > 0);
+  const stageMax = Math.max(...stageRows.map((r) => r.value), 1);
+  const serviceSlices: DonutSlice[] = (
+    [
+      { label: tr("Loose cargo (LCL)"), value: more.service.lcl, tone: 1 },
+      { label: tr("Full container (FCL)"), value: more.service.fcl, tone: 2 },
+    ] as DonutSlice[]
+  ).filter((x) => x.value > 0);
+  const CASE_NAMES: Record<string, string> = {
+    MISSING_CARGO: "Missing cargo",
+    DAMAGED_CARGO: "Damaged cargo",
+    PACKAGE_MISMATCH: "Package count",
+    WEIGHT_DIFFERENCE: "Weight difference",
+    CBM_DIFFERENCE: "Volume difference",
+    WRONG_CUSTOMER: "Wrong customer",
+    WRONG_CONTAINER: "Wrong container",
+    UNIDENTIFIED_CARGO: "Unidentified cargo",
+    CUSTOMS_HOLD: "Customs hold",
+    SHIPMENT_DELAY: "Shipment delay",
+    PAYMENT_DISCREPANCY: "Payment difference",
+    CUSTOMER_COMPLAINT: "Customer complaint",
+    DELIVERY_FAILURE: "Delivery failure",
+    OTHER: "Other",
+  };
+  const caseSlices: DonutSlice[] = more.openCases.slice(0, 5).map((c, i) => ({
+    label: tr(CASE_NAMES[c.type] ?? "Other"),
+    value: c.count,
+    tone: ((i % 6) + 1) as DonutSlice["tone"],
+  }));
+  const openCaseTotal = more.openCases.reduce((n, c) => n + c.count, 0);
+  const weeksTotal = more.intakeWeeks.reduce((n, w) => n + w.value, 0);
+  const receiverMax = Math.max(...more.topReceivers.map((r) => r.count), 1);
 
   const Panel = ({ title, hint, action, children, className }: { title: string; hint?: string; action?: { href: string; label: string }; children: React.ReactNode; className?: string }) => (
     <section className={cn("min-w-0 rounded-xl border bg-card p-5 shadow-soft", className)}>
@@ -455,6 +505,81 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
           height={240}
         />
       </Panel>
+
+      {/* ------------------------------------------------------ more analysis */}
+      <section>
+        <SectionLabel>{`${tr("The business")} · ${tr("more analysis")}`}</SectionLabel>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Panel className="lg:col-span-2" title={tr("Cargo received each week")} hint={`${tr("Consignments booked in, the last 12 weeks")} · ${count(weeksTotal)} ${tr("in all")}`}>
+            <BarChart data={more.intakeWeeks} height={190} tone={1} highlightIndex={more.intakeWeeks.length - 1} formatValue={count} />
+          </Panel>
+          <Panel title={tr("Loose or full container")} hint={tr("Every consignment on the books")}>
+            {serviceSlices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{tr("No cargo yet")}</p>
+            ) : (
+              <>
+                <div className="flex justify-center">
+                  <Donut slices={serviceSlices} size={140} stroke={20} label={count(more.service.lcl + more.service.fcl)} caption={tr("consignments")} />
+                </div>
+                <div className="mt-5"><DonutLegend slices={serviceSlices} format={count} /></div>
+              </>
+            )}
+          </Panel>
+          <Panel title={tr("Containers by stage")} hint={tr("Where every box is in its journey")} action={{ href: "/app/containers", label: tr("Shipments") }}>
+            {stageRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{tr("No containers yet")}</p>
+            ) : (
+              <ul className="space-y-3">
+                {stageRows.map((r) => (
+                  <li key={r.label}>
+                    <div className="flex items-baseline justify-between text-sm">
+                      <span>{r.label}</span>
+                      <span className="tnum font-semibold">{count(r.value)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                      <div className={cn("h-full rounded-full", r.tone === 1 ? "bg-chart-1" : r.tone === 2 ? "bg-chart-2" : r.tone === 4 ? "bg-chart-4" : "bg-chart-6")} style={{ width: `${(r.value / stageMax) * 100}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+          <Panel title={tr("Who receives the most")} hint={tr("Consignments addressed to them this year")}>
+            {more.topReceivers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{tr("Nothing received this year yet.")}</p>
+            ) : (
+              <ul className="space-y-3">
+                {more.topReceivers.map((r, i) => (
+                  <li key={`${r.name}-${i}`}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="truncate">{r.name}</span>
+                      <span className="tnum shrink-0 font-semibold">{count(r.count)}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-foreground/10">
+                      <div className="h-full rounded-full bg-chart-2" style={{ width: `${(r.count / receiverMax) * 100}%` }} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+          <Panel title={tr("Open claims by kind")} hint={tr("What is still unresolved")} action={{ href: "/app/exceptions", label: tr("Issues & claims") }}>
+            {caseSlices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{tr("No open claims.")}</p>
+            ) : (
+              <>
+                <div className="flex justify-center">
+                  <Donut slices={caseSlices} size={140} stroke={20} label={count(openCaseTotal)} caption={tr("open")} />
+                </div>
+                <div className="mt-5"><DonutLegend slices={caseSlices} format={count} /></div>
+              </>
+            )}
+          </Panel>
+          <Panel className="lg:col-span-3" title={tr("New customers each month")} hint={`${tr("Accounts opened, the last 12 months")} · ${count(more.totalCustomers)} ${tr("on the books")}`}>
+            <BarChart data={more.customerGrowth} height={150} tone={2} highlightIndex={more.customerGrowth.length - 1} formatValue={count} />
+          </Panel>
+        </div>
+      </section>
     </div>
   );
 }

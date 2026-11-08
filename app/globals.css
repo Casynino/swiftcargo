@@ -94,40 +94,40 @@
      for hours; deep neutrals with quiet elevation are easier to sit in front of
      than a mid-navy, and status colour reads louder against them. */
   .dark {
-    --background: 222 34% 5.5%;
+    --background: 224 46% 7%;
     --foreground: 210 24% 96%;
 
     /* Three points of lightness between page and card is not separation, it is
        a rumour. Surfaces have to read as surfaces or every screen flattens into
        one grey field. */
-    --card: 222 30% 9%;
+    --card: 224 40% 10.5%;
     --card-foreground: 210 24% 96%;
 
-    --popover: 222 32% 8%;
+    --popover: 224 42% 9.5%;
     --popover-foreground: 210 24% 96%;
 
     --primary: 210 24% 96%;
     --primary-foreground: 222 30% 7%;
 
-    --secondary: 222 24% 13%;
+    --secondary: 224 32% 15%;
     --secondary-foreground: 210 24% 96%;
 
-    --muted: 222 24% 13%;
+    --muted: 224 32% 15%;
     --muted-foreground: 218 15% 63%;
 
-    --accent: 222 24% 15%;
+    --accent: 224 32% 17%;
     --accent-foreground: 210 24% 96%;
 
     --destructive: 0 68% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 22% 17%;
-    --input: 222 22% 17%;
+    --border: 224 32% 19%;
+    --input: 224 32% 19%;
     --ring: 199 74% 60%;
 
     --brand: 202 76% 60%;
     --brand-foreground: 213 30% 9%;
-    --brand-muted: 218 40% 15%;
+    --brand-muted: 224 48% 17%;
 
     --signal: 19 90% 60%;
     --signal-foreground: 0 0% 100%;
@@ -137,8 +137,8 @@
     --marine: 196 84% 62%;
     --marine-foreground: 213 30% 9%;
 
-    --surface-1: 222 30% 8%;
-    --surface-2: 222 34% 6%;
+    --surface-1: 224 42% 9%;
+    --surface-2: 224 46% 6.5%;
     --surface-3: 222 26% 12%;
     --glass: 222 34% 8% / 0.72;
     --glass-border: 210 40% 98% / 0.12;

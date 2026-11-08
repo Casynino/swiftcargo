@@ -83,19 +83,16 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
         const Icon = (
           Icons as unknown as Record<
             string,
-            React.ComponentType<{ className?: string }>
+            React.ComponentType<{ className?: string; strokeWidth?: number }>
           >
         )[pill.icon];
         return (
           <Link
             key={pill.href + pill.label}
             href={pill.href}
-            className={cn(
-              "focus-ring inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold shadow-soft transition-all hover:-translate-y-0.5 sm:text-sm",
-              TONES[pill.tone ?? "plain"]
-            )}
+            className="focus-ring inline-flex items-center gap-2 rounded-full border bg-card/70 px-3.5 py-1.5 text-xs font-medium text-foreground/90 shadow-soft transition-colors hover:bg-foreground/5 sm:text-sm"
           >
-            {Icon ? <Icon className="size-3.5" /> : null}
+            {Icon ? <Icon className={cn("size-4", CHIP[pill.tone ?? "plain"])} strokeWidth={1.75} /> : null}
             {t(pill.label)}
           </Link>
         );
