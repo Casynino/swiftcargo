@@ -55,7 +55,15 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
     <>
       {/* PHONE: five tiles across, each a square icon over a short name, and a
           sixth or seventh a swipe away — thumbs hit tiles, not pills. */}
-      <div className="-mx-4 grid snap-x snap-mandatory scroll-px-4 auto-cols-[calc((100%-2rem)/5)] grid-flow-col gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
+      <div
+        className={cn(
+          "-mx-4 grid gap-2 px-4 pb-1 lg:hidden",
+          /* Five or fewer fill the width evenly; more than five scroll sideways. */
+          pills.length <= 5
+            ? "grid-flow-col auto-cols-fr"
+            : "snap-x snap-mandatory scroll-px-4 auto-cols-[calc((100%-2rem)/5)] grid-flow-col overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        )}
+      >
         {pills.map((pill) => {
           const Icon = iconFor(pill.icon);
           return (
