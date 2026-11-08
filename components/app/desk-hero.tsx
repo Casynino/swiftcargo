@@ -38,9 +38,9 @@ export async function DeskHero({
   subtitle: string;
   searchAction?: string;
   searchPlaceholder?: string;
-  /** The banner's heading, when it is not the desk's own name (management reads "Management"). */
+  /** The banner's heading when it should not be the person's own first name. */
   title?: string;
-  /** The small line under the title; the company by default. Management reads "CEO" or "Director". */
+  /** The small line under the name; the desk by default. Management reads "CEO" or "Director". */
   kicker?: string;
   /** Management watches rather than looks things up: no search box under the banner. */
   search?: boolean;
@@ -94,8 +94,8 @@ export async function DeskHero({
   return (
     <div className="space-y-4">
       <CleanBanner
-        title={title ?? tr(department)}
-        kicker={kicker ? tr(kicker) : "Swift Cargo"}
+        title={title ?? name}
+        kicker={tr(kicker ?? department)}
         image="/photos/port-cranes.jpg"
         line={
           <>
