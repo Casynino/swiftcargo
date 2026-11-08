@@ -618,7 +618,7 @@ function TrackingCard({
                     key={`${account.bankName}-${account.accountNumber}`}
                     className="rounded-lg border bg-card p-3"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       {account.bankName}
                       {account.kind === "MOBILE_MONEY"
                         ? ` — ${t(locale, "Lipa number")}`
@@ -639,7 +639,7 @@ function TrackingCard({
                     number. */}
                 {result.officeAddress ? (
                   <li className="rounded-lg border bg-card p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       {t(locale, "Cash — at our office")}
                     </p>
                     <p className="mt-0.5 text-sm font-medium">{result.officeAddress}</p>
@@ -875,7 +875,7 @@ function Cell({
 }) {
   return (
     <div className="min-w-0 bg-card px-5 py-3">
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <dt className="text-[11px] text-muted-foreground">
         {label}
       </dt>
       <dd className={cn("mt-0.5 text-base font-semibold", tone)}>{value}</dd>

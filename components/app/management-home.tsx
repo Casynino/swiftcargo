@@ -224,7 +224,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
         </div>
         <div className="grid lg:grid-cols-[1.25fr_1fr]">
           <div className="p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{tr("In the accounts")}</p>
+            <p className="text-[11px] font-medium text-muted-foreground">{tr("In the accounts")}</p>
             <p className="tnum mt-1 text-3xl font-bold tracking-tight">{tzs(o.heldTzs)}</p>
             <div className="mt-5 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
               <Donut slices={accountSlices} size={132} stroke={20} />
@@ -252,7 +252,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
             </div>
           </div>
           <dl className="divide-y border-t lg:border-l lg:border-t-0">
-            <p className="px-5 pt-5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{tr("Today")}</p>
+            <p className="px-5 pt-5 text-[11px] font-medium text-muted-foreground">{tr("Today")}</p>
             {[
               { k: tr("Billed today"), v: tzs(money.billedToday.tzs), c: "" },
               { k: tr("Collected today"), v: tzs(money.collectedTodayTzs), c: "text-success" },

@@ -185,7 +185,7 @@ export default async function ChinaPage() {
                 <Reveal as="li" key={market.id} delay={Math.min(i, 6) * 60} className="rounded-2xl border bg-card p-5 shadow-soft">
                   <p className="font-semibold">{market.name}</p>
                   {market.category ? (
-                    <p className="mt-0.5 text-xs uppercase tracking-wide text-signal">{market.category}</p>
+                    <p className="mt-0.5 text-xs text-signal">{market.category}</p>
                   ) : null}
                   {market.summary ? (
                     <p className="mt-2 text-sm text-muted-foreground">{market.summary}</p>

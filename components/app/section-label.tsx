@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Tx } from "@/components/app/tx";
 /**
- * The small uppercase rule above a block of a dashboard.
+ * The small label above a block of a dashboard.
  *
  * A dashboard is several unrelated answers stacked vertically. Without a label
  * at the top of each, the reader infers where a section starts from the shape
@@ -31,7 +31,7 @@ export function SectionLabel({
 }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <h2 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         {typeof children === "string" ? <Tx>{children}</Tx> : children}
         {count !== undefined && count > 0 ? (
           <span className="tnum rounded-full bg-warning/15 px-1.5 py-0.5 text-[11px] font-bold leading-none text-warning">

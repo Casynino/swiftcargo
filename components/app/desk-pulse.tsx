@@ -47,7 +47,7 @@ export function DeskPulsePanel({ desks, locale }: { desks: DeskPulse[]; locale: 
           <span aria-hidden className={cn("absolute inset-y-0 left-0 w-0.5", RULE[desk.tone])} />
 
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               {desk.desk}
             </p>
             <ArrowRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />

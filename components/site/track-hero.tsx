@@ -54,7 +54,7 @@ export function TrackHero({
       <div className="container relative flex min-h-[calc(72vw+26rem)] flex-col justify-start pb-[calc(72vw+1rem)] pt-28 sm:min-h-[calc(42vw+26rem)] sm:pb-[calc(42vw+1.5rem)] sm:pt-32 lg:min-h-[40rem] lg:justify-center lg:py-32 xl:min-h-[44rem] 2xl:min-h-[48rem]">
         <div className="animate-in-up max-w-xl lg:max-w-[30rem]">
 
-          <p className="mb-5 flex items-center gap-3 text-base font-bold uppercase tracking-[0.14em] text-orange-300">
+          <p className="mb-5 flex items-center gap-3 text-sm font-medium text-orange-300">
             <span aria-hidden className="h-0.5 w-8 rounded-full bg-orange-300" />
             {t(locale, "Fuatilia mzigo")}
           </p>
@@ -79,7 +79,7 @@ export function TrackHero({
           {/* The readout under the search. What the company actually does, in
               the register a bridge display is written in — and the only two
               figures on this screen that are not the customer's own. */}
-          <div className="mt-7 flex flex-col items-start gap-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/50 sm:flex-row sm:items-center sm:gap-3">
+          <div className="mt-7 flex flex-col items-start gap-1 text-[0.65rem] font-medium text-white/50 sm:flex-row sm:items-center sm:gap-3">
             <span aria-hidden className="hero-rule hidden h-px w-8 sm:block" />
             <span className="text-white/65">
               {ROUTE.originCity} → {ROUTE.destinationCity}

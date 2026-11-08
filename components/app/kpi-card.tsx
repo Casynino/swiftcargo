@@ -132,7 +132,7 @@ export function KpiCard({
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="truncate text-xs font-medium text-muted-foreground">
             <Tx>{label}</Tx>
           </p>
 

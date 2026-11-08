@@ -208,7 +208,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
             <div className="max-h-[80vh] overflow-y-auto p-6 sm:p-8">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-signal">
+                  <p className="text-xs font-medium text-signal">
                     {t(locale, open.tagline)}
                   </p>
                   <h3 className="mt-1 font-display text-3xl font-bold tracking-tight">{open.name}</h3>
@@ -230,7 +230,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
                 </p>
               ) : null}
               <p className="mt-4 leading-relaxed text-muted-foreground">{t(locale, open.about)}</p>
-              <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="mt-6 text-xs font-medium text-muted-foreground">
                 {t(locale, "What people buy here")}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">

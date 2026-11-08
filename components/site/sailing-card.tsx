@@ -45,7 +45,7 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-xs font-medium text-muted-foreground">
             {t(locale, "Sailing")}
           </p>
           <p className="mt-1 truncate font-display text-lg font-bold tracking-tight">

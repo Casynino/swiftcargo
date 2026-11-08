@@ -93,7 +93,7 @@ export default async function HomePage() {
             </Link>
             {/* Tracking, in the hero — it is what most visitors came for. */}
             <div className="mt-4 w-full max-w-xl">
-              <p className="mb-2.5 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-cyan-200">
+              <p className="mb-2.5 text-[0.7rem] font-medium text-cyan-200">
                 {t(locale, "Track your cargo")}
               </p>
               <TrackForm dark pill />
@@ -108,8 +108,8 @@ export default async function HomePage() {
                 className="site-float group block rounded-3xl bg-white/95 p-5 text-slate-900 shadow-[0_30px_60px_-30px_rgba(0,8,20,0.9)] backdrop-blur"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {t(locale, "Next sailing (next ship)")}
+                  <p className="text-[0.7rem] font-medium text-slate-500">
+                    {t(locale, "Next sailing")}
                   </p>
                   <span className="grid size-7 place-items-center rounded-full bg-slate-900 text-white transition-transform group-hover:rotate-45">
                     <ArrowUpRight className="size-3.5" />
@@ -117,7 +117,7 @@ export default async function HomePage() {
                 </div>
                 <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
                   <div>
-                    <p className="text-[0.65rem] font-semibold uppercase text-slate-500">
+                    <p className="text-[0.65rem] font-medium text-slate-500">
                       {t(locale, "Departs")}
                     </p>
                     <p className="tnum font-display text-lg font-bold">{short(next.departureDate)}</p>
@@ -127,7 +127,7 @@ export default async function HomePage() {
                     <Ship className="absolute left-1/2 top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 bg-white px-0.5 text-sky-700" />
                   </div>
                   <div className="text-right">
-                    <p className="text-[0.65rem] font-semibold uppercase text-slate-500">
+                    <p className="text-[0.65rem] font-medium text-slate-500">
                       {t(locale, "Arrives about")}
                     </p>
                     <p className="tnum font-display text-lg font-bold">{short(next.estimatedArrival)}</p>
@@ -182,7 +182,7 @@ export default async function HomePage() {
               ] as const
             ).map(([Icon, title, body], i) => (
               <Reveal as="li" key={title} delay={i * 80} className="rounded-2xl border bg-card p-5">
-                <span className="grid size-10 place-items-center rounded-xl bg-brand text-brand-foreground">
+                <span className="grid size-10 place-items-center rounded-xl border text-foreground/70">
                   <Icon className="size-5" />
                 </span>
                 <p className="mt-4 font-semibold">{t(locale, title)}</p>
@@ -340,7 +340,7 @@ export default async function HomePage() {
                   delay={i * 90}
                   className="flex gap-5 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:bg-white/[0.08]"
                 >
-                  <span className="tnum grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-signal to-orange-600 font-display text-lg font-bold">
+                  <span className="tnum grid size-11 shrink-0 place-items-center rounded-full bg-signal font-display text-lg font-semibold text-signal-foreground">
                     {i + 1}
                   </span>
                   <span>

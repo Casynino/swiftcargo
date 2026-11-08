@@ -75,7 +75,7 @@ export default async function MergedGroupPage({
 
   return (
     <Shell>
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">
+      <p className="text-xs font-medium text-white/50">
         {group.customerName} — one bill, {group.lines.length} consignments
       </p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">

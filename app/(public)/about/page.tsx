@@ -168,7 +168,7 @@ export default async function AboutPage() {
                         {t(locale, place)}
                       </p>
                       {entity ? (
-                        <p className="mt-3 text-xs font-medium uppercase tracking-wide text-white/60">{entity}</p>
+                        <p className="mt-3 text-xs font-medium text-white/60">{entity}</p>
                       ) : null}
                       <p className="mt-1.5 max-w-md leading-relaxed">{address}</p>
                     </div>

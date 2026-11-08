@@ -67,7 +67,7 @@ export function AuthScene({
             aria-hidden
             className="absolute -inset-x-16 -inset-y-20 -z-10 bg-[radial-gradient(ellipse_at_40%_50%,rgba(4,12,22,0.92)_0%,rgba(4,12,22,0.7)_45%,transparent_75%)]"
           />
-          <p className="flex items-center gap-3 text-base font-bold uppercase tracking-[0.14em] text-orange-300">
+          <p className="flex items-center gap-3 text-sm font-medium text-orange-300">
             <span aria-hidden className="h-0.5 w-8 rounded-full bg-orange-300" />
             {welcome}
           </p>

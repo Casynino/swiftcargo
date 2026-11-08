@@ -31,7 +31,7 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        "flex items-center gap-3 text-base font-bold uppercase tracking-[0.14em]",
+        "flex items-center gap-3 text-sm font-medium",
         dark ? "text-orange-300" : "text-signal",
         className
       )}
@@ -62,7 +62,7 @@ export function Headline({
   return (
     <Tag
       className={cn(
-        "font-display font-bold tracking-[-0.03em]",
+        "font-display font-semibold tracking-[-0.02em]",
         dark ? "text-white" : "text-foreground",
         className
       )}
@@ -71,7 +71,7 @@ export function Headline({
       {trail ? (
         <>
           {" "}
-          <span className={dark ? "site-outline" : "text-brand"}>{trail}</span>
+          <span className={dark ? "text-white/65" : "text-foreground/60"}>{trail}</span>
         </>
       ) : null}
     </Tag>
