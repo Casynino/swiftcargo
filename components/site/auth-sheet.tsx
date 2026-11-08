@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { Smartphone, X } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { InstallButton } from "@/components/install-app";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,9 +32,10 @@ export function AuthSheet({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-
   useEffect(() => {
     if (!open) return;
+    /* Always opens at the top of the card. */
+    document.querySelector<HTMLElement>("[data-auth-card]")?.scrollTo({ top: 0 });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -54,6 +56,18 @@ export function AuthSheet({
           >
             {cta}
           </button>
+          <InstallButton
+            render={(openSheet) => (
+              <button
+                type="button"
+                onClick={openSheet}
+                className="focus-ring inline-flex h-9 items-center gap-1.5 text-[13px] text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline"
+              >
+                <Smartphone className="size-3.5" />
+                Get the full-screen app
+              </button>
+            )}
+          />
         </div>
       </div>
 
@@ -68,11 +82,12 @@ export function AuthSheet({
 
       <div
         role="dialog"
+        data-auth-card
         aria-modal={open}
         aria-hidden={!open}
         className={cn(
-          "auth-card dark site-glass rounded-[2rem] p-6 text-foreground sm:p-8",
-          "max-lg:!bg-[#0a1624] max-lg:!backdrop-blur-none max-lg:fixed max-lg:inset-x-3 max-lg:bottom-3 max-lg:z-50 max-lg:max-h-[88dvh] max-lg:overflow-y-auto max-lg:transition-[transform,visibility] max-lg:duration-300",
+          "auth-card dark site-glass rounded-[2rem] p-6 text-foreground max-lg:p-5 sm:p-8",
+          "max-lg:!bg-[#0a1624] max-lg:!backdrop-blur-none max-lg:fixed max-lg:inset-x-3 max-lg:bottom-3 max-lg:z-50 max-lg:max-h-[80dvh] max-lg:overflow-y-auto max-lg:transition-[transform,visibility] max-lg:duration-300",
           open ? "max-lg:translate-y-0" : "max-lg:invisible max-lg:translate-y-[115%]"
         )}
       >

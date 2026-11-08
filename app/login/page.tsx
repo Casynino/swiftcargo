@@ -22,8 +22,15 @@ export default async function LoginPage({
   return (
     <AuthScene
       cta="Log in"
-      tagline="Your cargo, from Guangzhou to Dar es Salaam"
-      defaultOpen={revoked}
+      tagline={
+        revoked ? (
+          <span className="text-amber-200">
+            {sessionEnded ? "That sign-in has ended. Sign in again." : "Your account is no longer active."}
+          </span>
+        ) : (
+          "Your cargo, from Guangzhou to Dar es Salaam"
+        )
+      }
       welcome="Karibu tena"
       title={
         <>
@@ -38,13 +45,13 @@ export default async function LoginPage({
         "A sailing every Monday",
       ]}
     >
-      <h1 className="font-display text-3xl font-bold tracking-tight text-white">Sign in</h1>
-      <p className="mt-2 text-sm text-white/85">
+      <h1 className="font-display text-3xl font-bold tracking-tight text-white max-lg:text-2xl">Sign in</h1>
+      <p className="mt-2 text-sm text-white/85 max-lg:hidden">
         Staff and customers use the same door. You will land in the right place.
       </p>
 
       {revoked ? (
-        <div className="mt-6 flex gap-3 rounded-xl border border-amber-300/40 bg-amber-500/15 p-3 text-sm text-amber-100">
+        <div className="mt-6 flex gap-3 rounded-xl border border-amber-300/40 max-lg:hidden bg-amber-500/15 p-3 text-sm text-amber-100">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
           <p>
             {sessionEnded
@@ -56,13 +63,13 @@ export default async function LoginPage({
 
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
-      <p className="mt-6 text-sm text-white/85">
+      <p className="mt-4 text-sm text-white/85 lg:mt-6">
         <Link href="/register?mode=reset" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Forgot your password?
         </Link>
       </p>
 
-      <p className="mt-3 text-sm text-white/85">
+      <p className="mt-2 text-sm text-white/85 lg:mt-3">
         New customer, or shipped with us before?{" "}
         <Link href="/register" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Create an account

@@ -18,6 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/login",
     scope: "/",
     display: "standalone",
+    display_override: ["standalone", "minimal-ui"],
     orientation: "portrait",
     background_color: "#040e1a",
     theme_color: "#0a0e1a",
@@ -25,6 +26,7 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/brand/app-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/brand/app-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/brand/app-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
       { src: "/brand/app-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     /* A long press on the icon. Each one lands on a page that sends anybody

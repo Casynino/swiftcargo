@@ -23,6 +23,14 @@ const display = Archivo({
   display: "swap",
 });
 
+/* iPhone screens (points wide, high, pixel ratio), each with a launch picture in
+   public/brand/splash (scripts/make-splash.mjs): the home-screen app opens on
+   its own dark ground and the app tile instead of a white flash. */
+const SPLASH = [
+  [440, 956, 3], [430, 932, 3], [428, 926, 3], [420, 912, 3], [414, 896, 3], [414, 896, 2], [414, 736, 3],
+  [402, 874, 3], [393, 852, 3], [390, 844, 3], [375, 812, 3], [375, 667, 2], [320, 568, 2],
+] as const;
+
 export const metadata: Metadata = {
   metadataBase: metadataBaseUrl(),
   title: {
@@ -48,6 +56,10 @@ export const metadata: Metadata = {
     capable: true,
     title: "Swift Cargo",
     statusBarStyle: "black-translucent",
+    startupImage: SPLASH.map(([w, h, r]) => ({
+      url: `/brand/splash/${w}x${h}@${r}.png`,
+      media: `screen and (device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${r}) and (orientation: portrait)`,
+    })),
   },
   formatDetection: { telephone: false },
 };
@@ -62,6 +74,9 @@ export const viewport: Viewport = {
   /* Draw under the notch and the home bar; every fixed bar pads itself with
      the safe-area insets so nothing ends up behind them. */
   viewportFit: "cover",
+  /* Says the app draws its own light and dark, so Samsung Internet, Huawei's
+     browser and Chrome's "darken websites" leave its colours alone. */
+  colorScheme: "dark light",
 };
 
 /**
@@ -82,6 +97,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${display.variable} font-sans`}>
         <ThemeProvider>{children}</ThemeProvider>
         <UploadBudget limitBytes={UPLOAD_REQUEST_BUDGET} />
+        <div aria-hidden className="status-strip" />
         <InstallApp />
       </body>
     </html>

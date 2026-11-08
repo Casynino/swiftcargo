@@ -46,7 +46,7 @@ export function AuthScene({
 }) {
   const picture = PHOTOS[photo];
   return (
-    <main className="relative isolate min-h-dvh overflow-hidden bg-ink text-white">
+    <main data-login-scene className="relative isolate min-h-dvh overflow-hidden bg-ink text-white">
       <div aria-hidden className="absolute inset-0 -z-10">
         <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="site-drift object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.45)_0%,rgba(4,14,26,0.55)_55%,rgba(4,14,26,0.86)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.84)_45%,rgba(4,14,26,0.66)_100%)]" />

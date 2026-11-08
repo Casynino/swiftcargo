@@ -906,3 +906,38 @@
 main:has(a > svg.lucide-chevron-left, [data-smart-back]) [data-shell-back] {
   display: none !important;
 }
+
+
+/* Full screen on a phone. The page runs edge to edge (viewport-fit=cover); the
+   home-screen app runs under the phone's status bar (black-translucent, white
+   clock), so this strip is that bar's own colour: the app's dark ground, and a
+   navy by day so the white clock stays readable. It has no height in a browser
+   tab, where the browser draws its own bar. The sign-in scene runs under the
+   clock itself. */
+.status-strip {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 100;
+  height: env(safe-area-inset-top, 0px);
+  background: #0b1a33;
+  pointer-events: none;
+}
+html.dark .status-strip {
+  background: #0a0e1a;
+}
+body:has([data-login-scene]) .status-strip {
+  display: none;
+}
+body:has([data-login-scene]) {
+  background-color: #040e1a;
+}
+@media print {
+  .status-strip {
+    display: none;
+  }
+}
+/* A phone turned sideways keeps the page clear of the notch. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

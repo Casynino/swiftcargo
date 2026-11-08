@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 
@@ -22,9 +22,17 @@ function SubmitButton() {
 
 export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   const [state, action] = useActionState<LoginState, FormData>(login, {});
+  const first = useRef<HTMLInputElement>(null);
+
+  /* Focus the field on a computer only. On a phone the form sits out of sight
+     until the button is pressed, and focusing it there raises the keyboard and
+     scrolls the card before anybody has asked for it. */
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) first.current?.focus();
+  }, []);
 
   return (
-    <form action={action} className="mt-8 space-y-4">
+    <form action={action} className="mt-5 space-y-3 lg:mt-8 lg:space-y-4">
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
       <div className="space-y-2">
@@ -38,7 +46,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           autoCapitalize="none"
           spellCheck={false}
           required
-          autoFocus
+          ref={first}
           placeholder="0712 345 678"
         />
         <p className="text-xs text-muted-foreground">

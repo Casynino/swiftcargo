@@ -10,6 +10,7 @@ import type { Role } from "@prisma/client";
 import { MobileTabbar } from "@/components/app/mobile-tabbar";
 import { NavTrail } from "@/components/app/nav-trail";
 import { NewVersionNotice } from "@/components/app/new-version-notice";
+import { InstallPrompt } from "@/components/install-app";
 import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
 import { MobileBack } from "@/components/app/smart-back";
 import { NavProvider } from "@/components/app/section-tabs";
@@ -454,6 +455,7 @@ export function AppShell({
           {/* Offered, never forced: a clerk half-way through a consignment must
               not have the form pulled out from under them. */}
           <NewVersionNotice build={BUILD_ID} />
+          <InstallPrompt />
           {/* A ceiling on the reading width. On a 2560 screen a table stretched
               edge to edge puts a name and its balance a head-turn apart. */}
           <div className="mx-auto w-full max-w-[1600px]">
