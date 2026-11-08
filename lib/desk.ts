@@ -33,7 +33,7 @@ export function pillsFor(role: Role): ActionPill[] {
         { label: "Record Payment", short: "Payment", href: "#record-payment", icon: "Banknote", tone: "success" },
         { label: "Merge Payment", short: "Merge", href: "/app/finance/payments/new", icon: "Layers", tone: "success" },
         { label: "Release on credit", short: "Credit", href: "/app/finance/credit", icon: "CalendarClock" },
-        { label: "Payment follow-up", short: "Follow-up", href: "/app/finance/collections", icon: "Clock", tone: "warning" },
+        { label: "Payment follow-up", short: "Follow", href: "/app/finance/collections", icon: "Clock", tone: "warning" },
         { label: "Record a cost", short: "Cost", href: "/app/finance/expenses", icon: "Wallet", tone: "danger" },
         { label: "Reconciliation", short: "Reconcile", href: "/app/manager/reconciliation", icon: "Scale", tone: "signal" },
       ];

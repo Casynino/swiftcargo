@@ -58,10 +58,10 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
       <div
         className={cn(
           "-mx-4 grid gap-2 px-4 pb-1 lg:hidden",
-          /* Five or fewer fill the width evenly; more than five scroll sideways. */
-          pills.length <= 5
-            ? "grid-flow-col auto-cols-fr"
-            : "snap-x snap-mandatory scroll-px-4 auto-cols-[calc((100%-2rem)/5)] grid-flow-col overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          /* Up to seven sit in one row across the width; more scroll sideways. */
+          pills.length <= 7
+            ? "grid-flow-col auto-cols-fr gap-0.5"
+            : "snap-x snap-mandatory scroll-px-4 auto-cols-[calc((100%-2.5rem)/6)] grid-flow-col overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         )}
       >
         {pills.map((pill) => {
@@ -70,10 +70,10 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
             <Link
               key={`m-${pill.href}${pill.label}`}
               href={pill.href}
-              className="focus-ring flex snap-start flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-transform active:scale-95 active:bg-foreground/5"
+              className="focus-ring flex min-w-0 snap-start flex-col items-center gap-1.5 rounded-2xl px-0 py-2.5 text-center transition-transform active:scale-95 active:bg-foreground/5"
             >
-              {Icon ? <Icon className={cn("size-7", CHIP[pill.tone ?? "plain"])} strokeWidth={1.6} /> : null}
-              <span className="line-clamp-2 min-h-[2.1em] [overflow-wrap:anywhere] text-[11px] font-medium leading-tight text-foreground/85">{t(pill.short ?? pill.label)}</span>
+              {Icon ? <Icon className={cn("size-6", CHIP[pill.tone ?? "plain"])} strokeWidth={1.6} /> : null}
+              <span className="w-full truncate text-[10.5px] font-medium leading-tight text-foreground/85">{t(pill.short ?? pill.label)}</span>
             </Link>
           );
         })}
