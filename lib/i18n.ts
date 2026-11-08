@@ -1148,6 +1148,8 @@ const ZH: Record<string, string> = {
     "所有收银和银行账户的合计。数据来自账本，钱一动就变。",
   "Everyone still inside free storage": "全部仍在免费仓储期内",
   "Everything": "全部",
+  "container": "货柜",
+  "containers": "货柜",
   "Everything currently in the database, with one-click ways to try each workflow.":
     "数据库里现有的全部数据，每个流程都能一键试用。",
   "Everything held is cleared": "在库货物全部已放行",

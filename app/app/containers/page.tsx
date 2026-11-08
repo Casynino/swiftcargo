@@ -292,7 +292,7 @@ export default async function ContainersPage({
                     : "hover:bg-secondary"
                 )}
               >
-                {label}
+                {T(label)}
                 <span
                   className={cn(
                     "tnum rounded-full px-1.5 text-xs font-semibold",
@@ -309,9 +309,9 @@ export default async function ContainersPage({
 
       {/* What is actually on the screen, said once, so nobody counts the rows. */}
       <p className="tnum text-sm text-muted-foreground">
-        {containers.length} {containers.length === 1 ? "container" : "containers"}
+        {containers.length} {T(containers.length === 1 ? "container" : "containers")}
         {" · "}
-        {containers.reduce((sum, c) => sum + c._count.cargoLines, 0)} consignments
+        {containers.reduce((sum, c) => sum + c._count.cargoLines, 0)} {T("consignments")}
         {" · "}
         {formatCbm(
           containers.reduce(
@@ -435,7 +435,7 @@ export default async function ContainersPage({
                     </TableCell>
                     <TableCell>
                       <Badge tone={TONE[c.status]}>
-                        {CONTAINER_STATUS_LABELS[c.status]}
+                        {T(CONTAINER_STATUS_LABELS[c.status])}
                       </Badge>
                       {/* A list of sailings is where somebody notices one has
                           slipped. The box itself is where they go next. */}
