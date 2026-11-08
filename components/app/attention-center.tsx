@@ -67,12 +67,12 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border bg-card px-4 py-3 shadow-soft">
-        <span aria-hidden className="h-7 w-0.5 shrink-0 rounded-full bg-success" />
+      <div className="flex items-center gap-2.5 rounded-xl border bg-card px-3.5 py-1.5 shadow-soft">
+        <span aria-hidden className="h-6 w-0.5 shrink-0 rounded-full bg-success" />
         <CheckCircle2 className="size-3.5 shrink-0 text-success" />
         <p className="min-w-0 text-[13px] leading-tight">
           <span className="font-semibold">{t("Nothing needs you")}</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
+          <span className="mt-px block text-[11px] text-muted-foreground">
             {t("No missing cargo, no overdue bills, nothing held.")}
           </span>
         </p>
