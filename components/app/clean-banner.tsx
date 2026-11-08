@@ -47,9 +47,12 @@ export function CleanBanner({
       {image ? (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-cover bg-center opacity-80 [mask-image:linear-gradient(to_right,transparent,black_55%)] md:block"
+          className="pointer-events-none absolute inset-y-0 right-0 w-full bg-cover bg-center opacity-45 [mask-image:linear-gradient(to_right,transparent,black_70%)] md:w-1/2 md:opacity-80 md:[mask-image:linear-gradient(to_right,transparent,black_55%)]"
           style={{ backgroundImage: `url(${image})` }}
         />
+      ) : null}
+      {image ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(7,17,42,0.78),rgba(7,17,42,0.15)_80%)] md:hidden" />
       ) : null}
       {controls ? <div className="absolute left-6 top-1/2 z-10 hidden -translate-y-1/2 lg:block">{controls}</div> : null}
       <div className="relative">
