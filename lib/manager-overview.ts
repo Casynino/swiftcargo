@@ -7,6 +7,8 @@ import { DEPARTMENT_LABELS } from "@/lib/constants";
 import { creditBook, pendingCreditRequests } from "@/lib/credit";
 import { formatCurrency, isUsableRate, tzsToUsd, usdToTzs } from "@/lib/currency";
 import {
+  byCategory,
+  byCustomer,
   figures,
   loadBooks,
   monthRange,
@@ -19,7 +21,7 @@ import { balanceOf, invoiceRate, owedAcross, paymentTzs } from "@/lib/invoice-ba
 import { monthLabel, payrollFigure, payrollRuns, pendingPayrollApproval } from "@/lib/payroll";
 import { prisma } from "@/lib/prisma";
 
-import { darFields } from "@/lib/dar-time";
+import { darFields, darMidnight } from "@/lib/dar-time";
 /**
  * "What is happening in my company right now", in one object.
  *
@@ -906,7 +908,72 @@ export async function managerOverview(locale: Locale = "en", now = new Date()) {
     },
   ];
 
+  /* ---------------------------------------------------- the owner's home
+     Everything here comes off the same books and the same `figures` as
+     Finance's own Profit & loss, so the home and that page cannot disagree. */
+  const growth = (current: number, before: number) => (before > 0 ? ((current - before) / before) * 100 : null);
+  const series12 = Array.from({ length: 12 }, (_, i) => {
+    const d = darMidnight(here.year, here.month - 11 + i, 1);
+    const civil = darFields(d);
+    const r = monthRange(civil.year, civil.month);
+    const m = figures(books, r);
+    return {
+      label: d.toLocaleDateString("en-GB", { month: "short", timeZone: "Africa/Dar_es_Salaam" }),
+      billed: m.billed.tzs,
+      costs: m.expenses.tzs,
+      left: m.profit.tzs,
+    };
+  });
+  const ageBands = [
+    { key: "week", label: t(locale, "Billed this week"), max: 7 },
+    { key: "two", label: t(locale, "8–14 days"), max: 14 },
+    { key: "month", label: t(locale, "15–30 days"), max: 30 },
+    { key: "over", label: t(locale, "Over 30 days"), max: Infinity },
+  ].map((band) => ({ ...band, bills: 0, tzs: 0 }));
+  for (const b of books.bills) {
+    if (b.owing.tzs <= 0) continue;
+    const age = Math.max(0, Math.floor((now.getTime() - b.at.getTime()) / 86_400_000));
+    const band = ageBands.find((x) => age <= x.max)!;
+    band.bills += 1;
+    band.tzs += b.owing.tzs;
+  }
+  const home = {
+    thisMonth: {
+      billed: f.billed.tzs,
+      collected: f.collected.tzs,
+      costs: f.expenses.tzs,
+      profit: f.profit.tzs,
+      margin: f.margin,
+      billedUsd: f.billed.usd,
+    },
+    lastMonth: {
+      label: lastMonth.label,
+      billed: prior.billed.tzs,
+      collected: prior.collected.tzs,
+      costs: prior.expenses.tzs,
+      profit: prior.profit.tzs,
+    },
+    cargo: { cbm: f.cbmReceived, packages: f.packages, customers: f.customers },
+    health: {
+      collectionRate: f.collectionRate,
+      margin: f.margin,
+      expenseRatio: f.expenseRatio,
+      outstandingRatio: f.outstandingRatio,
+      revenueGrowth: growth(f.revenue.tzs, prior.revenue.tzs),
+      profitGrowth: prior.profit.tzs > 0 ? growth(f.profit.tzs, prior.profit.tzs) : null,
+    },
+    series12,
+    topCustomers: byCustomer(f.bills)
+      .slice(0, 6)
+      .map((c) => ({ name: c.name, billed: c.billed.tzs, owed: c.owed.tzs })),
+    spend: byCategory(f.costs)
+      .slice(0, 6)
+      .map((c) => ({ name: c.name, amount: c.amount.tzs })),
+    ageBands,
+  };
+
   return {
+    home,
     rate,
     attention,
     insights,

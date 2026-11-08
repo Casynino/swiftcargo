@@ -13,6 +13,7 @@ import { NewVersionNotice } from "@/components/app/new-version-notice";
 import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
 import { MobileBack } from "@/components/app/smart-back";
 import { NavProvider } from "@/components/app/section-tabs";
+import { ShellContext, useShell } from "@/components/app/shell-context";
 import { BrandMark } from "@/components/brand-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -172,9 +173,9 @@ export function AppShell({
       href={item.href}
       onClick={() => setOpen(false)}
       className={cn(
-        "flex items-center gap-3 rounded-xl px-3 py-1.5 text-[13px] transition-all",
+        "relative flex items-center gap-3 rounded-xl px-3 py-1.5 text-[13px] transition-all",
         isActive(item.href)
-          ? "bg-gradient-to-r from-brand/15 to-brand/5 font-medium text-foreground shadow-sm ring-1 ring-inset ring-brand/30"
+          ? "bg-foreground/5 font-medium text-foreground before:absolute before:inset-y-1.5 before:-left-3 before:w-[3px] before:rounded-full before:bg-[#e3b341]"
           : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
       )}
     >
@@ -186,7 +187,7 @@ export function AppShell({
   /* The box at the top of the menu. */
   const searchBox = (ref?: React.Ref<HTMLInputElement>, hint = false) => (
     <div className="px-3 pt-3">
-      <label className="flex h-10 items-center gap-2.5 rounded-xl border border-border/60 bg-background/50 px-3 text-sm focus-within:border-brand/50 focus-within:ring-2 focus-within:ring-brand/15">
+      <label className="flex h-10 items-center gap-2.5 border-b border-border/60 px-1 text-sm transition-colors focus-within:border-[#e3b341]/70">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
           ref={ref}
@@ -286,55 +287,42 @@ export function AppShell({
   /* The same menu squeezed to icons: Home, then one icon per section (lit when
      it holds the page you are on). Pressing a section opens the rail wide on
      that section, so nothing is a guess. */
-  const railIcon = "grid size-11 place-items-center rounded-xl transition-all";
+  /* The same menu squeezed to icons: Search, Home, then every row of every
+     section as its own icon, a thin rule between sections, the gold bar on the
+     page you are on. Hover says what each one is. */
+  const railIcon = "relative grid size-10 shrink-0 place-items-center rounded-xl transition-all";
+  const railOn = "text-foreground before:absolute before:inset-y-2 before:-left-2 before:w-[3px] before:rounded-full before:bg-[#e3b341]";
+  const railOff = "text-foreground/65 hover:bg-foreground/5 hover:text-foreground";
+  const railLink = (item: { href: string; icon: string; label: string }) => (
+    <Link
+      key={item.href + item.label}
+      href={item.href}
+      title={tr(item.label)}
+      aria-label={tr(item.label)}
+      className={cn(railIcon, isActive(item.href) ? railOn : railOff)}
+    >
+      <Glyph name={item.icon} className="size-[18px]" />
+    </Link>
+  );
   const rail = (
-    <nav className="flex flex-1 flex-col items-center gap-1.5 overflow-y-auto px-2 py-3">
-      <button type="button" onClick={focusSearch} title={`${tr("Search pages")}  (Ctrl K)`} aria-label={tr("Search pages")} className={cn(railIcon, "text-muted-foreground hover:bg-foreground/5 hover:text-foreground")}>
+    <nav className="flex flex-1 flex-col items-center gap-1 overflow-y-auto px-2 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button type="button" onClick={focusSearch} title={`${tr("Search pages")}  (Ctrl K)`} aria-label={tr("Search pages")} className={cn(railIcon, railOff)}>
         <Search className="size-[18px]" />
       </button>
-      <span aria-hidden className="my-1 h-px w-6 bg-border/70" />
-      <Link
-        href={home.href}
-        title={tr(home.label)}
-        aria-label={tr(home.label)}
-        className={cn(railIcon, isActive(home.href) ? "bg-gradient-to-br from-brand/20 to-brand/5 text-foreground ring-1 ring-inset ring-brand/30" : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground")}
-      >
-        <Glyph name={home.icon} className="size-[18px]" />
-      </Link>
-      {sections.map((section) =>
-        section.label ? (
-          <button
-            key={section.label}
-            type="button"
-            title={tr(section.label)}
-            aria-label={tr(section.label)}
-            onClick={() => {
-              setPressed((p) => ({ ...p, [section.label]: true }));
-              setRail(false);
-            }}
-            className={cn(railIcon, here === section.label ? "bg-gradient-to-br from-brand/20 to-brand/5 text-foreground ring-1 ring-inset ring-brand/30" : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground")}
-          >
-            <Glyph name={section.icon} className="size-[18px]" />
-          </button>
-        ) : (
-          section.items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={tr(item.label)}
-              aria-label={tr(item.label)}
-              className={cn(railIcon, isActive(item.href) ? "bg-gradient-to-br from-brand/20 to-brand/5 text-foreground ring-1 ring-inset ring-brand/30" : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground")}
-            >
-              <Glyph name={item.icon} className="size-[18px]" />
-            </Link>
-          ))
-        )
-      )}
+      <span aria-hidden className="my-1 h-px w-6 shrink-0 bg-border/70" />
+      {railLink(home)}
+      {sections.map((section, i) => (
+        <div key={section.label || `top-${i}`} className="flex flex-col items-center gap-1">
+          <span aria-hidden className="my-1 h-px w-6 shrink-0 bg-border/70" />
+          {section.items.map((item) => railLink(item))}
+        </div>
+      ))}
     </nav>
   );
 
   return (
     <LocaleProvider locale={locale}>
+    <ShellContext.Provider value={{ unread }}>
     <div
       className="flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2 print:max-w-none print:overflow-visible"
       style={{ backgroundImage: "radial-gradient(46rem 34rem at 0% 0%, hsl(var(--brand) / 0.10), transparent 70%), radial-gradient(40rem 30rem at 100% 100%, hsl(var(--brand) / 0.06), transparent 70%)" }}
@@ -346,7 +334,7 @@ export function AppShell({
           collapsed ? "w-[5.5rem]" : "w-[18.5rem]"
         )}
       >
-        <div className="relative flex h-full flex-col rounded-[28px] border border-border/60 bg-card/75 shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-card/60">
+        <div className="relative flex h-full flex-col rounded-[28px] border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.18),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.82))] shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.28),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
           <button
             type="button"
             onClick={() => setRail(!collapsed)}
@@ -397,7 +385,7 @@ export function AppShell({
         {/* On a phone the bar floats as a rounded card — menu, today's date, the
             bell — and nothing else; the rest is in the menu. On a computer it is
             the full-width bar it always was. */}
-        <header className="sticky top-0 z-30 px-3 pb-1 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:p-0 print:hidden">
+        <header className="sticky top-0 z-30 px-3 pb-1 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:hidden print:hidden">
           <div className="glass flex h-14 items-center gap-2 rounded-2xl border border-border/60 px-2 shadow-sm lg:h-16 lg:gap-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:px-8 lg:shadow-none">
             <Button
               variant="ghost"
@@ -476,6 +464,7 @@ export function AppShell({
         {canRecordPayment ? <RecordPaymentDialog canClear={canClearShortfall} /> : null}
       </div>
     </div>
+    </ShellContext.Provider>
     </LocaleProvider>
   );
 }
@@ -490,6 +479,7 @@ function UserFooter({
   compact?: boolean;
 }) {
   const [menu, setMenu] = useState(false);
+  const { unread } = useShell();
   const tr = (text: string) => t(locale, text);
   const avatar = (
     <span className="relative grid size-9 shrink-0 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
@@ -517,7 +507,14 @@ function UserFooter({
               {tr("Profile")}
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
-            <Link href="/" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5 lg:hidden">
+            <Link href="/app/notifications" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
+              {tr("Notifications")}
+              <span className="flex items-center gap-1.5">
+                {unread > 0 ? <span className="tnum rounded-full bg-signal px-1.5 text-[10px] font-semibold leading-[18px] text-white">{unread > 99 ? "99+" : unread}</span> : null}
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </span>
+            </Link>
+            <Link href="/" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
               {tr("Main site")}
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>

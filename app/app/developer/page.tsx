@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AlertTriangle, BarChart3, ChevronDown, ChevronRight, CircleCheck, Info, ScrollText, TriangleAlert } from "lucide-react";
 
+import { BannerControls } from "@/components/app/banner-controls";
 import { CleanBanner } from "@/components/app/clean-banner";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, PingBars, RankedBars, ScoreRing, Sparkline, StackedBars } from "@/components/app/dev-charts";
@@ -122,7 +123,7 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <CleanBanner title={user.name.split(" ")[0]} kicker={T("Developer")} line={hello} image="/photos/port-cranes.jpg" />
+      <CleanBanner controls={<BannerControls />} title={user.name.split(" ")[0]} kicker={T("Developer")} line={hello} image="/photos/port-cranes.jpg" />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <WorkAsDialog people={people} />

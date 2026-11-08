@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Search, type LucideIcon } from "lucide-react";
 
+import { BannerControls } from "@/components/app/banner-controls";
 import { CleanBanner } from "@/components/app/clean-banner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ export async function DeskHero({
   return (
     <div className="space-y-4">
       <CleanBanner
+        controls={<BannerControls />}
         title={title ?? name}
         kicker={tr(kicker ?? department)}
         image="/photos/port-cranes.jpg"
