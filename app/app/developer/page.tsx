@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AlertTriangle, BarChart3, ChevronDown, ChevronRight, CircleCheck, Info, ScrollText, TriangleAlert } from "lucide-react";
 
+import { CleanBanner } from "@/components/app/clean-banner";
 import { AddAccountDialog } from "@/components/app/add-account-dialog";
 import { Legend, PingBars, RankedBars, ScoreRing, Sparkline, StackedBars } from "@/components/app/dev-charts";
 import { WorkAsDialog } from "@/components/app/work-as-dialog";
@@ -121,30 +122,11 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <section
-        className="relative overflow-hidden rounded-2xl px-5 py-5 text-white sm:px-8 sm:py-6"
-        style={{ backgroundImage: "linear-gradient(135deg, #2e1065 0%, #5b21b6 55%, #7c3aed 100%)" }}
-      >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "36px 36px",
-          }}
-        />
-        <div className="relative">
-          <div className="flex flex-wrap items-center gap-2.5 text-xs font-medium text-white/80">
-            <span>{hello}</span>
-            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white">{T("Developer")}</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-            {greeting}, {user.name.split(" ")[0]}.
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/80">{T("Your control room for Swift Cargo — health, people and everything done, in one place.")}</p>
-        </div>
-      </section>
+      <CleanBanner
+        title={`${greeting}, ${user.name.split(" ")[0]}`}
+        kicker={`Swift Cargo · ${T("Developer")}`}
+        line={hello}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <WorkAsDialog people={people} />

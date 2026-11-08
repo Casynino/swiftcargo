@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { CleanBanner } from "@/components/app/clean-banner";
 import { CopyField } from "@/components/app/copy-field";
 import { SupplierAddressCard } from "@/components/app/supplier-address-card";
 import { Badge } from "@/components/ui/badge";
@@ -101,45 +102,27 @@ export default async function PortalPage() {
   return (
     <div className="space-y-8">
       {/* Who, and the way to a person. */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0b2742] via-[#0e3a5f] to-[#1d6fa3] p-5 text-white shadow-raised sm:p-7">
-        <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-white/10 blur-2xl" />
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/75">
-          {ROUTE.originCity} → {ROUTE.destinationCity}
-        </p>
-        <h1 className="mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl">
-          {t(locale, greeting)}, {user.name.split(" ")[0]}
-        </h1>
-        <p className="mt-1 text-sm text-white/80">
-          {t(locale, "Here is everything happening with your cargo.")}
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-          {customer?.code ? (
-            <span className="tnum rounded-full bg-white/15 px-2.5 py-1 font-semibold">
-              {t(locale, "Customer")} {customer.code}
-            </span>
-          ) : null}
-          {customer?.phone ? (
-            <span className="tnum rounded-full bg-white/15 px-2.5 py-1">
-              {formatTzPhone(customer.phone)}
-            </span>
-          ) : null}
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/25 px-2.5 py-1 font-medium">
-            <CheckCircle2 className="size-3.5" />
-            {t(locale, "Account active")}
-          </span>
-          {whatsapp ? (
-            <a
-              href={whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-semibold text-brand transition-transform hover:-translate-y-0.5 sm:ml-auto"
-            >
-              <MessageCircle className="size-3.5" />
-              {t(locale, "WhatsApp us")}
-            </a>
-          ) : null}
-        </div>
-      </header>
+      <CleanBanner
+        title={`${t(locale, greeting)}, ${user.name.split(" ")[0]}`}
+        kicker={`${ROUTE.originCity} → ${ROUTE.destinationCity}`}
+        line={[customer?.code ? `${t(locale, "Customer")} ${customer.code}` : null, customer?.phone ? formatTzPhone(customer.phone) : null].filter(Boolean).join("  ·  ")}
+      >
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/25 px-3 py-1.5 text-xs font-medium">
+          <CheckCircle2 className="size-3.5" />
+          {t(locale, "Account active")}
+        </span>
+        {whatsapp ? (
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand transition-transform hover:-translate-y-0.5"
+          >
+            <MessageCircle className="size-3.5" />
+            {t(locale, "WhatsApp us")}
+          </a>
+        ) : null}
+      </CleanBanner>
 
       {/* What I have, where it is, what I owe. */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
