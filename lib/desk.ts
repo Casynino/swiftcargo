@@ -14,37 +14,37 @@ export function pillsFor(role: Role): ActionPill[] {
   switch (role) {
     case "CHINA_WAREHOUSE":
       return [
-        { label: "Receive cargo", href: "/app/receive/new", icon: "PackagePlus", tone: "success" },
-        { label: "Open a container", href: "/app/containers/new", icon: "Container", tone: "marine" },
-        { label: "Warehouse floor", href: "/app/inventory", icon: "Warehouse" },
-        { label: "Raise an issue", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
+        { label: "Receive cargo", short: "Receiving", href: "/app/receive/new", icon: "PackagePlus", tone: "success" },
+        { label: "Open a container", short: "Container", href: "/app/containers/new", icon: "Container", tone: "marine" },
+        { label: "Warehouse floor", short: "Warehouse", href: "/app/inventory", icon: "Warehouse" },
+        { label: "Raise an issue", short: "Issues", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
       ];
     case "DAR_WAREHOUSE":
       return [
-        { label: "Verify counts", href: "/app/receive/dar", icon: "ClipboardCheck", tone: "success" },
-        { label: "Scan & release", href: "/app/scan", icon: "ScanLine", tone: "marine" },
-        { label: "Pickup list", href: "/app/release", icon: "DoorOpen" },
+        { label: "Verify counts", short: "Verify", href: "/app/receive/dar", icon: "ClipboardCheck", tone: "success" },
+        { label: "Scan & release", short: "Scan", href: "/app/scan", icon: "ScanLine", tone: "marine" },
+        { label: "Pickup list", short: "Pickup", href: "/app/release", icon: "DoorOpen" },
         { label: "Inventory", href: "/app/inventory", icon: "Warehouse" },
-        { label: "Raise an issue", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
+        { label: "Raise an issue", short: "Issues", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
       ];
     case "FINANCE":
       return [
-        { label: "Verify payments", href: "/app/finance/collections/verify", icon: "ShieldCheck", tone: "brand" },
-        { label: "Record Payment", href: "#record-payment", icon: "Banknote", tone: "success" },
-        { label: "Merge Payment", href: "/app/finance/payments/new", icon: "Layers", tone: "success" },
-        { label: "Release on credit", href: "/app/finance/credit", icon: "CalendarClock" },
-        { label: "Payment follow-up", href: "/app/finance/collections", icon: "Clock", tone: "warning" },
-        { label: "Record a cost", href: "/app/finance/expenses", icon: "Wallet", tone: "danger" },
+        { label: "Verify payments", short: "Verify", href: "/app/finance/collections/verify", icon: "ShieldCheck", tone: "brand" },
+        { label: "Record Payment", short: "Payment", href: "#record-payment", icon: "Banknote", tone: "success" },
+        { label: "Merge Payment", short: "Merge", href: "/app/finance/payments/new", icon: "Layers", tone: "success" },
+        { label: "Release on credit", short: "Credit", href: "/app/finance/credit", icon: "CalendarClock" },
+        { label: "Payment follow-up", short: "Follow-up", href: "/app/finance/collections", icon: "Clock", tone: "warning" },
+        { label: "Record a cost", short: "Cost", href: "/app/finance/expenses", icon: "Wallet", tone: "danger" },
         { label: "Reconciliation", short: "Reconcile", href: "/app/manager/reconciliation", icon: "Scale", tone: "signal" },
       ];
     case "CUSTOMER_SUPPORT":
       return [
         { label: "Collections", href: "/app/finance/collections", icon: "Banknote", tone: "signal" },
-        { label: "Record Payment", href: "#record-payment", icon: "HandCoins", tone: "plain" },
-        { label: "Merge Payment", href: "/app/finance/payments/new", icon: "Layers", tone: "success" },
-        { label: "Arrived containers", href: "/app/containers/arrived", icon: "Ship", tone: "marine" },
-        { label: "Pickup notes", href: "/app/finance/pickup-notes", icon: "QrCode", tone: "success" },
-        { label: "Issues & claims", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
+        { label: "Record Payment", short: "Payment", href: "#record-payment", icon: "HandCoins", tone: "plain" },
+        { label: "Merge Payment", short: "Merge", href: "/app/finance/payments/new", icon: "Layers", tone: "success" },
+        { label: "Arrived containers", short: "Arrived", href: "/app/containers/arrived", icon: "Ship", tone: "marine" },
+        { label: "Pickup notes", short: "Notes", href: "/app/finance/pickup-notes", icon: "QrCode", tone: "success" },
+        { label: "Issues & claims", short: "Issues", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
       ];
     case "MANAGER":
       /* Things this desk STARTS or DECIDES, from the one pressed every day to
@@ -55,7 +55,7 @@ export function pillsFor(role: Role): ActionPill[] {
         { label: "Pending approvals", short: "Approvals", href: "/app/manager/approvals", icon: "BadgeCheck", tone: "brand" },
         { label: "Reconciliation", short: "Reconcile", href: "/app/manager/reconciliation", icon: "Scale", tone: "signal" },
         { label: "Payroll approval", short: "Payroll", href: "/app/manager/payroll", icon: "Wallet", tone: "success" },
-        { label: "Issues & claims", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
+        { label: "Issues & claims", short: "Issues", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
         { label: "Management report", short: "Report", href: "/app/manager/reports", icon: "FileText", tone: "marine" },
       ];
     case "ADMIN":
@@ -64,12 +64,12 @@ export function pillsFor(role: Role): ActionPill[] {
          of a container's life, and the one register nobody else can read. The
          manager view is not here — this home IS that screen. */
       return [
-        { label: "The ledger", href: "/app/finance/ledger", icon: "Landmark", tone: "signal" },
+        { label: "The ledger", short: "Ledger", href: "/app/finance/ledger", icon: "Landmark", tone: "signal" },
         { label: "Accounts", href: "/app/finance/accounts", icon: "Wallet", tone: "brand" },
         { label: "Profit & loss", short: "Profit", href: "/app/finance/reports", icon: "TrendingUp", tone: "success" },
         { label: "Approvals", href: "/app/manager/approvals", icon: "BadgeCheck", tone: "marine" },
-        { label: "Issues & claims", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
-        { label: "Deleted records", href: "/app/admin/deleted", icon: "Trash2" },
+        { label: "Issues & claims", short: "Issues", href: "/app/exceptions", icon: "TriangleAlert", tone: "warning" },
+        { label: "Deleted records", short: "Deleted", href: "/app/admin/deleted", icon: "Trash2" },
       ];
     default:
       return [];

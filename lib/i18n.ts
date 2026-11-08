@@ -2533,6 +2533,7 @@ const ZH: Record<string, string> = {
   "Receiver phone": "收货人电话",
   "Receiver phone is required.": "必须填写收货人电话。",
   "Receiving": "收货",
+  "Issues": "问题",
   "Receiving Dock": "收货区",
   "Receiving photos": "收货照片",
   "Recent activity": "最近动态",
