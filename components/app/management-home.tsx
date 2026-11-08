@@ -141,7 +141,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
         greeting="Habari"
         name={user.name.split(" ")[0]}
         department={ROLE_LABELS[user.role]}
-        kicker={user.role === "ADMIN" ? "CEO" : "Director"}
+        kicker={user.role === "ADMIN" ? "Managing Director" : "Director"}
         search={user.role !== "ADMIN"}
         subtitle=""
       />

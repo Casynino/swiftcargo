@@ -7677,6 +7677,7 @@ const ZH: Record<string, string> = {
   "Workspace": "工作区",
   "Theme": "主题",
   "CEO": "首席执行官",
+  "Managing Director": "董事总经理",
   "Director": "总监",
   "Report": "报告",
   "Administrator": "管理员",
