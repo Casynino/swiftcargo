@@ -41,7 +41,7 @@ const TABS: Partial<Record<Role, Tab[]>> = {
   ADMIN: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/containers/loading", icon: Ship },
+    { href: "/app/containers/loading", icon: Ship, label: "Loading" },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
   ],
   MANAGER: [
@@ -54,28 +54,28 @@ const TABS: Partial<Record<Role, Tab[]>> = {
   CHINA_WAREHOUSE: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/receive/new", icon: PackagePlus },
-    { href: "/app/containers/loading", icon: Boxes },
+    { href: "/app/receive/new", icon: PackagePlus, label: "Receiving" },
+    { href: "/app/containers/loading", icon: Boxes, label: "Loading" },
   ],
   /* The Dar floor works a line: a box lands and is checked in, a customer
      arrives and it goes out. Those two screens are the shift. */
   DAR_WAREHOUSE: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/receive/dar", icon: PackageCheck },
-    { href: "/app/release", icon: Truck },
+    { href: "/app/receive/dar", icon: PackageCheck, label: "Check-in" },
+    { href: "/app/release", icon: Truck, label: "Release" },
   ],
   FINANCE: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/finance/collections", icon: Banknote },
+    { href: "/app/finance/collections", icon: Banknote, label: "Collections" },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
   ],
   CUSTOMER_SUPPORT: [
     { href: "/app/support", icon: Headset, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
-    { href: "/app/support/tickets", icon: MessageSquare },
-    { href: "/app/finance/collections", icon: Banknote },
+    { href: "/app/support/tickets", icon: MessageSquare, label: "Tickets" },
+    { href: "/app/finance/collections", icon: Banknote, label: "Collections" },
   ],
 };
 
@@ -145,7 +145,7 @@ export function MobileTabbar({
                 <span aria-hidden className="absolute inset-x-2.5 top-0 h-0.5 rounded-full bg-brand" />
               ) : null}
               <Icon className="size-5 shrink-0" strokeWidth={active ? 2.5 : 2} />
-              <span className="line-clamp-2 px-0.5 text-center text-[10px] font-medium leading-[1.15]">
+              <span className="line-clamp-1 px-0.5 text-center text-[10px] font-medium leading-[1.15]">
                 {t(tab.label ?? labels.get(tab.href) ?? "")}
               </span>
             </Link>
@@ -158,7 +158,7 @@ export function MobileTabbar({
           className="flex min-w-0 flex-1 flex-col items-center justify-start gap-0.5 pt-1.5 text-muted-foreground transition-colors active:bg-secondary"
         >
           <Menu className="size-5 shrink-0" />
-          <span className="line-clamp-2 px-0.5 text-center text-[10px] font-medium leading-[1.15]">
+          <span className="line-clamp-1 px-0.5 text-center text-[10px] font-medium leading-[1.15]">
             {t("Navigation")}
           </span>
         </button>
