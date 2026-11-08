@@ -7677,6 +7677,7 @@ const ZH: Record<string, string> = {
   "Theme": "主题",
   "CEO": "首席执行官",
   "Director": "总监",
+  "Report": "报告",
   "Administrator": "管理员",
   "Arrived Tanzania": "已抵达坦桑尼亚",
   "Arrived containers": "已到港集装箱",

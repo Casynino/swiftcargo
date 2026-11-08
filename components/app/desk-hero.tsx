@@ -25,7 +25,7 @@ export async function DeskHero({
   department,
   subtitle,
   searchAction = "/app/search",
-  searchPlaceholder = "Cargo reference, shipping mark, customer, phone, container or invoice",
+  searchPlaceholder = "Search cargo, customer or phone",
   title,
   kicker,
   search = true,
@@ -101,7 +101,7 @@ export async function DeskHero({
           <>
             {today}
             {clocks.map((clock) => (
-              <span key={clock.place}>
+              <span key={clock.place} className="hidden sm:inline">
                 {"  ·  "}
                 {tr(clock.place)} <span className="font-semibold text-white">{clock.time}</span>
               </span>
@@ -120,7 +120,7 @@ export async function DeskHero({
             className="h-11 rounded-full pl-11 text-sm"
           />
         </div>
-        <Button type="submit" className="h-11 rounded-full px-5">
+        <Button type="submit" className="hidden h-11 rounded-full px-5 sm:inline-flex">
           {tr("Search")}
         </Button>
       </form>

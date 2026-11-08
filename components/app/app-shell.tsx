@@ -56,6 +56,12 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  /* Today, short, for the phone bar. Filled in after load so the server and the
+     browser never disagree about what day it is. */
+  const [today, setToday] = useState("");
+  useEffect(() => {
+    setToday(new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Africa/Dar_es_Salaam" }).format(new Date()));
+  }, []);
   const tr = (text: string) => t(locale, text);
 
   /* The drawer covers the page, so Escape has to take it away again — a
@@ -388,64 +394,62 @@ export function AppShell({
       ) : null}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="glass sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b px-4 pt-[env(safe-area-inset-top)] lg:px-8 print:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setOpen(true)}
-            aria-label={tr("Open menu")}
-          >
-            <Menu />
-          </Button>
-          <Link href={home.href} className="lg:hidden">
-            <BrandMark size={28} showWordmark={false} />
-          </Link>
-          <div className="min-w-0 lg:hidden">
-            <MobileBack />
-          </div>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {tr(user.departmentLabel ?? user.roleLabel)}
-            </span>
-
-            {/* THE WAY OUT TO THE PUBLIC SITE, from every desk. Without it the
-                only door out of the app was Sign out. An ordinary in-tab link:
-                same origin, so the session stays and coming back lands on the
-                desk they left. */}
-            <Link
-              href="/"
-              title={tr("Open the public website — you stay signed in")}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:px-2.5"
+        {/* On a phone the bar floats as a rounded card — menu, today's date, the
+            bell — and nothing else; the rest is in the menu. On a computer it is
+            the full-width bar it always was. */}
+        <header className="sticky top-0 z-30 px-3 pb-1 pt-[calc(0.75rem+env(safe-area-inset-top))] lg:p-0 print:hidden">
+          <div className="glass flex h-14 items-center gap-2 rounded-2xl border border-border/60 px-2 shadow-sm lg:h-16 lg:gap-3 lg:rounded-none lg:border-x-0 lg:border-t-0 lg:px-8 lg:shadow-none">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setOpen(true)}
+              aria-label={tr("Open menu")}
             >
-              <Globe className="size-[18px]" />
-              <span className="hidden sm:inline">{tr("Main site")}</span>
-              <span className="sr-only sm:hidden">{tr("Main site")}</span>
-            </Link>
+              <Menu />
+            </Button>
+            {pathname === home.href ? (
+              <span className="min-w-0 truncate text-sm font-medium text-foreground/80 lg:hidden">{today}</span>
+            ) : null}
+            <div className="min-w-0 lg:hidden">
+              <MobileBack />
+            </div>
+            <div className="ml-auto flex items-center gap-1 lg:gap-3">
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {tr(user.departmentLabel ?? user.roleLabel)}
+              </span>
 
-            {/* THE BELL BELONGS WHERE PEOPLE LOOK FOR IT. Buried in the menu it
-                was a row you scrolled past; up here the count is visible from
-                every screen, which is the only reason to keep a count at all. */}
-            <Link
-              href="/app/notifications"
-              aria-label={
-                unread > 0
-                  ? `${tr("Notifications")}, ${unread}`
-                  : tr("Notifications")
-              }
-              className="relative grid size-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            >
-              <Bell className="size-[18px]" />
-              {unread > 0 ? (
-                <span className="tnum absolute -right-0.5 -top-0.5 grid min-w-[18px] place-items-center rounded-full bg-signal px-1 text-[10px] font-semibold leading-[18px] text-white">
-                  {unread > 99 ? "99+" : unread}
-                </span>
-              ) : null}
-            </Link>
+              {/* THE WAY OUT TO THE PUBLIC SITE, from every desk. An ordinary
+                  in-tab link: same origin, so the session stays and coming back
+                  lands on the desk they left. On a phone it is in the user menu. */}
+              <Link
+                href="/"
+                title={tr("Open the public website — you stay signed in")}
+                className="hidden h-9 items-center gap-1.5 rounded-full px-2.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:inline-flex"
+              >
+                <Globe className="size-[18px]" />
+                <span>{tr("Main site")}</span>
+              </Link>
 
-            <span className="grid size-9 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground">
-              {initials(user.name)}
-            </span>
+              {/* THE BELL BELONGS WHERE PEOPLE LOOK FOR IT: the count is visible
+                  from every screen, which is the only reason to keep a count. */}
+              <Link
+                href="/app/notifications"
+                aria-label={unread > 0 ? `${tr("Notifications")}, ${unread}` : tr("Notifications")}
+                className="relative grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:size-9"
+              >
+                <Bell className="size-[18px]" />
+                {unread > 0 ? (
+                  <span className="tnum absolute -right-0.5 -top-0.5 grid min-w-[18px] place-items-center rounded-full bg-signal px-1 text-[10px] font-semibold leading-[18px] text-white">
+                    {unread > 99 ? "99+" : unread}
+                  </span>
+                ) : null}
+              </Link>
+
+              <span className="hidden size-9 place-items-center rounded-full bg-brand text-xs font-semibold text-brand-foreground lg:grid">
+                {initials(user.name)}
+              </span>
+            </div>
           </div>
         </header>
 
@@ -511,6 +515,10 @@ function UserFooter({
             </p>
             <Link href="/app/profile" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
               {tr("Profile")}
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Link>
+            <Link href="/" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5 lg:hidden">
+              {tr("Main site")}
               <ChevronRight className="size-4 text-muted-foreground" />
             </Link>
             <div className="flex items-center justify-between rounded-xl px-2 py-1 text-sm">
