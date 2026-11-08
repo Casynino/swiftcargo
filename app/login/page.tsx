@@ -18,6 +18,9 @@ export default async function LoginPage({
 
   return (
     <AuthScene
+      cta="Log in"
+      tagline="Your cargo, from Guangzhou to Dar es Salaam"
+      defaultOpen={revoked}
       welcome="Karibu tena"
       title={
         <>

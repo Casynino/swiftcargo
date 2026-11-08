@@ -14,6 +14,9 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const reset = (await searchParams).mode === "reset";
   return (
     <AuthScene
+      cta={reset ? "Reset password" : "Create account"}
+      tagline="Ship from China, the easy way"
+      defaultOpen={reset}
       photo="portYard"
       welcome="Karibu Swift Cargo"
       title={

@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { NetworkMap } from "@/components/site/network-map";
+import { AuthSheet } from "@/components/site/auth-sheet";
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
 
 /**
@@ -23,6 +24,9 @@ export function AuthScene({
   title,
   subtitle,
   points,
+  cta = "Log in",
+  tagline,
+  defaultOpen = false,
   children,
 }: {
   photo?: PhotoName;
@@ -32,6 +36,12 @@ export function AuthScene({
   title: React.ReactNode;
   subtitle?: string;
   points?: string[];
+  /** The one small button on a phone's first screen. */
+  cta?: string;
+  /** The single line over that button. */
+  tagline?: React.ReactNode;
+  /** Open the form at once on a phone, for a notice that must be read. */
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   const picture = PHOTOS[photo];
@@ -39,7 +49,7 @@ export function AuthScene({
     <main className="relative isolate min-h-dvh overflow-hidden bg-ink text-white">
       <div aria-hidden className="absolute inset-0 -z-10">
         <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="site-drift object-cover" />
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.84)_45%,rgba(4,14,26,0.66)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.45)_0%,rgba(4,14,26,0.55)_55%,rgba(4,14,26,0.86)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.84)_45%,rgba(4,14,26,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[#062a4a]/40 mix-blend-multiply" />
         <div className="absolute inset-0" style={{ perspective: "1400px" }}>
           <div className="absolute inset-0 origin-bottom [transform:rotateX(16deg)_scale(1.05)]">
@@ -49,15 +59,13 @@ export function AuthScene({
       </div>
 
       <div className="relative mx-auto grid min-h-dvh max-w-[1400px] items-center gap-12 px-5 py-10 sm:px-10 lg:grid-cols-[minmax(0,30rem)_1fr] lg:gap-20 lg:px-16">
-        <div className="animate-in-up">
-          <Link href="/" className="dark focus-ring mb-8 inline-block rounded">
+        <div>
+          <Link href="/" className="dark focus-ring mb-8 hidden rounded lg:inline-block">
             <BrandMark size={44} />
           </Link>
-          <div
-            className="auth-card dark site-glass rounded-[2rem] p-6 text-foreground sm:p-8"
-          >
+          <AuthSheet cta={cta} tagline={tagline ?? subtitle ?? welcome} defaultOpen={defaultOpen}>
             {children}
-          </div>
+          </AuthSheet>
         </div>
 
         <div className="animate-in-up relative hidden [animation-delay:160ms] lg:block">
