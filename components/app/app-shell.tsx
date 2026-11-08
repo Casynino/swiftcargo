@@ -496,36 +496,36 @@ function UserFooter({
               a list of pages: your profile, the theme, the language, the way out. */}
           <div
             className={cn(
-              "absolute z-50 w-60 rounded-2xl border border-border/70 bg-popover p-2 text-popover-foreground shadow-2xl",
+              "absolute z-50 w-56 rounded-2xl border border-border/70 bg-popover p-1.5 text-popover-foreground shadow-2xl dark:border-white/10 dark:bg-[#0d1b3e]",
               compact ? "bottom-2 left-full ml-3" : "bottom-full left-2.5 right-2.5 mb-2 w-auto"
             )}
           >
-            <p className="px-2 pb-1.5 pt-1 text-xs text-muted-foreground">
+            <p className="truncate px-2 pb-1 pt-0.5 text-[11px] text-muted-foreground">
               {user.name} · {tr(user.roleLabel)}
             </p>
-            <Link href="/app/profile" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
+            <Link href="/app/profile" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] transition-colors hover:bg-foreground/5">
               {tr("Profile")}
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <ChevronRight className="size-3.5 text-muted-foreground" />
             </Link>
-            <Link href="/app/notifications" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
+            <Link href="/app/notifications" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] transition-colors hover:bg-foreground/5">
               {tr("Notifications")}
               <span className="flex items-center gap-1.5">
                 {unread > 0 ? <span className="tnum rounded-full bg-signal px-1.5 text-[10px] font-semibold leading-[18px] text-white">{unread > 99 ? "99+" : unread}</span> : null}
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <ChevronRight className="size-3.5 text-muted-foreground" />
               </span>
             </Link>
-            <Link href="/" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-xl px-2 py-2 text-sm transition-colors hover:bg-foreground/5">
+            <Link href="/" onClick={() => setMenu(false)} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[13px] transition-colors hover:bg-foreground/5">
               {tr("Main site")}
-              <ChevronRight className="size-4 text-muted-foreground" />
+              <ChevronRight className="size-3.5 text-muted-foreground" />
             </Link>
-            <div className="flex items-center justify-between rounded-xl px-2 py-1 text-sm">
+            <div className="flex items-center justify-between rounded-lg px-2 py-0.5 text-[13px]">
               {tr("Theme")}
               <ThemeToggle />
             </div>
-            <LanguageSwitch current={locale} className="my-1 w-full [&>button]:flex-1 [&>button]:justify-center" />
+            <LanguageSwitch current={locale} className="my-1 w-full rounded-full border-0 bg-foreground/[0.06] [&>button]:min-h-7 [&>button]:flex-1 [&>button]:justify-center [&>button]:rounded-full [&>button]:px-2 [&>button]:text-xs [&>button[aria-current]]:bg-foreground/15 [&>button[aria-current]]:text-foreground" />
             <form action={logout}>
-              <button type="submit" className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10">
-                <LogOut className="size-4" />
+              <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-destructive transition-colors hover:bg-destructive/10">
+                <LogOut className="size-3.5" />
                 {tr("Sign out")}
               </button>
             </form>
