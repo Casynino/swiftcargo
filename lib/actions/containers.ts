@@ -1270,6 +1270,128 @@ export async function advanceContainer(
 }
 
 /**
+ * TAKE A SEALED OR SAILING CONTAINER BACK TO THE LOADING FLOOR.
+ *
+ * Guangzhou forgets something, or loads a consignment it should not have. Until
+ * Dar has started booking the box in — it is still sealed or at sea, never
+ * arrived — the box can be opened again: it returns to "loading", every
+ * consignment stays on it as loaded, and the ordinary loading list adds more or
+ * takes some back to the Guangzhou floor. Sealing it again draws the packing
+ * list again, a new version under the same number.
+ *
+ * Nothing is erased. The container's history says who opened it and why, the
+ * departure date and arrival estimate it carried are written to FieldChange
+ * before they are cleared, and each consignment's own history records the step
+ * back. A customer who was told the cargo had left is told it has not.
+ */
+export async function takeContainerBack(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const actor = await authorize("container.load");
+
+  const containerId = String(formData.get("containerId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim().slice(0, 300);
+  if (!reason) return { error: "Say why it is being taken back." };
+
+  const container = await prisma.container.findFirst({
+    where: { id: containerId, deletedAt: null },
+    include: {
+      cargoLines: { select: { cargoId: true, cargo: { select: { senderId: true, receiverId: true } } } },
+      shipment: { select: { id: true, eta: true, departureDate: true } },
+    },
+  });
+  if (!container) return { error: "That container no longer exists." };
+
+  const BACKABLE: ContainerStatus[] = ["SEALED", "DEPARTED", "IN_TRANSIT"];
+  if (!BACKABLE.includes(container.status)) {
+    return {
+      error: LOADABLE_CONTAINER_STATUSES.includes(container.status)
+        ? `${container.reference} is already open for loading.`
+        : `${container.reference} has reached Dar, so Dar's desk changes it from here.`,
+    };
+  }
+  const wasAtSea = container.status !== "SEALED";
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const claim = await tx.container.updateMany({
+        where: { id: container.id, status: { in: BACKABLE } },
+        data: { status: "LOADING", sealedAt: null, loadedAt: null },
+      });
+      if (claim.count === 0) throw new Error("Its status changed while you were pressing. Look again.");
+
+      await tx.containerEvent.create({
+        data: {
+          containerId: container.id,
+          from: container.status,
+          to: "LOADING",
+          note: `Taken back from ${container.status.replace(/_/g, " ").toLowerCase()}: ${reason}`,
+          actorId: actor.id,
+        },
+      });
+
+      if (container.shipment) {
+        await tx.shipment.update({
+          where: { id: container.shipment.id },
+          data: { status: "PREPARING", departureDate: null, eta: null },
+        });
+        if (container.shipment.departureDate) {
+          await recordFieldChange(
+            { actor, entity: "Shipment", entityId: container.shipment.id, field: "departureDate", oldValue: dayOf(container.shipment.departureDate), newValue: null, reason },
+            tx
+          );
+        }
+        if (container.shipment.eta) {
+          await recordFieldChange(
+            { actor, entity: "Shipment", entityId: container.shipment.id, field: "eta", oldValue: dayOf(container.shipment.eta), newValue: null, reason },
+            tx
+          );
+        }
+      }
+
+      /* Back to "assigned": on the box, not yet sealed into it. */
+      await setCargoStatusBulk(
+        tx,
+        container.cargoLines.map((l) => l.cargoId),
+        "ASSIGNED_TO_CONTAINER",
+        actor,
+        `Container ${container.reference} taken back: ${reason}`
+      );
+
+      if (wasAtSea) {
+        await notifyCustomer(
+          container.cargoLines.flatMap((l) => [l.cargo.senderId, l.cargo.receiverId]),
+          {
+            kind: "container.recalled",
+            title: "Your cargo is back at the Guangzhou warehouse",
+            body: `Container ${container.containerNumber ?? container.reference} was called back before it arrived. It will be sent again and we will tell you when it sails.`,
+            href: "/portal",
+          },
+          tx
+        );
+      }
+    });
+  } catch (error) {
+    return { error: formMessage(error, "That did not work.") };
+  }
+
+  await recordAudit({
+    actor,
+    action: "container.takeBack",
+    entity: "Container",
+    entityId: container.id,
+    summary: `${container.reference} taken back from ${container.status.toLowerCase()} to loading (${container.cargoLines.length} consignment(s)): ${reason}`,
+  });
+
+  revalidatePath(`/app/containers/${container.id}`);
+  revalidatePath("/app/containers");
+  revalidatePath("/app/containers/loading");
+  revalidatePath("/app/inventory");
+  return { ok: "Taken back. It is open for loading again." };
+}
+
+/**
  * Freeze the packing list by hand.
  *
  * Sealing does this on its own — see `sealContainer` — so this button exists

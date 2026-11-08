@@ -2,12 +2,13 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Anchor, Lock, PackageMinus, PackagePlus, Ship, Truck } from "lucide-react";
+import { Anchor, Lock, PackageMinus, PackagePlus, Ship, Truck, Undo2 } from "lucide-react";
 
 import {
   advanceContainer,
   loadCargo,
   sealContainer,
+  takeContainerBack,
   unloadCargo,
   updateContainerBox,
   updateVoyage,
@@ -252,8 +253,8 @@ export function SealPanel({
         {tx("Sealing closes the box for good")}
       </p>
       <p className="text-xs text-muted-foreground">
-        Nothing can be added or taken out afterwards, and all {lineCount}{" "}
-        consignment(s) inside move to “container loaded” together.
+        All {lineCount} consignment(s) inside move to “container loaded” together. Until Dar starts booking it in,
+        Guangzhou can still take it back, add what was forgotten or take something out.
       </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -275,6 +276,49 @@ export function SealPanel({
         <SubmitButton variant="accent">
           <Lock />
           {tx("Seal the container")}
+        </SubmitButton>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+          {tx("Cancel")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * Pull the box back to the loading floor — only while it is sealed or at sea.
+ * A reason is asked for, and written beside the name and the time.
+ */
+export function TakeBackPanel({ containerId, atSea }: { containerId: string; atSea: boolean }) {
+  const tx = useT();
+  const [state, action] = useActionState<ActionState, FormData>(takeContainerBack, {});
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
+        <Undo2 />
+        {tx("Cancel sending, take it back")}
+      </Button>
+    );
+  }
+  return (
+    <form action={action} className="space-y-3 rounded-lg border border-warning/40 bg-warning/5 p-4">
+      <input type="hidden" name="containerId" value={containerId} />
+      <p className="text-sm font-medium">{tx("Take this container back to loading?")}</p>
+      <p className="text-xs text-muted-foreground">
+        {tx("It opens again with everything still on it. Then add what was forgotten or take goods off — they return to the Guangzhou floor — and seal it again.")}
+        {atSea ? ` ${tx("Customers are told their cargo is back at the warehouse.")}` : ""}
+      </p>
+      <div className="space-y-2">
+        <Label htmlFor="takeBackReason">{tx("Why")}</Label>
+        <Input id="takeBackReason" name="reason" required maxLength={300} placeholder={tx("e.g. one consignment was forgotten")} />
+      </div>
+      <FormMessage error={state.error} ok={state.ok} />
+      <div className="flex gap-2">
+        <SubmitButton variant="accent">
+          <Undo2 />
+          {tx("Take it back")}
         </SubmitButton>
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           {tx("Cancel")}

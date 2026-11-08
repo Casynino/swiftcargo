@@ -87,6 +87,16 @@ re-entering customer, mark, packages, pieces, weight, volume or category.
 **The packing list is derived, not typed.** It is the container's contents read
 back out, live while the box is open, frozen automatically when it is sealed.
 
+**A sealed or sailing box can be taken back until Dar books it in.** Guangzhou
+(`container.load`) presses "Cancel sending, take it back" with a reason: the
+container returns to loading, every consignment stays on it as assigned, and the
+ordinary loading list adds forgotten goods or takes goods back to the Guangzhou
+floor. The departure date and arrival estimate it carried go to `FieldChange`
+before they are cleared, the container's and each consignment's history record
+the step, customers told it had sailed are told it has not, and sealing again
+draws the packing list again as a new version under the same number. Once the
+box has arrived it is Dar's, and `takeContainerBack` refuses.
+
 **Dar reviews before it accepts.** Expected against actual, per consignment. A
 consignment that did not come off the container becomes `MISSING_AT_DAR` with a
 case — never a receiving record with zero packages — and the rest of the

@@ -20,6 +20,7 @@ import {
 
 import {
   AdvancePanel,
+  TakeBackPanel,
   BoxForm,
   LoadedTable,
   LoadPanel,
@@ -416,6 +417,18 @@ export default async function ContainerPage({
       </CardContent>
     </Card>
   ) : null;
+
+  /* Guangzhou can open a sealed or sailing box again until Dar books the first
+     consignment in; that is the desk that loaded it, so the card is its own and
+     does not depend on there being a next step this desk can press. */
+  const takeBack =
+    ["SEALED", "DEPARTED", "IN_TRANSIT"].includes(container.status) && can(user.role, "container.load") ? (
+      <Card>
+        <CardContent className="pt-6">
+          <TakeBackPanel containerId={container.id} atSea={container.status !== "SEALED"} />
+        </CardContent>
+      </Card>
+    ) : null;
 
   const waitingCbm = waiting.reduce(
     (sum, w) =>
@@ -843,6 +856,7 @@ export default async function ContainerPage({
         <div className="space-y-4">
           {arrival}
           {advance}
+          {takeBack}
         </div>
       ) : null}
 
