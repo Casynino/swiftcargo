@@ -274,7 +274,9 @@ export function AppShell({
                 {shown ? (
                   <ul className="ml-[1.35rem] mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
                     {section.items.map((item) => (
-                      <li key={item.href}>{row(item)}</li>
+                      <li key={item.href} className="relative before:absolute before:-left-2 before:top-1/2 before:h-px before:w-2 before:bg-foreground/20">
+                        {row(item)}
+                      </li>
                     ))}
                   </ul>
                 ) : null}

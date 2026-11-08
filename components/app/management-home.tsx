@@ -6,6 +6,7 @@ import { AttentionCenter } from "@/components/app/attention-center";
 import { CargoMix } from "@/components/app/cargo-mix";
 import { ContainerProfitTable } from "@/components/app/container-profit-table";
 import { DeskHero } from "@/components/app/desk-hero";
+import { ManagementCompanyExtras, ManagementMoneyExtras } from "@/components/app/management-extras";
 import { MoneyFlowChart } from "@/components/app/manager-bento";
 import { SectionLabel } from "@/components/app/section-label";
 import { AreaChart } from "@/components/charts/area-chart";
@@ -506,6 +507,8 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
         />
       </Panel>
 
+      <ManagementMoneyExtras o={o} locale={locale} />
+
       {/* ------------------------------------------------------ more analysis */}
       <section>
         <SectionLabel>{`${tr("The business")} · ${tr("more analysis")}`}</SectionLabel>
@@ -580,6 +583,8 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
           </Panel>
         </div>
       </section>
+
+      <ManagementCompanyExtras o={o} locale={locale} />
     </div>
   );
 }
