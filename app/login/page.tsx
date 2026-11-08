@@ -1,9 +1,12 @@
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AlertTriangle } from "lucide-react";
 
 import { LoginForm } from "@/components/login-form";
 import { AuthScene } from "@/components/site/auth-scene";
+
+/* The browser bars take the scene's own colour, so the picture runs to the edges of the screen. */
+export const viewport: Viewport = { themeColor: "#040e1a" };
 
 export const metadata: Metadata = { title: "Sign in" };
 

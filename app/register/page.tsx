@@ -1,8 +1,11 @@
 import Link from "next/link";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import { AuthScene } from "@/components/site/auth-scene";
 import { PortalAccess } from "@/components/site/portal-access";
+
+/* The browser bars take the scene's own colour, so the picture runs to the edges of the screen. */
+export const viewport: Viewport = { themeColor: "#040e1a" };
 
 export const metadata: Metadata = {
   title: "Create an account",
