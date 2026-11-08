@@ -367,10 +367,10 @@ export function AppShell({
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
-          <aside className="drawer-in absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 top-[max(0.75rem,env(safe-area-inset-top))] flex w-72 max-w-[85vw] flex-col rounded-[28px] border border-border/60 bg-background/90 shadow-2xl backdrop-blur-xl dark:border-white/10">
-            <div className="flex h-16 shrink-0 items-center justify-between px-4">
-              <BrandMark size={32} />
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label={tr("Close menu")}>
+          <aside className="drawer-in absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 top-[max(0.75rem,env(safe-area-inset-top))] flex w-[14.5rem] max-w-[72vw] flex-col rounded-3xl border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.16),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.97),rgba(246,248,252,0.95))] shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.26),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
+            <div className="flex h-14 shrink-0 items-center justify-between px-4">
+              <BrandMark size={28} compact />
+              <Button variant="ghost" size="icon" className="size-8" onClick={() => setOpen(false)} aria-label={tr("Close menu")}>
                 <X />
               </Button>
             </div>

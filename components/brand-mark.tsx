@@ -13,10 +13,13 @@ export function BrandMark({
   className,
   showWordmark = true,
   size = 36,
+  compact = false,
 }: {
   className?: string;
   showWordmark?: boolean;
   size?: number;
+  /** A narrower wordmark, for the phone drawer. */
+  compact?: boolean;
 }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
@@ -31,10 +34,10 @@ export function BrandMark({
       />
       {showWordmark ? (
         <span className="flex flex-col leading-none">
-          <span className="text-[15px] font-bold uppercase tracking-[0.14em] text-navy-700 dark:text-navy-100">
+          <span className={cn("whitespace-nowrap font-bold uppercase text-navy-700 dark:text-navy-100", compact ? "text-[13px] tracking-[0.1em]" : "text-[15px] tracking-[0.14em]")}>
             Swift Cargo
           </span>
-          <span className="mt-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">
+          <span className={cn("mt-0.5 whitespace-nowrap font-medium tracking-wide text-muted-foreground", compact ? "text-[9px]" : "text-[10px]")}>
             On time, Every time
           </span>
         </span>

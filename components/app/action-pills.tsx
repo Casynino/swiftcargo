@@ -32,15 +32,15 @@ const TONES: Record<NonNullable<ActionPill["tone"]>, string> = {
   plain: "border bg-card text-foreground hover:bg-secondary",
 };
 
-/* The same kinds of work, as the small coloured square on a phone's tile. */
+/* The same kinds of work, as the soft gradient square on a phone's tile. */
 const CHIP: Record<NonNullable<ActionPill["tone"]>, string> = {
-  brand: "bg-brand/15 text-brand",
-  marine: "bg-marine/15 text-marine",
-  signal: "bg-signal/15 text-signal",
-  success: "bg-success/15 text-success",
-  warning: "bg-warning/15 text-warning",
-  danger: "bg-destructive/15 text-destructive",
-  plain: "bg-secondary text-foreground/70",
+  brand: "bg-gradient-to-br from-brand/30 to-brand/10 text-brand ring-brand/25",
+  marine: "bg-gradient-to-br from-marine/30 to-marine/10 text-marine ring-marine/25",
+  signal: "bg-gradient-to-br from-signal/30 to-signal/10 text-signal ring-signal/25",
+  success: "bg-gradient-to-br from-success/30 to-success/10 text-success ring-success/25",
+  warning: "bg-gradient-to-br from-warning/30 to-warning/10 text-warning ring-warning/25",
+  danger: "bg-gradient-to-br from-destructive/30 to-destructive/10 text-destructive ring-destructive/25",
+  plain: "bg-gradient-to-br from-foreground/10 to-foreground/[0.03] text-foreground/75 ring-foreground/10",
 };
 
 export async function ActionPills({ pills }: { pills: ActionPill[] }) {
@@ -49,7 +49,7 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
   if (pills.length === 0) return null;
 
   const iconFor = (name: string) =>
-    (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name];
+    (Icons as unknown as Record<string, React.ComponentType<{ className?: string; strokeWidth?: number }>>)[name];
 
   return (
     <>
@@ -62,10 +62,10 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
             <Link
               key={`m-${pill.href}${pill.label}`}
               href={pill.href}
-              className="focus-ring flex snap-start flex-col items-center gap-1.5 rounded-2xl border bg-card px-1 py-2.5 text-center shadow-soft transition-transform active:scale-95"
+              className="focus-ring flex snap-start flex-col items-center gap-1.5 rounded-2xl border bg-gradient-to-b from-card to-card/70 px-1 py-2.5 text-center shadow-soft transition-transform active:scale-95"
             >
-              <span className={cn("grid size-9 place-items-center rounded-xl", CHIP[pill.tone ?? "plain"])}>
-                {Icon ? <Icon className="size-[18px]" /> : null}
+              <span className={cn("grid size-10 place-items-center rounded-[14px] shadow-sm ring-1 ring-inset", CHIP[pill.tone ?? "plain"])}>
+                {Icon ? <Icon className="size-5" strokeWidth={1.75} /> : null}
               </span>
               <span className="line-clamp-2 min-h-[2.1em] [overflow-wrap:anywhere] text-[10.5px] font-medium leading-tight">{t(pill.short ?? pill.label)}</span>
             </Link>

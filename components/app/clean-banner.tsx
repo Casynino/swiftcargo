@@ -36,13 +36,13 @@ export function CleanBanner({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(120deg,#08142e_0%,#0b1f4a_55%,#102a5e_100%)] px-5 py-7 text-center text-white shadow-raised sm:px-8 sm:py-9",
+        "relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(125deg,#07112a_0%,#0b1d47_48%,#17387a_100%)] px-4 py-5 text-center text-white shadow-raised ring-1 ring-inset ring-white/5 sm:rounded-3xl sm:px-8 sm:py-9",
         className
       )}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_85%_130%,rgba(70,120,210,0.35),transparent_55%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_90%_140%,rgba(88,140,235,0.42),transparent_55%),radial-gradient(ellipse_at_0%_-30%,rgba(227,179,65,0.22),transparent_50%)]"
       />
       {image ? (
         <div
@@ -60,8 +60,8 @@ export function CleanBanner({
               "min-w-0 text-balance font-semibold uppercase",
               /* A long name keeps its size down so it stays on one or two lines. */
               typeof title === "string" && title.length > 13
-                ? "text-lg tracking-[0.2em] sm:text-3xl sm:tracking-[0.24em]"
-                : "text-xl tracking-[0.3em] sm:text-4xl"
+                ? "text-base tracking-[0.2em] sm:text-3xl sm:tracking-[0.24em]"
+                : "text-lg tracking-[0.28em] sm:text-4xl sm:tracking-[0.3em]"
             )}
           >
             {title}
@@ -69,9 +69,9 @@ export function CleanBanner({
           <span aria-hidden className="hidden h-px w-10 bg-[#e3b341]/80 sm:block" />
         </div>
         {kicker ? (
-          <p className="mt-2.5 text-[11px] font-semibold uppercase tracking-[0.32em] text-[#e3b341]">{kicker}</p>
+          <p className="mt-1.5 text-[10px] sm:mt-2.5 sm:text-[11px] font-semibold uppercase tracking-[0.32em] text-[#e3b341]">{kicker}</p>
         ) : null}
-        {line ? <p className="tnum mt-1.5 text-sm text-white/70">{line}</p> : null}
+        {line ? <p className="tnum mt-1 text-xs text-white/70 sm:mt-1.5 sm:text-sm">{line}</p> : null}
         {children ? <div className="mt-4 flex flex-wrap items-center justify-center gap-2">{children}</div> : null}
       </div>
     </section>
