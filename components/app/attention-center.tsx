@@ -67,23 +67,20 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="flex items-center gap-2.5 rounded-xl border bg-card px-3.5 py-1.5 shadow-soft">
-        <span aria-hidden className="h-6 w-0.5 shrink-0 rounded-full bg-success" />
-        <CheckCircle2 className="size-3.5 shrink-0 text-success" />
-        <p className="min-w-0 text-[13px] leading-tight">
+      <div className="flex items-center gap-2.5 rounded-xl border bg-card px-3.5 py-2.5 text-[13px] shadow-soft">
+        <CheckCircle2 className="size-4 shrink-0 text-success" />
+        <p className="min-w-0 truncate leading-tight">
           <span className="font-semibold">{t("Nothing needs you")}</span>
-          <span className="mt-px block text-[11px] text-muted-foreground">
-            {t("No missing cargo, no overdue bills, nothing held.")}
-          </span>
+          <span className="text-muted-foreground"> · {t("No missing cargo, no overdue bills, nothing held.")}</span>
         </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
+    <div>
       {groups.length > 1 ? (
-      <div className="flex flex-wrap gap-1.5 border-b px-3 py-2">
+      <div className="mb-2 flex flex-wrap gap-1.5">
         {["All", ...groups].map((group) => {
           const count =
             group === "All"
@@ -95,10 +92,10 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
               type="button"
               onClick={() => setActive(group)}
               className={cn(
-                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-px text-[11px] font-medium transition-colors",
+                "focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors",
                 active === group
-                  ? "border-brand bg-brand text-brand-foreground"
-                  : "bg-card text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-brand text-brand-foreground"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
             >
               {t(group)}
@@ -108,6 +105,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
         })}
       </div>
       ) : null}
+    <div className="overflow-hidden rounded-xl border bg-card shadow-soft">
 
       {/* Three rows show; the rest scroll inside the panel, which is the same
           height whether the desk has three things or thirty. */}
@@ -152,6 +150,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
           {t("scroll for")} {shown.length - 3} {t("more")}
         </p>
       ) : null}
+    </div>
     </div>
   );
 }
