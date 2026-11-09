@@ -949,3 +949,33 @@ body:has([data-nino-page]) {
 body:has([data-nino-page]) .status-strip {
   background: #0a0a0b;
 }
+
+/* The sign-in card on a phone is small and plain: shorter fields and button, quieter labels. Fields keep a 16px font
+   so an iPhone does not zoom into them. */
+@media (max-width: 1023px) {
+  .auth-card input,
+  .auth-card select {
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+  .auth-card label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  .auth-card button[type="submit"] {
+    height: 2.75rem;
+    font-size: 0.875rem;
+  }
+  .auth-card h1 {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 600;
+  }
+  .auth-card p {
+    font-size: 0.75rem;
+    line-height: 1.1rem;
+  }
+}

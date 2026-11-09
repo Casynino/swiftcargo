@@ -32,10 +32,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   }, []);
 
   return (
-    <form action={action} className="mt-5 space-y-3 lg:mt-8 lg:space-y-4">
+    <form action={action} className="mt-3 space-y-2.5 lg:mt-8 lg:space-y-4">
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
-      <div className="space-y-2">
+      <div className="space-y-1.5 lg:space-y-2">
         <Label htmlFor="identifier">Phone number or email</Label>
         <Input
           id="identifier"
@@ -54,7 +54,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
         </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5 lg:space-y-2">
         <Label htmlFor="password">Password</Label>
         <PasswordInput
           id="password"

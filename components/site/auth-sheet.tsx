@@ -87,8 +87,10 @@ export function AuthSheet({
         aria-modal={open}
         aria-hidden={!open}
         className={cn(
-          "auth-card dark site-glass rounded-[2rem] p-6 text-foreground max-lg:p-5 sm:p-8",
-          "max-lg:!bg-[#0a1624] max-lg:!backdrop-blur-none max-lg:fixed max-lg:inset-x-3 max-lg:bottom-3 max-lg:z-50 max-lg:max-h-[80dvh] max-lg:overflow-y-auto max-lg:transition-[transform,visibility] max-lg:duration-300",
+          "auth-card dark site-glass rounded-[2rem] p-6 text-foreground sm:p-8",
+          /* On a phone: a small see-through glass card low on the page, not a slab across it. */
+          "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] max-lg:z-50 max-lg:mx-auto max-lg:max-h-[78dvh] max-lg:w-[calc(100%-2.5rem)] max-lg:max-w-[21rem] max-lg:overflow-y-auto max-lg:rounded-2xl max-lg:p-4 max-lg:transition-[transform,visibility] max-lg:duration-300",
+          "max-lg:!border-white/[0.09] max-lg:!bg-[#0a1624]/70 max-lg:!backdrop-blur-2xl max-lg:backdrop-saturate-150 max-lg:shadow-[0_18px_44px_-22px_rgba(0,0,0,0.75)]",
           open ? "max-lg:translate-y-0" : "max-lg:invisible max-lg:translate-y-[115%]"
         )}
       >
@@ -96,9 +98,9 @@ export function AuthSheet({
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="focus-ring absolute right-4 top-4 grid size-9 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+          className="focus-ring absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white lg:hidden"
         >
-          <X className="size-5" />
+          <X className="size-4" />
         </button>
         {children}
       </div>

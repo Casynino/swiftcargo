@@ -45,7 +45,7 @@ export default async function LoginPage({
         "A sailing every Monday",
       ]}
     >
-      <h1 className="font-display text-3xl font-bold tracking-tight text-white max-lg:text-2xl">Sign in</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight text-white">Sign in</h1>
       <p className="mt-2 text-sm text-white/85 max-lg:hidden">
         Staff and customers use the same door. You will land in the right place.
       </p>
@@ -63,7 +63,7 @@ export default async function LoginPage({
 
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
-      <p className="mt-4 text-sm text-white/85 lg:mt-6">
+      <p className="mt-3 text-sm text-white/85 lg:mt-6">
         <Link href="/register?mode=reset" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Forgot your password?
         </Link>
