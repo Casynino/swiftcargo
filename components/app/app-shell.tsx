@@ -273,7 +273,7 @@ export function AppShell({
                 {/* The rule down the left is what makes a section read as a group
                     rather than a heading followed by unrelated rows. */}
                 {shown ? (
-                  <ul className="ml-[1.35rem] mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
+                  <ul className="ml-[1.2rem] mt-0.5 space-y-0.5 border-l border-border/60 pl-2">
                     {section.items.map((item) => (
                       <li key={item.href} className="relative before:absolute before:-left-2 before:top-1/2 before:h-px before:w-2 before:bg-foreground/20">
                         {row(item)}
@@ -336,7 +336,7 @@ export function AppShell({
       <aside
         className={cn(
           "sticky top-0 hidden h-dvh shrink-0 p-3 transition-[width] duration-300 ease-out lg:block print:!hidden",
-          collapsed ? "w-[5.5rem]" : "w-[15.5rem]"
+          collapsed ? "w-[5.5rem]" : "w-[14rem]"
         )}
       >
         <div className="relative flex h-full flex-col rounded-[28px] border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.18),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(255,255,255,0.82))] shadow-xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.28),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
@@ -372,7 +372,7 @@ export function AppShell({
             className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
-          <aside className="drawer-in absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 top-[max(0.75rem,env(safe-area-inset-top))] flex w-[14.5rem] max-w-[72vw] flex-col rounded-3xl border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.16),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.97),rgba(246,248,252,0.95))] shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.26),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
+          <aside className="drawer-in absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 top-[max(0.75rem,env(safe-area-inset-top))] flex w-[12.5rem] max-w-[64vw] flex-col rounded-3xl border border-border/60 bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.16),transparent_60%),linear-gradient(180deg,rgba(255,255,255,0.97),rgba(246,248,252,0.95))] shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-[radial-gradient(ellipse_at_15%_112%,rgba(234,150,45,0.26),transparent_60%),linear-gradient(180deg,#0b1736,#09122e)]">
             <div className="flex h-14 shrink-0 items-center justify-between px-4">
               <BrandMark size={28} compact />
               <Button variant="ghost" size="icon" className="size-8" onClick={() => setOpen(false)} aria-label={tr("Close menu")}>

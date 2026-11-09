@@ -34,7 +34,7 @@ export function BrandMark({
       />
       {showWordmark ? (
         <span className="flex flex-col leading-none">
-          <span className={cn("whitespace-nowrap font-bold uppercase text-navy-700 dark:text-navy-100", compact ? "text-[13px] tracking-[0.1em]" : "text-[15px] tracking-[0.14em]")}>
+          <span className={cn("whitespace-nowrap font-bold uppercase text-navy-700 dark:text-navy-100", compact ? "text-[12px] tracking-[0.06em]" : "text-[15px] tracking-[0.14em]")}>
             Swift Cargo
           </span>
           <span className={cn("mt-0.5 whitespace-nowrap font-medium tracking-wide text-muted-foreground", compact ? "text-[9px]" : "text-[10px]")}>
