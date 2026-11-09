@@ -941,3 +941,11 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
+
+/* Nino's page is dark whatever the app's theme, so the bar under the clock and the page ground follow it. */
+body:has([data-nino-page]) {
+  background-color: #0a0a0b;
+}
+body:has([data-nino-page]) .status-strip {
+  background: #0a0a0b;
+}

@@ -96,13 +96,16 @@ export function AuthScene({
         </div>
       </div>
 
-      {/* Who made the system: one quiet line to Nino's page and work. */}
-      <footer className="absolute inset-x-0 bottom-0 z-10 flex justify-center px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:justify-start lg:px-16">
+      {/* Foot of the page: one quiet centred line, "Sea Freight System by Nino", linking to Nino's page and work. Worded
+          like the Lab's and Super Drive's sign-in pages, not "Developed by". */}
+      <footer className="absolute inset-x-0 bottom-0 z-10 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-0 pb-[max(0.125rem,calc(env(safe-area-inset-bottom)_-_0.9rem))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-1 text-[11px] text-white/70 [text-shadow:0_1px_6px_rgba(3,8,18,0.95)] sm:bg-gradient-to-t sm:from-[#040e1a]/85 sm:via-[#040e1a]/45 sm:to-transparent sm:pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pt-8 sm:text-xs sm:text-white/60 sm:[text-shadow:none]">
+        <span>Sea Freight System</span>
         <Link
           href="/nino"
-          className="focus-ring group inline-flex min-h-10 items-center gap-1 rounded-sm text-xs text-white/55 transition-colors hover:text-white"
+          aria-label="Sea Freight System by Nino: see his work"
+          className="focus-ring group inline-flex min-h-8 items-center gap-1 rounded-sm transition-colors hover:text-white sm:min-h-10"
         >
-          Developed by <span className="font-semibold text-white/80 transition-colors group-hover:text-[#c6f432]">Nino</span>
+          by <span className="font-semibold text-white/85 transition-colors group-hover:text-[#c6f432] sm:text-white/80">Nino</span>
           <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
         </Link>
       </footer>
