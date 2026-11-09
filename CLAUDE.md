@@ -124,7 +124,7 @@ a customer is holding.
 deploy.
 
 **The owner watches and administers; the manager supervises; the desks do the
-work.** ADMIN (the Managing Director) and MANAGER (the Director) hold every `*.view`
+work.** ADMIN (the Director, MD) and MANAGER (the Director) hold every `*.view`
 permission and none of `DAILY_WORK` in `lib/rbac.ts` — receiving, scanning,
 loading and sending containers, releasing cargo, recording and verifying
 payments, billing, preparing payroll, answering customers. Those belong to China,

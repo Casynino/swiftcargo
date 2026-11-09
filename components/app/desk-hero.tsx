@@ -41,7 +41,7 @@ export async function DeskHero({
   searchPlaceholder?: string;
   /** The banner's heading when it should not be the person's own first name. */
   title?: string;
-  /** The small line under the name; the desk by default. Management reads "Managing Director" or "Director". */
+  /** The small line under the name; the desk by default. Management reads "Director (MD)" or "Director". */
   kicker?: string;
   /** Management watches rather than looks things up: no search box under the banner. */
   search?: boolean;
