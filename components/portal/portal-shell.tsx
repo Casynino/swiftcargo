@@ -1,5 +1,6 @@
 "use client";
 
+import { InstallPrompt } from "@/components/install-app";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -239,6 +240,7 @@ export function PortalShell({
           </div>
         </header>
 
+        <InstallPrompt />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 [--bottom-bar:calc(3.5rem+env(safe-area-inset-bottom))] lg:px-8 lg:py-8 lg:[--bottom-bar:0px]">
           {children}
         </main>

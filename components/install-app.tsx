@@ -32,6 +32,13 @@ type InstallEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+declare global {
+  interface Window {
+    /** Set by the small script in the page head, which hears Chrome's install offer before this file has loaded. */
+    __scInstall?: InstallEvent | null;
+  }
+}
+
 // Chrome on Android fires this once, early; kept here so any part of the page can use it later.
 let deferred: InstallEvent | null = null;
 const listeners = new Set<() => void>();
@@ -43,8 +50,14 @@ if (typeof window !== "undefined") {
   });
   window.addEventListener("appinstalled", () => {
     deferred = null;
+    window.__scInstall = null;
     listeners.forEach((f) => f());
   });
+  window.addEventListener("sc-install-ready", () => {
+    deferred = deferred ?? window.__scInstall ?? null;
+    listeners.forEach((f) => f());
+  });
+  deferred = window.__scInstall ?? null;
 }
 
 const SEEN = "sc.installSeen";
@@ -82,6 +95,7 @@ function useInstall() {
       await deferred.prompt();
       const { outcome } = await deferred.userChoice;
       deferred = null;
+      window.__scInstall = null;
       listeners.forEach((f) => f());
       return outcome === "accepted";
     } catch {
@@ -190,24 +204,24 @@ function InstallSheet({ open, onClose }: { open: boolean; onClose: () => void })
   );
 }
 
-/** Opens by itself once, a moment after a phone's browser opens the app (never when it is installed); closing it is remembered. */
+/** Opens by itself a moment after a phone's browser opens the app, on every visit until the app is installed (closing it is remembered for that visit only). It never shows once installed. */
 export function InstallPrompt() {
   const { ready, phone, installed } = useInstall();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!ready || !phone || installed) return;
     try {
-      if (window.localStorage.getItem(SEEN)) return;
+      if (window.sessionStorage.getItem(SEEN)) return;
     } catch {
       return;
     }
-    const timer = window.setTimeout(() => setOpen(true), 2500);
+    const timer = window.setTimeout(() => setOpen(true), 1500);
     return () => window.clearTimeout(timer);
   }, [ready, phone, installed]);
   const close = () => {
     setOpen(false);
     try {
-      window.localStorage.setItem(SEEN, "1");
+      window.sessionStorage.setItem(SEEN, "1");
     } catch {
       /* private window: it simply asks again next time */
     }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Smartphone, X } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { InstallButton } from "@/components/install-app";
+import { InstallButton, InstallPrompt } from "@/components/install-app";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,6 +44,7 @@ export function AuthSheet({
   return (
     <>
       {/* The phone's first screen: the logo, one line, one small button. */}
+      <InstallPrompt />
       <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col items-center justify-between py-6 text-center lg:hidden">
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
         <div className="flex flex-col items-center gap-5">

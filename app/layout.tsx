@@ -94,6 +94,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Chrome offers "Install" once and early, often before the page's own code has loaded. This keeps the offer
+            so the pop-up can use it later and the install is one tap. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__scInstall=e;window.dispatchEvent(new Event('sc-install-ready'))});",
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${display.variable} font-sans`}>
         <ThemeProvider>{children}</ThemeProvider>
         <UploadBudget limitBytes={UPLOAD_REQUEST_BUDGET} />
