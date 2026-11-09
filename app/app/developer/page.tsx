@@ -124,7 +124,7 @@ export default async function DeveloperHome() {
 
   return (
     <div className="space-y-6">
-      <CleanBanner controls={<BannerControls />} title={user.name.split(" ")[0]} kicker={T("Developer")} line={
+      <CleanBanner controls={<BannerControls />} title={user.name.split(" ")[0]} kicker={T("Developer")} lineFromSm line={
           <>
             {hello}
             {twoClocks().map((c) => (

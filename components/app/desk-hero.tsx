@@ -99,6 +99,7 @@ export async function DeskHero({
         title={title ?? name}
         kicker={tr(kicker ?? department)}
         image="/photos/port-cranes.jpg"
+        lineFromSm
         line={
           <>
             {today}

@@ -15,6 +15,7 @@ export function CleanBanner({
   title,
   kicker,
   line,
+  lineFromSm = false,
   children,
   controls,
   image,
@@ -25,6 +26,8 @@ export function CleanBanner({
   kicker?: React.ReactNode;
   /** The day, or whatever one line belongs under the title. */
   line?: React.ReactNode;
+  /** Show the line from a tablet up only: on a phone the top bar already says the day. */
+  lineFromSm?: boolean;
   /** A button or two, centred under the lines. */
   children?: React.ReactNode;
   /** The bell and the moon, top left, on a computer. */
@@ -74,7 +77,7 @@ export function CleanBanner({
         {kicker ? (
           <p className="mt-1.5 text-[10px] sm:mt-2.5 sm:text-[11px] font-semibold uppercase tracking-[0.32em] text-[#e3b341]">{kicker}</p>
         ) : null}
-        {line ? <p className="tnum mt-1 text-xs text-white/70 sm:mt-1.5 sm:text-sm">{line}</p> : null}
+        {line ? <p className={cn("tnum mt-1 text-xs text-white/70 sm:mt-1.5 sm:text-sm", lineFromSm && "max-sm:hidden")}>{line}</p> : null}
         {children ? <div className="mt-4 flex flex-wrap items-center justify-center gap-2">{children}</div> : null}
       </div>
     </section>
