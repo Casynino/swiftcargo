@@ -2,8 +2,7 @@
  * Nino's work, as shown on /nino (copied from the Vegas Luxury Hotel project's page of the same name; keep the two lists in step). Every line comes
  * from the project's own live site (its title and description), its README, or from Nino — nothing invented. Screenshots in /public/nino are the live
  * home pages, taken 2026-10-05 (Super Drive Oil: its sign-in page, 2026-11-09).
- * Hao Labs, Super Drive Oil and BlueWave Cargo: their live sign-in pages, retaken 2026-11-09.
- * The other live sites' pictures were retaken from their live home pages on the evening of 2026-11-09.
+ * ZELab, Super Drive Oil and BlueWave Cargo: their live sign-in pages. Every picture was retaken on 2026-11-10.
  */
 
 export type Project = {
@@ -86,9 +85,9 @@ export const LIVE: Project[] = [
     tags: ["Brand site", "Community"],
   },
   {
-    name: "Hao Labs", kind: "Stock, settlement & commission system",
-    line: "Every box that leaves the Lab is on the system — who took it, what came back, what is still owed, and what each rep has earned. We keep Tanzania stocked.",
-    url: "https://hao-stock.vercel.app", domain: "hao-stock.vercel.app", shot: "/nino/haolabs-signin.webp",
+    name: "ZELab", kind: "Stock, settlement & commission system",
+    line: "Every box that leaves ZELab is on the system — who took it, what came back, what is still owed, and what each rep has earned. We keep Tanzania stocked.",
+    url: "https://www.zelab.site", domain: "zelab.site", shot: "/nino/haolabs-signin.webp",
     tags: ["Stock control", "Settlements", "Commission", "Reports"], code: `${GH}/The-Lab`,
   },
   {

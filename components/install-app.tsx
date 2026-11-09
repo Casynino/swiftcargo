@@ -135,7 +135,7 @@ function InstallSheet({ open, onClose }: { open: boolean; onClose: () => void })
   /* Frosted glass that belongs to the page: it sits low, in the empty dark ground above the toolbar, and leaves the
      logo, the button and the scene alone. The dim behind it is barely there, and the card is see-through, navy like
      the sea, blurring what is under it instead of covering it. Only a title and the steps; closing is the X, a tap
-     outside, or Escape. Copied from the Lab. */
+     outside, or Escape. Copied from ZELab. */
   return (
     <div
       className={cn(
