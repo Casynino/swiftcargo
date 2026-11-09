@@ -37,10 +37,10 @@ export const LIVE: Project[] = [
     tags: ["Booking engine", "Mobile money", "Staff system", "Reports"],
   },
   {
-    name: "Super Drive Oil", kind: "Lubricants · sales & distribution",
-    line: "Sales, stock and credit in one place — counter sales, cash and daily closing, credit control, and every movement recorded against the person who made it.",
+    name: "Super Drive Oil", kind: "Oil distribution · sales, stock & credit",
+    line: "Every carton that comes in, goes out or is still owed is on the system — counter sales, the warehouse and pickup notes, cash and daily closing, Winga and credit — each one recorded against the person who made it.",
     url: "https://super-drive-os.vercel.app", domain: "super-drive-os.vercel.app", shot: "/nino/superdrive-signin.webp",
-    tags: ["Point of sale", "Credit control", "Stock", "Daily closing"], code: `${GH}/Super-Drive-OS`,
+    tags: ["Point of sale", "Warehouse pickups", "Daily closing", "Credit & Winga"], code: `${GH}/Super-Drive-OS`,
   },
   {
     name: "Target Express Air Cargo", kind: "Air cargo · China → Tanzania",
