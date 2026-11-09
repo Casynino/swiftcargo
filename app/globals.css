@@ -978,4 +978,7 @@ body:has([data-nino-page]) .status-strip {
     font-size: 0.75rem;
     line-height: 1.1rem;
   }
+  .auth-card input::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+  }
 }

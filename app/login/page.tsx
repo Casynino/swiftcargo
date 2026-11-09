@@ -63,18 +63,19 @@ export default async function LoginPage({
 
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
-      <p className="mt-3 text-sm text-white/85 lg:mt-6">
-        <Link href="/register?mode=reset" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
-          Forgot your password?
+      <div className="mt-4 flex items-center justify-between gap-3 text-xs lg:mt-6 lg:block lg:text-sm lg:text-white/85">
+        <Link href="/register?mode=reset" className="font-medium text-orange-300 underline-offset-4 hover:underline lg:font-semibold">
+          <span className="lg:hidden">Forgot password?</span>
+          <span className="max-lg:hidden">Forgot your password?</span>
         </Link>
-      </p>
-
-      <p className="mt-2 text-sm text-white/85 lg:mt-3">
-        New customer, or shipped with us before?{" "}
-        <Link href="/register" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
-          Create an account
-        </Link>
-      </p>
+        <p className="lg:mt-3">
+          <span className="max-lg:hidden">New customer, or shipped with us before? </span>
+          <Link href="/register" className="font-medium text-orange-300 underline-offset-4 hover:underline lg:font-semibold">
+            <span className="lg:hidden">Create account</span>
+            <span className="max-lg:hidden">Create an account</span>
+          </Link>
+        </p>
+      </div>
     </AuthScene>
   );
 }
