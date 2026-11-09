@@ -44,7 +44,7 @@ export function AuthSheet({
   return (
     <>
       {/* The phone's first screen: the logo, one line, one small button. */}
-      <div className="flex min-h-[calc(100dvh-5rem)] flex-col items-center justify-between py-6 text-center lg:hidden">
+      <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col items-center justify-between py-6 text-center lg:hidden">
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
         <div className="flex flex-col items-center gap-5">
           <p className="max-w-xs text-balance text-lg font-medium leading-snug text-white/90">{tagline}</p>

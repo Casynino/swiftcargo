@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { NetworkMap } from "@/components/site/network-map";
@@ -95,6 +95,17 @@ export function AuthScene({
           ) : null}
         </div>
       </div>
+
+      {/* Who made the system: one quiet line to Nino's page and work. */}
+      <footer className="absolute inset-x-0 bottom-0 z-10 flex justify-center px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:justify-start lg:px-16">
+        <Link
+          href="/nino"
+          className="focus-ring group inline-flex min-h-10 items-center gap-1 rounded-sm text-xs text-white/55 transition-colors hover:text-white"
+        >
+          Developed by <span className="font-semibold text-white/80 transition-colors group-hover:text-[#c6f432]">Nino</span>
+          <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden="true" />
+        </Link>
+      </footer>
     </main>
   );
 }
