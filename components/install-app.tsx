@@ -105,12 +105,13 @@ function useInstall() {
   return { ...state, install };
 }
 
+/** One step: a plain line — a small number, the words, the button it names drawn faint at the end. No box round it. */
 function Step({ n, icon: Icon, children }: { n: number; icon?: typeof Share; children: React.ReactNode }) {
   return (
-    <li className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-2.5 py-2 text-[12.5px] leading-snug">
-      <span className="grid size-[18px] shrink-0 place-items-center rounded-full bg-signal text-[10.5px] font-semibold text-signal-foreground">{n}</span>
+    <li className="flex items-center gap-3 py-2.5 text-[13px] leading-snug text-white/65">
+      <span className="w-2.5 shrink-0 text-center font-mono text-[11px] text-signal">{n}</span>
       <span className="min-w-0 flex-1">{children}</span>
-      {Icon ? <Icon className="size-3.5 shrink-0 text-white/55" /> : null}
+      {Icon ? <Icon className="size-3.5 shrink-0 text-white/30" /> : null}
     </li>
   );
 }
@@ -127,82 +128,92 @@ function InstallSheet({ open, onClose }: { open: boolean; onClose: () => void })
   }, [open, onClose]);
 
   if (!open) return null;
+
+  /* On an iPhone in Safari a small arrow points at the Share button. */
+  const hint = ios && browser === "safari" && !canPrompt;
+
+  /* Frosted glass that belongs to the page: it sits low, in the empty dark ground above the toolbar, and leaves the
+     logo, the button and the scene alone. The dim behind it is barely there, and the card is see-through, navy like
+     the sea, blurring what is under it instead of covering it. Only a title and the steps; closing is the X, a tap
+     outside, or Escape. Copied from the Lab. */
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/55 p-5 backdrop-blur-[2px]" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div role="dialog" aria-modal="true" aria-label={t("Use it like an app")} className="relative w-full max-w-[19.5rem] rounded-2xl border border-white/10 bg-[#0a1624] p-4 text-left text-white shadow-[0_24px_60px_-20px_rgba(0,0,0,0.9)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[15px] font-semibold leading-tight">{t("Use it like an app")}</p>
-            <p className="mt-0.5 text-[12px] text-white/60">{t("Full screen, no browser bar, its own icon.")}</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label={t("Close")} className="-mr-1 -mt-1 grid size-7 shrink-0 place-items-center rounded-full text-white/55 hover:bg-white/10 hover:text-white">
-            <X className="size-4" />
+    <div
+      className={cn(
+        "fixed inset-0 z-[110] flex items-end justify-center bg-black/15 p-5",
+        hint ? "pb-[calc(max(0.5rem,env(safe-area-inset-bottom))+5.75rem)]" : "pb-[max(1.75rem,calc(env(safe-area-inset-bottom)+1rem))]"
+      )}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Use it like an app")}
+        className="w-full max-w-[17.5rem] rounded-2xl border border-white/[0.09] bg-[#0a1624]/60 px-4 pb-1.5 pt-3.5 text-left text-white shadow-[0_18px_44px_-22px_rgba(0,0,0,0.75)] backdrop-blur-2xl backdrop-saturate-150"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-[14px] font-medium tracking-tight">{t("Use it like an app")}</h3>
+          <button type="button" onClick={onClose} aria-label={t("Close")} className="-mr-1.5 grid size-7 shrink-0 place-items-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white/80">
+            <X className="size-3.5" />
           </button>
         </div>
 
         {canPrompt ? (
-          <div className="mt-3.5 flex flex-col gap-1.5">
-            <button type="button" onClick={async () => { if (await install()) onClose(); }} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-signal text-[13px] font-semibold text-signal-foreground hover:bg-signal/90">
+          <div className="mb-1.5 mt-3 flex flex-col items-stretch">
+            <button
+              type="button"
+              onClick={async () => { if (await install()) onClose(); }}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-white/10 text-[13px] font-medium text-white ring-1 ring-inset ring-white/15 transition hover:bg-white/15"
+            >
               <Download className="size-3.5" />
               {t("Install the app")}
             </button>
-            <button type="button" onClick={onClose} className="inline-flex h-9 items-center justify-center rounded-full border border-white/15 text-[12.5px] font-medium hover:bg-white/5">
+            <button type="button" onClick={onClose} className="h-8 text-[12px] text-white/45 transition hover:text-white/75">
               {t("Not now")}
             </button>
           </div>
         ) : (
-          <>
-            <ol className="mt-3 space-y-1.5">
-              {browser === "in-app" ? (
-                <>
-                  <Step n={1} icon={EllipsisVertical}>{t("Tap ··· at the top right, then Open in browser.")}</Step>
-                  <Step n={2}>{ios ? t("In Safari, sign in and tap Get the full-screen app again.") : t("In the browser, sign in and tap Get the full-screen app again.")}</Step>
-                </>
-              ) : ios ? (
-                <>
-                  <Step n={1} icon={Share}>{browser === "safari" ? t("Tap Share at the bottom of Safari.") : t("Tap Share in the address bar or the menu.")}</Step>
-                  <Step n={2} icon={SquarePlus}>{t("Scroll down and tap Add to Home Screen.")}</Step>
-                  <Step n={3}>{t("Tap Add, then open Swift Cargo from your home screen.")}</Step>
-                </>
-              ) : browser === "samsung" ? (
-                <>
-                  <Step n={1} icon={Menu}>{t("Tap the menu at the bottom right.")}</Step>
-                  <Step n={2}>{t("Tap Add page to, then Home screen.")}</Step>
-                  <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
-                </>
-              ) : browser === "huawei" ? (
-                <>
-                  <Step n={1} icon={Menu}>{t("Tap the menu at the bottom of the browser.")}</Step>
-                  <Step n={2}>{t("Tap Add to home screen (it may be under Add to).")}</Step>
-                  <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
-                </>
-              ) : (
-                <>
-                  <Step n={1} icon={browser === "chrome" ? EllipsisVertical : Menu}>
-                    {browser === "chrome" ? t("Open the browser menu at the top right.") : t("Open the browser menu.")}
-                  </Step>
-                  <Step n={2}>{t("Tap Install app or Add to Home screen.")}</Step>
-                  <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
-                </>
-              )}
-            </ol>
-            {browser !== "in-app" ? (
-              <p className="mt-2 text-[11px] leading-snug text-white/50">
-                {ios ? t("If this page opened inside WeChat or WhatsApp, open it in Safari first.") : t("If this page opened inside WeChat or WhatsApp, open it in Chrome first.")}
-              </p>
-            ) : null}
-            <button type="button" onClick={onClose} className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-full border border-white/15 text-[12.5px] font-medium hover:bg-white/5">
-              {t("Got it")}
-            </button>
-          </>
+          <ol className="mt-1.5 divide-y divide-white/[0.06]">
+            {browser === "in-app" ? (
+              <>
+                <Step n={1} icon={EllipsisVertical}>{t("Tap ··· at the top right, then Open in browser.")}</Step>
+                <Step n={2}>{ios ? t("In Safari, sign in and tap Get the full-screen app again.") : t("In the browser, sign in and tap Get the full-screen app again.")}</Step>
+              </>
+            ) : ios ? (
+              <>
+                <Step n={1} icon={Share}>{browser === "safari" ? t("Tap Share at the bottom of Safari.") : t("Tap Share in the address bar or the menu.")}</Step>
+                <Step n={2} icon={SquarePlus}>{t("Scroll down and tap Add to Home Screen.")}</Step>
+                <Step n={3}>{t("Tap Add, then open Swift Cargo from your home screen.")}</Step>
+              </>
+            ) : browser === "samsung" ? (
+              <>
+                <Step n={1} icon={Menu}>{t("Tap the menu at the bottom right.")}</Step>
+                <Step n={2}>{t("Tap Add page to, then Home screen.")}</Step>
+                <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
+              </>
+            ) : browser === "huawei" ? (
+              <>
+                <Step n={1} icon={Menu}>{t("Tap the menu at the bottom of the browser.")}</Step>
+                <Step n={2}>{t("Tap Add to home screen (it may be under Add to).")}</Step>
+                <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
+              </>
+            ) : (
+              <>
+                <Step n={1} icon={browser === "chrome" ? EllipsisVertical : Menu}>
+                  {browser === "chrome" ? t("Open the browser menu at the top right.") : t("Open the browser menu.")}
+                </Step>
+                <Step n={2}>{t("Tap Install app or Add to Home screen.")}</Step>
+                <Step n={3}>{t("Open Swift Cargo from your home screen.")}</Step>
+              </>
+            )}
+          </ol>
         )}
       </div>
 
       {/* An iPhone has no one-tap install, so the next best thing: while the pop-up is open in Safari, a small arrow
           bounces over the toolbar where Share actually is, so nobody hunts for it. */}
-      {ios && browser === "safari" && !canPrompt ? (
-        <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-[120] flex justify-center">
-          <span className="flex animate-bounce flex-col items-center gap-0.5 text-[10px] font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+      {hint ? (
+        <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-[calc(max(0.5rem,env(safe-area-inset-bottom))+2.4rem)] z-[120] flex justify-center">
+          <span className="flex animate-bounce flex-col items-center gap-0.5 text-[10px] font-medium text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
             {t("Share")}
             <ArrowDown className="size-3.5 text-signal" />
           </span>
