@@ -68,18 +68,9 @@ export default async function HomePage() {
       <PageHero
         size="home"
         photo="shipWake"
-        lead={t(locale, "Shipping from China to Tanzania,")}
-        trail={t(locale, "on time, every time.")}
-        body={
-          <p>
-            {t(locale, "Loose cargo and full containers by sea,")} {ROUTE.transitDaysMin}–
-            {ROUTE.transitDaysMax}{" "}
-            {t(
-              locale,
-              "days from our Guangzhou warehouse to Dar es Salaam. Every box counted, weighed, measured and photographed the day it reaches us."
-            )}
-          </p>
-        }
+        lead={t(locale, "China to Tanzania.")}
+        trail={t(locale, "On time, every time.")}
+        body={<p>{t(locale, "Loose cargo or a full container, by sea. A ship leaves Guangzhou every Monday.")}</p>}
         actions={
           <>
             <Link href="/quote" className={heroButton.primary}>
@@ -97,6 +88,19 @@ export default async function HomePage() {
               </p>
               <TrackForm dark pill />
             </div>
+            {/* Three facts instead of a paragraph. */}
+            <dl className="mt-6 grid w-full max-w-xl grid-cols-3 gap-4 border-t border-white/15 pt-4">
+              {[
+                ["Every Monday", "A ship leaves"],
+                ["Friday", "Last day to receive cargo"],
+                ["Photos", "Taken the day it arrives"],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-sm font-semibold text-white">{t(locale, k)}</dt>
+                  <dd className="mt-0.5 text-[0.7rem] leading-snug text-white/60 sm:text-xs">{t(locale, v)}</dd>
+                </div>
+              ))}
+            </dl>
           </>
         }
         aside={
@@ -145,7 +149,7 @@ export default async function HomePage() {
 
 
       {/* ---------------------------------------------------------- Who we are */}
-      <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
+      <section className="container grid items-center gap-14 py-14 sm:py-24 lg:grid-cols-2">
         <Reveal className="relative pb-16 sm:pb-20">
           <PhotoFrame name="portYard" className="aspect-[4/5] rounded-[2rem] sm:aspect-square" />
           <PhotoFrame
@@ -168,7 +172,7 @@ export default async function HomePage() {
             trail={t(locale, "run properly from end to end.")}
             body={t(
               locale,
-              "Swift Cargo ships goods by sea from China to Tanzania for traders and businesses. We receive in Guangzhou, load, sail, clear and hand over in Dar es Salaam — one company holding your goods the whole way."
+              "One company holds your goods from Guangzhou to Dar es Salaam: received, loaded, shipped, cleared and handed over."
             )}
           />
           <ul className="mt-9 grid gap-4 sm:grid-cols-2">
@@ -180,12 +184,14 @@ export default async function HomePage() {
                 [MapPin, "Tracked the whole way", "One reference from the warehouse floor to your hands."],
               ] as const
             ).map(([Icon, title, body], i) => (
-              <Reveal as="li" key={title} delay={i * 80} className="rounded-2xl border bg-card p-5">
-                <span className="grid size-10 place-items-center rounded-xl border text-foreground/70">
-                  <Icon className="size-5" />
+              <Reveal as="li" key={title} delay={i * 80} className="flex gap-4 rounded-xl border bg-card p-4 sm:block sm:rounded-2xl sm:p-5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg border text-foreground/70 sm:size-10 sm:rounded-xl">
+                  <Icon className="size-[18px] sm:size-5" />
                 </span>
-                <p className="mt-4 font-semibold">{t(locale, title)}</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(locale, body)}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold sm:mt-4">{t(locale, title)}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground sm:mt-1">{t(locale, body)}</p>
+                </div>
               </Reveal>
             ))}
           </ul>
@@ -197,7 +203,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------ Services */}
-      <section className="site-band py-20 sm:py-28">
+      <section className="site-band py-14 sm:py-24">
         <div className="container">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
@@ -219,7 +225,7 @@ export default async function HomePage() {
                   icon: Package,
                   tag: "LCL",
                   title: "Loose cargo",
-                  body: "Share a container and pay only for the space you use, by the cubic metre.",
+                  body: "Share a container. Pay by the cubic metre.",
                   href: "/book?service=SHARED_CARGO",
                 },
                 {
@@ -227,7 +233,7 @@ export default async function HomePage() {
                   icon: Container,
                   tag: "FCL",
                   title: "Full container",
-                  body: "A whole 20ft, 40ft or high cube to yourself, sealed at the factory or at our warehouse.",
+                  body: "A whole 20ft, 40ft or high cube, sealed and yours.",
                   href: "/book?service=FULL_CONTAINER",
                 },
                 {
@@ -235,7 +241,7 @@ export default async function HomePage() {
                   icon: Search,
                   tag: "Sourcing",
                   title: "China sourcing",
-                  body: "We find suppliers, check the goods before they load and consolidate them into one shipment.",
+                  body: "We find suppliers and check goods before they load.",
                   href: "/china",
                 },
               ] as const
@@ -269,7 +275,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------ Explore China */}
-      <section className="container py-20 sm:py-28">
+      <section className="container py-14 sm:py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHead
             eyebrow={t(locale, "Explore China")}
@@ -277,7 +283,7 @@ export default async function HomePage() {
             trail={t(locale, "are made and sold.")}
             body={t(
               locale,
-              "Guangzhou's markets, Yiwu's small goods, Shenzhen's electronics, Foshan's furniture. Find where to buy what you sell — we bring it home."
+              "Guangzhou, Yiwu, Shenzhen, Foshan: find where to buy what you sell. We bring it home."
             )}
           />
           <Link href="/china" className={heroButton.outline}>
@@ -320,26 +326,19 @@ export default async function HomePage() {
               lead={t(locale, "Five steps,")}
               trail={t(locale, "factory to your shop.")}
             />
-            <ol className="mt-10 space-y-3">
+            <ol className="mt-8 divide-y divide-white/10 border-y border-white/10">
               {[
-                ["Get your address", "Register and we give you our Guangzhou address and your own shipping mark."],
-                ["Your supplier delivers", "They deliver straight to our warehouse with your mark on every box."],
-                ["We receive and measure", "Counted, weighed, measured and photographed, and you get a delivery note."],
-                ["It sails", "Packed into a container on Friday, sails on Monday, about a month at sea."],
-                ["Collect or we deliver", "Settle the invoice and collect in Dar, or ask us to bring it to you."],
+                ["Get your address", "Register. We give you our Guangzhou address and your own mark."],
+                ["Your supplier delivers", "They deliver to our warehouse with your mark on every box."],
+                ["We receive and measure", "Counted, weighed, measured, photographed. You get a delivery note."],
+                ["It sails", "Packed on Friday, sails on Monday, about a month at sea."],
+                ["Collect or we deliver", "Pay the invoice and collect in Dar, or we deliver."],
               ].map(([title, body], i) => (
-                <Reveal
-                  as="li"
-                  key={title}
-                  delay={i * 90}
-                  className="flex gap-5 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:bg-white/[0.08]"
-                >
-                  <span className="tnum grid size-11 shrink-0 place-items-center rounded-full bg-signal font-display text-lg font-semibold text-signal-foreground">
-                    {i + 1}
-                  </span>
+                <Reveal as="li" key={title} delay={i * 80} className="flex gap-5 py-4">
+                  <span className="tnum w-6 shrink-0 pt-0.5 font-mono text-sm text-signal">{String(i + 1).padStart(2, "0")}</span>
                   <span>
-                    <span className="block font-semibold">{t(locale, title)}</span>
-                    <span className="mt-1 block text-sm leading-relaxed text-white/65">{t(locale, body)}</span>
+                    <span className="block font-medium">{t(locale, title)}</span>
+                    <span className="mt-0.5 block text-sm leading-relaxed text-white/60">{t(locale, body)}</span>
                   </span>
                 </Reveal>
               ))}
@@ -364,7 +363,7 @@ export default async function HomePage() {
 
       {/* ------------------------------------------------------------- Sailings */}
       {sailings.length > 0 ? (
-        <section className="container py-20 sm:py-28">
+        <section className="container py-14 sm:py-24">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
               eyebrow={t(locale, "Meli zinazofuata")}
@@ -388,13 +387,13 @@ export default async function HomePage() {
       ) : null}
 
       {/* ------------------------------------------------------- Price check */}
-      <section className="site-band py-20 sm:py-28">
+      <section className="site-band py-14 sm:py-24">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "What it costs")}
             lead={t(locale, "What will my shipping cost?")}
             trail={t(locale, "Find out in seconds.")}
-            body={t(locale, "Choose your goods, enter your CBM or your box sizes, and your price appears.")}
+            body={t(locale, "Pick your goods, enter the CBM or box sizes, see the price.")}
           />
           <Reveal className="mt-12">
             <PriceCalculator cargoTypes={cargoTypes.map((r) => r.cargoType)} />
@@ -403,7 +402,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------------------------------------------- Who we ship for */}
-      <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
+      <section className="container grid items-center gap-14 py-14 sm:py-24 lg:grid-cols-2">
         <div className="lg:order-2">
           <SectionHead
             eyebrow={t(locale, "Who we ship for")}
@@ -411,7 +410,7 @@ export default async function HomePage() {
             trail={t(locale, "across Tanzania.")}
             body={t(
               locale,
-              "Register once and you get your own shipping mark. Every box your suppliers send us is recorded under your name, and you can follow it from your phone."
+              "Register once for your own shipping mark. Follow every box from your phone."
             )}
           />
           <ul className="mt-8 space-y-3">
@@ -447,7 +446,7 @@ export default async function HomePage() {
       </section>
 
       {/* ------------------------------------------------------------ Warehouses */}
-      <section className="site-band py-20 sm:py-28">
+      <section className="site-band py-14 sm:py-24">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "Where to send your goods")}

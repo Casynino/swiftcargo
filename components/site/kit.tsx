@@ -202,17 +202,28 @@ export function PageHero({
           sizes="100vw"
           className="site-drift object-cover"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(4,14,26,0.92)_0%,rgba(4,14,26,0.72)_42%,rgba(4,14,26,0.6)_100%)]" />
-        <div className="absolute inset-0 bg-[#062a4a]/45 mix-blend-multiply" />
-        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
+        {size === "home" ? (
+          /* The photograph carries the first screen: clear at the top, dark only under the words at the foot. */
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.4)_0%,rgba(4,14,26,0.12)_22%,rgba(4,14,26,0.82)_52%,rgba(4,14,26,0.96)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.9)_0%,rgba(4,14,26,0.55)_45%,rgba(4,14,26,0.25)_100%)]" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink to-transparent" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(4,14,26,0.92)_0%,rgba(4,14,26,0.72)_42%,rgba(4,14,26,0.6)_100%)]" />
+            <div className="absolute inset-0 bg-[#062a4a]/45 mix-blend-multiply" />
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
+          </>
+        )}
       </div>
 
       <div
         className={cn(
-          "container relative grid items-center gap-12 pt-32 sm:pt-36",
+          "container relative grid gap-12",
+          size === "home" ? "items-end pt-24" : "items-center pt-32 sm:pt-36",
           overlap ? "pb-36" : "pb-16",
           size === "home"
-            ? "min-h-[100svh] lg:grid-cols-[1.15fr_0.85fr] lg:pb-28"
+            ? "min-h-[100svh] gap-8 !pb-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:!pb-16"
             : "min-h-[34rem] lg:min-h-[38rem]",
           aside && size !== "home" && "lg:grid-cols-[1.2fr_0.8fr]"
         )}
@@ -224,19 +235,20 @@ export function PageHero({
             dark
             lead={lead}
             trail={trail}
+            /* The line height comes after the size: a size class cancels any line height written before it. */
             className={cn(
-              "leading-[1.02]",
               size === "home"
-                ? "text-[2.25rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
-                : "text-4xl sm:text-5xl lg:text-6xl"
+                ? "text-[2rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
+                : "text-4xl sm:text-5xl lg:text-6xl",
+              "leading-[1.05]"
             )}
           />
           {body ? (
-            <div className="mt-6 max-w-xl text-base leading-relaxed text-white/75 sm:text-lg">
+            <div className={cn("max-w-xl text-base leading-relaxed text-white/75 sm:text-lg", size === "home" ? "mt-4" : "mt-6")}>
               {body}
             </div>
           ) : null}
-          {actions ? <div className="mt-9 flex flex-wrap gap-3">{actions}</div> : null}
+          {actions ? <div className={cn("flex flex-wrap gap-3", size === "home" ? "mt-6" : "mt-9")}>{actions}</div> : null}
         </div>
         {aside ? (
           <div className="animate-in-up [animation-delay:160ms] lg:self-start lg:pt-6">{aside}</div>
@@ -263,8 +275,8 @@ export function CtaBand({
 }) {
   const picture = PHOTOS[photo];
   return (
-    <section className="container py-20 sm:py-24">
-      <Reveal className="relative isolate overflow-hidden rounded-[2rem] bg-ink px-6 py-16 text-white sm:px-14 sm:py-20">
+    <section className="container py-14 sm:py-24">
+      <Reveal className="relative isolate overflow-hidden rounded-[2rem] bg-ink px-6 py-12 text-white sm:px-14 sm:py-20">
         <Image
           src={picture.src}
           alt=""
