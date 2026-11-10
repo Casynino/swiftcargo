@@ -15,6 +15,8 @@ export type Project = {
   /** Shown on the card: the address without https:// and www. */
   domain: string;
   shot?: string;
+  /** The official logo, shown as the card's title in place of the plain name (the name stays as its alt text). */
+  logo?: string;
   tags: string[];
   code?: string;
   status?: "soon" | "private";
@@ -88,6 +90,7 @@ export const LIVE: Project[] = [
     name: "ZELab", kind: "Stock, settlement & commission system",
     line: "Every box that leaves ZELab is on the system — who took it, what came back, what is still owed, and what each rep has earned. We keep Tanzania stocked.",
     url: "https://www.zelab.site", domain: "zelab.site", shot: "/nino/haolabs-signin.webp",
+    logo: "/brand/zelab-dark.svg",
     tags: ["Stock control", "Settlements", "Commission", "Reports"], code: `${GH}/The-Lab`,
   },
   {
