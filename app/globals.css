@@ -982,3 +982,16 @@ body:has([data-nino-page]) .status-strip {
     color: rgba(255, 255, 255, 0.42);
   }
 }
+
+/* The tracking box on a phone is a plain surface with a hairline: no blur, no inner highlights, no deep shadow. */
+@media (max-width: 1023px) {
+  .track-shell,
+  .track-shell:focus-within {
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+  }
+  .track-shell:focus-within {
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}

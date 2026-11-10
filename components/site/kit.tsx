@@ -210,7 +210,7 @@ export function PageHero({
         {/* The live network, laid on the water: tilted back like a chart on a
             table, and faded out under the words so they keep a clean ground. */}
         <div
-          className="absolute inset-0 [mask-image:linear-gradient(to_right,rgba(0,0,0,0.35)_0%,#000_55%)] lg:[mask-image:linear-gradient(to_right,transparent_0%,rgba(0,0,0,0.5)_35%,#000_60%)]"
+          className="absolute inset-0 max-lg:hidden [mask-image:linear-gradient(to_right,rgba(0,0,0,0.35)_0%,#000_55%)] lg:[mask-image:linear-gradient(to_right,transparent_0%,rgba(0,0,0,0.5)_35%,#000_60%)]"
           style={{ perspective: "1400px" }}
         >
           <div className="absolute inset-0 origin-bottom opacity-60 [transform:rotateX(18deg)_scale(1.06)] lg:opacity-100">
@@ -239,7 +239,7 @@ export function PageHero({
             className={cn(
               "leading-[1.02]",
               size === "home"
-                ? "text-[2.75rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
+                ? "text-[2.25rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
                 : "text-4xl sm:text-5xl lg:text-6xl"
             )}
           />
@@ -318,13 +318,13 @@ export function GlassCard({
 /** The three hero buttons, so every page's calls to action are the same shape. */
 export const heroButton = {
   primary:
-    "track-go inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold text-white",
+    "track-go inline-flex h-12 items-center gap-2 rounded-xl px-6 text-sm font-semibold text-white",
   ghost:
-    "inline-flex h-12 items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/20",
+    "inline-flex h-12 items-center gap-2 rounded-xl border border-white/25 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/10",
   solid:
-    "inline-flex h-12 items-center gap-2 rounded-full bg-brand px-6 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90",
+    "inline-flex h-12 items-center gap-2 rounded-xl bg-brand px-6 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90",
   outline:
-    "inline-flex h-12 items-center gap-2 rounded-full border px-6 text-sm font-semibold transition-colors hover:bg-secondary",
+    "inline-flex h-12 items-center gap-2 rounded-xl border px-6 text-sm font-semibold transition-colors hover:bg-secondary",
 };
 
 /**

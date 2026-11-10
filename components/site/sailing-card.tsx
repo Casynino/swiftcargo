@@ -118,13 +118,13 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
         {sailing.bookingOpen ? (
           <Link
             href={bookHref(sailing)}
-            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
+            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
           >
             {t(locale, "Book this sailing")}
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
           </Link>
         ) : (
-          <p className="rounded-full border px-5 py-3 text-center text-sm text-muted-foreground">
+          <p className="rounded-xl border px-5 py-3 text-center text-sm text-muted-foreground">
             {t(locale, "Closed for cargo")}
           </p>
         )}

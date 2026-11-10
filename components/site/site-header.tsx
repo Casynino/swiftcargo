@@ -115,7 +115,7 @@ export function SiteHeader() {
           {/* Short on a phone: at full length "Back to my desk" pushed the
               menu button off the edge of the screen, and the menu is the only
               way to the rest of the site. */}
-          <Button asChild size="sm" className="track-go h-9 shrink-0 gap-1.5 rounded-full border-0 px-3 text-white sm:px-4">
+          <Button asChild size="sm" className="track-go h-9 shrink-0 gap-1.5 rounded-lg border-0 px-3 text-white sm:px-4 max-sm:!bg-transparent max-sm:px-1 max-sm:underline max-sm:decoration-signal max-sm:decoration-2 max-sm:underline-offset-[6px]">
             <Link href={signedIn ? home : "/login"}>
               {signedIn === "staff" ? (
                 <>
