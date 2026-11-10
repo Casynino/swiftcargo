@@ -26,13 +26,14 @@ import {
 import { Reveal } from "@/components/site/motion";
 import { RouteMap } from "@/components/site/route-map";
 import { SailingCard, bookHref } from "@/components/site/sailing-card";
+import { swDate, swDay } from "@/lib/sw-date";
 import { PriceCalculator } from "@/components/site/price-calculator";
 import { TrackForm } from "@/components/site/track-form";
 import { CITIES } from "@/lib/china-guide";
 import { ROUTE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { publicRateBook } from "@/lib/public-estimate";
-import { ARRIVAL_CAVEAT, publicSailings } from "@/lib/sailing-schedule";
+import { ARRIVAL_CAVEAT_SW, publicSailings } from "@/lib/sailing-schedule";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { telHref } from "@/lib/site-contact";
 
@@ -60,8 +61,6 @@ export default async function HomePage() {
   ]);
 
   const next = sailings.find((s) => s.bookingOpen) ?? sailings[0];
-  const short = (d: Date) =>
-    new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(d);
 
   return (
     <>
@@ -109,7 +108,7 @@ export default async function HomePage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[0.7rem] font-medium text-slate-500">
-                    {t(locale, "Next sailing")}
+                    {t(locale, "Meli niayofuata")}
                   </p>
                   <span className="grid size-7 place-items-center rounded-full bg-slate-900 text-white transition-transform group-hover:rotate-45">
                     <ArrowUpRight className="size-3.5" />
@@ -118,9 +117,9 @@ export default async function HomePage() {
                 <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
                   <div>
                     <p className="text-[0.65rem] font-medium text-slate-500">
-                      {t(locale, "Departs")}
+                      {t(locale, "Inaondoka")}
                     </p>
-                    <p className="tnum font-display text-lg font-bold">{short(next.departureDate)}</p>
+                    <p className="tnum font-display text-lg font-bold">{swDay(next.departureDate)}</p>
                   </div>
                   <div aria-hidden className="relative h-5">
                     <span className="absolute inset-x-0 top-1/2 border-t-2 border-dashed border-slate-300" />
@@ -128,14 +127,14 @@ export default async function HomePage() {
                   </div>
                   <div className="text-right">
                     <p className="text-[0.65rem] font-medium text-slate-500">
-                      {t(locale, "Arrives about")}
+                      {t(locale, "Inafika (makadirio)")}
                     </p>
-                    <p className="tnum font-display text-lg font-bold">{short(next.estimatedArrival)}</p>
+                    <p className="tnum font-display text-lg font-bold">{swDay(next.estimatedArrival)}</p>
                   </div>
                 </div>
                 <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-xs text-orange-800">
-                  {t(locale, "Last day to receive cargo:")}{" "}
-                  <span className="tnum font-semibold">{short(next.cargoDeadline)}</span>
+                  {t(locale, "Mwisho kupokea mzigo:")}{" "}
+                  <span className="tnum font-semibold">{swDate(next.cargoDeadline)}</span>
                 </p>
               </Link>
             ) : null}
@@ -368,12 +367,12 @@ export default async function HomePage() {
         <section className="container py-20 sm:py-28">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHead
-              eyebrow={t(locale, "Next out")}
-              lead={t(locale, "A ship every Monday.")}
-              trail={t(locale, "Cargo in by Friday.")}
+              eyebrow={t(locale, "Meli zinazofuata")}
+              lead={t(locale, "Meli kila Jumatatu.")}
+              trail={t(locale, "Mzigo mwisho Ijumaa.")}
             />
             <Link href="/schedule" className={heroButton.outline}>
-              {t(locale, "Full schedule")}
+              {t(locale, "Ratiba kamili")}
               <ArrowRight className="size-4" />
             </Link>
           </div>
@@ -384,7 +383,7 @@ export default async function HomePage() {
               </Reveal>
             ))}
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT)}</p>
+          <p className="mt-6 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
         </section>
       ) : null}
 

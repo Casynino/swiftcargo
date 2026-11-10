@@ -1,131 +1,105 @@
 import Link from "next/link";
-import { ArrowRight, Ship } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-import { SAILING_STATUS_LABEL } from "@/lib/constants";
-import { formatDate } from "@/lib/format";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import type { Sailing } from "@/lib/sailing-schedule";
+import { swDate, swDay } from "@/lib/sw-date";
 import { cn } from "@/lib/utils";
-
-const TONE: Record<Sailing["status"], string> = {
-  OPEN_FOR_BOOKING: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-  CUTOFF_APPROACHING: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  CLOSED: "bg-secondary text-muted-foreground",
-  DEPARTED: "bg-brand/10 text-brand",
-  IN_TRANSIT: "bg-brand/10 text-brand",
-  ARRIVED: "bg-secondary text-muted-foreground",
-  DELAYED: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  CANCELLED: "bg-red-500/12 text-red-700 dark:text-red-300",
-};
 
 export function bookHref(sailing: Sailing) {
   return `/book?sailing=${sailing.departureDate.toISOString().slice(0, 10)}`;
 }
 
+/* The status, in Kiswahili. The staff pages keep the English words. */
+const STATUS_SW: Record<Sailing["status"], string> = {
+  OPEN_FOR_BOOKING: "Nafasi zipo",
+  CUTOFF_APPROACHING: "Muda unakaribia kuisha",
+  CLOSED: "Imefungwa",
+  DEPARTED: "Imeondoka",
+  IN_TRANSIT: "Iko njiani",
+  ARRIVED: "Imefika",
+  DELAYED: "Imechelewa",
+  CANCELLED: "Imeghairiwa",
+};
+
+const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
+
 /**
- * ONE SAILING, AS A BOARDING CARD.
+ * ONE SAILING, IN THE WORDS OF THE SAILING NOTICE.
  *
- * Leaves and arrives across the top with the ship on the line between them —
- * the two dates a customer plans around — and the Friday deadline underneath,
- * which is the one they actually have to act on.
+ * The notice customers already see on WhatsApp ("Ratiba ya meli") has three lines — the ship, the last day to receive
+ * cargo, the estimated arrival — each with its date written out and the weekday in brackets. The card says the same
+ * three things in the same words, with the Friday deadline in the accent because it is the one they have to act on.
  */
 export function SailingCard({ sailing, className }: { sailing: Sailing; className?: string }) {
   const locale = DEFAULT_LOCALE;
-  const short = (d: Date) =>
-    new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(d);
-  const weekday = (d: Date) =>
-    new Intl.DateTimeFormat("en-GB", { weekday: "long", timeZone: "UTC" }).format(d);
+  const rows = [
+    { label: "Meli inaondoka", value: swDate(sailing.departureDate), accent: false },
+    { label: "Mwisho kupokea mzigo", value: swDate(sailing.cargoDeadline), accent: true },
+    { label: "Meli kufika (makadirio)", value: swDate(sailing.estimatedArrival), accent: false },
+    /* The container is packed the same Friday, so it is only a line of its own when somebody has moved it. */
+    ...(sameDay(sailing.loadingDate, sailing.cargoDeadline)
+      ? []
+      : [{ label: "Kontena linapakiwa", value: swDate(sailing.loadingDate), accent: false }]),
+  ];
 
   return (
-    <article
-      className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-3xl border bg-card p-6 shadow-soft transition-all duration-500 hover:-translate-y-1 hover:shadow-raised sm:p-7",
-        className
-      )}
-    >
+    <article className={cn("group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card p-5 sm:p-6", className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-muted-foreground">
-            {t(locale, "Sailing")}
+          <p className="truncate font-display text-lg font-semibold tracking-tight">
+            {/* Named once the line has named it; until then the ship is known by the day it leaves. */}
+            {sailing.vessel ?? `${t(locale, "Meli ya")} ${swDay(sailing.departureDate)}`}
           </p>
-          <p className="mt-1 truncate font-display text-lg font-bold tracking-tight">
-            {/* Named once the line has named it; until then the ship is known
-                by the day it leaves, which is what the customer plans around. */}
-            {sailing.vessel ?? `${t(locale, "Ship leaving")} ${short(sailing.departureDate)}`}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {sailing.origin} → {sailing.destination}
+            {sailing.reference ? <span className="tnum"> · {sailing.reference}</span> : null}
           </p>
-          {sailing.reference ? (
-            <p className="tnum text-xs text-muted-foreground">{sailing.reference}</p>
-          ) : null}
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full px-2.5 py-1 text-[0.7rem] font-semibold",
-            TONE[sailing.status]
+            "shrink-0 pt-1 text-xs font-medium",
+            sailing.status === "OPEN_FOR_BOOKING"
+              ? "text-emerald-600 dark:text-emerald-300"
+              : sailing.status === "CANCELLED"
+                ? "text-red-600 dark:text-red-300"
+                : sailing.status === "CUTOFF_APPROACHING" || sailing.status === "DELAYED"
+                  ? "text-amber-600 dark:text-amber-300"
+                  : "text-muted-foreground"
           )}
         >
-          {t(locale, SAILING_STATUS_LABEL[sailing.status])}
+          {t(locale, STATUS_SW[sailing.status])}
         </span>
       </div>
 
-      <div className="mt-7 grid grid-cols-[auto_1fr_auto] items-center gap-3">
-        <div>
-          <p className="font-display text-2xl font-extrabold tracking-tight">GZ</p>
-          <p className="text-xs text-muted-foreground">{sailing.origin}</p>
-        </div>
-        <div aria-hidden className="relative h-6">
-          <span className="absolute inset-x-0 top-1/2 border-t-2 border-dashed border-border" />
-          <span className="absolute left-0 top-1/2 size-2 -translate-y-1/2 rounded-full bg-signal" />
-          <span className="absolute right-0 top-1/2 size-2 -translate-y-1/2 rounded-full bg-marine" />
-          <span className="absolute left-1/2 top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-brand text-brand-foreground shadow-raised transition-transform duration-700 group-hover:translate-x-[40%]">
-            <Ship className="size-4" />
-          </span>
-        </div>
-        <div className="text-right">
-          <p className="font-display text-2xl font-extrabold tracking-tight">DAR</p>
-          <p className="text-xs text-muted-foreground">{sailing.destination}</p>
-        </div>
-      </div>
-
-      <dl className="tnum mt-6 grid grid-cols-2 gap-4 rounded-2xl bg-surface-2 p-4 text-sm">
-        <div>
-          <dt className="text-xs text-muted-foreground">{t(locale, "Departs China")}</dt>
-          <dd className="mt-0.5 font-semibold">{short(sailing.departureDate)}</dd>
-          <dd className="text-xs text-muted-foreground">{weekday(sailing.departureDate)}</dd>
-        </div>
-        <div className="text-right">
-          <dt className="text-xs text-muted-foreground">{t(locale, "Estimated arrival")}</dt>
-          <dd className="mt-0.5 font-semibold">{short(sailing.estimatedArrival)}</dd>
-          <dd className="text-xs text-muted-foreground">
-            {sailing.transitDays} {t(locale, "days at sea")}
-          </dd>
-        </div>
+      <dl className="mt-5 divide-y border-y">
+        {rows.map((row) => (
+          <div key={row.label} className="py-3">
+            <dt className="text-xs text-muted-foreground">{t(locale, row.label)}</dt>
+            <dd className={cn("tnum mt-0.5 text-[15px] font-semibold", row.accent && "text-signal")}>{row.value}</dd>
+            {row.label === "Meli kufika (makadirio)" ? (
+              <dd className="mt-0.5 text-xs text-muted-foreground">
+                {t(locale, "Siku")} {sailing.transitDays} {t(locale, "baharini")}
+              </dd>
+            ) : null}
+          </div>
+        ))}
       </dl>
 
-      <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">{t(locale, "Last day to receive cargo")}</span>
-        <span className="tnum font-semibold text-signal">{formatDate(sailing.cargoDeadline)}</span>
-      </div>
-      <div className="mt-1.5 flex items-center justify-between gap-3 text-sm">
-        <span className="text-muted-foreground">{t(locale, "Container packed")}</span>
-        <span className="tnum font-medium">{formatDate(sailing.loadingDate)}</span>
-      </div>
+      {sailing.notes ? <p className="mt-4 rounded-lg bg-secondary px-3 py-2 text-xs">{sailing.notes}</p> : null}
 
-      {sailing.notes ? (
-        <p className="mt-4 rounded-xl bg-secondary px-3 py-2 text-xs">{sailing.notes}</p>
-      ) : null}
-
-      <div className="mt-auto pt-6">
+      <div className="mt-auto pt-5">
         {sailing.bookingOpen ? (
           <Link
             href={bookHref(sailing)}
             className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
           >
-            {t(locale, "Book this sailing")}
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            {t(locale, "Weka nafasi sasa")}
+            <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         ) : (
           <p className="rounded-xl border px-5 py-3 text-center text-sm text-muted-foreground">
-            {t(locale, "Closed for cargo")}
+            {t(locale, "Muda wa kupokea mzigo umeisha")}
           </p>
         )}
       </div>

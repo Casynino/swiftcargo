@@ -6,7 +6,7 @@ import { PageHero, heroButton } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
 import { SailingCard } from "@/components/site/sailing-card";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
-import { ARRIVAL_CAVEAT, publicSailings } from "@/lib/sailing-schedule";
+import { ARRIVAL_CAVEAT_SW, publicSailings } from "@/lib/sailing-schedule";
 
 export const metadata: Metadata = {
   title: "Sailing schedule",
@@ -31,14 +31,14 @@ export default async function SchedulePage() {
       <PageHero
         overlap
         photo="shipSea"
-        eyebrow={t(locale, "Sailing schedule")}
-        lead={t(locale, "A ship every Monday.")}
-        trail={t(locale, "Cargo in by Friday.")}
+        eyebrow={t(locale, "Ratiba ya meli")}
+        lead={t(locale, "Meli kila Jumatatu.")}
+        trail={t(locale, "Mzigo mwisho Ijumaa.")}
         body={
           <p>
             {t(
               locale,
-              "We take cargo in Guangzhou until Friday, pack the container that Friday, and the ship leaves on Monday. Get your goods to the warehouse before the deadline and they are on that sailing."
+              "Tunapokea mzigo Guangzhou hadi Ijumaa, tunapakia kontena Ijumaa hiyo, na meli inaondoka Jumatatu. Fikisha mzigo wako ghalani kabla ya muda wa mwisho na utakuwa kwenye meli hiyo."
             )}
           </p>
         }
@@ -48,12 +48,12 @@ export default async function SchedulePage() {
         {sailings.length === 0 ? (
           <div className="relative z-10 -mt-24 rounded-[2rem] border bg-card p-12 text-center shadow-raised">
             <Ship className="mx-auto size-8 text-muted-foreground" />
-            <p className="mt-4 font-medium">{t(locale, "No sailings published at the moment")}</p>
+            <p className="mt-4 font-medium">{t(locale, "Hakuna ratiba ya meli kwa sasa")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {t(locale, "Contact us and we will tell you when the next container closes.")}
+              {t(locale, "Wasiliana nasi tutakuambia kontena linalofuata litafungwa lini.")}
             </p>
             <Link href="/contact" className={`${heroButton.outline} mt-6`}>
-              {t(locale, "Contact us")}
+              {t(locale, "Wasiliana nasi")}
             </Link>
           </div>
         ) : (
@@ -66,11 +66,11 @@ export default async function SchedulePage() {
           </ul>
         )}
 
-        <p className="mt-8 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT)}</p>
+        <p className="mt-8 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
         <p className="mt-2 text-xs text-muted-foreground">
           {t(
             locale,
-            "Sailings slip for weather, port congestion and customs, and we will tell you when one does."
+            "Meli huchelewa kwa sababu ya hali ya hewa, msongamano bandarini na forodha, na tutakujulisha inapotokea."
           )}
         </p>
       </section>

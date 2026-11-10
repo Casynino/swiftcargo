@@ -90,6 +90,10 @@ export type Sailing = {
 export const ARRIVAL_CAVEAT =
   "Estimated arrival — subject to shipping, port, customs and clearance conditions.";
 
+/** The same caveat in Kiswahili, for the public sailing pages. */
+export const ARRIVAL_CAVEAT_SW =
+  "Tarehe ya kufika ni makadirio — inategemea hali ya usafirishaji, bandari, forodha na ukaguzi.";
+
 function utcMidnight(value: Date): Date {
   return new Date(
     Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate())
