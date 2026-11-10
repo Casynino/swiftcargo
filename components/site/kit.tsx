@@ -2,7 +2,6 @@ import Image from "next/image";
 
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
 import { Reveal } from "@/components/site/motion";
-import { NetworkMap } from "@/components/site/network-map";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,7 +35,6 @@ export function Eyebrow({
         className
       )}
     >
-      <span aria-hidden className={cn("h-0.5 w-8 rounded-full", dark ? "bg-orange-300" : "bg-signal")} />
       {children}
     </p>
   );
@@ -207,16 +205,6 @@ export function PageHero({
         <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(4,14,26,0.92)_0%,rgba(4,14,26,0.72)_42%,rgba(4,14,26,0.6)_100%)]" />
         <div className="absolute inset-0 bg-[#062a4a]/45 mix-blend-multiply" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
-        {/* The live network, laid on the water: tilted back like a chart on a
-            table, and faded out under the words so they keep a clean ground. */}
-        <div
-          className="absolute inset-0 max-lg:hidden [mask-image:linear-gradient(to_right,rgba(0,0,0,0.35)_0%,#000_55%)] lg:[mask-image:linear-gradient(to_right,transparent_0%,rgba(0,0,0,0.5)_35%,#000_60%)]"
-          style={{ perspective: "1400px" }}
-        >
-          <div className="absolute inset-0 origin-bottom opacity-60 [transform:rotateX(18deg)_scale(1.06)] lg:opacity-100">
-            <NetworkMap focus={0.64} intensity={size === "home" ? 1 : 0.85} />
-          </div>
-        </div>
       </div>
 
       <div

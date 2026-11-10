@@ -105,7 +105,7 @@ export default async function HomePage() {
             {next ? (
               <Link
                 href={next.bookingOpen ? bookHref(next) : "/schedule"}
-                className="site-float group block rounded-3xl bg-white/95 p-5 text-slate-900 shadow-[0_30px_60px_-30px_rgba(0,8,20,0.9)] backdrop-blur"
+                className="group block rounded-3xl bg-white/95 p-5 text-slate-900 border border-white/10"
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[0.7rem] font-medium text-slate-500">
@@ -154,7 +154,7 @@ export default async function HomePage() {
             sizes="(max-width: 768px) 60vw, 25vw"
             className="absolute -bottom-2 right-0 aspect-square w-[52%] rounded-[1.6rem] border-[6px] border-background shadow-raised"
           />
-          <div className="site-float absolute left-4 top-6 rounded-2xl bg-card/95 p-4 shadow-raised backdrop-blur sm:left-6">
+          <div className="absolute left-4 top-6 rounded-2xl bg-card/95 p-4 shadow-raised sm:left-6">
             <p className="tnum font-display text-3xl font-extrabold text-brand">
               {ROUTE.transitDaysMin}–{ROUTE.transitDaysMax}
             </p>
@@ -249,15 +249,14 @@ export default async function HomePage() {
                     className="h-[30rem] rounded-[2rem]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
-                    <span className="absolute left-5 top-5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                    <span className="absolute left-5 top-5 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white">
                       {service.tag}
                     </span>
                     <span className="absolute right-5 top-5 grid size-11 place-items-center rounded-full bg-white text-slate-900 transition-transform duration-500 group-hover:rotate-45">
                       <ArrowUpRight className="size-5" />
                     </span>
                     <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                      <service.icon className="size-7 text-cyan-300" />
-                      <p className="mt-4 font-display text-3xl font-bold tracking-tight">
+                      <p className="font-display text-3xl font-bold tracking-tight">
                         {t(locale, service.title)}
                       </p>
                       <p className="mt-2 text-sm leading-relaxed text-white/75">{t(locale, service.body)}</p>
@@ -301,7 +300,7 @@ export default async function HomePage() {
                     <p className="font-display text-xl font-bold tracking-tight sm:text-2xl">{city.name}</p>
                     <p className="mt-0.5 text-xs text-white/75 sm:text-sm">{t(locale, city.tagline)}</p>
                   </div>
-                  <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[0.7rem] font-semibold text-white backdrop-blur-md">
+                  <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[0.7rem] font-medium text-white">
                     <MapPin className="size-3" />
                     {city.where}
                   </span>
@@ -314,10 +313,6 @@ export default async function HomePage() {
 
       {/* ---------------------------------------------------------- The route */}
       <section className="relative isolate overflow-hidden bg-ink py-20 text-white sm:py-28">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_80%_20%,hsl(var(--marine)/0.25),transparent_55%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.18),transparent_50%)]"
-        />
         <div className="container grid items-center gap-14 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
             <SectionHead

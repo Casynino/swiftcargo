@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { NetworkMap } from "@/components/site/network-map";
 import { AuthSheet } from "@/components/site/auth-sheet";
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
 
@@ -54,11 +53,6 @@ export function AuthScene({
         <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="site-drift object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.45)_0%,rgba(4,14,26,0.55)_55%,rgba(4,14,26,0.86)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.84)_45%,rgba(4,14,26,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[#062a4a]/40 mix-blend-multiply" />
-        <div className="absolute inset-0 max-lg:hidden" style={{ perspective: "1400px" }}>
-          <div className="absolute inset-0 origin-bottom [transform:rotateX(16deg)_scale(1.05)]">
-            <NetworkMap focus={0.74} intensity={0.8} />
-          </div>
-        </div>
       </div>
 
       {/* The way back to the public website, from the sign-in and register pages alike. */}

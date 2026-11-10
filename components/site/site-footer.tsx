@@ -35,10 +35,6 @@ export async function SiteFooter() {
 
   return (
     <footer className="relative isolate overflow-hidden bg-ink text-white/80">
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_85%_0%,hsl(var(--marine)/0.22),transparent_55%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.14),transparent_50%)]"
-      />
       <div className="container flex flex-wrap items-end justify-between gap-8 border-b border-white/10 pb-12 pt-16">
         <p className="font-display text-4xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl">
           {ROUTE.originCity} <span className="text-signal">→</span>
