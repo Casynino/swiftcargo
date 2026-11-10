@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import type { Sailing } from "@/lib/sailing-schedule";
-import { swDate, swDay } from "@/lib/sw-date";
+import { swDay, swWeekday } from "@/lib/sw-date";
 import { cn } from "@/lib/utils";
 
 export function bookHref(sailing: Sailing) {
@@ -25,22 +25,28 @@ const STATUS_SW: Record<Sailing["status"], string> = {
 const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
 
 /**
- * ONE SAILING, IN THE WORDS OF THE SAILING NOTICE.
+ * ONE SAILING, AS THREE DATES IN ORDER.
  *
- * The notice customers already see on WhatsApp ("Ratiba ya meli") has three lines — the ship, the last day to receive
- * cargo, the estimated arrival — each with its date written out and the weekday in brackets. The card says the same
- * three things in the same words, with the Friday deadline in the accent because it is the one they have to act on.
+ * The notice customers already see on WhatsApp ("Ratiba ya meli") says three things: the last day to receive cargo,
+ * the day the ship leaves, the estimated arrival. The card draws them in that order down a thin line, each date large
+ * and the weekday beside it, so the days read before the words do. The Friday deadline is in the accent because it is
+ * the one customers have to act on.
  */
 export function SailingCard({ sailing, className }: { sailing: Sailing; className?: string }) {
   const locale = DEFAULT_LOCALE;
-  const rows = [
-    { label: "Meli inaondoka", value: swDate(sailing.departureDate), accent: false },
-    { label: "Mwisho kupokea mzigo", value: swDate(sailing.cargoDeadline), accent: true },
-    { label: "Meli kufika (makadirio)", value: swDate(sailing.estimatedArrival), accent: false },
-    /* The container is packed the same Friday, so it is only a line of its own when somebody has moved it. */
+  const steps = [
+    { label: "Mwisho kupokea mzigo", date: sailing.cargoDeadline, accent: true, note: null as string | null },
+    /* The container is packed the same Friday, so it is only a step of its own when somebody has moved it. */
     ...(sameDay(sailing.loadingDate, sailing.cargoDeadline)
       ? []
-      : [{ label: "Kontena linapakiwa", value: swDate(sailing.loadingDate), accent: false }]),
+      : [{ label: "Kontena linapakiwa", date: sailing.loadingDate, accent: false, note: null }]),
+    { label: "Meli inaondoka", date: sailing.departureDate, accent: false, note: null },
+    {
+      label: "Meli kufika (makadirio)",
+      date: sailing.estimatedArrival,
+      accent: false,
+      note: `${t(locale, "Siku")} ${sailing.transitDays} ${t(locale, "baharini")}`,
+    },
   ];
 
   return (
@@ -72,29 +78,36 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
         </span>
       </div>
 
-      <dl className="mt-5 divide-y border-y">
-        {rows.map((row) => (
-          <div key={row.label} className="py-3">
-            <dt className="text-xs text-muted-foreground">{t(locale, row.label)}</dt>
-            <dd className={cn("tnum mt-0.5 text-[15px] font-semibold", row.accent && "text-signal")}>{row.value}</dd>
-            {row.label === "Meli kufika (makadirio)" ? (
-              <dd className="mt-0.5 text-xs text-muted-foreground">
-                {t(locale, "Siku")} {sailing.transitDays} {t(locale, "baharini")}
-              </dd>
-            ) : null}
-          </div>
+      <ol className="mt-6 space-y-5 border-l pl-5">
+        {steps.map((step) => (
+          <li key={step.label} className="relative">
+            <span
+              aria-hidden
+              className={cn("absolute -left-[1.6rem] top-2 size-2.5 rounded-full", step.accent ? "bg-signal" : "bg-border")}
+            />
+            <p className="text-xs text-muted-foreground">{t(locale, step.label)}</p>
+            <p className="tnum mt-0.5 flex flex-wrap items-baseline gap-x-2">
+              <span className={cn("font-display text-2xl font-semibold tracking-tight", step.accent && "text-signal")}>
+                {swDay(step.date)}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {swWeekday(step.date)} · {step.date.getUTCFullYear()}
+              </span>
+            </p>
+            {step.note ? <p className="mt-0.5 text-xs text-muted-foreground">{step.note}</p> : null}
+          </li>
         ))}
-      </dl>
+      </ol>
 
       {sailing.notes ? <p className="mt-4 rounded-lg bg-secondary px-3 py-2 text-xs">{sailing.notes}</p> : null}
 
-      <div className="mt-auto pt-5">
+      <div className="mt-auto pt-6">
         {sailing.bookingOpen ? (
           <Link
             href={bookHref(sailing)}
             className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
           >
-            {t(locale, "Weka nafasi sasa")}
+            {t(locale, "Book space")}
             <ArrowRight className="size-4" aria-hidden="true" />
           </Link>
         ) : (

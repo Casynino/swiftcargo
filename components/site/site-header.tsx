@@ -15,7 +15,7 @@ const LINKS = [
   { href: "/services", label: "Services" },
   { href: "/rates", label: "Rates" },
   { href: "/calculator", label: "Price calculator" },
-  { href: "/schedule", label: "Sailings" },
+  { href: "/schedule", label: "Schedule" },
   { href: "/china", label: "Explore China" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },

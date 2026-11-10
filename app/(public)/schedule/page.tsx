@@ -38,7 +38,7 @@ export default async function SchedulePage() {
           <p>
             {t(
               locale,
-              "Tunapokea mzigo Guangzhou hadi Ijumaa, tunapakia kontena Ijumaa hiyo, na meli inaondoka Jumatatu. Fikisha mzigo wako ghalani kabla ya muda wa mwisho na utakuwa kwenye meli hiyo."
+              "Tunapokea mzigo kila siku, ila tunapakia kontena kila wiki. Tunapakia kila Ijumaa, na Jumatatu meli inaanza safari kuja Tanzania. Safari huchukua siku 28 hadi 35."
             )}
           </p>
         }

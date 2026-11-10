@@ -22,3 +22,8 @@ export function swDay(d: Date): string {
 export function swShort(d: Date): string {
   return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
+
+/** Ijumaa */
+export function swWeekday(d: Date): string {
+  return WEEKDAYS[d.getUTCDay()];
+}
