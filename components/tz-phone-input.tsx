@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { normaliseTzPhone } from "@/lib/phone";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,12 @@ export function TzPhoneInput({
 }) {
   const [national, setNational] = useState(() => nationalDigits(defaultValue ?? ""));
   const [touched, setTouched] = useState(false);
+  const field = useRef<HTMLInputElement>(null);
+
+  /* Focus on a computer only: on a phone the keyboard rising before anybody has asked for it covers the form. */
+  useEffect(() => {
+    if (autoFocus && window.matchMedia("(min-width: 1024px)").matches) field.current?.focus();
+  }, [autoFocus]);
   const full = national ? `+255${national}` : "";
   const valid = !!normaliseTzPhone(full);
   const showProblem = touched && national.length > 0 && !valid;
@@ -52,7 +58,7 @@ export function TzPhoneInput({
     <div className={className}>
       <div
         className={cn(
-          "flex h-10 w-full items-center overflow-hidden rounded-md border bg-background text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+          "flex h-10 max-lg:h-11 w-full items-center overflow-hidden rounded-md border bg-background text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
           showProblem && "border-destructive"
         )}
       >
@@ -65,7 +71,7 @@ export function TzPhoneInput({
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          autoFocus={autoFocus}
+          ref={field}
           required={required}
           aria-invalid={showProblem || undefined}
           aria-describedby={id ? `${id}-hint` : undefined}
@@ -79,7 +85,7 @@ export function TzPhoneInput({
       <input type="hidden" name={name} value={full} />
       <p
         id={id ? `${id}-hint` : undefined}
-        className={cn("mt-1.5 text-xs", showProblem ? "text-destructive" : "text-muted-foreground")}
+        className={cn("mt-1.5 text-xs", showProblem ? "text-destructive" : "text-muted-foreground max-lg:hidden")}
       >
         {showProblem
           ? "A Tanzanian mobile number has nine digits after +255 and starts with 6 or 7."

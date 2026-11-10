@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CheckCircle2 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { NetworkMap } from "@/components/site/network-map";
@@ -57,6 +57,15 @@ export function AuthScene({
           </div>
         </div>
       </div>
+
+      {/* The way back to the public website, from the sign-in and register pages alike. */}
+      <Link
+        href="/"
+        className="focus-ring absolute left-4 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] z-10 inline-flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 text-xs font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-black/40 hover:text-white lg:left-16 lg:top-6"
+      >
+        <ArrowLeft className="size-3.5" aria-hidden="true" />
+        Back to site
+      </Link>
 
       <div className="relative mx-auto grid min-h-dvh max-w-[1400px] items-center gap-12 px-5 py-10 sm:px-10 lg:grid-cols-[minmax(0,30rem)_1fr] lg:gap-20 lg:px-16">
         <div>

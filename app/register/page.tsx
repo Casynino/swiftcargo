@@ -37,17 +37,17 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <h1 className="font-display text-3xl font-bold tracking-tight text-white">
         {reset ? "Forgot your password?" : "Open your account"}
       </h1>
-      <p className="mt-2 text-sm text-white/85">
+      <p className="mt-2 text-sm text-white/85 max-lg:hidden">
         {reset
           ? "Enter your phone number, then the 6-digit code our office gives you, and choose a new password."
           : "Shipped with us before? We will find your profile. New? You will get your shipping mark and our Guangzhou address straight away."}
       </p>
 
-      <div className="mt-7">
+      <div className="mt-4 lg:mt-7">
         <PortalAccess mode={reset ? "reset" : "register"} />
       </div>
 
-      <p className="mt-8 text-sm text-white/85">
+      <p className="mt-4 text-center text-xs text-white/70 lg:mt-8 lg:text-left lg:text-sm lg:text-white/85">
         Already have an account?{" "}
         <Link href="/login" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Sign in

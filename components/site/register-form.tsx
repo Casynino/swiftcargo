@@ -17,57 +17,60 @@ export function RegisterForm({ initialPhone }: { initialPhone?: string }) {
   );
 
   return (
-    <form action={action} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="fullName">Full name</Label>
-        <Input id="fullName" name="fullName" required autoComplete="name" defaultValue={state.values?.fullName} key={state.values?.fullName} />
+    <form action={action} className="space-y-2.5 lg:space-y-4">
+      <div className="space-y-1.5 lg:space-y-2">
+        <Label htmlFor="fullName" className="max-lg:sr-only">Full name</Label>
+        <Input id="fullName" name="fullName" required autoComplete="name" placeholder="Full name" defaultValue={state.values?.fullName} key={state.values?.fullName} />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="businessName">
+      <div className="space-y-1.5 lg:space-y-2">
+        <Label htmlFor="businessName" className="max-lg:sr-only">
           Business name{" "}
           <span className="font-normal text-muted-foreground">(optional)</span>
         </Label>
-        <Input id="businessName" name="businessName" autoComplete="organization" defaultValue={state.values?.businessName} key={state.values?.businessName} />
+        <Input id="businessName" name="businessName" autoComplete="organization" placeholder="Business name (optional)" defaultValue={state.values?.businessName} key={state.values?.businessName} />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone number</Label>
+      <div className="space-y-1.5 lg:space-y-2">
+        <Label htmlFor="phone" className="max-lg:sr-only">Phone number</Label>
         <TzPhoneInput key={state.values?.phone ?? initialPhone} id="phone" name="phone" required defaultValue={state.values?.phone ?? initialPhone} />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+      <div className="space-y-1.5 lg:space-y-2">
+        <Label htmlFor="email" className="max-lg:sr-only">Email</Label>
         <Input
           id="email"
           name="email"
           type="email"
           required
           autoComplete="email"
+          placeholder="Email"
           defaultValue={state.values?.email}
           key={state.values?.email}
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:gap-4">
+        <div className="space-y-1.5 lg:space-y-2">
+          <Label htmlFor="password" className="max-lg:sr-only">Password</Label>
           <PasswordInput
             id="password"
             name="password"
             required
             minLength={8}
             autoComplete="new-password"
+            placeholder="Password"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm password</Label>
+        <div className="space-y-1.5 lg:space-y-2">
+          <Label htmlFor="confirmPassword" className="max-lg:sr-only">Confirm password</Label>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
             required
             minLength={8}
             autoComplete="new-password"
+            placeholder="Confirm password"
           />
         </div>
       </div>

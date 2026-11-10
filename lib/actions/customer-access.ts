@@ -50,19 +50,26 @@ export async function issueCustomerCode(_prev: CodeState, formData: FormData): P
   return { ok: "Code ready.", code, purpose, expiresAt: expiresAt.toISOString() };
 }
 
-export type PhoneStep = { error?: string; step?: "activate" | "login" | "new"; phone?: string };
+export type PhoneStep = { error?: string; step?: "activate" | "login" | "new"; phone?: string; /** First name only, for the greeting — given just for a customer on the books who has not opened a login yet. */ name?: string };
 
-/** Public, step one: what is this number? Says nothing about the customer beyond that. */
+/**
+ * Public, step one: what is this number? Says nothing about the customer beyond that — except, by the owner's decision,
+ * the first name of a customer on the books who has not opened a login yet, so the next screen can greet them ("Welcome,
+ * Nino"). Never a surname, a business, a code or any figure, and nothing at all for a number that already has a login.
+ */
 export async function checkPhone(_prev: PhoneStep, formData: FormData): Promise<PhoneStep> {
   const raw = String(formData.get("phone") ?? "");
   const phone = normaliseTzPhone(raw);
   if (!phone) return { error: tzPhoneProblem(raw) ?? "Check the phone number." };
   const customer = await prisma.customer.findFirst({
     where: { phone, deletedAt: null },
-    select: { login: { select: { id: true } } },
+    select: { fullName: true, login: { select: { id: true } } },
   });
   if (!customer) return { step: "new", phone };
-  return { step: customer.login ? "login" : "activate", phone };
+  if (customer.login) return { step: "login", phone };
+  const first = customer.fullName.trim().split(/\s+/)[0] ?? "";
+  const name = first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : undefined;
+  return { step: "activate", phone, name };
 }
 
 const passwordRules = z
