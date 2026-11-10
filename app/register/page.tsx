@@ -18,6 +18,8 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   return (
     <AuthScene
       cta={reset ? "Reset password" : "Create account"}
+      alt={{ label: "Sign in", href: "/login?open=1" }}
+      defaultOpen
       tagline="Ship from China, the easy way"
       photo="portYard"
       welcome="Karibu Swift Cargo"
@@ -49,7 +51,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
 
       <p className="mt-4 text-center text-xs text-white/70 lg:mt-8 lg:text-left lg:text-sm lg:text-white/85">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
+        <Link href="/login?open=1" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
           Sign in
         </Link>
       </p>

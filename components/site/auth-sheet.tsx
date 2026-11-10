@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Smartphone, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Smartphone, X } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { InstallButton, InstallPrompt } from "@/components/install-app";
@@ -22,11 +23,14 @@ import { cn } from "@/lib/utils";
  */
 export function AuthSheet({
   cta,
+  alt,
   tagline,
   defaultOpen = false,
   children,
 }: {
   cta: string;
+  /** The other door, on the same first screen: a link to the other page (which opens its card at once). */
+  alt?: { label: string; href: string };
   tagline: React.ReactNode;
   defaultOpen?: boolean;
   children: React.ReactNode;
@@ -49,14 +53,24 @@ export function AuthSheet({
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
         <div className="flex flex-col items-center gap-5">
           <p className="max-w-xs text-balance text-lg font-medium leading-snug text-white/90">{tagline}</p>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-haspopup="dialog"
-            className="focus-ring inline-flex h-11 items-center rounded-full bg-signal px-7 text-sm font-semibold text-signal-foreground transition-colors hover:bg-signal/90"
-          >
-            {cta}
-          </button>
+          {/* Two plain choices, no pills: the one for this page underlined, the other a quiet line under it. */}
+          <div className="flex flex-col items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-haspopup="dialog"
+              className="focus-ring group relative inline-flex items-center gap-2 pb-1.5 text-base font-semibold text-white"
+            >
+              {cta}
+              <ArrowRight className="size-3.5 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[1.5px] rounded-full bg-signal" />
+            </button>
+            {alt ? (
+              <Link href={alt.href} className="focus-ring text-[15px] text-white/70 transition-colors hover:text-white">
+                {alt.label}
+              </Link>
+            ) : null}
+          </div>
           <InstallButton
             render={(openSheet) => (
               <button

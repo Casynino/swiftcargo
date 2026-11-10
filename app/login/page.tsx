@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Sign in" };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; revoked?: string; reason?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; revoked?: string; reason?: string; open?: string }>;
 }) {
   const params = await searchParams;
   const revoked = params.revoked === "1";
@@ -21,7 +21,9 @@ export default async function LoginPage({
 
   return (
     <AuthScene
-      cta="Log in"
+      cta="Sign in"
+      alt={{ label: "Create account", href: "/register" }}
+      defaultOpen={params.open === "1"}
       tagline={
         revoked ? (
           <span className="text-amber-200">

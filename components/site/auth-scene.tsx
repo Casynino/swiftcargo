@@ -24,7 +24,8 @@ export function AuthScene({
   title,
   subtitle,
   points,
-  cta = "Log in",
+  cta = "Sign in",
+  alt,
   tagline,
   defaultOpen = false,
   children,
@@ -38,6 +39,8 @@ export function AuthScene({
   points?: string[];
   /** The one small button on a phone's first screen. */
   cta?: string;
+  /** The other door on the phone's first screen. */
+  alt?: { label: string; href: string };
   /** The single line over that button. */
   tagline?: React.ReactNode;
   /** Open the form at once on a phone, for a notice that must be read. */
@@ -51,7 +54,7 @@ export function AuthScene({
         <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="site-drift object-cover" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.45)_0%,rgba(4,14,26,0.55)_55%,rgba(4,14,26,0.86)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.84)_45%,rgba(4,14,26,0.66)_100%)]" />
         <div className="absolute inset-0 bg-[#062a4a]/40 mix-blend-multiply" />
-        <div className="absolute inset-0" style={{ perspective: "1400px" }}>
+        <div className="absolute inset-0 max-lg:hidden" style={{ perspective: "1400px" }}>
           <div className="absolute inset-0 origin-bottom [transform:rotateX(16deg)_scale(1.05)]">
             <NetworkMap focus={0.74} intensity={0.8} />
           </div>
@@ -61,7 +64,7 @@ export function AuthScene({
       {/* The way back to the public website, from the sign-in and register pages alike. */}
       <Link
         href="/"
-        className="focus-ring absolute left-4 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] z-10 inline-flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-black/25 px-3 text-xs font-medium text-white/80 backdrop-blur-md transition-colors hover:bg-black/40 hover:text-white lg:left-16 lg:top-6"
+        className="focus-ring absolute left-4 top-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] z-10 inline-flex h-9 items-center gap-1.5 text-xs font-medium text-white/70 transition-colors hover:text-white lg:left-16 lg:top-6"
       >
         <ArrowLeft className="size-3.5" aria-hidden="true" />
         Back to site
@@ -72,7 +75,7 @@ export function AuthScene({
           <Link href="/" className="dark focus-ring mb-8 hidden rounded lg:inline-block">
             <BrandMark size={44} />
           </Link>
-          <AuthSheet cta={cta} tagline={tagline ?? subtitle ?? welcome} defaultOpen={defaultOpen}>
+          <AuthSheet cta={cta} alt={alt} tagline={tagline ?? subtitle ?? welcome} defaultOpen={defaultOpen}>
             {children}
           </AuthSheet>
         </div>
