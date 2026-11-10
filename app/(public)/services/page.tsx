@@ -24,7 +24,7 @@ const SERVICES = [
     photo: "containerStack" as PhotoName,
     href: "/book?service=SHARED_CARGO",
     cta: "Book loose cargo",
-    body: "Your goods share a container with other customers. You pay for the space you use, by the cubic metre, with no minimum order size beyond our small charging floor.",
+    body: "Share a container. Pay by the cubic metre.",
     points: [
       "Charged per cubic metre",
       "Consolidated at our Guangzhou warehouse",
@@ -38,7 +38,7 @@ const SERVICES = [
     photo: "craneLift" as PhotoName,
     href: "/book?service=FULL_CONTAINER",
     cta: "Book a container",
-    body: "A 20ft, 40ft or 40ft high-cube container to yourself, sealed at your supplier's factory or at our warehouse. Best when you are filling most of a box.",
+    body: "A 20ft, 40ft or high-cube container to yourself, sealed at the factory or our warehouse.",
     points: [
       "Flat price per container",
       "Sealed and seal number recorded",
@@ -52,7 +52,7 @@ const SERVICES = [
     photo: "cnWholesaleHall" as PhotoName,
     href: "/china",
     cta: "Explore China",
-    body: "Cannot find a supplier, or want somebody on the ground to check the goods before they ship? We buy, inspect and consolidate on your behalf in Guangzhou.",
+    body: "We buy, inspect and consolidate for you in Guangzhou.",
     points: [
       "Supplier search and price comparison",
       "Quality check before loading",
@@ -66,7 +66,7 @@ const SERVICES = [
     photo: "warehouseRacks" as PhotoName,
     href: "/china",
     cta: "Our warehouse address",
-    body: "Warehouses at both ends. Your supplier delivers to Guangzhou; your goods wait safely in Dar until you are ready to collect them.",
+    body: "A warehouse at each end. Your goods wait safely in Dar until you collect.",
     points: [
       "Guangzhou receiving warehouse",
       "Dar es Salaam storage",
@@ -80,7 +80,7 @@ const SERVICES = [
     photo: "parcels" as PhotoName,
     href: "/contact",
     cta: "Ask about delivery",
-    body: "Do not want to come to the warehouse? Ask us to deliver, and we will quote for it and bring it to your address.",
+    body: "Ask us to deliver. We quote it and bring it to your address.",
     points: [
       "Delivery anywhere in Dar es Salaam",
       "Upcountry by arrangement",
@@ -113,7 +113,7 @@ export default async function ServicesPage() {
           <p>
             {t(
               locale,
-              "We handle the whole journey — receiving in China, loading, the sailing, clearing, storage in Dar and delivery."
+              "The whole journey: receiving, loading, sailing, clearing, storage and delivery."
             )}
           </p>
         }
@@ -130,44 +130,36 @@ export default async function ServicesPage() {
         }
       />
 
-      <section className="container space-y-20 py-20 sm:space-y-28 sm:py-28">
-        {SERVICES.map((service, i) => (
-          <div
-            key={service.title}
-            className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
-          >
-            <Reveal className={i % 2 ? "lg:order-2" : undefined}>
-              <PhotoFrame name={service.photo} className="aspect-[4/3] rounded-[2rem]">
-                <span className="absolute left-5 top-5 rounded-full bg-white/90 px-3 py-1 font-display text-sm font-bold text-slate-900">
-                  0{i + 1}
-                </span>
-              </PhotoFrame>
-            </Reveal>
-            <Reveal delay={100}>
-              <span className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-foreground">
-                <service.icon className="size-6" />
-              </span>
-              <h2 className="mt-6 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                {t(locale, service.title)}
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                {t(locale, service.body)}
-              </p>
-              <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-                {service.points.map((text) => (
-                  <li key={text} className="flex items-start gap-2.5 text-sm">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-signal" />
-                    {point(text)}
-                  </li>
-                ))}
-              </ul>
-              <Link href={service.href} className={`${heroButton.solid} mt-8`}>
-                {t(locale, service.cta)}
-                <ArrowRight className="size-4" />
-              </Link>
-            </Reveal>
-          </div>
-        ))}
+      <section className="container py-14 sm:py-24">
+        <ol className="divide-y">
+          {SERVICES.map((service, i) => (
+            <li key={service.title} className="py-10 first:pt-0 sm:py-16">
+              <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+                <Reveal className={i % 2 ? "lg:order-2" : undefined}>
+                  <PhotoFrame name={service.photo} className="aspect-[4/3] rounded-2xl" />
+                </Reveal>
+                <Reveal delay={100}>
+                  <p className="font-mono text-xs text-signal">{String(i + 1).padStart(2, "0")}</p>
+                  <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                    {t(locale, service.title)}
+                  </h2>
+                  <p className="mt-3 max-w-md text-lg text-muted-foreground">{t(locale, service.body)}</p>
+                  <ul className="mt-6 divide-y border-y text-sm">
+                    {service.points.map((text) => (
+                      <li key={text} className="py-2.5">
+                        {point(text)}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={service.href} className="group mt-6 inline-flex items-center gap-2 border-b border-signal pb-1 font-medium">
+                    {t(locale, service.cta)}
+                    <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                </Reveal>
+              </div>
+            </li>
+          ))}
+        </ol>
       </section>
 
       <CtaBand

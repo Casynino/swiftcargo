@@ -38,47 +38,47 @@ export default async function ContactPage() {
           <p>
             {t(
               locale,
-              "Call us, message us on WhatsApp, or leave your details and we will come back with a price."
+              "Call, message us on WhatsApp, or leave your details and we will send a price."
             )}
           </p>
         }
       />
 
-      <section className="container pb-20 sm:pb-28">
+      <section className="container pb-14 sm:pb-24">
         <div className="relative z-10 -mt-24 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {company?.phone ? (
-            <a href={telHref(company.phone)} className="group rounded-[1.6rem] border bg-card p-6 shadow-raised transition-transform hover:-translate-y-1">
-              <span className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-foreground">
+            <a href={telHref(company.phone)} className="group rounded-2xl border bg-card p-5 transition-colors hover:border-signal/60">
+              <span className="grid size-10 place-items-center rounded-lg border text-foreground/70 transition-colors group-hover:text-signal">
                 <Phone className="size-5" />
               </span>
-              <p className="mt-5 text-sm text-muted-foreground">{t(locale, "Call us")}</p>
+              <p className="mt-4 text-sm text-muted-foreground">{t(locale, "Call us")}</p>
               <p className="tnum mt-1 font-display text-lg font-bold">{company.phone}</p>
               {company.altPhone ? <p className="tnum text-sm text-muted-foreground">{company.altPhone}</p> : null}
             </a>
           ) : null}
           {whatsapp ? (
-            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="group rounded-[1.6rem] border bg-card p-6 shadow-raised transition-transform hover:-translate-y-1">
-              <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500 text-white">
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="group rounded-2xl border bg-card p-5 transition-colors hover:border-signal/60">
+              <span className="grid size-10 place-items-center rounded-lg border text-foreground/70 transition-colors group-hover:text-signal">
                 <MessageCircle className="size-5" />
               </span>
-              <p className="mt-5 text-sm text-muted-foreground">WhatsApp</p>
+              <p className="mt-4 text-sm text-muted-foreground">WhatsApp</p>
               <p className="mt-1 font-display text-lg font-bold">{t(locale, "Message us")}</p>
             </a>
           ) : null}
           {company?.email ? (
-            <a href={`mailto:${company.email}`} className="group min-w-0 rounded-[1.6rem] border bg-card p-6 shadow-raised transition-transform hover:-translate-y-1">
-              <span className="grid size-12 place-items-center rounded-2xl bg-signal text-white">
+            <a href={`mailto:${company.email}`} className="group min-w-0 rounded-2xl border bg-card p-5 transition-colors hover:border-signal/60">
+              <span className="grid size-10 place-items-center rounded-lg border text-foreground/70 transition-colors group-hover:text-signal">
                 <Mail className="size-5" />
               </span>
-              <p className="mt-5 text-sm text-muted-foreground">{t(locale, "Email")}</p>
+              <p className="mt-4 text-sm text-muted-foreground">{t(locale, "Email")}</p>
               <p className="mt-1 break-all font-semibold">{company.email}</p>
             </a>
           ) : null}
-          <Link href="/track" className="group rounded-[1.6rem] border bg-card p-6 shadow-raised transition-transform hover:-translate-y-1">
-            <span className="grid size-12 place-items-center rounded-2xl bg-ink text-white">
+          <Link href="/track" className="group rounded-2xl border bg-card p-5 transition-colors hover:border-signal/60">
+            <span className="grid size-10 place-items-center rounded-lg border text-foreground/70 transition-colors group-hover:text-signal">
               <MapPin className="size-5" />
             </span>
-            <p className="mt-5 text-sm text-muted-foreground">{t(locale, "Already shipping?")}</p>
+            <p className="mt-4 text-sm text-muted-foreground">{t(locale, "Already shipping?")}</p>
             <p className="mt-1 font-display text-lg font-bold">{t(locale, "Track your cargo")}</p>
           </Link>
         </div>

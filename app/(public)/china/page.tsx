@@ -58,7 +58,7 @@ export default async function ChinaPage() {
           <p>
             {t(
               locale,
-              "Cities that make the world's goods, markets that sell them by the carton, and a warehouse in Guangzhou to bring it all together. Find where to buy what you sell — then send it to us."
+              "Cities, markets and one Guangzhou warehouse that brings it together. Find where to buy what you sell, then send it to us."
             )}
           </p>
         }

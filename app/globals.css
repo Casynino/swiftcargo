@@ -995,3 +995,55 @@ body:has([data-nino-page]) .status-strip {
     border-color: rgba(255, 255, 255, 0.4);
   }
 }
+
+/* Words that rise into place (SplitHeading). The words are in place until the browser hides them before first paint. */
+.split-w {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+.split-i {
+  display: inline-block;
+}
+[data-split="hidden"] .split-i {
+  transform: translateY(112%);
+}
+[data-split="in"] .split-i {
+  transform: none;
+  transition: transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* A picture opening from the bottom edge (RevealFrame). */
+.site-clip {
+  transition: clip-path 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.site-clip[data-clip="closed"] {
+  clip-path: inset(100% 0 0 0);
+}
+.site-clip[data-clip="open"] {
+  clip-path: inset(0 0 0 0);
+}
+
+/* A statement lit word by word as it is scrolled through (ScrollWords). */
+[data-scroll="on"] .scroll-word {
+  opacity: 0.22;
+  transition: opacity 0.5s ease, color 0.5s ease;
+}
+[data-scroll="on"] .scroll-word[data-lit="1"] {
+  opacity: 1;
+}
+[data-scroll="on"] .scroll-word[data-lit="1"][data-accent="1"] {
+  color: hsl(var(--signal));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-split="hidden"] .split-i {
+    transform: none;
+  }
+  .site-clip[data-clip="closed"] {
+    clip-path: none;
+  }
+}

@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Camera, MapPin, Scale, ShieldCheck, Ship } from "lucide-react";
 
-import { CtaBand, PageHero, PhotoFrame, SectionHead, heroButton } from "@/components/site/kit";
-import { Reveal } from "@/components/site/motion";
+import { CtaBand, Eyebrow, PageHero, PhotoFrame, SectionHead, heroButton } from "@/components/site/kit";
+import { Reveal, ScrollWords } from "@/components/site/motion";
 import { RouteMap } from "@/components/site/route-map";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
@@ -47,12 +47,12 @@ export default async function AboutPage() {
     {
       icon: Scale,
       title: "Measured at both ends",
-      body: "Our Guangzhou warehouse counts, weighs and measures every consignment when it arrives, and our Dar es Salaam warehouse does it again when it comes off the container. Both figures are kept.",
+      body: "Guangzhou and Dar each count, weigh and measure every consignment. Both figures are kept.",
     },
     {
       icon: Camera,
       title: "Photographed on arrival",
-      body: "The boxes are photographed when they are received, so you can see your goods are in our hands long before they reach you.",
+      body: "Boxes are photographed when received, so you see them in our hands early.",
     },
     {
       icon: Ship,
@@ -62,7 +62,7 @@ export default async function AboutPage() {
     {
       icon: ShieldCheck,
       title: "Released to the right person",
-      body: "Cargo leaves our Dar warehouse only once it has been checked in, the invoice is paid and confirmed, and it is handed to the person it is addressed to.",
+      body: "Cargo leaves Dar only when checked in, paid, and handed to the person it is addressed to.",
     },
   ];
 
@@ -77,7 +77,7 @@ export default async function AboutPage() {
           <p>
             {t(
               locale,
-              "We ship goods by sea from China to Tanzania for traders and businesses — shared containers for loose cargo, whole containers for those who fill them, and sourcing help in Guangzhou for those still looking for a supplier."
+              "Sea freight from China to Tanzania: shared containers, whole containers, and sourcing help in Guangzhou."
             )}
           </p>
         }
@@ -94,41 +94,35 @@ export default async function AboutPage() {
         }
       />
 
-      <section className="container grid items-center gap-14 py-20 sm:py-28 lg:grid-cols-2">
-        <Reveal className="grid grid-cols-2 gap-4">
-          <PhotoFrame name="warehouseTeam" className="col-span-2 aspect-[16/10] rounded-[2rem]" />
-          <PhotoFrame name="portYard" sizes="25vw" className="aspect-square rounded-[1.6rem]" />
-          <PhotoFrame name="shipAerial" sizes="25vw" className="aspect-square rounded-[1.6rem]" />
-        </Reveal>
-        <div>
-          <SectionHead
-            eyebrow={t(locale, "How we work")}
-            lead={t(locale, "Nothing on this page")}
-            trail={t(locale, "is a promise we cannot keep.")}
-            body={t(
-              locale,
-              "What we tell you is how the operation actually runs — which is what a trader choosing a forwarder is really trying to find out."
-            )}
-          />
-          <ul className="mt-9 grid gap-4 sm:grid-cols-2">
-            {principles.map((item, i) => (
-              <Reveal as="li" key={item.title} delay={i * 80} className="rounded-2xl border bg-card p-5 shadow-soft">
-                <span className="grid size-10 place-items-center rounded-xl bg-brand text-brand-foreground">
-                  <item.icon className="size-5" />
-                </span>
-                <h3 className="mt-4 font-semibold">{t(locale, item.title)}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t(locale, item.body)}</p>
-              </Reveal>
-            ))}
-          </ul>
-        </div>
+      <section className="container py-14 sm:py-24">
+        <Eyebrow className="mb-8">{t(locale, "How we work")}</Eyebrow>
+        <ScrollWords
+          text="We count every box twice, photograph it when it arrives, and release it only to the person it is addressed to."
+          accent={["twice", "photograph", "addressed"]}
+          className="max-w-5xl font-display text-[clamp(1.75rem,4.4vw,3.6rem)] font-medium leading-[1.12] tracking-[-0.02em]"
+        />
       </section>
 
-      <section className="relative isolate overflow-hidden bg-ink py-20 text-white sm:py-28">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_80%_20%,hsl(var(--marine)/0.25),transparent_55%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.18),transparent_50%)]"
-        />
+      <section className="container grid items-center gap-12 pb-14 sm:pb-24 lg:grid-cols-2 lg:gap-16">
+        <Reveal className="grid grid-cols-2 gap-4">
+          <PhotoFrame name="warehouseTeam" className="col-span-2 aspect-[16/10] rounded-2xl" />
+          <PhotoFrame name="portYard" sizes="25vw" className="aspect-square rounded-2xl" />
+          <PhotoFrame name="shipAerial" sizes="25vw" className="aspect-square rounded-2xl" />
+        </Reveal>
+        <ol className="divide-y border-y">
+          {principles.map((item, i) => (
+            <Reveal as="li" key={item.title} delay={i * 80} className="flex gap-5 py-5">
+              <span className="tnum w-6 shrink-0 pt-0.5 font-mono text-sm text-signal">{String(i + 1).padStart(2, "0")}</span>
+              <span>
+                <span className="block font-medium">{t(locale, item.title)}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">{t(locale, item.body)}</span>
+              </span>
+            </Reveal>
+          ))}
+        </ol>
+      </section>
+
+      <section className="relative isolate overflow-hidden bg-ink py-14 text-white sm:py-24">
         <div className="container grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
           <SectionHead
             dark
@@ -144,7 +138,7 @@ export default async function AboutPage() {
       </section>
 
       {company?.chinaAddress || company?.darAddress ? (
-        <section className="container py-20 sm:py-28">
+        <section className="container py-14 sm:py-24">
           <SectionHead
             eyebrow={t(locale, "Where we are")}
             lead={t(locale, "Two warehouses,")}

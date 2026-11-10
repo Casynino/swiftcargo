@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
-import { Reveal } from "@/components/site/motion";
+import { Reveal, RevealFrame, SplitHeading } from "@/components/site/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,12 +30,12 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        "flex items-center gap-3 text-sm font-medium",
-        dark ? "text-orange-300" : "text-signal",
+        "font-mono text-[11px] uppercase tracking-[0.2em]",
+        dark ? "text-white/60" : "text-muted-foreground",
         className
       )}
     >
-      {children}
+      <span className={dark ? "text-orange-300" : "text-signal"}>[</span> {children} <span className={dark ? "text-orange-300" : "text-signal"}>]</span>
     </p>
   );
 }
@@ -57,14 +57,21 @@ export function Headline({
   dark?: boolean;
   className?: string;
 }) {
+  const cls = cn("font-display font-semibold tracking-[-0.02em]", dark ? "text-white" : "text-foreground", className);
+  if (typeof lead === "string" && (trail === undefined || typeof trail === "string")) {
+    return (
+      <SplitHeading
+        as={Tag}
+        lead={lead}
+        trail={trail}
+        className={cls}
+        trailClassName={dark ? "text-white/65" : "text-foreground/60"}
+        immediate={Tag === "h1"}
+      />
+    );
+  }
   return (
-    <Tag
-      className={cn(
-        "font-display font-semibold tracking-[-0.02em]",
-        dark ? "text-white" : "text-foreground",
-        className
-      )}
-    >
+    <Tag className={cls}>
       {lead}
       {trail ? (
         <>
@@ -140,7 +147,7 @@ export function PhotoFrame({
 }) {
   const photo = PHOTOS[name];
   return (
-    <div className={cn("group relative isolate overflow-hidden bg-ink", className)}>
+    <RevealFrame className={cn("group relative isolate overflow-hidden bg-ink", className)}>
       <Image
         src={photo.src}
         alt={photo.alt}
@@ -151,7 +158,7 @@ export function PhotoFrame({
         className={cn("site-zoom object-cover", imageClassName)}
       />
       {children}
-    </div>
+    </RevealFrame>
   );
 }
 
@@ -202,29 +209,20 @@ export function PageHero({
           sizes="100vw"
           className="site-drift object-cover"
         />
-        {size === "home" ? (
-          /* The photograph carries the first screen: clear at the top, dark only under the words at the foot. */
-          <>
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.4)_0%,rgba(4,14,26,0.12)_22%,rgba(4,14,26,0.82)_52%,rgba(4,14,26,0.96)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.9)_0%,rgba(4,14,26,0.55)_45%,rgba(4,14,26,0.25)_100%)]" />
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink to-transparent" />
-          </>
-        ) : (
-          <>
-            <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(4,14,26,0.92)_0%,rgba(4,14,26,0.72)_42%,rgba(4,14,26,0.6)_100%)]" />
-            <div className="absolute inset-0 bg-[#062a4a]/45 mix-blend-multiply" />
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink to-transparent" />
-          </>
-        )}
+        {/* The photograph carries the first screen: clear at the top, dark only under the words at the foot. */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.7)_0%,rgba(4,14,26,0.3)_13%,rgba(4,14,26,0.1)_28%,rgba(4,14,26,0.82)_54%,rgba(4,14,26,0.96)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.9)_0%,rgba(4,14,26,0.55)_45%,rgba(4,14,26,0.25)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink to-transparent" />
       </div>
 
       <div
         className={cn(
           "container relative grid gap-12",
-          size === "home" ? "items-end pt-24" : "items-center pt-32 sm:pt-36",
-          overlap ? "pb-36" : "pb-16",
+          "items-end",
+          size === "home" ? "pt-24" : "pt-28 sm:pt-32",
+          overlap ? "pb-36" : "pb-12 sm:pb-16",
           size === "home"
-            ? "min-h-[100svh] gap-8 !pb-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end lg:!pb-16"
-            : "min-h-[34rem] lg:min-h-[38rem]",
+            ? "min-h-[100svh] gap-8 !pb-8 lg:grid-cols-[1.15fr_0.85fr] lg:!pb-16"
+            : "min-h-[26rem] lg:min-h-[32rem]",
           aside && size !== "home" && "lg:grid-cols-[1.2fr_0.8fr]"
         )}
       >

@@ -57,7 +57,7 @@ export default async function RatesPage() {
           <p>
             {t(
               locale,
-              "Choose your goods, enter your CBM, and see your rate and your total straight away."
+              "Choose your goods, enter your CBM, see your rate and total."
             )}
           </p>
         }
