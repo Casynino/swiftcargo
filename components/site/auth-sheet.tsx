@@ -99,7 +99,7 @@ export function AuthSheet({
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-[rgba(3,10,19,0.55)] backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-[rgba(3,10,19,0.3)]"
         />
       ) : null}
 
@@ -111,8 +111,8 @@ export function AuthSheet({
         className={cn(
           "auth-card dark text-foreground",
           /* A small see-through glass card low on the page, not a slab across it — on a phone and a computer alike. */
-          "fixed inset-x-0 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 mx-auto max-h-[78dvh] w-[calc(100%-2.5rem)] max-w-[21rem] overflow-y-auto rounded-xl p-5 transition-[transform,visibility] duration-300 sm:bottom-[16vh] sm:max-w-[23rem] sm:p-7",
-          "border border-white/10 bg-[rgba(4,12,22,0.82)] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl",
+          "fixed inset-x-0 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 mx-auto max-h-[78dvh] w-[calc(100%-2.5rem)] max-w-[21rem] overflow-y-auto rounded-2xl p-5 transition-[transform,visibility] duration-300 sm:bottom-[16vh] sm:max-w-[22rem] sm:p-6",
+          "border border-white/10 bg-[rgba(10,22,36,0.62)] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.8)] backdrop-blur-2xl backdrop-saturate-150",
           open ? "translate-y-0" : "invisible translate-y-[calc(100%+12vh)]"
         )}
       >

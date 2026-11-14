@@ -31,7 +31,7 @@ export default async function LoginPage({
         ) : undefined
       }
     >
-      <h1 className="sc-title text-xl text-white">Sign in</h1>
+      <h1 className="font-display text-lg font-semibold tracking-tight text-white">Sign in</h1>
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
       <div className="mt-4 flex items-center justify-between gap-3 text-xs">

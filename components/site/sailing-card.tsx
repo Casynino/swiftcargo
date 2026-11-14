@@ -24,109 +24,85 @@ const STATUS_SW: Record<Sailing["status"], string> = {
   CANCELLED: "Imeghairiwa",
 };
 
-const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
-
 /**
- * ONE SAILING, AS THREE DATES IN ORDER.
+ * ONE SAILING, SMALL AND CLEAR.
  *
- * The notice customers already see on WhatsApp ("Ratiba ya meli") says three things: the last day to receive cargo,
- * the day the ship leaves, the estimated arrival. The card draws them in that order down a thin line, each date large
- * and the weekday beside it, so the days read before the words do. The Friday deadline is in the accent because it is
- * the one customers have to act on.
+ * The day the ship leaves, large; under it only the two dates a customer acts on — the last day to receive cargo
+ * (orange, it is the one to act on) and the estimated arrival — the status, and Book space. The next open sailing
+ * carries the live count down to its cargo deadline (Nino, 14 Nov 2026: fewer words, well arranged).
  */
 export function SailingCard({ sailing, featured, className }: { sailing: Sailing; featured?: boolean; className?: string }) {
   const locale = DEFAULT_LOCALE;
-  const steps = [
-    { label: "Mwisho kupokea mzigo", date: sailing.cargoDeadline, accent: true, note: null as string | null },
-    /* The container is packed the same Friday, so it is only a step of its own when somebody has moved it. */
-    ...(sameDay(sailing.loadingDate, sailing.cargoDeadline)
-      ? []
-      : [{ label: "Kontena linapakiwa", date: sailing.loadingDate, accent: false, note: null }]),
-    { label: "Meli inaondoka", date: sailing.departureDate, accent: false, note: null },
-    {
-      label: "Meli kufika (makadirio)",
-      date: sailing.estimatedArrival,
-      accent: false,
-      note: `${t(locale, "Siku")} ${sailing.transitDays} ${t(locale, "baharini")}`,
-    },
-  ];
-
+  const closed = !sailing.bookingOpen;
   return (
     <article
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-2xl border p-5 sm:p-6",
+        "flex h-full flex-col rounded-xl border p-4 sm:p-5",
         featured ? "border-signal/40 bg-card" : "bg-card",
+        closed && "opacity-60",
         className
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-display text-lg font-semibold tracking-tight">
-            {/* Named once the line has named it; until then the ship is known by the day it leaves. */}
-            {sailing.vessel ?? `${t(locale, "Meli ya")} ${swDay(sailing.departureDate)}`}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {sailing.origin} → {sailing.destination}
-            {sailing.reference ? <span className="tnum"> · {sailing.reference}</span> : null}
-          </p>
+          {featured ? (
+            <p className="mb-2 text-sm font-semibold text-signal">{t(locale, "Meli inayofuata")}</p>
+          ) : null}
+          <p className="text-xs text-white/50">{t(locale, swWeekday(sailing.departureDate))}</p>
+          <p className="sc-title tnum mt-1 text-2xl text-white">{swDay(sailing.departureDate)}</p>
+          {sailing.vessel ? <p className="mt-1 truncate text-xs text-white/50">{sailing.vessel}</p> : null}
         </div>
         <span
           className={cn(
-            "shrink-0 pt-1 text-xs font-medium",
+            "shrink-0 pt-0.5 text-xs font-medium",
             sailing.status === "OPEN_FOR_BOOKING"
-              ? "text-emerald-600 dark:text-emerald-300"
+              ? "text-emerald-300"
               : sailing.status === "CANCELLED"
-                ? "text-red-600 dark:text-red-300"
+                ? "text-red-300"
                 : sailing.status === "CUTOFF_APPROACHING" || sailing.status === "DELAYED"
-                  ? "text-amber-600 dark:text-amber-300"
-                  : "text-muted-foreground"
+                  ? "text-amber-300"
+                  : "text-white/50"
           )}
         >
           {t(locale, STATUS_SW[sailing.status])}
         </span>
       </div>
 
-      <ol className="mt-6 space-y-5 border-l pl-5">
-        {steps.map((step) => (
-          <li key={step.label} className="relative">
-            <span
-              aria-hidden
-              className={cn("absolute -left-[1.6rem] top-2 size-2.5 rounded-full", step.accent ? "bg-signal" : "bg-border")}
-            />
-            <p className="text-xs text-muted-foreground">{t(locale, step.label)}</p>
-            <p className="tnum mt-0.5 flex flex-wrap items-baseline gap-x-2">
-              <span className={cn("font-display text-2xl font-semibold tracking-tight", step.accent && "text-signal")}>
-                {swDay(step.date)}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {swWeekday(step.date)} · {step.date.getUTCFullYear()}
-              </span>
-            </p>
-            {step.note ? <p className="mt-0.5 text-xs text-muted-foreground">{step.note}</p> : null}
-          </li>
-        ))}
-      </ol>
+      <dl className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-white/55">{t(locale, "Mzigo mwisho")}</dt>
+          <dd className="tnum font-semibold text-signal">
+            {swWeekday(sailing.cargoDeadline)} {swDay(sailing.cargoDeadline)}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3">
+          <dt className="text-white/55">{t(locale, "Inafika (makadirio)")}</dt>
+          <dd className="tnum font-medium text-white">{swDay(sailing.estimatedArrival)}</dd>
+        </div>
+        {featured && sailing.bookingOpen ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-white/55">{t(locale, "Muda uliobaki")}</dt>
+            <dd>
+              <Countdown
+                to={cargoClosesAt(sailing).toISOString()}
+                labels={["siku", "saa", "dak", "sek"]}
+                className="gap-1.5 font-mono text-sm text-white"
+              />
+            </dd>
+          </div>
+        ) : null}
+      </dl>
 
-      {sailing.notes ? <p className="mt-4 rounded-lg bg-secondary px-3 py-2 text-xs">{sailing.notes}</p> : null}
+      {sailing.notes ? <p className="mt-3 text-xs text-white/60">{sailing.notes}</p> : null}
 
-      <div className="mt-auto pt-6">
+      <div className="mt-auto pt-4">
         {sailing.bookingOpen ? (
-          <Link
-            href={bookHref(sailing)}
-            className={cn(
-              "focus-ring inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition-colors",
-              featured
-                ? "bg-brand text-brand-foreground hover:bg-brand/90"
-                : "bg-white/[0.06] text-white hover:bg-white/10"
-            )}
-          >
+          <Link href={bookHref(sailing)} className="sc-link text-sm text-white">
             {t(locale, "Book space")}
-            <ArrowRight className="size-4" aria-hidden="true" />
+            <ArrowRight className="size-3.5" aria-hidden="true" />
           </Link>
         ) : (
-          <p className="rounded-xl border px-5 py-3 text-center text-sm text-muted-foreground">
-            {t(locale, "Muda wa kupokea mzigo umeisha")}
-          </p>
+          <p className="text-xs text-white/50">{t(locale, "Muda wa kupokea mzigo umeisha")}</p>
         )}
       </div>
     </article>
@@ -156,7 +132,7 @@ export function NextSailingStrip({ sailing }: { sailing: Sailing }) {
     <section className="container py-6 sm:py-10">
       <div className="rounded-xl border border-white/10 bg-[linear-gradient(150deg,rgba(22,40,62,0.6),rgba(9,19,33,0.55))] px-4 py-4 backdrop-blur-md sm:px-6 lg:flex lg:items-center lg:gap-10 lg:py-5">
         <div className="flex items-center justify-between gap-4 lg:block lg:shrink-0">
-          <p className="sc-label text-white/55">{t(locale, "Meli inayofuata")}</p>
+          <p className="text-sm font-semibold text-signal">{t(locale, "Meli inayofuata")}</p>
           <div className="lg:hidden">{book}</div>
         </div>
 

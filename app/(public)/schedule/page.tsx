@@ -4,7 +4,7 @@ import { Ship } from "lucide-react";
 
 import { PageHero, heroButton } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
-import { NextSailingStrip, SailingCard } from "@/components/site/sailing-card";
+import { SailingCard } from "@/components/site/sailing-card";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { ARRIVAL_CAVEAT_SW, publicSailings } from "@/lib/sailing-schedule";
 
@@ -36,8 +36,6 @@ export default async function SchedulePage() {
         body={<p>{t(locale, "Mzigo hupokelewa hadi Ijumaa, meli inaondoka Jumatatu.")}</p>}
       />
 
-      {next ? <NextSailingStrip sailing={next} /> : null}
-
       <section className="container py-14 sm:py-24">
         {sailings.length === 0 ? (
           <div className="rounded-3xl border bg-card p-12 text-center shadow-raised">
@@ -51,7 +49,7 @@ export default async function SchedulePage() {
             </Link>
           </div>
         ) : (
-          <ul className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {sailings.map((sailing, i) => (
               <Reveal as="li" key={sailing.key} delay={Math.min(i, 5) * 70}>
                 <SailingCard sailing={sailing} featured={sailing.key === next?.key} />

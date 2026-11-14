@@ -21,7 +21,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       alt={{ label: "Sign in", href: "/login?open=1" }}
       defaultOpen
     >
-      <h1 className="sc-title text-xl text-white">
+      <h1 className="font-display text-lg font-semibold tracking-tight text-white">
         {reset ? "Forgot your password?" : "Open your account"}
       </h1>
       <div className="mt-4">
