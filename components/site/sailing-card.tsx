@@ -136,51 +136,79 @@ export function SailingCard({ sailing, featured, className }: { sailing: Sailing
 /**
  * THE NEXT SHIP, COUNTING DOWN.
  *
- * One line across the page under a hero: the last day to receive cargo, the departure and the estimated arrival, and a
- * live count of the time left until the warehouse stops taking cargo for this sailing (the end of the deadline day in
- * Guangzhou — cargoClosesAt). In Kiswahili, as the schedule is.
+ * A card like a boarding pass under the hero (Nino, 14 Nov 2026: the plain lines were not visible enough): the
+ * route from Guangzhou to Dar es Salaam with the day the ship leaves and the estimated arrival under each end, the
+ * last day to receive cargo in orange, and a live count of the time left until the warehouse stops taking cargo for
+ * this sailing (the end of the deadline day in Guangzhou — cargoClosesAt). In Kiswahili, as the schedule is.
  */
 export function NextSailingStrip({ sailing }: { sailing: Sailing }) {
   const locale = DEFAULT_LOCALE;
   return (
-    <section className="border-y border-white/10 bg-white/[0.025]">
-      <div className="container grid gap-6 py-6 sm:grid-cols-2 sm:py-7 lg:grid-cols-[auto_1fr_1fr_1fr_auto] lg:items-center lg:gap-10">
-        <p className="sc-label flex items-center gap-2.5 text-white sm:col-span-2 lg:col-span-1">
-          {t(locale, "Meli inayofuata")}
-        </p>
-        <div>
-          <p className="text-xs text-white/45">{t(locale, "Mwisho kupokea mzigo")}</p>
-          <p className="tnum mt-1 font-display text-lg font-semibold text-signal">
-            {swWeekday(sailing.cargoDeadline)} {swDay(sailing.cargoDeadline)}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-white/45">
-            {t(locale, "Inaondoka")} · {t(locale, "Inafika (makadirio)")}
-          </p>
-          <p className="tnum mt-1 font-display text-lg font-semibold">
-            {swDay(sailing.departureDate)} <span className="text-white/35">→</span> {swDay(sailing.estimatedArrival)}
-          </p>
-        </div>
-        {sailing.bookingOpen ? (
-          <div>
-            <p className="text-xs text-white/45">{t(locale, "Muda uliobaki")}</p>
-            <Countdown
-              to={cargoClosesAt(sailing).toISOString()}
-              labels={["siku", "saa", "dak", "sek"]}
-              className="mt-1 font-mono text-lg text-white"
-            />
+    <section className="container py-8 sm:py-12">
+      <div className="overflow-hidden rounded-xl border border-white/10 bg-[linear-gradient(150deg,rgba(22,40,62,0.78),rgba(9,19,33,0.72))] shadow-[0_24px_60px_-30px_rgba(0,0,0,0.9)] backdrop-blur-md">
+        <div className="grid lg:grid-cols-[1.25fr_1fr]">
+          {/* The route, like the top of a ticket. */}
+          <div className="p-5 sm:p-8">
+            <p className="sc-label text-white/60">{t(locale, "Meli inayofuata")}</p>
+            <div className="mt-6 grid grid-cols-[auto_1fr_auto] items-end gap-3 sm:gap-6">
+              <div>
+                <p className="sc-title text-[1.6rem] text-white sm:text-4xl">CAN</p>
+                <p className="mt-1 text-xs text-white/50">{sailing.origin}</p>
+              </div>
+              <div aria-hidden className="relative mb-4 h-px bg-white/20 sm:mb-5">
+                <span className="absolute -top-[3px] left-0 size-[7px] bg-signal" />
+                <span className="absolute -top-[3px] right-0 size-[7px] border border-white/60 bg-transparent" />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-[#0d1d2f] px-2 font-mono text-[10px] tracking-[0.15em] text-white/60 sm:text-[11px]">
+                  {`${sailing.transitDays} ${t(locale, "SIKU")}`}
+                </span>
+              </div>
+              <div className="text-right">
+                <p className="sc-title text-[1.6rem] text-white sm:text-4xl">DAR</p>
+                <p className="mt-1 text-xs text-white/50">{sailing.destination}</p>
+              </div>
+            </div>
+            <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-dashed border-white/15 pt-5">
+              <div>
+                <dt className="text-xs text-white/50">{t(locale, "Inaondoka")}</dt>
+                <dd className="tnum mt-1 font-display text-lg font-semibold text-white">
+                  {swWeekday(sailing.departureDate)} {swDay(sailing.departureDate)}
+                </dd>
+              </div>
+              <div className="text-right">
+                <dt className="text-xs text-white/50">{t(locale, "Inafika (makadirio)")}</dt>
+                <dd className="tnum mt-1 font-display text-lg font-semibold text-white">
+                  {swWeekday(sailing.estimatedArrival)} {swDay(sailing.estimatedArrival)}
+                </dd>
+              </div>
+            </dl>
           </div>
-        ) : (
-          <div />
-        )}
-        <Link
-          href={sailing.bookingOpen ? bookHref(sailing) : "/schedule"}
-          className="sc-link text-sm text-white sm:col-span-2 lg:col-span-1"
-        >
-          {t(locale, sailing.bookingOpen ? "Book space" : "Ratiba kamili")}
-          <ArrowUpRight className="size-4" />
-        </Link>
+
+          {/* The deadline and the time left, like the stub. */}
+          <div className="border-t border-dashed border-white/15 bg-white/[0.03] p-5 sm:p-8 lg:border-l lg:border-t-0">
+            <p className="text-xs text-white/50">{t(locale, "Mwisho kupokea mzigo")}</p>
+            <p className="tnum mt-1 font-display text-xl font-semibold text-signal">
+              {swWeekday(sailing.cargoDeadline)} {swDay(sailing.cargoDeadline)}
+            </p>
+            {sailing.bookingOpen ? (
+              <>
+                <p className="mt-5 text-xs text-white/50">{t(locale, "Muda uliobaki")}</p>
+                <Countdown
+                  to={cargoClosesAt(sailing).toISOString()}
+                  labels={["siku", "saa", "dak", "sek"]}
+                  className="mt-2 grid w-full grid-cols-4 gap-2"
+                  cellClassName="flex flex-col items-center rounded-md border border-white/10 bg-[rgba(3,10,19,0.5)] py-2.5 font-mono text-2xl text-white sm:text-3xl [&>span]:ml-0 [&>span]:mt-1 [&>span]:text-[10px] [&>span]:uppercase [&>span]:tracking-[0.15em]"
+                />
+              </>
+            ) : null}
+            <Link
+              href={sailing.bookingOpen ? bookHref(sailing) : "/schedule"}
+              className="sc-link mt-6 text-sm text-white"
+            >
+              {t(locale, sailing.bookingOpen ? "Book space" : "Ratiba kamili")}
+              <ArrowUpRight className="size-4" />
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );
