@@ -23,7 +23,6 @@ export default async function CalculatorPage() {
   return (
     <>
       <PageHero
-        overlap
         photo="parcels"
         eyebrow={t(locale, "Price calculator")}
         lead={t(locale, "Price calculator.")}
@@ -38,8 +37,8 @@ export default async function CalculatorPage() {
         }
       />
       <section className="container pb-20 sm:pb-28">
-        <div className="relative z-10 -mt-24">
-          <PriceCalculator cargoTypes={rates.map((r) => r.cargoType)} start="boxes" />
+        <div className="relative z-10 pt-4 sm:pt-8">
+          <PriceCalculator quiet cargoTypes={rates.map((r) => r.cargoType)} start="boxes" />
         </div>
       </section>
     </>

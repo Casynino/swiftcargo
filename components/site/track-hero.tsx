@@ -72,7 +72,7 @@ export function TrackHero({
           </p>
 
           <div className="mt-8">
-            <TrackForm dark pill value={reference} />
+            <TrackForm dark line value={reference} />
           </div>
 
           {/* The readout under the search. What the company actually does, in

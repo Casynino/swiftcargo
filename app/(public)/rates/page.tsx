@@ -48,7 +48,6 @@ export default async function RatesPage() {
   return (
     <>
       <PageHero
-        overlap
         photo="containerStack"
         eyebrow={t(locale, "Shipping rates")}
         lead={t(locale, "What it costs.")}
@@ -64,9 +63,9 @@ export default async function RatesPage() {
       />
 
       <section className="container pb-20 sm:pb-28">
-        <div className="relative z-10 -mt-24">
+        <div className="relative z-10 pt-4 sm:pt-8">
           {lcl.length > 0 || containers.length > 0 ? (
-            <PriceCalculator cargoTypes={lcl.map((r) => r.cargoType)} containers={containers} start="cbm" />
+            <PriceCalculator quiet cargoTypes={lcl.map((r) => r.cargoType)} containers={containers} start="cbm" />
           ) : (
             <p className="rounded-[2rem] border bg-card p-12 text-center text-muted-foreground shadow-raised">
               {t(locale, "Our rate card is being updated. Please ask us for a quote.")}
@@ -75,17 +74,17 @@ export default async function RatesPage() {
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <Reveal className="rounded-[2rem] bg-surface-2 p-7 sm:p-9">
-            <h2 className="font-display text-2xl font-bold tracking-tight">{t(locale, "What is not included")}</h2>
-            <ul className="mt-5 space-y-3 text-sm">
+          <Reveal className="border-t pt-8">
+            <h2 className="sc-title text-xl text-white sm:text-2xl">{t(locale, "What is not included")}</h2>
+            <ul className="mt-5 divide-y border-y text-sm text-white/80">
               {[
                 "Tanzanian import duty and VAT",
                 "Customs clearing and port charges",
                 "Delivery from our Dar warehouse to your address",
                 "Storage beyond the free period after arrival",
               ].map((item) => (
-                <li key={item} className="flex gap-2.5">
-                  <span className="mt-1.5 size-2 shrink-0 rounded-full bg-signal" />
+                <li key={item} className="flex gap-3 py-3">
+                  <span className="mt-2 h-px w-3 shrink-0 bg-signal" />
                   {t(locale, item)}
                 </li>
               ))}

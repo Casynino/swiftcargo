@@ -34,8 +34,15 @@ export function PriceCalculator({
   containers = [],
   start = "cbm",
   bookPath = "/book",
+  quiet = false,
 }: {
   cargoTypes: string[];
+  /**
+   * The public site's version: no card, no glow, no drawn container — two columns divided by a hairline on the
+   * page's own ground, the fill a thin line (Nino, 14 Nov 2026: the boxed calculator broke the clean look). The
+   * portal keeps the card.
+   */
+  quiet?: boolean;
   containers?: FullContainerPrice[];
   /** Where "Book" goes: the public form, or the portal's own for a signed-in customer. */
   bookPath?: string;
@@ -96,9 +103,16 @@ export function PriceCalculator({
     setCbmTyped((v) => String(Math.max(0, Math.round(((Number(v) || 0) + delta) * 10) / 10)));
 
   return (
-    <div className="grid grid-cols-1 overflow-clip rounded-[2rem] border bg-card [&>*]:min-w-0 shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] lg:grid-cols-[1.15fr_0.85fr]">
+    <div
+      className={cn(
+        "grid grid-cols-1 [&>*]:min-w-0 lg:grid-cols-[1.15fr_0.85fr]",
+        quiet
+          ? "border-y lg:divide-x"
+          : "overflow-clip rounded-[2rem] border bg-card shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)]"
+      )}
+    >
       {/* ---------------------------------------------------- The question */}
-      <div className="flex flex-col p-5 sm:p-8">
+      <div className={cn("flex flex-col", quiet ? "py-8 lg:py-10 lg:pr-12" : "p-5 sm:p-8")}>
         {containers.length > 0 ? (
           <div className="inline-flex gap-5 border-b">
             {(
@@ -146,7 +160,7 @@ export function PriceCalculator({
             </Step>
 
             <Step n={2} title={t(locale, "How much is there?")}>
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap gap-5 border-b">
                 {(
                   [
                     ["cbm", "I know the CBM"],
@@ -158,8 +172,8 @@ export function PriceCalculator({
                     type="button"
                     onClick={() => setHow(value)}
                     className={cn(
-                      "rounded-md border px-3.5 py-1.5 text-sm font-medium transition-colors",
-                      how === value ? "border-brand bg-brand/10 text-brand" : "text-muted-foreground hover:text-foreground"
+                      "-mb-px border-b-2 px-0.5 py-2 text-sm font-medium transition-colors",
+                      how === value ? "border-signal text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {t(locale, label)}
@@ -343,8 +357,8 @@ export function PriceCalculator({
         )}
 
         {/* How to measure, where the column would otherwise run out. */}
-        <div className="mt-8 hidden items-center gap-4 rounded-2xl bg-surface-2 p-4 sm:flex lg:mt-auto">
-          <svg aria-hidden viewBox="0 0 64 52" className="h-12 w-14 shrink-0 text-brand">
+        <div className={cn("mt-8 hidden items-center gap-4 sm:flex lg:mt-auto", !quiet && "rounded-2xl bg-surface-2 p-4")}>
+          <svg aria-hidden viewBox="0 0 64 52" className={cn("h-12 w-14 shrink-0 text-brand", quiet && "hidden")}>
             <path d="M8 18 32 8l24 10v22L32 50 8 40Z" fill="currentColor" opacity=".12" />
             <path d="M8 18 32 28l24-10M32 28v22M8 18 32 8l24 10v22L32 50 8 40Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
             <path d="M4 22v18M60 22v18M36 4h18" stroke="#f4611f" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 3" />
@@ -397,11 +411,20 @@ export function PriceCalculator({
       </div>
 
       {/* ------------------------------------------------------ The answer */}
-      <div id="calc-answer" aria-live="polite" className="relative isolate flex scroll-mt-20 flex-col overflow-hidden bg-ink p-5 text-white sm:p-8">
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_90%_0%,hsl(var(--marine)/0.3),transparent_60%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.22),transparent_55%)]"
-        />
+      <div
+        id="calc-answer"
+        aria-live="polite"
+        className={cn(
+          "relative isolate flex scroll-mt-20 flex-col overflow-hidden text-white",
+          quiet ? "border-t py-8 lg:border-t-0 lg:py-10 lg:pl-12" : "bg-ink p-5 sm:p-8"
+        )}
+      >
+        {quiet ? null : (
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_90%_0%,hsl(var(--marine)/0.3),transparent_60%),radial-gradient(ellipse_at_0%_100%,hsl(var(--signal)/0.22),transparent_55%)]"
+          />
+        )}
 
         {service === "FCL" ? (
           <div className="my-auto">
@@ -420,7 +443,23 @@ export function PriceCalculator({
           </div>
         ) : (
           <>
-            {/* How full a 20ft container this would be, drawn. */}
+            {/* How full a 20ft container this would be: a thin line on the public site, a drawn container in the portal. */}
+            {quiet ? (
+              <div aria-hidden>
+                <div className="flex items-baseline justify-between text-xs text-white/55">
+                  <span className="tnum font-semibold text-white/85">{cbm.toFixed(2)} CBM</span>
+                  <span>
+                    {fill >= 100 ? t(locale, "More than a 20ft container") : `${Math.round(fill)}% ${t(locale, "of a 20ft container")}`}
+                  </span>
+                </div>
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-signal transition-[width] duration-700 ease-out"
+                    style={{ width: `${Math.max(fill, cbm > 0 ? 2 : 0)}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
             <div aria-hidden className="relative h-20 overflow-hidden rounded-xl border border-white/15 bg-white/[0.04]">
               <div
                 className="absolute inset-y-0 left-0 bg-[repeating-linear-gradient(90deg,#f4611f_0_14px,#dc4e12_14px_16px)] transition-[width] duration-700 ease-out"
@@ -434,6 +473,7 @@ export function PriceCalculator({
                 {fill >= 100 ? t(locale, "More than a 20ft container") : `${Math.round(fill)}% ${t(locale, "of a 20ft container")}`}
               </span>
             </div>
+            )}
 
             <div className="mt-7 flex-1">
               {!cargoType ? (

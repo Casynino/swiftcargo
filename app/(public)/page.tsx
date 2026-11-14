@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowUpRight, Calculator, Check, MapPin } from "lucide-react";
+import { ArrowUpRight, Check, MapPin } from "lucide-react";
 
 import { Btn, CtaBand, Eyebrow, PhotoFrame, SectionHead, Ticker } from "@/components/site/kit";
 import { BgVideo, CountUp, Reveal, ScrollVar, ScrollWords } from "@/components/site/motion";
@@ -150,7 +150,7 @@ export default async function HomePage() {
               </p>
               <div className="animate-in-up mt-7 flex flex-wrap gap-3 [animation-delay:400ms]">
                 <Btn href="/quote">{t(locale, "Get a quote")}</Btn>
-                <Btn href="/calculator" tone="line" icon={Calculator}>
+                <Btn href="/calculator" tone="line">
                   {t(locale, "Price calculator")}
                 </Btn>
               </div>
@@ -159,7 +159,7 @@ export default async function HomePage() {
             {/* Tracking, in the hero — it is what most visitors came for. */}
             <div className="animate-in-up w-full [animation-delay:480ms] lg:w-[25rem]">
               <p className="sc-label mb-3 text-white/55">{t(locale, "Track your cargo")}</p>
-              <TrackForm dark pill />
+              <TrackForm dark line />
             </div>
           </div>
         </div>
@@ -386,7 +386,7 @@ export default async function HomePage() {
             body={t(locale, "Pick your goods, enter the CBM or the box sizes, and see the price.")}
           />
           <Reveal className="mt-12">
-            <PriceCalculator cargoTypes={cargoTypes.map((r) => r.cargoType)} />
+            <PriceCalculator quiet cargoTypes={cargoTypes.map((r) => r.cargoType)} />
           </Reveal>
         </div>
       </section>
