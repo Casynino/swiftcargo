@@ -1238,3 +1238,86 @@ html[data-sc-intro] .sc-intro { display: none; }
 }
 .sc-band-photo { transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 14%), 0); will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .sc-band-photo { transform: none !important; } }
+
+/* UNDER THE SEA. One fixed layer behind every public page (Nino, 14 Nov 2026: the backgrounds were plain; he
+   pointed at the ZELab app's sky, then asked for water — what is inside the sea). The page reads as deep water:
+   lighter at the surface, darkening to the deep; sunlight falling through it in slow swaying shafts, the orange of
+   the logo's sun in the top corner, and fine particles drifting up through it. Sections without a ground of their
+   own let it through. Every moving part is a transform or opacity on its own layer, so the phone's compositor runs
+   it without repainting the page, and it all stops under reduced motion. */
+.sc-sky {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 100lvh;
+  min-height: 100%;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 40% at 8% -4%, rgba(244, 97, 31, 0.14), transparent 70%),
+    radial-gradient(120% 55% at 50% -12%, rgba(38, 140, 190, 0.22), transparent 72%),
+    radial-gradient(60% 45% at 100% 45%, rgba(30, 105, 190, 0.1), transparent 72%),
+    linear-gradient(180deg, #071a2a 0%, #05111e 38%, #040b14 100%);
+}
+.sc-sky i { position: absolute; display: block; }
+/* Sunlight through the water: soft shafts from the surface, swaying. */
+.sc-sky i:nth-child(1) {
+  left: -25%; right: -25%; top: -10%; height: 85%;
+  background: repeating-linear-gradient(100deg,
+    transparent 0 7%, rgba(150, 215, 255, 0.07) 9%, transparent 12%,
+    transparent 17%, rgba(150, 215, 255, 0.045) 18.5%, transparent 21%);
+  filter: blur(14px);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.5) 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,0.5) 45%, transparent 100%);
+  transform-origin: 50% 0;
+  animation: sc-rays 16s ease-in-out infinite alternate;
+}
+/* Light rippling just under the surface. */
+.sc-sky i:nth-child(2) {
+  left: -10%; right: -10%; top: -6%; height: 30%;
+  background:
+    radial-gradient(30% 40% at 20% 40%, rgba(120, 205, 255, 0.10), transparent 70%),
+    radial-gradient(25% 35% at 62% 30%, rgba(120, 205, 255, 0.08), transparent 70%),
+    radial-gradient(28% 40% at 88% 55%, rgba(255, 160, 110, 0.06), transparent 70%);
+  filter: blur(10px);
+  animation: sc-ripple 11s ease-in-out infinite alternate;
+}
+/* Particles in the water, rising very slowly. Each layer moves by whole tiles, so the loop has no jump; a third
+   tile of another size stays still underneath, so the repeat never shows. */
+.sc-sky i:nth-child(3) {
+  left: 0; right: 0; top: 0; height: calc(100% + 993px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='331' height='331' viewBox='0 0 331 331'%3E%3Ccircle cx='107.2' cy='49.9' r='0.4' fill='white' fill-opacity='0.28'/%3E%3Ccircle cx='31.2' cy='192.9' r='0.55' fill='white' fill-opacity='0.14'/%3E%3Ccircle cx='138.4' cy='79.7' r='0.85' fill='white' fill-opacity='0.43'/%3E%3Ccircle cx='138.4' cy='79.7' r='2.55' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='41.0' cy='73.9' r='0.4' fill='rgb(255,214,190)' fill-opacity='0.24'/%3E%3Ccircle cx='16.4' cy='73.2' r='0.5' fill='white' fill-opacity='0.2'/%3E%3Ccircle cx='179.0' cy='189.0' r='0.5' fill='white' fill-opacity='0.24'/%3E%3Ccircle cx='211.5' cy='123.3' r='0.45' fill='rgb(255,214,190)' fill-opacity='0.13'/%3E%3Ccircle cx='68.2' cy='225.2' r='0.85' fill='white' fill-opacity='0.3'/%3E%3Ccircle cx='68.2' cy='225.2' r='2.55' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='305.7' cy='119.7' r='0.55' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='80.8' cy='190.1' r='1.0' fill='white' fill-opacity='0.4'/%3E%3Ccircle cx='80.8' cy='190.1' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='95.3' cy='324.4' r='0.45' fill='rgb(255,214,190)' fill-opacity='0.2'/%3E%3Ccircle cx='250.6' cy='50.3' r='1.0' fill='rgb(205,226,255)' fill-opacity='0.13'/%3E%3Ccircle cx='250.6' cy='50.3' r='3.00' fill='rgb(205,226,255)' fill-opacity='0.05'/%3E%3Ccircle cx='221.2' cy='253.1' r='0.65' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='196.7' cy='191.9' r='1.0' fill='white' fill-opacity='0.44'/%3E%3Ccircle cx='196.7' cy='191.9' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='312.7' cy='156.9' r='0.45' fill='white' fill-opacity='0.27'/%3E%3Ccircle cx='102.5' cy='191.3' r='1.0' fill='white' fill-opacity='0.39'/%3E%3Ccircle cx='102.5' cy='191.3' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='293.6' cy='114.9' r='1.0' fill='white' fill-opacity='0.18'/%3E%3Ccircle cx='293.6' cy='114.9' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='38.8' cy='19.5' r='0.6' fill='white' fill-opacity='0.27'/%3E%3Ccircle cx='131.7' cy='303.5' r='1.0' fill='white' fill-opacity='0.18'/%3E%3Ccircle cx='131.7' cy='303.5' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='132.9' cy='92.0' r='0.5' fill='rgb(205,226,255)' fill-opacity='0.29'/%3E%3Ccircle cx='92.2' cy='137.5' r='0.65' fill='rgb(205,226,255)' fill-opacity='0.31'/%3E%3Ccircle cx='50.0' cy='58.3' r='0.55' fill='white' fill-opacity='0.12'/%3E%3C/svg%3E") 0 0 / 331px 331px;
+  animation: sc-drift-a 120s linear infinite;
+}
+.sc-sky i:nth-child(4) {
+  left: 0; right: 0; top: 0; height: calc(100% + 1226px);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='613' height='613' viewBox='0 0 613 613'%3E%3Ccircle cx='600.9' cy='402.9' r='0.65' fill='white' fill-opacity='0.23'/%3E%3Ccircle cx='80.3' cy='8.7' r='0.45' fill='rgb(255,214,190)' fill-opacity='0.27'/%3E%3Ccircle cx='85.4' cy='604.8' r='0.55' fill='white' fill-opacity='0.13'/%3E%3Ccircle cx='130.4' cy='307.2' r='0.65' fill='white' fill-opacity='0.23'/%3E%3Ccircle cx='511.4' cy='37.3' r='0.65' fill='rgb(205,226,255)' fill-opacity='0.25'/%3E%3Ccircle cx='499.6' cy='316.8' r='0.5' fill='rgb(255,214,190)' fill-opacity='0.15'/%3E%3Ccircle cx='313.0' cy='535.0' r='0.5' fill='rgb(255,214,190)' fill-opacity='0.12'/%3E%3Ccircle cx='489.9' cy='105.6' r='1.0' fill='rgb(255,214,190)' fill-opacity='0.4'/%3E%3Ccircle cx='489.9' cy='105.6' r='3.00' fill='rgb(255,214,190)' fill-opacity='0.05'/%3E%3Ccircle cx='341.1' cy='199.8' r='1.0' fill='white' fill-opacity='0.46'/%3E%3Ccircle cx='341.1' cy='199.8' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='34.8' cy='117.3' r='0.4' fill='white' fill-opacity='0.22'/%3E%3Ccircle cx='344.3' cy='465.9' r='0.45' fill='rgb(205,226,255)' fill-opacity='0.19'/%3E%3Ccircle cx='596.7' cy='371.6' r='0.55' fill='white' fill-opacity='0.21'/%3E%3Ccircle cx='326.9' cy='293.0' r='0.55' fill='rgb(255,214,190)' fill-opacity='0.3'/%3E%3Ccircle cx='577.6' cy='159.1' r='0.55' fill='rgb(205,226,255)' fill-opacity='0.15'/%3E%3C/svg%3E") 200px 120px / 613px 613px;
+  animation: sc-drift-b 90s linear infinite, sc-twinkle 6s ease-in-out infinite alternate;
+}
+.sc-sky i:nth-child(5) {
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='523' height='523' viewBox='0 0 523 523'%3E%3Ccircle cx='434.7' cy='95.4' r='0.6' fill='white' fill-opacity='0.15'/%3E%3Ccircle cx='279.6' cy='318.9' r='0.65' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='269.6' cy='323.0' r='0.4' fill='rgb(205,226,255)' fill-opacity='0.3'/%3E%3Ccircle cx='407.9' cy='457.4' r='0.85' fill='rgb(205,226,255)' fill-opacity='0.27'/%3E%3Ccircle cx='407.9' cy='457.4' r='2.55' fill='rgb(205,226,255)' fill-opacity='0.05'/%3E%3Ccircle cx='54.1' cy='331.7' r='0.4' fill='white' fill-opacity='0.13'/%3E%3Ccircle cx='109.2' cy='84.9' r='0.65' fill='rgb(255,214,190)' fill-opacity='0.13'/%3E%3Ccircle cx='0.1' cy='79.1' r='0.45' fill='white' fill-opacity='0.24'/%3E%3Ccircle cx='36.8' cy='108.8' r='0.85' fill='white' fill-opacity='0.36'/%3E%3Ccircle cx='36.8' cy='108.8' r='2.55' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='499.7' cy='315.0' r='1.0' fill='white' fill-opacity='0.16'/%3E%3Ccircle cx='499.7' cy='315.0' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='255.3' cy='511.4' r='1.0' fill='rgb(205,226,255)' fill-opacity='0.24'/%3E%3Ccircle cx='255.3' cy='511.4' r='3.00' fill='rgb(205,226,255)' fill-opacity='0.05'/%3E%3Ccircle cx='75.4' cy='392.1' r='0.6' fill='rgb(205,226,255)' fill-opacity='0.29'/%3E%3Ccircle cx='84.4' cy='12.1' r='0.65' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='478.1' cy='396.5' r='0.6' fill='white' fill-opacity='0.26'/%3E%3Ccircle cx='136.6' cy='191.8' r='0.5' fill='white' fill-opacity='0.27'/%3E%3Ccircle cx='278.5' cy='407.4' r='0.65' fill='white' fill-opacity='0.24'/%3E%3Ccircle cx='412.3' cy='396.6' r='0.55' fill='white' fill-opacity='0.28'/%3E%3Ccircle cx='387.0' cy='118.6' r='1.0' fill='white' fill-opacity='0.4'/%3E%3Ccircle cx='387.0' cy='118.6' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='517.6' cy='413.2' r='1.0' fill='white' fill-opacity='0.19'/%3E%3Ccircle cx='517.6' cy='413.2' r='3.00' fill='white' fill-opacity='0.05'/%3E%3Ccircle cx='316.5' cy='180.1' r='0.65' fill='white' fill-opacity='0.14'/%3E%3Ccircle cx='53.4' cy='245.9' r='0.65' fill='white' fill-opacity='0.22'/%3E%3Ccircle cx='515.3' cy='319.2' r='0.4' fill='rgb(205,226,255)' fill-opacity='0.3'/%3E%3Ccircle cx='179.9' cy='336.4' r='0.45' fill='rgb(205,226,255)' fill-opacity='0.28'/%3E%3Ccircle cx='392.3' cy='250.0' r='0.5' fill='rgb(205,226,255)' fill-opacity='0.28'/%3E%3Ccircle cx='173.9' cy='418.8' r='0.85' fill='rgb(205,226,255)' fill-opacity='0.27'/%3E%3Ccircle cx='173.9' cy='418.8' r='2.55' fill='rgb(205,226,255)' fill-opacity='0.05'/%3E%3Ccircle cx='495.2' cy='379.1' r='0.5' fill='white' fill-opacity='0.13'/%3E%3Ccircle cx='309.0' cy='243.4' r='0.5' fill='rgb(255,214,190)' fill-opacity='0.29'/%3E%3C/svg%3E") 80px 40px / 523px 523px;
+  opacity: 0.7;
+}
+@keyframes sc-drift-a { to { transform: translate3d(0, -993px, 0); } }
+@keyframes sc-drift-b { to { transform: translate3d(0, -1226px, 0); } }
+@keyframes sc-rays {
+  from { transform: translate3d(-3%, 0, 0) skewX(-4deg); opacity: 0.75; }
+  to { transform: translate3d(3%, 0, 0) skewX(4deg); opacity: 1; }
+}
+@keyframes sc-ripple {
+  from { transform: translate3d(-4%, 0, 0) scale(1); opacity: 0.7; }
+  to { transform: translate3d(4%, 2%, 0) scale(1.08); opacity: 1; }
+}
+@keyframes sc-twinkle { from { opacity: 0.3; } to { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .sc-sky i { animation: none !important; } }
+
+/* Cards on the public site are soft glass over the sky (the ZELab finish): a white-alpha gradient and a
+   hairline, so the stars and the light show through instead of a flat block. */
+.sc-site .bg-card {
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.022));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 14px 32px -18px rgba(0, 0, 0, 0.9);
+}
+/* Photographs melt into the water instead of ending on a hard edge. */
+.sc-fade-b { -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); }
+.sc-fade-y { -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); }

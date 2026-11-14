@@ -10,6 +10,13 @@ export default function PublicLayout({
 }) {
   return (
     <div className="dark sc-site relative isolate flex min-h-dvh flex-col overflow-x-clip">
+      <div aria-hidden className="sc-sky">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />

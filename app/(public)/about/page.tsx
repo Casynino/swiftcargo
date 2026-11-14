@@ -125,7 +125,7 @@ export default async function AboutPage() {
 
       {/* The route, over the sea it crosses: three figures instead of a map. */}
       <ScrollVar as="section" mode="through" className="relative isolate overflow-hidden text-white">
-        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+        <div aria-hidden className="sc-fade-y absolute inset-0 -z-10 overflow-hidden">
           <div className="sc-band-photo absolute inset-x-0 -inset-y-[12%]">
             <Image src={PHOTOS.shipAerial.src} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
           </div>

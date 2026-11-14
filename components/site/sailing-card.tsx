@@ -143,7 +143,7 @@ export function SailingCard({ sailing, featured, className }: { sailing: Sailing
 export function NextSailingStrip({ sailing }: { sailing: Sailing }) {
   const locale = DEFAULT_LOCALE;
   return (
-    <section className="border-y border-white/10 bg-[#040d18]">
+    <section className="border-y border-white/10 bg-white/[0.025]">
       <div className="container grid gap-6 py-6 sm:grid-cols-2 sm:py-7 lg:grid-cols-[auto_1fr_1fr_1fr_auto] lg:items-center lg:gap-10">
         <p className="sc-label flex items-center gap-2.5 text-white sm:col-span-2 lg:col-span-1">
           {t(locale, "Meli inayofuata")}

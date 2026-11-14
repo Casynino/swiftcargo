@@ -99,8 +99,8 @@ export default async function HomePage() {
       </div>
 
       {/* ---------------------------------------------------------------- Hero */}
-      <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden bg-ink text-white">
-        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+      <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden text-white">
+        <div aria-hidden className="sc-fade-b absolute inset-0 -z-10 overflow-hidden">
           <div className="sc-hero-photo absolute inset-0">
             <Image src={PHOTOS.shipWake.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
           </div>

@@ -34,7 +34,7 @@ export async function SiteFooter() {
   const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER);
 
   return (
-    <footer className="dark relative isolate overflow-hidden border-t border-white/10 bg-[#030a13] text-white/75">
+    <footer className="dark relative isolate overflow-hidden border-t border-white/10 bg-[rgba(3,9,17,0.55)] text-white/75">
       <div className="container grid gap-10 pb-12 pt-16 sm:pt-24 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
         <div>
           <p className="sc-label flex items-center gap-3 text-white/50">
