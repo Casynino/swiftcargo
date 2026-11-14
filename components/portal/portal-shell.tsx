@@ -1,5 +1,6 @@
 "use client";
 
+import { SeaSky } from "@/components/sea-sky";
 import { InstallPrompt } from "@/components/install-app";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -163,7 +164,8 @@ export function PortalShell({
   );
 
   return (
-    <div className="flex min-h-dvh bg-surface-2">
+    <div data-sea-shell className="relative isolate flex min-h-dvh bg-surface-2 dark:bg-[#050b14]">
+      <SeaSky />
       {/* The whole menu, always open, where there is room for it. */}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-card lg:flex">
         <Link href="/portal" className="flex h-16 items-center border-b px-5">

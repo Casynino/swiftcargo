@@ -75,6 +75,16 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
     "text-destructive": "from-destructive/10",
   };
 
+  /* The icon wears its figure's colour in a small tinted chip, so a row of tiles reads by colour before it is read
+     by word (the ZELab finish the owner pointed at). */
+  const CHIP: Record<string, string> = {
+    "text-marine": "bg-marine/15 text-marine ring-marine/25",
+    "text-success": "bg-success/15 text-success ring-success/25",
+    "text-signal": "bg-signal/15 text-signal ring-signal/25",
+    "text-destructive": "bg-destructive/15 text-destructive ring-destructive/25",
+    "text-warning": "bg-warning/15 text-warning ring-warning/25",
+  };
+
   const Tile = ({
     icon: Icon,
     label,
@@ -92,7 +102,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
   }) => (
     <div className={cn("relative min-w-0 rounded-xl border bg-card bg-gradient-to-br to-transparent p-4 shadow-soft", TINT[tone] ?? "from-secondary/40")}>
       <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-        <span className="grid size-8 place-items-center rounded-lg bg-secondary">
+        <span className={cn("grid size-8 place-items-center rounded-lg ring-1 ring-inset", CHIP[tone] ?? "bg-secondary text-foreground/70 ring-border")}>
           <Icon className="size-4" />
         </span>
         <span className="truncate">{label}</span>

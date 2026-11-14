@@ -8,6 +8,7 @@ import { Bell, ChevronDown, ChevronLeft, ChevronRight, Globe, LogOut, Menu, Sear
 import type { Role } from "@prisma/client";
 
 import { MobileTabbar } from "@/components/app/mobile-tabbar";
+import { SeaSky } from "@/components/sea-sky";
 import { NavTrail } from "@/components/app/nav-trail";
 import { NewVersionNotice } from "@/components/app/new-version-notice";
 import { InstallPrompt } from "@/components/install-app";
@@ -329,9 +330,11 @@ export function AppShell({
     <LocaleProvider locale={locale}>
     <ShellContext.Provider value={{ unread }}>
     <div
-      className="flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2 print:max-w-none print:overflow-visible"
-      style={{ backgroundImage: "radial-gradient(48rem 36rem at 0% 0%, rgba(54, 96, 200, 0.14), transparent 70%), radial-gradient(40rem 30rem at 100% 100%, rgba(54, 96, 200, 0.08), transparent 70%)" }}
+      data-sea-shell
+      className="relative isolate flex min-h-dvh max-w-full touch-pan-x touch-pan-y overflow-x-clip bg-surface-2 [background-image:radial-gradient(48rem_36rem_at_0%_0%,rgba(54,96,200,0.14),transparent_70%),radial-gradient(40rem_30rem_at_100%_100%,rgba(54,96,200,0.08),transparent_70%)] dark:bg-[#050b14] dark:[background-image:none] print:max-w-none print:overflow-visible"
     >
+      {/* Under a dark theme the desk sits in the same water as the public site. */}
+      <SeaSky />
       {/* Desktop rail: a floating glass panel that can shrink to icons. */}
       <aside
         className={cn(

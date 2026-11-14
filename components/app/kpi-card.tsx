@@ -15,12 +15,12 @@ import { Tx } from "@/components/app/tx";
 type Tone = "brand" | "marine" | "signal" | "success" | "warning" | "danger";
 
 const ICON_TONES: Record<Tone, string> = {
-  brand: "bg-brand/10 text-brand",
-  marine: "bg-marine/10 text-marine",
-  signal: "bg-signal/10 text-signal",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
+  brand: "bg-brand/15 text-brand ring-1 ring-inset ring-brand/25",
+  marine: "bg-marine/15 text-marine ring-1 ring-inset ring-marine/25",
+  signal: "bg-signal/15 text-signal ring-1 ring-inset ring-signal/25",
+  success: "bg-success/15 text-success ring-1 ring-inset ring-success/25",
+  warning: "bg-warning/15 text-warning ring-1 ring-inset ring-warning/25",
+  danger: "bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/25",
 };
 
 /**

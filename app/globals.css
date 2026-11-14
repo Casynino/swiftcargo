@@ -1321,3 +1321,20 @@ html[data-sc-intro] .sc-intro { display: none; }
 /* Photographs melt into the water instead of ending on a hard edge. */
 .sc-fade-b { -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, #000 70%, transparent 100%); }
 .sc-fade-y { -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%); }
+
+/* The water is drawn only under a dark theme (the public site's own wrapper is always .dark). */
+.sc-sky { display: none; }
+.dark .sc-sky { display: block; }
+
+/* THE DESK IN THE WATER (Nino, 14 Nov 2026: the staff app and the portal should wear the public site's sea, with
+   ZELab's finish). Under a dark theme every card in the shell is navy glass — opaque enough that a sticky header or
+   a long table stays easy to read, clear enough that the light and the particles show through at the edges — with
+   a hairline and a soft shadow. Pop-ups render outside the shell and keep their solid ground. */
+.dark [data-sea-shell] .bg-card {
+  background-color: transparent;
+  background-image: linear-gradient(150deg, rgba(22, 40, 62, 0.78), rgba(9, 19, 33, 0.72));
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 28px -18px rgba(0, 0, 0, 0.9);
+}
+.dark [data-sea-shell] thead { background: rgba(255, 255, 255, 0.03); }
+.dark [data-sea-shell] tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
