@@ -28,9 +28,7 @@ export default async function LoginPage({
           <span className="text-amber-200">
             {sessionEnded ? "That sign-in has ended. Sign in again." : "Your account is no longer active."}
           </span>
-        ) : (
-          "Your cargo, from Guangzhou to Dar es Salaam"
-        )
+        ) : undefined
       }
     >
       <h1 className="font-display text-2xl font-bold tracking-tight text-white">Sign in</h1>

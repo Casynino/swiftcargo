@@ -82,8 +82,10 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* The first visit to the home page in a session opens on the ship itself: the camera pushing in over a
-          container ship at sea, the name rising over it, then the scene opens into the page (globals.css .sc-intro). */}
+      {/* The first visit to the home page in a session opens behind a shipping container's doors: the name rises
+          letter by letter, a marker runs the route from Guangzhou to Dar es Salaam, the locking bars lift, and the
+          doors swing apart onto the page (globals.css .sc-intro). Pure CSS: it plays and gets out of the way with or
+          without script, and an inline script skips it for the rest of the session. */}
       <script
         dangerouslySetInnerHTML={{
           __html:
@@ -91,26 +93,29 @@ export default async function HomePage() {
         }}
       />
       <div aria-hidden className="sc-intro">
-        <div className="sc-intro-film absolute inset-0">
-          {/* The film's own first frame, on screen before the film arrives. */}
-          <img src="/video/ship-sea.webp" alt="" className="absolute inset-0 size-full object-cover" />
-          <video
-            src="/video/ship-sea.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 size-full object-cover"
-          />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(3,10,19,0.25)_0%,rgba(3,10,19,0.7)_75%)]" />
+        <div className="sc-door sc-door--l">
+          <span className="sc-bar left-[30%]" />
+          <span className="sc-bar left-[70%]" />
         </div>
-        <div className="relative text-center">
-          <p className="sc-intro-word sc-title text-[2.4rem] text-white [text-shadow:0_4px_40px_rgba(0,0,0,0.6)] sm:text-7xl">Swift Cargo</p>
-          <div className="mx-auto mt-5 h-px w-48 bg-white/25 sm:w-72">
-            <div className="sc-intro-bar h-px bg-signal" />
+        <div className="sc-door sc-door--r">
+          <span className="sc-bar left-[30%]" />
+          <span className="sc-bar left-[70%]" />
+        </div>
+        <div className="sc-intro-copy relative px-6 text-center">
+          <p className="sc-title text-[2.3rem] text-white sm:text-7xl">
+            {"Swift Cargo".split("").map((ch, i) => (
+              <span key={i} className="sc-intro-ch" style={{ ["--i" as string]: i }}>
+                {ch === " " ? "\u00a0" : ch}
+              </span>
+            ))}
+          </p>
+          <div className="relative mx-auto mt-7 h-px w-56 bg-white/20 sm:w-96">
+            <div className="sc-intro-bar absolute inset-0 bg-signal" />
+            <span className="sc-intro-ship absolute -top-[3px] left-0 size-[7px] bg-signal shadow-[0_0_14px_2px_rgba(244,97,31,0.8)]" />
           </div>
-          <p className="sc-intro-word sc-label mt-4 text-white/80 [animation-delay:0.35s]">
-            {ROUTE.originCity} → {ROUTE.destinationCity}
+          <p className="sc-intro-route sc-label mt-4 flex justify-between gap-6 text-white/70 sm:text-xs">
+            <span>{ROUTE.originCity}</span>
+            <span>{ROUTE.destinationCity}</span>
           </p>
         </div>
       </div>

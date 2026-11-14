@@ -25,8 +25,8 @@ export function AuthScene({
   cta?: string;
   /** The other door on the first screen. */
   alt?: { label: string; href: string };
-  /** The single line over that button. */
-  tagline: React.ReactNode;
+  /** A line over the doors, only for a notice that must be read (a sign-in that has ended). */
+  tagline?: React.ReactNode;
   /** Open the form at once, for a notice that must be read. */
   defaultOpen?: boolean;
   children: React.ReactNode;

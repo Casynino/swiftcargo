@@ -20,7 +20,6 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       cta={reset ? "Reset password" : "Create account"}
       alt={{ label: "Sign in", href: "/login?open=1" }}
       defaultOpen
-      tagline="Ship from China, the easy way"
     >
       <h1 className="font-display text-2xl font-bold tracking-tight text-white">
         {reset ? "Forgot your password?" : "Open your account"}
