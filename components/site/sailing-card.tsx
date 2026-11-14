@@ -48,7 +48,7 @@ export function SailingCard({ sailing, featured, className }: { sailing: Sailing
           {featured ? (
             <p className="mb-2 text-sm font-semibold text-signal">{t(locale, "Meli inayofuata")}</p>
           ) : null}
-          <p className="text-xs text-white/50">{t(locale, swWeekday(sailing.departureDate))}</p>
+          <p className="text-xs text-white/55">{t(locale, "Meli inaondoka")} · {t(locale, swWeekday(sailing.departureDate))}</p>
           <p className="sc-title tnum mt-1 text-2xl text-white">{swDay(sailing.departureDate)}</p>
           {sailing.vessel ? <p className="mt-1 truncate text-xs text-white/50">{sailing.vessel}</p> : null}
         </div>
@@ -70,14 +70,16 @@ export function SailingCard({ sailing, featured, className }: { sailing: Sailing
 
       <dl className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-white/55">{t(locale, "Mzigo mwisho")}</dt>
+          <dt className="text-white/55">{t(locale, "Mwisho kupokea mzigo")}</dt>
           <dd className="tnum font-semibold text-signal">
             {swWeekday(sailing.cargoDeadline)} {swDay(sailing.cargoDeadline)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-white/55">{t(locale, "Inafika (makadirio)")}</dt>
-          <dd className="tnum font-medium text-white">{swDay(sailing.estimatedArrival)}</dd>
+          <dt className="text-white/55">{t(locale, "Meli kufika (makadirio)")}</dt>
+          <dd className="tnum font-medium text-white">
+            {swWeekday(sailing.estimatedArrival)} {swDay(sailing.estimatedArrival)}
+          </dd>
         </div>
         {featured && sailing.bookingOpen ? (
           <div className="flex items-baseline justify-between gap-3">
