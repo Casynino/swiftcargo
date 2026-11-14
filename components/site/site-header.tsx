@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/services", label: "Services" },
   { href: "/rates", label: "Rates" },
-  { href: "/calculator", label: "Price calculator" },
+  { href: "/calculator", label: "Calculator" },
   { href: "/schedule", label: "Schedule" },
-  { href: "/china", label: "Explore China" },
+  { href: "/china", label: "China" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
@@ -113,7 +113,7 @@ export function SiteHeader() {
             href="/track"
             className="focus-ring hidden h-10 items-center px-2 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:inline-flex"
           >
-            {t(locale, "Track cargo")}
+            {t(locale, "Track")}
           </Link>
           <Link
             href={account}
@@ -155,7 +155,7 @@ export function SiteHeader() {
           className="fixed inset-0 -z-10 flex flex-col bg-[#030a13] pt-[calc(env(safe-area-inset-top)+5rem)] lg:hidden"
         >
           <ul className="container flex-1 overflow-y-auto">
-            {[...LINKS, { href: "/track", label: "Track cargo" }].map((link, i) => (
+            {[...LINKS, { href: "/track", label: "Track" }].map((link, i) => (
               <li key={link.href} className="sc-menu-item border-b border-white/10" style={{ ["--i" as string]: i }}>
                 <Link href={link.href} onClick={() => setOpen(false)} className="group flex items-center gap-4 py-4">
                   <span className="tnum w-5 font-mono text-[11px] text-white/35">{String(i + 1).padStart(2, "0")}</span>
@@ -177,10 +177,10 @@ export function SiteHeader() {
             style={{ ["--i" as string]: 9 }}
           >
             <Link href="/quote" onClick={() => setOpen(false)} className="sc-btn sc-btn--orange sc-btn--plain justify-center">
-              {t(locale, "Get a quote")}
+              {t(locale, "Quote")}
             </Link>
             <Link href="/register" onClick={() => setOpen(false)} className="sc-btn sc-btn--line sc-btn--plain justify-center">
-              {t(locale, "Create account")}
+              {t(locale, "Register")}
             </Link>
           </div>
         </nav>
