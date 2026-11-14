@@ -62,29 +62,29 @@ export function TrackForm({
       <form
         role="search"
         onSubmit={submit}
-        className="group flex items-center gap-3 border-b border-white/30 pb-2 transition-colors focus-within:border-signal"
+        className="group flex items-center gap-2.5 border-b border-white/25 pb-1 transition-colors focus-within:border-signal"
       >
-        <PackageSearch aria-hidden className="size-5 shrink-0 text-white/50" />
+        <PackageSearch aria-hidden className="size-4 shrink-0 text-white/45" />
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder={t(locale, "Your reference, e.g. SC0125")}
+          placeholder={t(locale, "Track cargo: SC0125")}
           aria-label={t(locale, "Cargo reference")}
           autoCapitalize="characters"
           autoComplete="off"
           spellCheck={false}
           maxLength={40}
           required
-          className="tnum h-10 min-w-0 flex-1 bg-transparent text-base uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/40"
+          className="tnum h-9 min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/45"
         />
         <button
           type="submit"
           disabled={pending}
-          className="focus-ring inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-white transition-colors hover:text-signal disabled:opacity-60"
+          className="focus-ring inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-white transition-colors hover:text-signal disabled:opacity-60"
         >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           {t(locale, "Track")}
-          {pending ? null : <ArrowRight className="size-4 transition-transform group-focus-within:translate-x-0.5" />}
+          {pending ? null : <ArrowRight className="size-3.5 transition-transform group-focus-within:translate-x-0.5" />}
         </button>
       </form>
     );
