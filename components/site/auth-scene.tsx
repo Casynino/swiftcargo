@@ -13,7 +13,7 @@ import { BgVideo } from "@/components/site/motion";
  * and Create account. The form is not on the picture; it comes up as a small glass card when a door is pressed.
  */
 export function AuthScene({
-  video = "ship-sea",
+  video = "port-night",
   cta = "Sign in",
   alt,
   tagline,
@@ -35,8 +35,9 @@ export function AuthScene({
     <main data-login-scene className="relative isolate min-h-dvh overflow-hidden bg-ink text-white">
       <div aria-hidden className="absolute inset-0 -z-10">
         <BgVideo name={video} />
-        {/* Dark at the head and the foot where the words sit, clear in the middle where the ship is. */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.72)_0%,rgba(3,10,19,0.2)_30%,rgba(3,10,19,0.25)_55%,rgba(3,10,19,0.9)_100%)]" />
+        {/* One even dark veil and a darker rim: the port glows through, quiet enough that the words lead. */}
+        <div className="absolute inset-0 bg-[rgba(3,10,19,0.5)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(3,10,19,0.75)_100%)]" />
       </div>
 
       {/* The way back to the public website, from the sign-in and register pages alike. */}

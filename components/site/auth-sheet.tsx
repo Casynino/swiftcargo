@@ -49,7 +49,8 @@ export function AuthSheet({
     <>
       {/* The phone's first screen: the logo, one line, one small button. */}
       <InstallPrompt />
-      <div className="flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-between py-6 text-center">
+      {/* A phone keeps the mark at the head and the doors at the foot; a computer gathers all of it in the middle. */}
+      <div className="flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-between py-6 text-center sm:justify-center sm:gap-14">
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
         <div className="flex flex-col items-center gap-5 sm:gap-6">
           <p className="max-w-xs text-balance text-lg font-medium leading-snug text-white/90 [text-shadow:0_2px_16px_rgba(0,0,0,0.6)] sm:max-w-xl sm:text-3xl sm:font-semibold sm:tracking-tight">{tagline}</p>
