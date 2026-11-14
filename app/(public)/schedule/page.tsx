@@ -31,6 +31,7 @@ export default async function SchedulePage() {
     <>
       <PageHero
         photo="shipSea"
+        video="port-night"
         eyebrow={t(locale, "Ratiba ya meli")}
         lead={t(locale, "Meli kila Jumatatu.")}
         trail={t(locale, "Mzigo mwisho Ijumaa.")}

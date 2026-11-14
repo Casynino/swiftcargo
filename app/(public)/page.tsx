@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArrowUpRight, Calculator, Check, MapPin } from "lucide-react";
 
 import { Btn, CtaBand, Eyebrow, PhotoFrame, SectionHead, Ticker } from "@/components/site/kit";
-import { CountUp, Reveal, ScrollVar, ScrollWords } from "@/components/site/motion";
+import { BgVideo, CountUp, Reveal, ScrollVar, ScrollWords } from "@/components/site/motion";
 import { PHOTOS } from "@/components/site/photos";
 import { NextSailingStrip, SailingCard } from "@/components/site/sailing-card";
 import { PriceCalculator } from "@/components/site/price-calculator";
@@ -31,6 +31,7 @@ export const revalidate = 60;
 const SERVICES = [
   {
     photo: "containerStack",
+    video: "yard-crane",
     tag: "LCL",
     title: "Loose cargo",
     body: "Share a container with other customers. Pay only for the cubic metres you use.",
@@ -39,6 +40,7 @@ const SERVICES = [
   },
   {
     photo: "craneLift",
+    video: "port-drone",
     tag: "FCL",
     title: "Full container",
     body: "A whole 20ft, 40ft or high cube, loaded for you alone and sealed in Guangzhou.",
@@ -47,6 +49,7 @@ const SERVICES = [
   },
   {
     photo: "guangzhouNight",
+    video: null,
     tag: "Sourcing",
     title: "China sourcing",
     body: "We find suppliers, check the goods and bring them to our warehouse before they load.",
@@ -102,7 +105,7 @@ export default async function HomePage() {
       <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden text-white">
         <div aria-hidden className="sc-fade-b absolute inset-0 -z-10 overflow-hidden">
           <div className="sc-hero-photo absolute inset-0">
-            <Image src={PHOTOS.shipWake.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+            <BgVideo name="ship-sea" />
           </div>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.7)_0%,rgba(3,10,19,0.15)_25%,rgba(3,10,19,0.3)_48%,rgba(3,10,19,0.9)_78%,hsl(var(--background))_100%)]" />
         </div>
@@ -206,14 +209,18 @@ export default async function HomePage() {
                 href={service.href}
                 className="group relative isolate block h-[34rem] overflow-hidden rounded-3xl border border-white/10 bg-ink sm:h-[38rem] lg:h-[40rem]"
               >
-                <Image
-                  src={PHOTOS[service.photo].src}
-                  alt={PHOTOS[service.photo].alt}
-                  fill
-                  placeholder="blur"
-                  sizes="(max-width: 1400px) 100vw, 1400px"
-                  className="site-zoom -z-10 object-cover"
-                />
+                {service.video ? (
+                  <BgVideo name={service.video} className="-z-10" />
+                ) : (
+                  <Image
+                    src={PHOTOS[service.photo].src}
+                    alt={PHOTOS[service.photo].alt}
+                    fill
+                    placeholder="blur"
+                    sizes="(max-width: 1400px) 100vw, 1400px"
+                    className="site-zoom -z-10 object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(3,10,19,0.55)_0%,rgba(3,10,19,0.1)_35%,rgba(3,10,19,0.92)_100%)] lg:bg-[linear-gradient(90deg,rgba(3,10,19,0.92)_0%,rgba(3,10,19,0.55)_50%,rgba(3,10,19,0.05)_100%)]" />
 
                 <div className="flex h-full flex-col justify-between p-6 sm:p-10 lg:p-14">
@@ -476,6 +483,7 @@ export default async function HomePage() {
       </section>
 
       <CtaBand
+        video="port-night"
         lead={t(locale, "Ready to ship")}
         trail={t(locale, "from China?")}
         body={t(locale, "Create an account, get your shipping mark, and send it to your supplier.")}

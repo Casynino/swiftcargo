@@ -361,3 +361,74 @@ export function Countdown({
     </span>
   );
 }
+
+/**
+ * A FILM BEHIND A SECTION.
+ *
+ * Real footage of the route (public/video, cut to a few MB each): the still frame is on screen at once as the
+ * poster, and the film only starts loading once the page is idle and the line can carry it — never on data saver or
+ * a 2G line, and never for somebody who has asked their phone for less motion, who keeps the still. It pauses when
+ * scrolled out of sight, so a long page is not playing four films at once on a phone's battery.
+ */
+export function BgVideo({ name, className }: { name: "ship-sea" | "port-night" | "yard-crane" | "port-drone"; className?: string }) {
+  const ref = useRef<HTMLVideoElement | null>(null);
+  const [src, setSrc] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || reduced()) return;
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (conn?.saveData || /(^|-)2g$/.test(conn?.effectiveType ?? "")) return;
+
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      setSrc(`/video/${name}.mp4`);
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((e) => e.isIntersecting);
+        if (visible) {
+          if (!started) {
+            const idle = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+              .requestIdleCallback;
+            if (idle) idle(start, { timeout: 2500 });
+            else window.setTimeout(start, 800);
+          } else video.play().catch(() => {});
+        } else if (started) video.pause();
+      },
+      { rootMargin: "200px 0px" }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [name]);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !src) return;
+    video.load();
+    video.play().catch(() => {});
+  }, [src]);
+
+  return (
+    <div className={cn("absolute inset-0", className)}>
+      {/* The still is the film's own first frame, already sized: a plain img, no optimiser round trip. */}
+      <img src={`/video/${name}.webp`} alt="" className="absolute inset-0 size-full object-cover" decoding="async" />
+      <video
+        ref={ref}
+        muted
+        loop
+        playsInline
+        preload="none"
+        src={src ?? undefined}
+        onPlaying={() => setPlaying(true)}
+        className={cn(
+          "absolute inset-0 size-full object-cover transition-opacity duration-1000",
+          playing ? "opacity-100" : "opacity-0"
+        )}
+      />
+    </div>
+  );
+}

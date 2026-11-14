@@ -107,6 +107,7 @@ export default async function ServicesPage() {
     <>
       <PageHero
         photo="portCranes"
+        video="yard-crane"
         lead={t(locale, "Supplier to shop.")}
         trail={t(locale, "We do it all.")}
         body={

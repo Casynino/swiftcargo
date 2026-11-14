@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
-import { Reveal, RevealFrame, ScrollVar, SplitHeading } from "@/components/site/motion";
+import { BgVideo, Reveal, RevealFrame, ScrollVar, SplitHeading } from "@/components/site/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -167,6 +167,7 @@ export function PhotoFrame({
  */
 export function PageHero({
   photo,
+  video,
   eyebrow,
   lead,
   trail,
@@ -177,6 +178,8 @@ export function PageHero({
   overlap,
   children,
 }: {
+  /** Footage instead of the photograph (public/video); the photograph is then unused. */
+  video?: VideoName;
   /** Leave room at the foot for a panel that rides up over the hero. */
   overlap?: boolean;
   photo: PhotoName;
@@ -196,7 +199,11 @@ export function PageHero({
     <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden text-white">
       <div aria-hidden className="sc-fade-b absolute inset-0 -z-10 overflow-hidden">
         <div className="sc-hero-photo absolute inset-0">
-          <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+          {video ? (
+            <BgVideo name={video} />
+          ) : (
+            <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+          )}
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.75)_0%,rgba(3,10,19,0.25)_22%,rgba(3,10,19,0.35)_45%,rgba(3,10,19,0.92)_80%,hsl(var(--background))_100%)]" />
       </div>
@@ -263,12 +270,14 @@ export function Btn({
 /** The closing band: a full-bleed photograph, one huge sentence and the two things to do next. */
 export function CtaBand({
   photo = "portSunset",
+  video,
   lead,
   trail,
   body,
   actions,
 }: {
   photo?: PhotoName;
+  video?: VideoName;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -279,7 +288,11 @@ export function CtaBand({
     <ScrollVar as="section" mode="through" className="relative isolate overflow-hidden text-white">
       <div aria-hidden className="sc-fade-y absolute inset-0 -z-10 overflow-hidden">
         <div className="sc-band-photo absolute inset-x-0 -inset-y-[12%]">
-          <Image src={picture.src} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
+          {video ? (
+            <BgVideo name={video} />
+          ) : (
+            <Image src={picture.src} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
+          )}
         </div>
         <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background))_0%,rgba(3,10,19,0.55)_30%,rgba(3,10,19,0.6)_70%,hsl(var(--background))_100%)]" />
       </div>
@@ -293,6 +306,8 @@ export function CtaBand({
     </ScrollVar>
   );
 }
+
+export type VideoName = "ship-sea" | "port-night" | "yard-crane" | "port-drone";
 
 /** A dark panel for a hero's right-hand side. */
 export function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
