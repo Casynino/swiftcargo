@@ -50,7 +50,12 @@ export function AuthSheet({
       {/* The phone's first screen: the logo, one line, one small button. */}
       <InstallPrompt />
       {/* A phone keeps the mark at the head and the doors at the foot; a computer gathers all of it in the middle. */}
-      <div className="flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-between py-6 text-center sm:justify-center sm:gap-14">
+      <div
+        className={cn(
+          "flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-between py-6 text-center transition-opacity duration-300 sm:justify-center sm:gap-14",
+          open && "pointer-events-none opacity-0 sm:opacity-100 sm:[&>div]:opacity-0"
+        )}
+      >
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
         <div className="flex flex-col items-center gap-5 sm:gap-6">
           {tagline ? (
@@ -94,7 +99,7 @@ export function AuthSheet({
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/55"
+          className="fixed inset-0 z-40 bg-[rgba(3,10,19,0.55)] backdrop-blur-[2px]"
         />
       ) : null}
 
@@ -106,8 +111,8 @@ export function AuthSheet({
         className={cn(
           "auth-card dark text-foreground",
           /* A small see-through glass card low on the page, not a slab across it — on a phone and a computer alike. */
-          "fixed inset-x-0 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 mx-auto max-h-[78dvh] w-[calc(100%-2.5rem)] max-w-[21rem] overflow-y-auto rounded-2xl p-4 transition-[transform,visibility] duration-300 sm:bottom-[10vh] sm:max-w-[24rem] sm:p-6",
-          "border border-white/[0.09] bg-[#0a1624]/70 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.75)] backdrop-blur-2xl backdrop-saturate-150",
+          "fixed inset-x-0 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 mx-auto max-h-[78dvh] w-[calc(100%-2.5rem)] max-w-[21rem] overflow-y-auto rounded-xl p-5 transition-[transform,visibility] duration-300 sm:bottom-[16vh] sm:max-w-[23rem] sm:p-7",
+          "border border-white/10 bg-[rgba(4,12,22,0.82)] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl",
           open ? "translate-y-0" : "invisible translate-y-[calc(100%+12vh)]"
         )}
       >
@@ -115,7 +120,7 @@ export function AuthSheet({
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="focus-ring absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white"
+          className="focus-ring absolute right-3 top-3 grid size-8 place-items-center text-white/45 transition-colors hover:text-white"
         >
           <X className="size-4" />
         </button>

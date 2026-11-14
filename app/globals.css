@@ -827,58 +827,54 @@
   }
 }
 
-/* The sign-in and registration card: the forms are the app's own, so the
-   glass look is laid over them here rather than forked into the components. */
-.auth-card input,
+/* The sign-in, register and reset card (Nino, 14 Nov 2026: match the site — no pill buttons, no blue focus
+   ring). The forms are the app's own, so the look is laid over them here rather than forked into the
+   components: fields are slim outlined bars like the tracking bar, the button a plain orange rectangle,
+   focus an orange hairline. */
+.auth-card input:not([type="hidden"]):not([type="checkbox"]),
 .auth-card select {
   height: 3rem;
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
   color: #fff;
+  box-shadow: none;
 }
-
+.auth-card input::placeholder { color: rgba(255, 255, 255, 0.45); }
 .auth-card input:focus,
-.auth-card select:focus {
-  border-color: rgba(255, 150, 90, 0.7);
-  box-shadow: 0 0 0 3px rgba(244, 97, 31, 0.2);
+.auth-card input:focus-visible,
+.auth-card select:focus,
+.auth-card select:focus-visible {
+  outline: none;
+  border-color: rgba(244, 97, 31, 0.7);
+  box-shadow: none;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
 }
-
-.auth-card label {
-  color: rgba(255, 255, 255, 0.85);
+.auth-card [data-tz-phone] {
+  height: 3rem;
+  border-radius: 0.5rem;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
 }
-
+.auth-card [data-tz-phone],
+.auth-card [data-tz-phone]:focus-within { box-shadow: none !important; }
+.auth-card [data-tz-phone]:focus-within { border-color: rgba(244, 97, 31, 0.7); }
+.auth-card [data-tz-phone] > span:first-child { background: transparent; border-color: rgba(255, 255, 255, 0.12); }
+.auth-card [data-tz-phone] input { height: 100%; border: 0; background: transparent; border-radius: 0; }
+.auth-card label { color: rgba(255, 255, 255, 0.8); font-weight: 500; }
 .auth-card button[type="submit"] {
   height: 3rem;
-  border-radius: 9999px;
+  border-radius: 0.5rem;
   color: #fff;
   font-weight: 600;
   background-color: #f4611f;
+  box-shadow: none;
 }
-
-.auth-card.site-glass {
-  background: rgba(6, 16, 28, 0.74);
-}
-
-.auth-card.site-glass {
-  background: rgba(6, 16, 28, 0.86);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.auth-card label {
-  color: #fff;
-  font-weight: 600;
-}
-
-.auth-card input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.auth-card input,
-.auth-card select {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.28);
-}
+.auth-card button[type="submit"]:hover { background-color: #ff7a3d; }
 
 /* The side menu slides in from the edge it lives on, the way a phone's own
    menus do, rather than appearing all at once. */

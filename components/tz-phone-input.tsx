@@ -57,6 +57,7 @@ export function TzPhoneInput({
   return (
     <div className={className}>
       <div
+        data-tz-phone
         className={cn(
           "flex h-10 max-lg:h-11 w-full items-center overflow-hidden rounded-md border bg-background text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
           showProblem && "border-destructive"

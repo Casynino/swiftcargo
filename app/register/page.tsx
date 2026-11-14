@@ -21,16 +21,16 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       alt={{ label: "Sign in", href: "/login?open=1" }}
       defaultOpen
     >
-      <h1 className="font-display text-2xl font-bold tracking-tight text-white">
+      <h1 className="sc-title text-xl text-white">
         {reset ? "Forgot your password?" : "Open your account"}
       </h1>
       <div className="mt-4">
         <PortalAccess mode={reset ? "reset" : "register"} />
       </div>
 
-      <p className="mt-4 text-center text-xs text-white/70">
+      <p className="mt-5 text-center text-xs text-white/55">
         Already have an account?{" "}
-        <Link href="/login?open=1" className="font-semibold text-orange-300 underline-offset-4 hover:underline">
+        <Link href="/login?open=1" className="font-semibold text-white underline decoration-signal decoration-2 underline-offset-[6px] hover:text-signal">
           Sign in
         </Link>
       </p>

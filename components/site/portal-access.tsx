@@ -19,7 +19,7 @@ import {
   type ResetState,
 } from "@/lib/actions/customer-access";
 
-const link = "font-semibold text-orange-300 underline-offset-4 hover:underline";
+const link = "font-semibold text-white underline decoration-signal decoration-2 underline-offset-[5px] hover:text-signal";
 
 /**
  * PHONE FIRST. The number says which of four things this person is:

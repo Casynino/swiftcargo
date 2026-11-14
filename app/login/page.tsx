@@ -31,14 +31,14 @@ export default async function LoginPage({
         ) : undefined
       }
     >
-      <h1 className="font-display text-2xl font-bold tracking-tight text-white">Sign in</h1>
+      <h1 className="sc-title text-xl text-white">Sign in</h1>
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
       <div className="mt-4 flex items-center justify-between gap-3 text-xs">
-        <Link href="/register?mode=reset" className="font-medium text-orange-300 underline-offset-4 hover:underline">
+        <Link href="/register?mode=reset" className="text-white/55 transition-colors hover:text-white">
           Forgot password?
         </Link>
-        <Link href="/register" className="font-medium text-orange-300 underline-offset-4 hover:underline">
+        <Link href="/register" className="font-semibold text-white underline decoration-signal decoration-2 underline-offset-[6px] hover:text-signal">
           Create account
         </Link>
       </div>
