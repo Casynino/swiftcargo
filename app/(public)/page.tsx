@@ -157,7 +157,7 @@ export default async function HomePage() {
             </div>
 
             {/* Tracking, in the hero — it is what most visitors came for. */}
-            <div className="animate-in-up w-full max-w-[19rem] [animation-delay:480ms] lg:w-[19rem]">
+            <div className="animate-in-up w-full max-w-[22rem] [animation-delay:480ms] lg:w-[22rem]">
               <TrackForm dark line />
             </div>
           </div>

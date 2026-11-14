@@ -62,9 +62,9 @@ export function TrackForm({
       <form
         role="search"
         onSubmit={submit}
-        className="group flex items-center gap-2.5 border-b border-white/25 pb-1 transition-colors focus-within:border-signal"
+        className="group flex h-12 items-center gap-2.5 rounded-lg border border-white/15 bg-[rgba(3,10,19,0.45)] pl-3.5 pr-1.5 backdrop-blur-md transition-colors focus-within:border-signal/70"
       >
-        <PackageSearch aria-hidden className="size-4 shrink-0 text-white/45" />
+        <PackageSearch aria-hidden className="size-4 shrink-0 text-white/50" />
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -75,12 +75,12 @@ export function TrackForm({
           spellCheck={false}
           maxLength={40}
           required
-          className="tnum h-9 min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/45"
+          className="tnum h-full min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/50"
         />
         <button
           type="submit"
           disabled={pending}
-          className="focus-ring inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-white transition-colors hover:text-signal disabled:opacity-60"
+          className="focus-ring inline-flex h-9 shrink-0 items-center gap-1 rounded-md border-l border-white/15 pl-3.5 pr-2.5 text-[13px] font-semibold text-white transition-colors hover:text-signal disabled:opacity-60"
         >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}
           {t(locale, "Track")}
