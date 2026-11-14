@@ -143,13 +143,6 @@ export async function SiteFooter() {
         </div>
       </div>
 
-      {/* The name, as wide as the page, cut off at the foot like a hull at the waterline. */}
-      <div aria-hidden className="pointer-events-none select-none overflow-hidden">
-        <p className="sc-title sc-stroke -mb-[0.18em] whitespace-nowrap text-center text-[10.4vw] leading-none opacity-40">
-          Swift Cargo
-        </p>
-      </div>
-
       <div className="border-t border-white/10">
         <div className="container flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-white/45">
           <p>
