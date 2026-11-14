@@ -32,17 +32,8 @@ export default async function SchedulePage() {
       <PageHero
         photo="shipSea"
         video="port-night"
-        eyebrow={t(locale, "Ratiba ya meli")}
-        lead={t(locale, "Meli kila Jumatatu.")}
-        trail={t(locale, "Mzigo mwisho Ijumaa.")}
-        body={
-          <p>
-            {t(
-              locale,
-              "Tunapokea mzigo kila siku, ila tunapakia kontena kila wiki. Tunapakia kila Ijumaa, na Jumatatu meli inaanza safari kuja Tanzania. Safari huchukua siku 28 hadi 35."
-            )}
-          </p>
-        }
+        lead={t(locale, "Ratiba ya meli")}
+        body={<p>{t(locale, "Mzigo hupokelewa hadi Ijumaa, meli inaondoka Jumatatu.")}</p>}
       />
 
       {next ? <NextSailingStrip sailing={next} /> : null}
