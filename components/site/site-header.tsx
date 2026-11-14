@@ -9,14 +9,16 @@ import { BrandMark } from "@/components/brand-mark";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
+/* In the order customers need them (Nino, 14 Nov 2026): tracking first, then the price and the ships. */
 const LINKS = [
-  { href: "/services", label: "Services" },
-  { href: "/rates", label: "Rates" },
+  { href: "/track", label: "Track" },
   { href: "/calculator", label: "Calculator" },
   { href: "/schedule", label: "Schedule" },
+  { href: "/services", label: "Services" },
+  { href: "/rates", label: "Rates" },
   { href: "/china", label: "China" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/about", label: "About" },
 ];
 
 export function SiteHeader() {
@@ -111,7 +113,7 @@ export function SiteHeader() {
         <div className="relative z-10 ml-auto flex shrink-0 items-center gap-2 lg:ml-2">
           <Link
             href="/track"
-            className="focus-ring hidden h-10 items-center px-2 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:inline-flex"
+            className="focus-ring hidden h-10 items-center px-2 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:inline-flex lg:hidden"
           >
             {t(locale, "Track")}
           </Link>
@@ -155,7 +157,7 @@ export function SiteHeader() {
           className="fixed inset-0 -z-10 flex flex-col bg-[#030a13] pt-[calc(env(safe-area-inset-top)+5rem)] lg:hidden"
         >
           <ul className="container flex-1 overflow-y-auto">
-            {[...LINKS, { href: "/track", label: "Track" }].map((link, i) => (
+            {LINKS.map((link, i) => (
               <li key={link.href} className="sc-menu-item border-b border-white/10" style={{ ["--i" as string]: i }}>
                 <Link href={link.href} onClick={() => setOpen(false)} className="group flex items-center gap-4 py-4">
                   <span className="tnum w-5 font-mono text-[11px] text-white/35">{String(i + 1).padStart(2, "0")}</span>
