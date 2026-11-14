@@ -19,7 +19,7 @@ export function FormShell({
 }) {
   return (
     <section className="container grid gap-8 pb-20 sm:pb-28 lg:grid-cols-[1.45fr_0.8fr]">
-      <div className="relative z-10 -mt-24 rounded-[2rem] border bg-card p-5 shadow-[0_40px_80px_-40px_rgba(4,14,26,0.55)] sm:p-8">
+      <div className="relative z-10 -mt-24 rounded-3xl border bg-card p-5 shadow-[0_40px_80px_-40px_rgba(0,0,0,0.8)] sm:p-8">
         {children}
       </div>
       {side ? <aside className="lg:-mt-24 lg:pt-0">{side}</aside> : null}
@@ -38,10 +38,10 @@ export async function FormSide({ photo = "portYard" }: { photo?: PhotoName }) {
 
   return (
     <div className="relative z-10 space-y-4">
-      <PhotoFrame name={photo} sizes="(max-width: 1024px) 100vw, 30vw" className="aspect-[4/3] rounded-[2rem]">
+      <PhotoFrame name={photo} sizes="(max-width: 1024px) 100vw, 30vw" className="aspect-[4/3] rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-6 text-white">
-          <p className="font-display text-xl font-bold">{t(locale, "Prefer to talk?")}</p>
+          <p className="sc-title text-xl">{t(locale, "Prefer to talk?")}</p>
           <p className="mt-1 text-sm text-white/75">{t(locale, "Call or message us — we are happy to help.")}</p>
         </div>
       </PhotoFrame>

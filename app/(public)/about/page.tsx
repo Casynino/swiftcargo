@@ -1,10 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, Camera, MapPin, Scale, ShieldCheck, Ship } from "lucide-react";
 
 import { CtaBand, Eyebrow, PageHero, PhotoFrame, SectionHead, heroButton } from "@/components/site/kit";
-import { Reveal, ScrollWords } from "@/components/site/motion";
-import { RouteMap } from "@/components/site/route-map";
+import { Reveal, ScrollVar, ScrollWords } from "@/components/site/motion";
+import { PHOTOS } from "@/components/site/photos";
 import { ROUTE } from "@/lib/constants";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -94,51 +95,71 @@ export default async function AboutPage() {
         }
       />
 
-      <section className="container py-14 sm:py-24">
-        <Eyebrow className="mb-8">{t(locale, "How we work")}</Eyebrow>
+      <section className="container py-20 sm:py-32">
+        <Eyebrow index="01" className="mb-8">{t(locale, "How we work")}</Eyebrow>
         <ScrollWords
           text="We count every box twice, photograph it when it arrives, and release it only to the person it is addressed to."
           accent={["twice", "photograph", "addressed"]}
-          className="max-w-5xl font-display text-[clamp(1.75rem,4.4vw,3.6rem)] font-medium leading-[1.12] tracking-[-0.02em]"
+          className="max-w-6xl font-display text-[1.7rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-5xl lg:text-[4rem]"
         />
       </section>
 
-      <section className="container grid items-center gap-12 pb-14 sm:pb-24 lg:grid-cols-2 lg:gap-16">
+      <section className="container grid items-center gap-12 pb-20 sm:pb-32 lg:grid-cols-2 lg:gap-20">
         <Reveal className="grid grid-cols-2 gap-4">
-          <PhotoFrame name="warehouseTeam" className="col-span-2 aspect-[16/10] rounded-2xl" />
+          <PhotoFrame name="warehouseTeam" className="col-span-2 aspect-[16/10] rounded-3xl" />
           <PhotoFrame name="portYard" sizes="25vw" className="aspect-square rounded-2xl" />
           <PhotoFrame name="shipAerial" sizes="25vw" className="aspect-square rounded-2xl" />
         </Reveal>
-        <ol className="divide-y border-y">
+        <ol className="divide-y divide-white/10 border-y border-white/10">
           {principles.map((item, i) => (
-            <Reveal as="li" key={item.title} delay={i * 80} className="flex gap-5 py-5">
-              <span className="tnum w-6 shrink-0 pt-0.5 font-mono text-sm text-signal">{String(i + 1).padStart(2, "0")}</span>
+            <Reveal as="li" key={item.title} delay={i * 80} className="flex gap-5 py-6 sm:gap-8 sm:py-8">
+              <span className="sc-title sc-stroke tnum w-12 shrink-0 text-3xl sm:w-16 sm:text-4xl">{String(i + 1).padStart(2, "0")}</span>
               <span>
-                <span className="block font-medium">{t(locale, item.title)}</span>
-                <span className="mt-0.5 block text-sm leading-relaxed text-muted-foreground">{t(locale, item.body)}</span>
+                <span className="sc-title block text-lg text-white sm:text-2xl">{t(locale, item.title)}</span>
+                <span className="mt-2 block text-[15px] leading-relaxed text-white/60">{t(locale, item.body)}</span>
               </span>
             </Reveal>
           ))}
         </ol>
       </section>
 
-      <section className="relative isolate overflow-hidden bg-ink py-14 text-white sm:py-24">
-        <div className="container grid items-center gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+      {/* The route, over the sea it crosses: three figures instead of a map. */}
+      <ScrollVar as="section" mode="through" className="relative isolate overflow-hidden text-white">
+        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="sc-band-photo absolute inset-x-0 -inset-y-[12%]">
+            <Image src={PHOTOS.shipAerial.src} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
+          </div>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background))_0%,rgba(3,10,19,0.6)_30%,rgba(3,10,19,0.75)_70%,hsl(var(--background))_100%)]" />
+        </div>
+        <div className="container py-24 sm:py-36">
           <SectionHead
-            dark
             eyebrow={t(locale, "One route")}
-            lead={`${ROUTE.originCity} → ${ROUTE.destinationCity},`}
-            trail={`${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax} ${t(locale, "days at sea.")}`}
+            lead={`${ROUTE.originCity} →`}
+            trail={ROUTE.destinationCity}
             body={t(locale, "A ship every week. Cargo in Guangzhou by Friday sails on Monday.")}
           />
-          <Reveal className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-8">
-            <RouteMap />
-          </Reveal>
+          <dl className="mt-14 grid grid-cols-3 border-t border-white/15">
+            {(
+              [
+                [`${ROUTE.transitDaysMin}–${ROUTE.transitDaysMax}`, "Days at sea"],
+                [t(locale, "Mon"), "Sails every week"],
+                [t(locale, "Fri"), "Last day for cargo"],
+              ] as const
+            ).map(([value, label], i) => (
+              <Reveal key={label} delay={i * 90} className="border-r border-white/15 py-6 pr-3 last:border-r-0 sm:py-9 [&:not(:first-child)]:pl-4 sm:[&:not(:first-child)]:pl-8">
+                <dt className="sr-only">{t(locale, label)}</dt>
+                <dd>
+                  <span className="sc-title tnum block text-[1.7rem] sm:text-6xl">{value}</span>
+                  <span className="mt-2 block text-xs text-white/60 sm:text-sm">{t(locale, label)}</span>
+                </dd>
+              </Reveal>
+            ))}
+          </dl>
         </div>
-      </section>
+      </ScrollVar>
 
       {company?.chinaAddress || company?.darAddress ? (
-        <section className="container py-14 sm:py-24">
+        <section className="container py-20 sm:py-32">
           <SectionHead
             eyebrow={t(locale, "Where we are")}
             lead={t(locale, "Two warehouses,")}
@@ -154,17 +175,17 @@ export default async function AboutPage() {
               .filter(([, , address]) => address)
               .map(([place, entity, address, photo], i) => (
                 <Reveal key={place} delay={i * 100}>
-                  <PhotoFrame name={photo} className="min-h-[22rem] rounded-[2rem]">
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/40 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                      <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
-                        <MapPin className="size-4" />
+                  <PhotoFrame name={photo} className="min-h-[28rem] rounded-3xl">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#030a13] via-[#030a13]/50 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-9">
+                      <p className="sc-label flex items-center gap-2 text-white/70">
+                        <MapPin className="size-3.5 text-signal" />
                         {t(locale, place)}
                       </p>
                       {entity ? (
                         <p className="mt-3 text-xs font-medium text-white/60">{entity}</p>
                       ) : null}
-                      <p className="mt-1.5 max-w-md leading-relaxed">{address}</p>
+                      <p className="mt-2 max-w-md text-lg leading-relaxed">{address}</p>
                     </div>
                   </PhotoFrame>
                 </Reveal>
@@ -177,7 +198,7 @@ export default async function AboutPage() {
       ) : null}
 
       <CtaBand
-        lead={t(locale, "Ship with people who count your boxes.")}
+        lead={t(locale, "We count your boxes.")}
         trail={t(locale, "Twice.")}
         actions={
           <>

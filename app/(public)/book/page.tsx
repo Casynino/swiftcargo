@@ -64,8 +64,8 @@ export default async function Page({
         overlap
         photo="shipAerial"
         eyebrow={t(locale, "Book a service")}
-        lead={t(locale, "Book your space")}
-        trail={t(locale, "on the next ship.")}
+        lead={t(locale, "Book space.")}
+        trail={t(locale, "On the next ship.")}
         body={
           <p>
             {t(

@@ -66,10 +66,10 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
                 setQuery("");
               }}
               className={cn(
-                "focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors",
+                "focus-ring inline-flex items-center gap-2 border-b-2 px-1 py-2.5 text-sm font-semibold transition-colors",
                 tab === key && !q
-                  ? "bg-brand text-brand-foreground shadow-soft"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "border-signal text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="size-4" />
@@ -104,7 +104,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
               type="button"
               onClick={() => setQuery(s)}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                "rounded-md border px-3 py-1 text-xs font-medium transition-colors",
                 q === s.toLowerCase()
                   ? "border-signal bg-signal/10 text-signal"
                   : "text-muted-foreground hover:border-brand hover:text-brand"
@@ -117,7 +117,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
       </div>
 
       <div className="mt-12 flex flex-wrap items-end justify-between gap-3">
-        <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        <h2 className="sc-title text-2xl text-white sm:text-4xl">
           {q
             ? `${shown.length} ${t(locale, shown.length === 1 ? "place for" : "places for")} “${query.trim()}”`
             : tab === "cities"
@@ -145,7 +145,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
               <button
                 type="button"
                 onClick={() => setOpen(place)}
-                className="focus-ring group relative block aspect-[3/4] w-full overflow-hidden rounded-[1.75rem] bg-ink text-left"
+                className="focus-ring group relative block aspect-[3/4] w-full overflow-hidden rounded-3xl bg-ink text-left"
               >
                 <Image
                   src={PHOTOS[place.photo].src}
@@ -156,24 +156,18 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
                   className="site-zoom object-cover"
                 />
                 <span className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-transparent" />
-                <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur-md">
+                <span className="absolute left-5 top-5 inline-flex items-center gap-1.5 text-xs font-medium text-white/80">
                   <MapPin className="size-3.5" />
                   {place.where}
                 </span>
-                <span className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white text-slate-900 transition-transform duration-500 group-hover:rotate-45">
-                  <ArrowUpRight className="size-4" />
-                </span>
+                <ArrowUpRight className="absolute right-5 top-5 size-5 text-white transition-transform duration-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 <span className="absolute inset-x-0 bottom-0 p-5 text-white">
-                  <span className="block font-display text-2xl font-bold leading-tight tracking-tight">
+                  <span className="sc-title block text-2xl text-white">
                     {place.name}
                   </span>
                   <span className="mt-1 block text-sm text-white/75">{t(locale, place.tagline)}</span>
-                  <span className="mt-3 flex flex-wrap gap-1.5">
-                    {place.goods.slice(0, 3).map((g) => (
-                      <span key={g} className="rounded-full bg-white/15 px-2 py-0.5 text-[0.7rem] backdrop-blur-md">
-                        {t(locale, g)}
-                      </span>
-                    ))}
+                  <span className="mt-3 block text-xs text-white/55">
+                    {place.goods.slice(0, 3).map((g) => t(locale, g)).join(" · ")}
                   </span>
                 </span>
               </button>
@@ -211,7 +205,7 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
                   <p className="text-xs font-medium text-signal">
                     {t(locale, open.tagline)}
                   </p>
-                  <h3 className="mt-1 font-display text-3xl font-bold tracking-tight">{open.name}</h3>
+                  <h3 className="sc-title mt-1 text-3xl">{open.name}</h3>
                 </div>
                 <button
                   type="button"
@@ -243,14 +237,14 @@ export function ChinaExplorer({ cities, markets }: { cities: Place[]; markets: P
               <div className="mt-7 grid gap-2">
                 <Link
                   href="/pickup"
-                  className="track-go inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold text-white"
+                  className="track-go inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold text-white"
                 >
                   {t(locale, "We collect from your supplier")}
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href={`/book?service=SHARED_CARGO&commodity=${encodeURIComponent(open.goods[0])}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold hover:bg-secondary"
+                  className="inline-flex items-center justify-center gap-2 rounded-md border px-5 py-3 text-sm font-semibold hover:bg-secondary"
                 >
                   {t(locale, "Book space on a sailing")}
                 </Link>

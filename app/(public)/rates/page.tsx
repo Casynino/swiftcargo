@@ -51,8 +51,8 @@ export default async function RatesPage() {
         overlap
         photo="containerStack"
         eyebrow={t(locale, "Shipping rates")}
-        lead={t(locale, "What will my shipping cost?")}
-        trail={t(locale, "Find out in seconds.")}
+        lead={t(locale, "What it costs.")}
+        trail={t(locale, "In seconds.")}
         body={
           <p>
             {t(

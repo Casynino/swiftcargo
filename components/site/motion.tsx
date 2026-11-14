@@ -253,3 +253,111 @@ export function ScrollWords({ text, accent = [], className }: { text: string; ac
     </p>
   );
 }
+
+/**
+ * ONE NUMBER FOR SCROLL-LINKED MOTION.
+ *
+ * Writes `--p` (0 → 1) on its element as the page scrolls, and the CSS turns that number into movement (sc-hero-photo,
+ * sc-rail, sc-track in globals.css). "leave": 0 while the element's top is at the top of the screen, 1 once it has
+ * scrolled away — for a hero. "through": 0 as it enters at the foot, 1 as its foot reaches the middle — for a progress
+ * rail. "pin": 0 → 1 across the extra height of a tall section whose child sticks — for a sideways gallery. Without
+ * script, or with reduced motion, `--p` stays unset and everything sits still in place.
+ */
+export function ScrollVar({
+  mode = "through",
+  className,
+  children,
+  as: Tag = "div",
+  style,
+}: {
+  mode?: "leave" | "through" | "pin";
+  className?: string;
+  children?: React.ReactNode;
+  as?: "div" | "section" | "ol";
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || reduced()) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const r = node.getBoundingClientRect();
+      const vh = window.innerHeight;
+      let p: number;
+      if (mode === "leave") p = -r.top / Math.max(1, r.height);
+      else if (mode === "pin") p = -r.top / Math.max(1, r.height - vh);
+      else p = (vh - r.top) / Math.max(1, r.height + vh * 0.5);
+      node.style.setProperty("--p", Math.min(1, Math.max(0, p)).toFixed(4));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, [mode]);
+
+  return (
+    <Tag ref={ref as never} className={className} style={style}>
+      {children}
+    </Tag>
+  );
+}
+
+/**
+ * A LIVE COUNT DOWN TO A REAL DATE.
+ *
+ * Days, hours, minutes and seconds to the moment given (the cargo deadline of the next sailing). The server cannot know
+ * the reader's second, so the figures fill in once the page is running; before that the cells hold dashes of the same
+ * width, so nothing shifts.
+ */
+export function Countdown({
+  to,
+  labels = ["d", "h", "m", "s"],
+  className,
+  cellClassName,
+}: {
+  to: string;
+  labels?: [string, string, string, string] | string[];
+  className?: string;
+  cellClassName?: string;
+}) {
+  const [left, setLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const target = new Date(to).getTime();
+    const tick = () => setLeft(Math.max(0, target - Date.now()));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [to]);
+
+  const parts =
+    left === null
+      ? ["--", "--", "--", "--"]
+      : [
+          Math.floor(left / 86_400_000),
+          Math.floor(left / 3_600_000) % 24,
+          Math.floor(left / 60_000) % 60,
+          Math.floor(left / 1000) % 60,
+        ].map((n) => String(n).padStart(2, "0"));
+
+  return (
+    <span className={cn("tnum inline-flex items-baseline gap-2", className)} role="timer" aria-live="off">
+      {parts.map((v, i) => (
+        <span key={i} className={cellClassName}>
+          {v}
+          <span className="ml-0.5 text-[0.55em] font-normal opacity-60">{labels[i]}</span>
+        </span>
+      ))}
+    </span>
+  );
+}

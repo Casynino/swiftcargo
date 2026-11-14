@@ -1,54 +1,51 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { PHOTOS, type PhotoName } from "@/components/site/photos";
-import { Reveal, RevealFrame, SplitHeading } from "@/components/site/motion";
+import { Reveal, RevealFrame, ScrollVar, SplitHeading } from "@/components/site/motion";
 import { cn } from "@/lib/utils";
 
 /**
  * THE PUBLIC SITE'S PARTS.
  *
- * Every public page is built from the same half-dozen pieces: a photograph hero
- * under the header, a pill over each heading, a two-tone headline, a picture
- * frame, a running strip and a closing band. A page that reaches for its own
- * version of any of these is a page that stops looking like the rest.
+ * Every public page is built from the same few pieces: a full-bleed photograph
+ * hero, a mono label over each heading, a big expanded headline in capitals, a
+ * picture frame that opens as it arrives, a ticker of giant words and a closing
+ * band. A page that reaches for its own version of any of these is a page that
+ * stops looking like the rest.
  */
 
 /**
- * The words over a headline — plain text, no shape around it: a short rule and
- * the label in bold capitals, in the orange on paper and a lighter orange on
- * a photograph, so it reads first without looking like a button.
+ * The label over a headline: a small orange square, an optional number and the
+ * words in mono capitals.
  */
 export function Eyebrow({
   children,
-  dark,
+  index,
   className,
 }: {
   children: React.ReactNode;
+  index?: string;
   dark?: boolean;
   className?: string;
 }) {
   return (
-    <p
-      className={cn(
-        "font-mono text-[11px] uppercase tracking-[0.2em]",
-        dark ? "text-white/60" : "text-muted-foreground",
-        className
-      )}
-    >
-      <span className={dark ? "text-orange-300" : "text-signal"}>[</span> {children} <span className={dark ? "text-orange-300" : "text-signal"}>]</span>
+    <p className={cn("sc-label flex items-center gap-3 text-white/60", className)}>
+      {index ? <span className="tnum text-signal">{index}</span> : null}
+      <span>{children}</span>
     </p>
   );
 }
 
 /**
- * A headline in two tones: the words that carry it, then the rest set hollow
- * on a photograph or in the brand blue on paper.
+ * A headline in two tones, in expanded capitals: the words that carry it in
+ * white, the rest dimmed. Words rise into place one after another.
  */
 export function Headline({
   as: Tag = "h2",
   lead,
   trail,
-  dark,
   className,
 }: {
   as?: "h1" | "h2" | "h3";
@@ -57,7 +54,7 @@ export function Headline({
   dark?: boolean;
   className?: string;
 }) {
-  const cls = cn("font-display font-semibold tracking-[-0.02em]", dark ? "text-white" : "text-foreground", className);
+  const cls = cn("sc-title text-white", className);
   if (typeof lead === "string" && (trail === undefined || typeof trail === "string")) {
     return (
       <SplitHeading
@@ -65,7 +62,7 @@ export function Headline({
         lead={lead}
         trail={trail}
         className={cls}
-        trailClassName={dark ? "text-white/65" : "text-foreground/60"}
+        trailClassName="text-white/35"
         immediate={Tag === "h1"}
       />
     );
@@ -76,25 +73,29 @@ export function Headline({
       {trail ? (
         <>
           {" "}
-          <span className={dark ? "text-white/65" : "text-foreground/60"}>{trail}</span>
+          <span className="text-white/35">{trail}</span>
         </>
       ) : null}
     </Tag>
   );
 }
 
+/** The size every section headline is set at. Leading after size: a size class cancels a leading written before it. */
+export const sectionTitle = "text-[1.65rem] sm:text-[2.6rem] lg:text-[3.4rem] leading-[1.02]";
+
 /** Label, headline and a line of text, the way every section opens. */
 export function SectionHead({
   eyebrow,
+  index,
   lead,
   trail,
   body,
-  dark,
   center,
   className,
   children,
 }: {
   eyebrow?: React.ReactNode;
+  index?: string;
   lead: React.ReactNode;
   trail?: React.ReactNode;
   body?: React.ReactNode;
@@ -104,32 +105,26 @@ export function SectionHead({
   children?: React.ReactNode;
 }) {
   return (
-    <Reveal className={cn(center && "mx-auto text-center", "max-w-3xl", className)}>
-      {eyebrow ? <Eyebrow dark={dark} className={cn("mb-4", center && "justify-center")}>{eyebrow}</Eyebrow> : null}
-      <Headline
-        lead={lead}
-        trail={trail}
-        dark={dark}
-        className="text-3xl leading-[1.08] sm:text-4xl lg:text-5xl"
-      />
+    <div className={cn(center && "mx-auto text-center", "max-w-4xl", className)}>
+      {eyebrow ? (
+        <Eyebrow index={index} className={cn("mb-6", center && "justify-center")}>
+          {eyebrow}
+        </Eyebrow>
+      ) : null}
+      <Headline lead={lead} trail={trail} className={sectionTitle} />
       {body ? (
-        <p
-          className={cn(
-            "mt-5 text-base leading-relaxed sm:text-lg",
-            center && "mx-auto",
-            "max-w-2xl",
-            dark ? "text-white/70" : "text-muted-foreground"
-          )}
-        >
-          {body}
-        </p>
+        <Reveal>
+          <p className={cn("mt-6 max-w-xl text-[15px] leading-relaxed text-white/60 sm:text-lg", center && "mx-auto")}>
+            {body}
+          </p>
+        </Reveal>
       ) : null}
       {children}
-    </Reveal>
+    </div>
   );
 }
 
-/** A photograph that fills its box, with the slow zoom on hover. */
+/** A photograph that fills its box, opening from the bottom as it arrives, with a slow zoom on hover. */
 export function PhotoFrame({
   name,
   className,
@@ -165,10 +160,10 @@ export function PhotoFrame({
 /**
  * THE TOP OF EVERY PUBLIC PAGE.
  *
- * A photograph drifting under a dark wash, the header floating over it, and the
- * page's words set on the left where the wash is deepest. The top padding is
- * the header's height: the header is fixed and transparent here, so the hero
- * runs underneath it rather than starting below it.
+ * A photograph under the header, sliding away slower than the page as it is
+ * scrolled; the page's title huge at the foot, rising word by word; a mono
+ * label above it. The header is fixed and transparent here, so the hero runs
+ * underneath it rather than starting below it.
  */
 export function PageHero({
   photo,
@@ -198,66 +193,74 @@ export function PageHero({
 }) {
   const picture = PHOTOS[photo];
   return (
-    <section className="relative isolate overflow-hidden bg-ink text-white">
-      <div aria-hidden className="absolute inset-0 -z-10">
-        <Image
-          src={picture.src}
-          alt=""
-          fill
-          priority
-          placeholder="blur"
-          sizes="100vw"
-          className="site-drift object-cover"
-        />
-        {/* The photograph carries the first screen: clear at the top, dark only under the words at the foot. */}
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,14,26,0.7)_0%,rgba(4,14,26,0.3)_13%,rgba(4,14,26,0.1)_28%,rgba(4,14,26,0.82)_54%,rgba(4,14,26,0.96)_100%)] lg:bg-[linear-gradient(100deg,rgba(4,14,26,0.9)_0%,rgba(4,14,26,0.55)_45%,rgba(4,14,26,0.25)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-ink to-transparent" />
+    <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden bg-ink text-white">
+      <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="sc-hero-photo absolute inset-0">
+          <Image src={picture.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+        </div>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.75)_0%,rgba(3,10,19,0.25)_22%,rgba(3,10,19,0.35)_45%,rgba(3,10,19,0.92)_80%,hsl(var(--background))_100%)]" />
       </div>
 
       <div
         className={cn(
-          "container relative grid gap-12",
-          "items-end",
-          size === "home" ? "pt-24" : "pt-28 sm:pt-32",
-          overlap ? "pb-36" : "pb-12 sm:pb-16",
-          size === "home"
-            ? "min-h-[100svh] gap-8 !pb-8 lg:grid-cols-[1.15fr_0.85fr] lg:!pb-16"
-            : "min-h-[26rem] lg:min-h-[32rem]",
-          aside && size !== "home" && "lg:grid-cols-[1.2fr_0.8fr]"
+          "container relative grid items-end gap-10",
+          "pt-28 sm:pt-36",
+          overlap ? "pb-36" : "pb-12 sm:pb-20",
+          size === "home" ? "min-h-[100svh]" : "min-h-[30rem] sm:min-h-[36rem] lg:min-h-[42rem]",
+          aside && "lg:grid-cols-[1.25fr_0.75fr]"
         )}
       >
-        <div className="animate-in-up max-w-3xl">
-          {eyebrow ? <Eyebrow dark className="mb-5">{eyebrow}</Eyebrow> : null}
+        <div className="sc-hero-fade min-w-0">
+          {eyebrow ? <Eyebrow className="mb-6 text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{eyebrow}</Eyebrow> : null}
           <Headline
             as="h1"
-            dark
             lead={lead}
             trail={trail}
-            /* The line height comes after the size: a size class cancels any line height written before it. */
-            className={cn(
+            className={
               size === "home"
-                ? "text-[2rem] sm:text-6xl lg:text-7xl xl:text-[5.4rem]"
-                : "text-4xl sm:text-5xl lg:text-6xl",
-              "leading-[1.05]"
-            )}
+                ? "text-[2.6rem] leading-[0.92] sm:text-7xl lg:text-8xl"
+                : "text-[2.2rem] leading-[0.94] sm:text-6xl lg:text-[5.2rem]"
+            }
           />
           {body ? (
-            <div className={cn("max-w-xl text-base leading-relaxed text-white/75 sm:text-lg", size === "home" ? "mt-4" : "mt-6")}>
+            <div className="animate-in-up mt-6 max-w-xl text-[15px] leading-relaxed text-white/70 [animation-delay:250ms] sm:text-lg">
               {body}
             </div>
           ) : null}
-          {actions ? <div className={cn("flex flex-wrap gap-3", size === "home" ? "mt-6" : "mt-9")}>{actions}</div> : null}
+          {actions ? (
+            <div className="animate-in-up mt-8 flex flex-wrap items-center gap-3 [animation-delay:350ms]">{actions}</div>
+          ) : null}
         </div>
-        {aside ? (
-          <div className="animate-in-up [animation-delay:160ms] lg:self-start lg:pt-6">{aside}</div>
-        ) : null}
+        {aside ? <div className="animate-in-up [animation-delay:200ms] lg:self-end">{aside}</div> : null}
       </div>
       {children}
-    </section>
+    </ScrollVar>
   );
 }
 
-/** The closing band: a photograph, one sentence and the two things to do next. */
+/** A link styled as the site's button: a plain rectangle (or, for "line", words and an arrow). */
+export function Btn({
+  href,
+  children,
+  tone = "orange",
+  icon: Icon = ArrowRight,
+  className,
+}: {
+  href: string;
+  children: React.ReactNode;
+  tone?: "orange" | "white" | "line";
+  icon?: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  className?: string;
+}) {
+  return (
+    <Link href={href} className={cn("sc-btn focus-ring", `sc-btn--${tone}`, className)}>
+      {children}
+      <Icon aria-hidden />
+    </Link>
+  );
+}
+
+/** The closing band: a full-bleed photograph, one huge sentence and the two things to do next. */
 export function CtaBand({
   photo = "portSunset",
   lead,
@@ -273,57 +276,71 @@ export function CtaBand({
 }) {
   const picture = PHOTOS[photo];
   return (
-    <section className="container py-14 sm:py-24">
-      <Reveal className="relative isolate overflow-hidden rounded-[2rem] bg-ink px-6 py-12 text-white sm:px-14 sm:py-20">
-        <Image
-          src={picture.src}
-          alt=""
-          fill
-          placeholder="blur"
-          sizes="(max-width: 1400px) 100vw, 1400px"
-          className="site-drift -z-10 object-cover"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(4,14,26,0.94)_0%,rgba(4,14,26,0.7)_55%,rgba(4,14,26,0.35)_100%)]"
-        />
-        <div className="max-w-2xl">
-          <Headline
-            dark
-            lead={lead}
-            trail={trail}
-            className="text-3xl leading-[1.06] sm:text-5xl"
-          />
-          {body ? <p className="mt-5 text-lg text-white/75">{body}</p> : null}
-          <div className="mt-9 flex flex-wrap gap-3">{actions}</div>
+    <ScrollVar as="section" mode="through" className="relative isolate overflow-hidden bg-ink text-white">
+      <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="sc-band-photo absolute inset-x-0 -inset-y-[12%]">
+          <Image src={picture.src} alt="" fill placeholder="blur" sizes="100vw" className="object-cover" />
         </div>
-      </Reveal>
-    </section>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--background))_0%,rgba(3,10,19,0.55)_30%,rgba(3,10,19,0.6)_70%,hsl(var(--background))_100%)]" />
+      </div>
+      <div className="container py-28 sm:py-40">
+        <Headline lead={lead} trail={trail} className="max-w-5xl text-[2.3rem] leading-[0.94] sm:text-7xl lg:text-[6rem]" />
+        <Reveal>
+          {body ? <p className="mt-7 max-w-xl text-[15px] text-white/70 sm:text-lg">{body}</p> : null}
+          <div className="mt-9 flex flex-wrap gap-3">{actions}</div>
+        </Reveal>
+      </div>
+    </ScrollVar>
   );
 }
 
-/** A glass card for a hero's right-hand side. */
-export function GlassCard({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <div className={cn("site-glass rounded-3xl p-6 sm:p-7", className)}>{children}</div>;
+/** A dark panel for a hero's right-hand side. */
+export function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-2xl border border-white/10 bg-[rgba(4,12,22,0.72)] p-6 backdrop-blur-md sm:p-7", className)}>
+      {children}
+    </div>
+  );
 }
 
-/** The three hero buttons, so every page's calls to action are the same shape. */
+/**
+ * The buttons as class names, for a link whose children are its own (text and an
+ * icon side by side). New sections use <Btn>.
+ */
 export const heroButton = {
-  primary:
-    "track-go inline-flex h-12 items-center gap-2 rounded-xl px-6 text-sm font-semibold text-white",
-  ghost:
-    "inline-flex h-12 items-center gap-2 rounded-xl border border-white/25 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/10",
-  solid:
-    "inline-flex h-12 items-center gap-2 rounded-xl bg-brand px-6 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90",
-  outline:
-    "inline-flex h-12 items-center gap-2 rounded-xl border px-6 text-sm font-semibold transition-colors hover:bg-secondary",
+  primary: "sc-btn sc-btn--orange sc-btn--plain focus-ring [&>svg]:size-4",
+  ghost: "sc-btn sc-btn--line sc-btn--plain focus-ring [&>svg]:size-4",
+  solid: "sc-btn sc-btn--white sc-btn--plain focus-ring [&>svg]:size-4",
+  outline: "sc-btn sc-btn--line sc-btn--plain focus-ring [&>svg]:size-4",
 };
+
+/**
+ * A ticker of giant words running sideways, solid and hollow in turn, with an
+ * orange mark between them. Doubled so the loop has no seam; the second copy is
+ * hidden from screen readers.
+ */
+export function Ticker({ words, reverse, className }: { words: string[]; reverse?: boolean; className?: string }) {
+  const row = (hidden?: boolean) => (
+    <ul aria-hidden={hidden} className="flex shrink-0 items-center">
+      {words.map((w, i) => (
+        <li key={i} className="flex shrink-0 items-center">
+          <span className={cn("sc-title px-6 text-[2.6rem] sm:px-10 sm:text-7xl lg:text-8xl", i % 2 ? "sc-stroke" : "text-white")}>
+            {w}
+          </span>
+          <span aria-hidden className="sc-title text-[2.6rem] text-signal sm:text-7xl lg:text-8xl">/</span>
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className={cn("overflow-hidden py-8 sm:py-12", className)}>
+      <div className={cn("sc-ticker", reverse && "sc-ticker--rev")}>
+        {row()}
+        {row(true)}
+      </div>
+    </div>
+  );
+}
 
 /**
  * A strip of photographs that runs sideways on its own, captioned. Doubled so
@@ -339,21 +356,19 @@ export function PhotoMarquee({
   reverse?: boolean;
 }) {
   const row = (hidden?: boolean) => (
-    <ul aria-hidden={hidden} className="flex shrink-0 gap-5 pr-5">
+    <ul aria-hidden={hidden} className="flex shrink-0 gap-4 pr-4">
       {items.map((item, i) => (
-        <li key={i} className="group relative h-64 w-72 shrink-0 overflow-hidden rounded-[1.6rem] bg-ink sm:h-80 sm:w-96">
+        <li key={i} className="group relative h-64 w-60 shrink-0 overflow-hidden rounded-2xl bg-ink sm:h-96 sm:w-80">
           <Image
             src={PHOTOS[item.photo].src}
             alt={hidden ? "" : PHOTOS[item.photo].alt}
             fill
             placeholder="blur"
-            sizes="24rem"
+            sizes="20rem"
             className="site-zoom object-cover"
           />
-          <span className="absolute inset-0 bg-gradient-to-t from-ink/85 via-transparent to-transparent" />
-          <span className="absolute bottom-4 left-5 font-display text-lg font-bold text-white">
-            {item.caption}
-          </span>
+          <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <span className="sc-title absolute bottom-4 left-4 text-lg text-white">{item.caption}</span>
         </li>
       ))}
     </ul>
@@ -370,4 +385,3 @@ export function PhotoMarquee({
     </div>
   );
 }
-

@@ -54,12 +54,11 @@ export function TrackHero({
       <div className="container relative flex min-h-[calc(72vw+26rem)] flex-col justify-start pb-[calc(72vw+1rem)] pt-28 sm:min-h-[calc(42vw+26rem)] sm:pb-[calc(42vw+1.5rem)] sm:pt-32 lg:min-h-[40rem] lg:justify-center lg:py-32 xl:min-h-[44rem] 2xl:min-h-[48rem]">
         <div className="animate-in-up max-w-xl lg:max-w-[30rem]">
 
-          <p className="mb-5 flex items-center gap-3 text-sm font-medium text-orange-300">
-            <span aria-hidden className="h-0.5 w-8 rounded-full bg-orange-300" />
+          <p className="sc-label mb-6 flex items-center gap-3 text-white/70">
             {t(locale, "Fuatilia mzigo")}
           </p>
-          <h1 className="hero-display text-[2.6rem] font-semibold leading-[1.04] tracking-[-0.03em] sm:text-6xl">
-            {t(locale, "Track your cargo")}
+          <h1 className="sc-title text-[2.5rem] leading-[0.94] text-white sm:text-6xl lg:text-7xl">
+            {t(locale, "Track")} <span className="text-white/35">{t(locale, "your cargo.")}</span>
           </h1>
 
           <p className="mt-5 text-base leading-relaxed text-white/75 sm:text-lg">
@@ -94,7 +93,7 @@ export function TrackHero({
             {t(locale, "Have an account?")}{" "}
             <Link
               href="/login?callbackUrl=%2Fportal"
-              className="font-medium text-cyan-300 underline-offset-4 hover:underline"
+              className="font-medium text-white underline decoration-signal underline-offset-4"
             >
               {t(locale, "Sign in to see all of your cargo, invoices and photos.")}
             </Link>

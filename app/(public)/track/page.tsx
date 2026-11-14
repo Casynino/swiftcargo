@@ -116,8 +116,8 @@ export default async function TrackPage() {
           <ol className="mt-6 space-y-4">
             {JOURNEY.map(([label, where], i) => (
               <li key={label} className="flex gap-3.5">
-                <span className="tnum mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-secondary text-[11px] font-semibold text-muted-foreground">
-                  {i + 1}
+                <span className="tnum mt-0.5 w-5 shrink-0 font-mono text-[11px] text-signal">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{t(locale, label)}</p>

@@ -1047,3 +1047,194 @@ body:has([data-nino-page]) .status-strip {
     clip-path: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE PUBLIC SITE AT NIGHT.
+
+   The public pages sit on one deep sea-at-night ground in both themes (the way
+   a printed cover is the same in any light): the photographs and the orange do
+   the work, the type is large and expanded, the small labels are mono. The
+   tokens are scoped here, so the forms, calculator and cards reused from the
+   app take the night colours without a second set of components.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sc-site {
+  --background: 214 62% 5%;
+  --foreground: 210 30% 96%;
+  --card: 214 48% 8.5%;
+  --card-foreground: 210 30% 96%;
+  --popover: 214 48% 8.5%;
+  --popover-foreground: 210 30% 96%;
+  --secondary: 214 38% 13%;
+  --secondary-foreground: 210 30% 96%;
+  --muted: 214 38% 13%;
+  --muted-foreground: 213 18% 64%;
+  --accent: 214 38% 14%;
+  --accent-foreground: 210 30% 96%;
+  --border: 214 34% 15%;
+  --input: 214 34% 18%;
+  --brand: 19 90% 56%;
+  --brand-foreground: 0 0% 100%;
+  --surface-2: 214 48% 8%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  color-scheme: dark;
+}
+
+/* Film grain over the whole page: the difference between a flat screen colour
+   and a photograph's night. Painted once, fixed, never repainted on scroll. */
+.sc-site::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* The big words: Archivo opened out to its widest, in capitals, set tight. */
+.font-wide {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-stretch: 125%;
+  font-variation-settings: "wdth" 125;
+}
+.sc-title {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  font-stretch: 125%;
+  font-variation-settings: "wdth" 125;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+}
+/* Hollow words: the second line of a title, the giant footer mark. */
+.sc-stroke {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.7);
+}
+@media (max-width: 639px) {
+  .sc-stroke { -webkit-text-stroke-width: 1px; }
+}
+
+/* Mono labels: [ 01 ] WHAT WE DO */
+.sc-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Buttons: one plain rectangle for the main action; the second action is words
+   and an arrow, nothing drawn around them. */
+.sc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 3rem;
+  padding: 0 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease, transform 0.15s ease;
+}
+.sc-btn:active { transform: scale(0.98); }
+.sc-btn svg { width: 1rem; height: 1rem; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.sc-btn:hover svg { transform: translateX(3px); }
+.sc-btn--orange { background: #f4611f; color: #fff; }
+.sc-btn--orange:hover { background: #ff7a3d; }
+.sc-btn--white { background: #fff; color: #06121f; }
+.sc-btn--white:hover { background: #ffe9de; }
+.sc-btn--line { padding: 0 0.25rem; color: #fff; opacity: 0.85; }
+.sc-btn--line:hover { opacity: 1; }
+.sc-btn--line + .sc-btn--line, .sc-btn--orange + .sc-btn--line, .sc-btn--white + .sc-btn--line { margin-left: 0.5rem; }
+
+/* An underlined text link whose line draws in from the left. */
+.sc-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 4px;
+  font-weight: 600;
+}
+.sc-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.35;
+  transform-origin: left;
+  transition: opacity 0.3s ease;
+}
+.sc-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: #f4611f;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+.sc-link:hover::before { transform: scaleX(1); transform-origin: left; }
+
+/* Scroll-linked motion: ScrollVar writes --p (0 → 1) on the element; the CSS
+   turns it into movement, so the only thing script does is set one number. */
+.sc-hero-photo {
+  transform: translate3d(0, calc(var(--p, 0) * 22%), 0) scale(calc(1.08 - var(--p, 0) * 0.06));
+  will-change: transform;
+}
+.sc-hero-fade { opacity: calc(1 - var(--p, 0) * 1.6); transform: translate3d(0, calc(var(--p, 0) * -60px), 0); }
+.sc-rail { transform: scaleY(var(--p, 0)); transform-origin: top; }
+@media (min-width: 1024px) {
+  .sc-track { transform: translate3d(calc(var(--p, 0) * (100vw - 100%)), 0, 0); will-change: transform; }
+}
+
+/* A ticker of giant words, doubled so the loop has no seam. */
+@keyframes sc-ticker { to { transform: translate3d(-50%, 0, 0); } }
+.sc-ticker { display: flex; width: max-content; animation: sc-ticker 40s linear infinite; }
+.sc-ticker--rev { animation-direction: reverse; }
+
+/* The first visit to the home page: the mark, the route, and the curtain lifts.
+   Pure CSS — it plays and gets out of the way whether or not script runs; an
+   inline script hides it for the rest of the session. */
+html[data-sc-intro] .sc-intro { display: none; }
+.sc-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: #040c16;
+  pointer-events: none;
+  animation: sc-intro-lift 0.9s cubic-bezier(0.76, 0, 0.24, 1) 1.5s forwards;
+}
+.sc-intro-word { animation: sc-intro-word 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+.sc-intro-bar { transform-origin: left; animation: sc-intro-bar 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both; }
+@keyframes sc-intro-lift { to { transform: translate3d(0, -100%, 0); visibility: hidden; } }
+@keyframes sc-intro-word { from { opacity: 0; transform: translate3d(0, 40%, 0); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes sc-intro-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* Live status dot (only beside a figure that really is live — the countdown). */
+@keyframes sc-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.sc-live { animation: sc-live 1.6s ease-in-out infinite; }
+
+/* The phone menu: a full screen of big words, rising in one after another. */
+@keyframes sc-menu-in { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+.sc-menu-item { animation: sc-menu-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 60ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-hero-photo, .sc-hero-fade, .sc-track { transform: none !important; opacity: 1 !important; }
+  .sc-ticker, .sc-live, .sc-menu-item, .sc-intro-word, .sc-intro-bar { animation: none !important; }
+  .sc-intro { display: none; }
+}
+.sc-band-photo { transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 14%), 0); will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .sc-band-photo { transform: none !important; } }

@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+
+import { Countdown } from "@/components/site/motion";
 
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
-import type { Sailing } from "@/lib/sailing-schedule";
+import { cargoClosesAt, type Sailing } from "@/lib/sailing-schedule";
 import { swDay, swWeekday } from "@/lib/sw-date";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +34,7 @@ const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOSt
  * and the weekday beside it, so the days read before the words do. The Friday deadline is in the accent because it is
  * the one customers have to act on.
  */
-export function SailingCard({ sailing, className }: { sailing: Sailing; className?: string }) {
+export function SailingCard({ sailing, featured, className }: { sailing: Sailing; featured?: boolean; className?: string }) {
   const locale = DEFAULT_LOCALE;
   const steps = [
     { label: "Mwisho kupokea mzigo", date: sailing.cargoDeadline, accent: true, note: null as string | null },
@@ -50,7 +52,13 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
   ];
 
   return (
-    <article className={cn("group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card p-5 sm:p-6", className)}>
+    <article
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden rounded-2xl border p-5 sm:p-6",
+        featured ? "border-signal/40 bg-card" : "bg-card",
+        className
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-display text-lg font-semibold tracking-tight">
@@ -105,7 +113,12 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
         {sailing.bookingOpen ? (
           <Link
             href={bookHref(sailing)}
-            className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand/90"
+            className={cn(
+              "focus-ring inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition-colors",
+              featured
+                ? "bg-brand text-brand-foreground hover:bg-brand/90"
+                : "bg-white/[0.06] text-white hover:bg-white/10"
+            )}
           >
             {t(locale, "Book space")}
             <ArrowRight className="size-4" aria-hidden="true" />
@@ -117,5 +130,58 @@ export function SailingCard({ sailing, className }: { sailing: Sailing; classNam
         )}
       </div>
     </article>
+  );
+}
+
+/**
+ * THE NEXT SHIP, COUNTING DOWN.
+ *
+ * One line across the page under a hero: the last day to receive cargo, the departure and the estimated arrival, and a
+ * live count of the time left until the warehouse stops taking cargo for this sailing (the end of the deadline day in
+ * Guangzhou — cargoClosesAt). In Kiswahili, as the schedule is.
+ */
+export function NextSailingStrip({ sailing }: { sailing: Sailing }) {
+  const locale = DEFAULT_LOCALE;
+  return (
+    <section className="border-y border-white/10 bg-[#040d18]">
+      <div className="container grid gap-6 py-6 sm:grid-cols-2 sm:py-7 lg:grid-cols-[auto_1fr_1fr_1fr_auto] lg:items-center lg:gap-10">
+        <p className="sc-label flex items-center gap-2.5 text-white sm:col-span-2 lg:col-span-1">
+          {t(locale, "Meli inayofuata")}
+        </p>
+        <div>
+          <p className="text-xs text-white/45">{t(locale, "Mwisho kupokea mzigo")}</p>
+          <p className="tnum mt-1 font-display text-lg font-semibold text-signal">
+            {swWeekday(sailing.cargoDeadline)} {swDay(sailing.cargoDeadline)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-white/45">
+            {t(locale, "Inaondoka")} · {t(locale, "Inafika (makadirio)")}
+          </p>
+          <p className="tnum mt-1 font-display text-lg font-semibold">
+            {swDay(sailing.departureDate)} <span className="text-white/35">→</span> {swDay(sailing.estimatedArrival)}
+          </p>
+        </div>
+        {sailing.bookingOpen ? (
+          <div>
+            <p className="text-xs text-white/45">{t(locale, "Muda uliobaki")}</p>
+            <Countdown
+              to={cargoClosesAt(sailing).toISOString()}
+              labels={["siku", "saa", "dak", "sek"]}
+              className="mt-1 font-mono text-lg text-white"
+            />
+          </div>
+        ) : (
+          <div />
+        )}
+        <Link
+          href={sailing.bookingOpen ? bookHref(sailing) : "/schedule"}
+          className="sc-link text-sm text-white sm:col-span-2 lg:col-span-1"
+        >
+          {t(locale, sailing.bookingOpen ? "Book space" : "Ratiba kamili")}
+          <ArrowUpRight className="size-4" />
+        </Link>
+      </div>
+    </section>
   );
 }

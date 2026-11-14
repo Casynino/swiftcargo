@@ -20,7 +20,7 @@ export default function Page() {
         photo="portSunset"
         eyebrow="Swift Cargo"
         lead={t(locale, "Get a quote.")}
-        trail={t(locale, "Tell us what you ship.")}
+        trail={t(locale, "It is free.")}
         body={<p>{t(locale, "Tell us what you are shipping and we will come back with a price.")}</p>}
       />
       <FormShell side={<FormSide />}>

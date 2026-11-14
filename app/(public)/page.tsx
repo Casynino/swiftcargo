@@ -1,32 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Calculator,
-  Camera,
-  CheckCircle2,
-  Container,
-  MapPin,
-  Package,
-  Scale,
-  Search,
-  ShieldCheck,
-  Ship,
-} from "lucide-react";
+import { ArrowUpRight, Calculator, Check, MapPin } from "lucide-react";
 
-import {
-  CtaBand,
-  Headline,
-  PageHero,
-  PhotoFrame,
-  SectionHead,
-  heroButton,
-} from "@/components/site/kit";
-import { Reveal } from "@/components/site/motion";
-import { RouteMap } from "@/components/site/route-map";
-import { SailingCard, bookHref } from "@/components/site/sailing-card";
-import { swDate, swDay } from "@/lib/sw-date";
+import { Btn, CtaBand, Eyebrow, PhotoFrame, SectionHead, Ticker } from "@/components/site/kit";
+import { CountUp, Reveal, ScrollVar, ScrollWords } from "@/components/site/motion";
+import { PHOTOS } from "@/components/site/photos";
+import { NextSailingStrip, SailingCard } from "@/components/site/sailing-card";
 import { PriceCalculator } from "@/components/site/price-calculator";
 import { TrackForm } from "@/components/site/track-form";
 import { CITIES } from "@/lib/china-guide";
@@ -48,6 +28,41 @@ export const metadata: Metadata = {
    the morning is live by the time a customer rings about it. */
 export const revalidate = 60;
 
+const SERVICES = [
+  {
+    photo: "containerStack",
+    tag: "LCL",
+    title: "Loose cargo",
+    body: "Share a container with other customers. Pay only for the cubic metres you use.",
+    points: ["From one carton", "Priced per CBM", "Every Monday"],
+    href: "/book?service=SHARED_CARGO",
+  },
+  {
+    photo: "craneLift",
+    tag: "FCL",
+    title: "Full container",
+    body: "A whole 20ft, 40ft or high cube, loaded for you alone and sealed in Guangzhou.",
+    points: ["20ft · 40ft · 40HC", "Sealed at loading", "One owner"],
+    href: "/book?service=FULL_CONTAINER",
+  },
+  {
+    photo: "guangzhouNight",
+    tag: "Sourcing",
+    title: "China sourcing",
+    body: "We find suppliers, check the goods and bring them to our warehouse before they load.",
+    points: ["Supplier search", "Goods checked", "Paid safely"],
+    href: "/china",
+  },
+] as const;
+
+const STEPS = [
+  ["Get your address", "Register. We give you our Guangzhou address and your own shipping mark."],
+  ["Your supplier delivers", "They bring the goods to our warehouse with your mark on every box."],
+  ["We receive and measure", "Counted, weighed, measured and photographed. You get a delivery note."],
+  ["It sails", "Packed on Friday, sails on Monday, about a month at sea."],
+  ["Collect or we deliver", "Pay the invoice and collect in Dar es Salaam, or we bring it to you."],
+] as const;
+
 export default async function HomePage() {
   const locale = DEFAULT_LOCALE;
   const [company, cargoTypes, sailings] = await Promise.all([
@@ -64,336 +79,285 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* The first visit to the home page in a session opens on the mark and the route (globals.css .sc-intro). */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "try{if(sessionStorage.getItem('sc-intro'))document.documentElement.setAttribute('data-sc-intro','');sessionStorage.setItem('sc-intro','1')}catch(e){}",
+        }}
+      />
+      <div aria-hidden className="sc-intro">
+        <div className="text-center">
+          <p className="sc-intro-word sc-title text-[2.4rem] text-white sm:text-7xl">Swift Cargo</p>
+          <div className="mx-auto mt-5 h-px w-48 bg-white/15 sm:w-72">
+            <div className="sc-intro-bar h-px bg-signal" />
+          </div>
+          <p className="sc-intro-word sc-label mt-4 text-white/50 [animation-delay:0.35s]">
+            {ROUTE.originCity} → {ROUTE.destinationCity}
+          </p>
+        </div>
+      </div>
+
       {/* ---------------------------------------------------------------- Hero */}
-      <PageHero
-        size="home"
-        photo="shipWake"
-        lead={t(locale, "China to Tanzania.")}
-        trail={t(locale, "On time, every time.")}
-        body={<p>{t(locale, "Loose cargo or a full container, by sea. A ship leaves Guangzhou every Monday.")}</p>}
-        actions={
-          <>
-            <Link href="/quote" className={heroButton.primary}>
-              {t(locale, "Get a quote")}
-              <ArrowRight className="size-4" />
-            </Link>
-            <Link href="/calculator" className={heroButton.ghost}>
-              <Calculator className="size-4" />
-              {t(locale, "Price calculator")}
-            </Link>
-            {/* Tracking, in the hero — it is what most visitors came for. */}
-            <div className="mt-4 w-full max-w-xl">
-              <p className="mb-2.5 text-[0.7rem] font-medium text-cyan-200">
-                {t(locale, "Track your cargo")}
+      <ScrollVar as="section" mode="leave" className="relative isolate overflow-hidden bg-ink text-white">
+        <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="sc-hero-photo absolute inset-0">
+            <Image src={PHOTOS.shipWake.src} alt="" fill priority placeholder="blur" sizes="100vw" className="object-cover" />
+          </div>
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.7)_0%,rgba(3,10,19,0.15)_25%,rgba(3,10,19,0.3)_48%,rgba(3,10,19,0.9)_78%,hsl(var(--background))_100%)]" />
+        </div>
+
+        <div className="container flex min-h-[100svh] flex-col justify-end pb-10 pt-28 sm:pb-16">
+          <div className="sc-hero-fade grid items-end gap-10 lg:grid-cols-[1fr_auto]">
+            <div className="min-w-0">
+              <Eyebrow className="mb-6 text-white [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{t(locale, "Sea freight · Every Monday")}</Eyebrow>
+              <h1 className="sc-title text-[2.75rem] leading-[0.9] sm:text-[5.5rem] lg:text-[7.4rem]">
+                <span className="split-w">
+                  <span className="split-i animate-in-up">{t(locale, "China to")}</span>
+                </span>
+                <br />
+                <span className="split-w">
+                  <span className="split-i animate-in-up [animation-delay:120ms]">{t(locale, "Tanzania.")}</span>
+                </span>
+              </h1>
+              <p className="sc-title sc-stroke animate-in-up mt-3 text-[1.6rem] [animation-delay:240ms] sm:text-5xl lg:text-6xl">
+                {t(locale, "On time, every time.")}
               </p>
+              <p className="animate-in-up mt-6 max-w-md text-[15px] leading-relaxed text-white/70 [animation-delay:320ms] sm:text-lg">
+                {t(locale, "Loose cargo or a full container, by sea, from Guangzhou to Dar es Salaam.")}
+              </p>
+              <div className="animate-in-up mt-7 flex flex-wrap gap-3 [animation-delay:400ms]">
+                <Btn href="/quote">{t(locale, "Get a quote")}</Btn>
+                <Btn href="/calculator" tone="line" icon={Calculator}>
+                  {t(locale, "Price calculator")}
+                </Btn>
+              </div>
+            </div>
+
+            {/* Tracking, in the hero — it is what most visitors came for. */}
+            <div className="animate-in-up w-full [animation-delay:480ms] lg:w-[25rem]">
+              <p className="sc-label mb-3 text-white/55">{t(locale, "Track your cargo")}</p>
               <TrackForm dark pill />
             </div>
-            {/* Three facts instead of a paragraph. */}
-            <dl className="mt-6 grid w-full max-w-xl grid-cols-3 gap-4 border-t border-white/15 pt-4">
-              {[
-                ["Every Monday", "A ship leaves"],
-                ["Friday", "Last day to receive cargo"],
-                ["Photos", "Taken the day it arrives"],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-sm font-semibold text-white">{t(locale, k)}</dt>
-                  <dd className="mt-0.5 text-[0.7rem] leading-snug text-white/60 sm:text-xs">{t(locale, v)}</dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        }
-        aside={
-          <div className="relative mx-auto w-full max-w-sm lg:ml-auto lg:max-w-[20rem]">
-            {next ? (
-              <Link
-                href={next.bookingOpen ? bookHref(next) : "/schedule"}
-                className="group block rounded-3xl bg-white/95 p-5 text-slate-900 border border-white/10"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[0.7rem] font-medium text-slate-500">
-                    {t(locale, "Meli niayofuata")}
-                  </p>
-                  <span className="grid size-7 place-items-center rounded-full bg-slate-900 text-white transition-transform group-hover:rotate-45">
-                    <ArrowUpRight className="size-3.5" />
-                  </span>
-                </div>
-                <div className="mt-3 grid grid-cols-[auto_1fr_auto] items-center gap-3">
-                  <div>
-                    <p className="text-[0.65rem] font-medium text-slate-500">
-                      {t(locale, "Inaondoka")}
-                    </p>
-                    <p className="tnum font-display text-lg font-bold">{swDay(next.departureDate)}</p>
-                  </div>
-                  <div aria-hidden className="relative h-5">
-                    <span className="absolute inset-x-0 top-1/2 border-t-2 border-dashed border-slate-300" />
-                    <Ship className="absolute left-1/2 top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 bg-white px-0.5 text-sky-700" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[0.65rem] font-medium text-slate-500">
-                      {t(locale, "Inafika (makadirio)")}
-                    </p>
-                    <p className="tnum font-display text-lg font-bold">{swDay(next.estimatedArrival)}</p>
-                  </div>
-                </div>
-                <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-xs text-orange-800">
-                  {t(locale, "Mwisho kupokea mzigo:")}{" "}
-                  <span className="tnum font-semibold">{swDate(next.cargoDeadline)}</span>
-                </p>
-              </Link>
-            ) : null}
           </div>
-        }
-      >
-      </PageHero>
+        </div>
+      </ScrollVar>
 
+      {next ? <NextSailingStrip sailing={next} /> : null}
+
+      <Ticker words={[ROUTE.originCity, t(locale, "Loose cargo"), ROUTE.destinationCity, t(locale, "Full container"), t(locale, "China sourcing"), t(locale, "Every Monday")]} />
 
       {/* ---------------------------------------------------------- Who we are */}
-      <section className="container grid items-center gap-14 py-14 sm:py-24 lg:grid-cols-2">
-        <Reveal className="relative pb-16 sm:pb-20">
-          <PhotoFrame name="portYard" className="aspect-[4/5] rounded-[2rem] sm:aspect-square" />
-          <PhotoFrame
-            name="warehouseForklift"
-            sizes="(max-width: 768px) 60vw, 25vw"
-            className="absolute -bottom-2 right-0 aspect-square w-[52%] rounded-[1.6rem] border-[6px] border-background shadow-raised"
-          />
-          <div className="absolute left-4 top-6 rounded-2xl bg-card/95 p-4 shadow-raised sm:left-6">
-            <p className="tnum font-display text-3xl font-extrabold text-brand">
-              {ROUTE.transitDaysMin}–{ROUTE.transitDaysMax}
-            </p>
-            <p className="text-xs font-medium text-muted-foreground">{t(locale, "days at sea")}</p>
-          </div>
-        </Reveal>
+      <section className="container pb-20 pt-8 sm:pb-32 sm:pt-16">
+        <Eyebrow index="01">{t(locale, "Who we are")}</Eyebrow>
+        <ScrollWords
+          text={t(
+            locale,
+            "One company holds your goods from Guangzhou to Dar es Salaam. Received, measured, photographed, shipped, cleared and handed over to you."
+          )}
+          accent={["measured", "photographed", "you"]}
+          className="mt-8 max-w-6xl font-display text-[1.7rem] font-semibold leading-[1.12] tracking-[-0.02em] text-white sm:text-5xl lg:text-[4rem]"
+        />
 
-        <div>
-          <SectionHead
-            eyebrow={t(locale, "Who we are")}
-            lead={t(locale, "One sea route,")}
-            trail={t(locale, "run properly from end to end.")}
-            body={t(
-              locale,
-              "One company holds your goods from Guangzhou to Dar es Salaam: received, loaded, shipped, cleared and handed over."
-            )}
-          />
-          <ul className="mt-9 grid gap-4 sm:grid-cols-2">
-            {(
-              [
-                [Scale, "Measured at both ends", "Guangzhou and Dar each weigh and measure, and both figures are kept."],
-                [Camera, "Photographed on arrival", "See your boxes are in our hands long before they reach you."],
-                [ShieldCheck, "Released to the right person", "Only once the bill is settled, and only to the receiver."],
-                [MapPin, "Tracked the whole way", "One reference from the warehouse floor to your hands."],
-              ] as const
-            ).map(([Icon, title, body], i) => (
-              <Reveal as="li" key={title} delay={i * 80} className="flex gap-4 rounded-xl border bg-card p-4 sm:block sm:rounded-2xl sm:p-5">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg border text-foreground/70 sm:size-10 sm:rounded-xl">
-                  <Icon className="size-[18px] sm:size-5" />
-                </span>
-                <div className="min-w-0">
-                  <p className="font-semibold sm:mt-4">{t(locale, title)}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground sm:mt-1">{t(locale, body)}</p>
-                </div>
-              </Reveal>
-            ))}
-          </ul>
-          <Link href="/about" className={`${heroButton.outline} mt-9`}>
-            {t(locale, "More about us")}
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
+        <dl className="mt-16 grid grid-cols-2 border-t border-white/10 sm:mt-24 lg:grid-cols-4">
+          {(
+            [
+              [<><span>{ROUTE.transitDaysMin}–</span><CountUp value={ROUTE.transitDaysMax} /></>, "Days at sea, Guangzhou to Dar"],
+              [t(locale, "Mon"), "A ship leaves every week"],
+              [t(locale, "Fri"), "Last day to receive cargo"],
+              [<>2<span className="text-signal">×</span></>, "Measured, in China and in Dar"],
+            ] as const
+          ).map(([value, label], i) => (
+            <Reveal
+              key={label}
+              delay={i * 90}
+              className="border-b border-white/10 py-7 pr-4 odd:border-r sm:py-10 lg:border-b-0 lg:border-r lg:px-8 lg:first:pl-0 lg:last:border-r-0"
+            >
+              <dt className="sr-only">{t(locale, label)}</dt>
+              <dd>
+                <span className="sc-title tnum block text-[2.4rem] text-white sm:text-6xl">{value}</span>
+                <span className="mt-3 block text-[13px] leading-snug text-white/55 sm:text-sm">{t(locale, label)}</span>
+              </dd>
+            </Reveal>
+          ))}
+        </dl>
       </section>
 
       {/* ------------------------------------------------------------ Services */}
-      <section className="site-band py-14 sm:py-24">
+      <section className="pb-20 sm:pb-32">
         <div className="container">
-          <div className="flex flex-wrap items-end justify-between gap-6">
+          <SectionHead
+            eyebrow={t(locale, "What we do")}
+            index="02"
+            lead={t(locale, "Two ways to ship.")}
+            trail={t(locale, "One to find what to ship.")}
+          />
+        </div>
+
+        {/* Cards that stack: each one sticks and the next slides up over it. */}
+        <div className="container mt-12 sm:mt-16">
+          {SERVICES.map((service, i) => (
+            <div
+              key={service.title}
+              className="sticky mb-6 sm:mb-10"
+              style={{ top: `calc(5rem + ${i * 1.25}rem)` }}
+            >
+              <Link
+                href={service.href}
+                className="group relative isolate block h-[34rem] overflow-hidden rounded-3xl border border-white/10 bg-ink sm:h-[38rem] lg:h-[40rem]"
+              >
+                <Image
+                  src={PHOTOS[service.photo].src}
+                  alt={PHOTOS[service.photo].alt}
+                  fill
+                  placeholder="blur"
+                  sizes="(max-width: 1400px) 100vw, 1400px"
+                  className="site-zoom -z-10 object-cover"
+                />
+                <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(3,10,19,0.55)_0%,rgba(3,10,19,0.1)_35%,rgba(3,10,19,0.92)_100%)] lg:bg-[linear-gradient(90deg,rgba(3,10,19,0.92)_0%,rgba(3,10,19,0.55)_50%,rgba(3,10,19,0.05)_100%)]" />
+
+                <div className="flex h-full flex-col justify-between p-6 sm:p-10 lg:p-14">
+                  <div className="flex items-start justify-between">
+                    <span className="sc-title sc-stroke text-6xl sm:text-8xl">{String(i + 1).padStart(2, "0")}</span>
+                    <ArrowUpRight className="size-7 text-white transition-transform duration-500 group-hover:-translate-y-1 group-hover:translate-x-1" />
+                  </div>
+                  <div className="max-w-xl">
+                    <p className="sc-label text-signal">{service.tag}</p>
+                    <h3 className="sc-title mt-3 text-[2.3rem] text-white sm:text-6xl lg:text-7xl">{t(locale, service.title)}</h3>
+                    <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/70 sm:text-lg">{t(locale, service.body)}</p>
+                    <p className="sc-label mt-6 text-white/60">
+                      {service.points.map((point) => t(locale, point)).join("  ·  ")}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------- How it works */}
+      <section className="border-t border-white/10 py-20 sm:py-32">
+        <div className="container grid gap-14 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+          <div className="lg:sticky lg:top-28 lg:self-start">
             <SectionHead
-              eyebrow={t(locale, "What we do")}
-              lead={t(locale, "Two ways to ship,")}
-              trail={t(locale, "and help finding what to ship.")}
+              eyebrow={t(locale, "How it works")}
+              index="03"
+              lead={t(locale, "Five steps.")}
+              trail={t(locale, "Factory to your shop.")}
             />
-            <Link href="/services" className={heroButton.outline}>
-              {t(locale, "All services")}
-              <ArrowRight className="size-4" />
-            </Link>
+            <PhotoFrame
+              name="warehouseTeam"
+              sizes="(max-width: 1024px) 100vw, 40vw"
+              className="mt-10 hidden aspect-[4/3] rounded-3xl lg:block"
+            />
           </div>
 
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {(
-              [
-                {
-                  photo: "containerStack",
-                  icon: Package,
-                  tag: "LCL",
-                  title: "Loose cargo",
-                  body: "Share a container. Pay by the cubic metre.",
-                  href: "/book?service=SHARED_CARGO",
-                },
-                {
-                  photo: "craneLift",
-                  icon: Container,
-                  tag: "FCL",
-                  title: "Full container",
-                  body: "A whole 20ft, 40ft or high cube, sealed and yours.",
-                  href: "/book?service=FULL_CONTAINER",
-                },
-                {
-                  photo: "guangzhouNight",
-                  icon: Search,
-                  tag: "Sourcing",
-                  title: "China sourcing",
-                  body: "We find suppliers and check goods before they load.",
-                  href: "/china",
-                },
-              ] as const
-            ).map((service, i) => (
-              <Reveal key={service.title} delay={i * 100}>
-                <Link href={service.href} className="focus-ring block rounded-[2rem]">
-                  <PhotoFrame
-                    name={service.photo}
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="h-[30rem] rounded-[2rem]"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-transparent" />
-                    <span className="absolute left-5 top-5 rounded-full bg-black/40 px-3 py-1 text-xs font-medium text-white">
-                      {service.tag}
-                    </span>
-                    <span className="absolute right-5 top-5 grid size-11 place-items-center rounded-full bg-white text-slate-900 transition-transform duration-500 group-hover:rotate-45">
-                      <ArrowUpRight className="size-5" />
-                    </span>
-                    <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                      <p className="font-display text-3xl font-bold tracking-tight">
-                        {t(locale, service.title)}
-                      </p>
-                      <p className="mt-2 text-sm leading-relaxed text-white/75">{t(locale, service.body)}</p>
-                    </div>
-                  </PhotoFrame>
-                </Link>
+          <ol className="border-t border-white/10">
+            {STEPS.map(([title, body], i) => (
+              <Reveal as="li" key={title} delay={i * 60} className="flex gap-6 border-b border-white/10 py-8 sm:gap-10 sm:py-10">
+                <span className="tnum w-6 shrink-0 pt-1 font-mono text-xs text-signal sm:pt-2">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>
+                  <span className="sc-title block text-xl text-white sm:text-3xl">{t(locale, title)}</span>
+                  <span className="mt-3 block max-w-md text-[15px] leading-relaxed text-white/60">{t(locale, body)}</span>
+                </span>
               </Reveal>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
       {/* ------------------------------------------------------ Explore China */}
-      <section className="container py-14 sm:py-24">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <SectionHead
-            eyebrow={t(locale, "Explore China")}
-            lead={t(locale, "Where the world's goods")}
-            trail={t(locale, "are made and sold.")}
-            body={t(
-              locale,
-              "Guangzhou, Yiwu, Shenzhen, Foshan: find where to buy what you sell. We bring it home."
-            )}
-          />
-          <Link href="/china" className={heroButton.outline}>
-            {t(locale, "Explore all")}
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-        <ul className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {CITIES.slice(0, 5).map((city, i) => (
-            <Reveal as="li" key={city.slug} delay={i * 80} className={i === 0 ? "col-span-2 md:col-span-1" : undefined}>
-              <Link href="/china" className="focus-ring block rounded-[1.75rem]">
-                <PhotoFrame
-                  name={city.photo}
-                  sizes="(max-width: 768px) 50vw, 20vw"
-                  className="aspect-[3/4] rounded-[1.75rem]"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
-                    <p className="font-display text-xl font-bold tracking-tight sm:text-2xl">{city.name}</p>
-                    <p className="mt-0.5 text-xs text-white/75 sm:text-sm">{t(locale, city.tagline)}</p>
-                  </div>
-                  <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[0.7rem] font-medium text-white">
-                    <MapPin className="size-3" />
-                    {city.where}
-                  </span>
-                </PhotoFrame>
-              </Link>
-            </Reveal>
-          ))}
-        </ul>
-      </section>
-
-      {/* ---------------------------------------------------------- The route */}
-      <section className="relative isolate overflow-hidden bg-ink py-20 text-white sm:py-28">
-        <div className="container grid items-center gap-14 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
+      {/* On a computer the section holds still while the cities run sideways past it; on a phone they swipe. */}
+      <ScrollVar as="section" mode="pin" className="relative border-t border-white/10 lg:h-[260vh]">
+        <div className="py-20 sm:py-32 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:justify-center lg:overflow-hidden lg:py-0">
+          <div className="container flex flex-wrap items-end justify-between gap-6">
             <SectionHead
-              dark
-              eyebrow={t(locale, "How it works")}
-              lead={t(locale, "Five steps,")}
-              trail={t(locale, "factory to your shop.")}
+              eyebrow={t(locale, "Explore China")}
+              index="04"
+              lead={t(locale, "Where the world's goods")}
+              trail={t(locale, "are made and sold.")}
             />
-            <ol className="mt-8 divide-y divide-white/10 border-y border-white/10">
-              {[
-                ["Get your address", "Register. We give you our Guangzhou address and your own mark."],
-                ["Your supplier delivers", "They deliver to our warehouse with your mark on every box."],
-                ["We receive and measure", "Counted, weighed, measured, photographed. You get a delivery note."],
-                ["It sails", "Packed on Friday, sails on Monday, about a month at sea."],
-                ["Collect or we deliver", "Pay the invoice and collect in Dar, or we deliver."],
-              ].map(([title, body], i) => (
-                <Reveal as="li" key={title} delay={i * 80} className="flex gap-5 py-4">
-                  <span className="tnum w-6 shrink-0 pt-0.5 font-mono text-sm text-signal">{String(i + 1).padStart(2, "0")}</span>
-                  <span>
-                    <span className="block font-medium">{t(locale, title)}</span>
-                    <span className="mt-0.5 block text-sm leading-relaxed text-white/60">{t(locale, body)}</span>
-                  </span>
-                </Reveal>
-              ))}
-            </ol>
+            <Link href="/china" className="sc-link text-sm text-white">
+              {t(locale, "Explore all")}
+              <ArrowUpRight className="size-4" />
+            </Link>
           </div>
-          <Reveal>
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-4 sm:p-8">
-              <RouteMap />
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm">
-                <span className="flex items-center gap-2 text-white/70">
-                  <Ship className="size-4 text-cyan-300" />
-                  {t(locale, "South China Sea · Malacca · Indian Ocean")}
-                </span>
-                <span className="tnum font-display text-lg font-bold">
-                  {ROUTE.transitDaysMin}–{ROUTE.transitDaysMax} {t(locale, "days")}
-                </span>
-              </div>
-            </div>
-          </Reveal>
+          <div className="mt-10 overflow-x-auto overscroll-x-contain [scrollbar-width:none] lg:mt-14 lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+            <ul className="sc-track flex w-max snap-x snap-mandatory gap-4 px-5 sm:gap-5 sm:px-8 lg:px-[max(2rem,calc((100vw-1400px)/2+1.25rem))]">
+              {CITIES.map((city, i) => (
+                <li key={city.slug} className="snap-start">
+                  <Link
+                    href="/china"
+                    className="group relative block h-[26rem] w-[17rem] overflow-hidden rounded-3xl bg-ink sm:h-[30rem] sm:w-[21rem] lg:h-[34rem] lg:w-[24rem]"
+                  >
+                    <Image
+                      src={PHOTOS[city.photo].src}
+                      alt={PHOTOS[city.photo].alt}
+                      fill
+                      placeholder="blur"
+                      sizes="24rem"
+                      className="site-zoom object-cover"
+                    />
+                    <span className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,10,19,0.45)_0%,transparent_30%,rgba(3,10,19,0.92)_100%)]" />
+                    <span className="absolute left-5 top-5 font-mono text-[11px] text-white/70">
+                      {String(i + 1).padStart(2, "0")} / {String(CITIES.length).padStart(2, "0")}
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 p-6">
+                      <span className="flex items-center gap-1.5 text-xs text-white/60">
+                        <MapPin className="size-3.5" />
+                        {city.where}
+                      </span>
+                      <span className="sc-title mt-2 block text-3xl text-white sm:text-4xl">{city.name}</span>
+                      <span className="mt-2 block text-sm text-white/65">{t(locale, city.tagline)}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </section>
+      </ScrollVar>
 
       {/* ------------------------------------------------------------- Sailings */}
       {sailings.length > 0 ? (
-        <section className="container py-14 sm:py-24">
-          <div className="flex flex-wrap items-end justify-between gap-6">
-            <SectionHead
-              eyebrow={t(locale, "Meli zinazofuata")}
-              lead={t(locale, "Meli kila Jumatatu.")}
-              trail={t(locale, "Mzigo mwisho Ijumaa.")}
-            />
-            <Link href="/schedule" className={heroButton.outline}>
-              {t(locale, "Ratiba kamili")}
-              <ArrowRight className="size-4" />
-            </Link>
+        <section className="border-t border-white/10 py-20 sm:py-32">
+          <div className="container">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <SectionHead
+                eyebrow={t(locale, "Meli zinazofuata")}
+                index="05"
+                lead={t(locale, "Meli kila Jumatatu.")}
+                trail={t(locale, "Mzigo mwisho Ijumaa.")}
+              />
+              <Link href="/schedule" className="sc-link text-sm text-white">
+                {t(locale, "Ratiba kamili")}
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </div>
+            <div className="mt-12 grid gap-4 sm:gap-6 md:grid-cols-3">
+              {sailings.map((sailing, i) => (
+                <Reveal key={sailing.key} delay={i * 100} className="h-full">
+                  <SailingCard sailing={sailing} featured={sailing.key === next?.key} />
+                </Reveal>
+              ))}
+            </div>
+            <p className="mt-6 text-xs text-white/45">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
           </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {sailings.map((sailing, i) => (
-              <Reveal key={sailing.key} delay={i * 100}>
-                <SailingCard sailing={sailing} />
-              </Reveal>
-            ))}
-          </div>
-          <p className="mt-6 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
         </section>
       ) : null}
 
       {/* ------------------------------------------------------- Price check */}
-      <section className="site-band py-14 sm:py-24">
+      <section className="relative border-t border-white/10 py-20 sm:py-32">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "What it costs")}
-            lead={t(locale, "What will my shipping cost?")}
-            trail={t(locale, "Find out in seconds.")}
-            body={t(locale, "Pick your goods, enter the CBM or box sizes, see the price.")}
+            index="06"
+            lead={t(locale, "What will it cost?")}
+            trail={t(locale, "Know in seconds.")}
+            body={t(locale, "Pick your goods, enter the CBM or the box sizes, and see the price.")}
           />
           <Reveal className="mt-12">
             <PriceCalculator cargoTypes={cargoTypes.map((r) => r.cargoType)} />
@@ -402,70 +366,68 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------------------------------------------- Who we ship for */}
-      <section className="container grid items-center gap-14 py-14 sm:py-24 lg:grid-cols-2">
-        <div className="lg:order-2">
-          <SectionHead
-            eyebrow={t(locale, "Who we ship for")}
-            lead={t(locale, "Shops, wholesalers and importers")}
-            trail={t(locale, "across Tanzania.")}
-            body={t(
-              locale,
-              "Register once for your own shipping mark. Follow every box from your phone."
-            )}
-          />
-          <ul className="mt-8 space-y-3">
-            {[
-              "Your own shipping mark and account",
-              "Delivery note and photographs when your goods arrive",
-              "Invoices in shillings, with the rate fixed on the day",
-              "Collect in Dar es Salaam or ask us to deliver",
-            ].map((line, i) => (
-              <Reveal as="li" key={line} delay={i * 70} className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-signal" />
-                <span>{t(locale, line)}</span>
-              </Reveal>
-            ))}
-          </ul>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/register" className={heroButton.solid}>
-              {t(locale, "Get my shipping mark")}
-              <ArrowRight className="size-4" />
-            </Link>
-            <Link href="/pickup" className={heroButton.outline}>
-              {t(locale, "Request a pickup in China")}
-            </Link>
+      <section className="border-t border-white/10 py-20 sm:py-32">
+        <div className="container grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
+          <div className="lg:order-2">
+            <SectionHead
+              eyebrow={t(locale, "Who we ship for")}
+              index="07"
+              lead={t(locale, "Shops and importers")}
+              trail={t(locale, "across Tanzania.")}
+              body={t(locale, "Register once for your own shipping mark, and follow every box from your phone.")}
+            />
+            <ul className="mt-9 divide-y divide-white/10 border-y border-white/10">
+              {[
+                "Your own shipping mark and account",
+                "Delivery note and photographs when your goods arrive",
+                "Invoices in shillings, with the rate fixed on the day",
+                "Collect in Dar es Salaam or ask us to deliver",
+              ].map((line, i) => (
+                <Reveal as="li" key={line} delay={i * 70} className="flex items-start gap-4 py-4">
+                  <Check className="mt-0.5 size-4 shrink-0 text-signal" />
+                  <span className="text-[15px] text-white/85">{t(locale, line)}</span>
+                </Reveal>
+              ))}
+            </ul>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Btn href="/register" tone="white">{t(locale, "Get my shipping mark")}</Btn>
+              <Btn href="/pickup" tone="line">{t(locale, "Pickup in China")}</Btn>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-3 sm:gap-4 lg:order-1">
+            <PhotoFrame name="traderShop" className="col-span-3 aspect-[3/4] rounded-3xl" />
+            <div className="col-span-2 grid gap-3 sm:gap-4">
+              <PhotoFrame name="traderPhone" sizes="25vw" className="aspect-square rounded-2xl" />
+              <PhotoFrame name="traderDoor" sizes="25vw" className="aspect-[4/5] rounded-2xl" />
+            </div>
           </div>
         </div>
-        <Reveal className="grid grid-cols-5 gap-4 lg:order-1">
-          <PhotoFrame name="traderShop" className="col-span-3 aspect-[3/4] rounded-[2rem]" />
-          <div className="col-span-2 grid gap-4">
-            <PhotoFrame name="traderPhone" sizes="25vw" className="aspect-square rounded-[1.6rem]" />
-            <PhotoFrame name="traderDoor" sizes="25vw" className="aspect-[4/5] rounded-[1.6rem]" />
-          </div>
-        </Reveal>
       </section>
 
       {/* ------------------------------------------------------------ Warehouses */}
-      <section className="site-band py-14 sm:py-24">
+      <section className="border-t border-white/10 py-20 sm:py-32">
         <div className="container">
           <SectionHead
             eyebrow={t(locale, "Where to send your goods")}
-            lead={t(locale, "A warehouse at each end")}
-            trail={t(locale, "of the voyage.")}
+            index="08"
+            lead={t(locale, "A warehouse")}
+            trail={t(locale, "at each end.")}
           />
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
+          <div className="mt-12 grid gap-4 sm:gap-6 md:grid-cols-2">
             {(
               [
                 {
                   photo: "guangzhouDusk",
+                  code: "CAN",
                   place: "Guangzhou, China",
                   address: company?.chinaAddress,
-                  note: "Give this address to your supplier along with your shipping mark.",
+                  note: "Give this address to your supplier with your shipping mark.",
                   href: "/china",
                   cta: "Warehouse address",
                 },
                 {
                   photo: "portCranes",
+                  code: "DAR",
                   place: "Dar es Salaam, Tanzania",
                   address: company?.darAddress,
                   note: "Collect here once your cargo has arrived and the invoice is settled.",
@@ -473,38 +435,37 @@ export default async function HomePage() {
                   cta: "Visit or call us",
                 },
               ] as const
-            ).map((site, i) => (
-              <Reveal key={site.place} delay={i * 100}>
-                <PhotoFrame name={site.photo} className="min-h-[26rem] rounded-[2rem]">
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/95 via-ink/40 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-9">
-                    <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
-                      <MapPin className="size-4" />
-                      {t(locale, site.place)}
-                    </p>
-                    <p className="mt-3 max-w-md text-lg leading-relaxed">
-                      {site.address ?? t(locale, "Address available on request")}
-                    </p>
-                    <p className="mt-2 max-w-md text-sm text-white/65">{t(locale, site.note)}</p>
-                    <Link href={site.href} className={`${heroButton.ghost} mt-6 h-10 px-5`}>
-                      {t(locale, site.cta)}
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </div>
-                </PhotoFrame>
-              </Reveal>
+            ).map((site) => (
+              <PhotoFrame key={site.place} name={site.photo} className="min-h-[30rem] rounded-3xl">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#030a13] via-[#030a13]/50 to-transparent" />
+                <span className="sc-title sc-stroke absolute right-6 top-5 text-6xl sm:text-7xl">{site.code}</span>
+                <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-9">
+                  <p className="sc-label flex items-center gap-2 text-white/70">
+                    <MapPin className="size-3.5 text-signal" />
+                    {t(locale, site.place)}
+                  </p>
+                  <p className="mt-4 max-w-md text-lg leading-relaxed sm:text-xl">
+                    {site.address ?? t(locale, "Address available on request")}
+                  </p>
+                  <p className="mt-2 max-w-md text-sm text-white/60">{t(locale, site.note)}</p>
+                  <Link href={site.href} className="sc-link mt-6 text-sm">
+                    {t(locale, site.cta)}
+                    <ArrowUpRight className="size-4" />
+                  </Link>
+                </div>
+              </PhotoFrame>
             ))}
           </div>
           {company?.phone ? (
-            <p className="tnum mt-6 text-sm text-muted-foreground">
+            <p className="tnum mt-6 text-sm text-white/50">
               {t(locale, "Call us")}:{" "}
-              <a href={telHref(company.phone)} className="font-semibold text-foreground hover:text-brand">
+              <a href={telHref(company.phone)} className="font-semibold text-white hover:text-signal">
                 {company.phone}
               </a>
               {company.altPhone ? (
                 <>
                   {" · "}
-                  <a href={telHref(company.altPhone)} className="font-semibold text-foreground hover:text-brand">
+                  <a href={telHref(company.altPhone)} className="font-semibold text-white hover:text-signal">
                     {company.altPhone}
                   </a>
                 </>
@@ -515,18 +476,13 @@ export default async function HomePage() {
       </section>
 
       <CtaBand
-        lead={t(locale, "Ready to ship from China?")}
-        trail={t(locale, "Start today.")}
+        lead={t(locale, "Ready to ship")}
+        trail={t(locale, "from China?")}
         body={t(locale, "Create an account, get your shipping mark, and send it to your supplier.")}
         actions={
           <>
-            <Link href="/register" className={heroButton.primary}>
-              {t(locale, "Create an account")}
-              <ArrowRight className="size-4" />
-            </Link>
-            <Link href="/contact" className={heroButton.ghost}>
-              {t(locale, "Talk to us")}
-            </Link>
+            <Btn href="/register">{t(locale, "Create an account")}</Btn>
+            <Btn href="/contact" tone="line">{t(locale, "Talk to us")}</Btn>
           </>
         }
       />

@@ -45,6 +45,11 @@ export const DEFAULT_DESTINATION = "Dar es Salaam";
  */
 const CHINA_DAY_END_MS = 16 * 60 * 60 * 1000;
 
+/** The moment a sailing stops taking cargo: the end of its deadline day in Guangzhou. */
+export function cargoClosesAt(sailing: Pick<Sailing, "cargoDeadline">): Date {
+  return new Date(sailing.cargoDeadline.getTime() + CHINA_DAY_END_MS);
+}
+
 /** How long before the deadline the page starts saying "hurry". */
 const CUTOFF_WARNING_DAYS = 2;
 

@@ -100,7 +100,7 @@ export function PriceCalculator({
       {/* ---------------------------------------------------- The question */}
       <div className="flex flex-col p-5 sm:p-8">
         {containers.length > 0 ? (
-          <div className="inline-flex rounded-full bg-secondary p-1">
+          <div className="inline-flex gap-5 border-b">
             {(
               [
                 ["LCL", Box, "Loose cargo"],
@@ -112,10 +112,10 @@ export function PriceCalculator({
                 type="button"
                 onClick={() => setService(value)}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+                  "-mb-px inline-flex items-center gap-2 border-b-2 px-1 py-2.5 text-sm font-semibold transition-colors",
                   service === value
-                    ? "bg-brand text-brand-foreground shadow-soft"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "border-signal text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Icon className="size-4" />
@@ -158,7 +158,7 @@ export function PriceCalculator({
                     type="button"
                     onClick={() => setHow(value)}
                     className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                      "rounded-md border px-3.5 py-1.5 text-sm font-medium transition-colors",
                       how === value ? "border-brand bg-brand/10 text-brand" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -412,7 +412,7 @@ export function PriceCalculator({
             <p className="mt-2 text-sm text-white/60">{t(locale, "The whole container, Guangzhou to Dar es Salaam.")}</p>
             <Link
               href={`${bookPath}?service=FULL_CONTAINER`}
-              className="track-go mt-8 inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold"
+              className="track-go mt-8 inline-flex h-12 items-center gap-2 rounded-md px-6 text-sm font-semibold"
             >
               {t(locale, "Book this container")}
               <ArrowRight className="size-4" />
@@ -448,7 +448,7 @@ export function PriceCalculator({
               ) : answer?.estimate?.kind === "quote-required" ? (
                 <>
                   <p className="font-display text-3xl font-bold tracking-tight">{t(locale, "We will price this for you")}</p>
-                  <Link href="/quote" className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-900">
+                  <Link href="/quote" className="mt-5 inline-flex items-center gap-2 rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-900">
                     {t(locale, "Get a quote")}
                     <ArrowRight className="size-4" />
                   </Link>
@@ -484,7 +484,7 @@ export function PriceCalculator({
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   href={`${bookPath}?service=SHARED_CARGO&commodity=${encodeURIComponent(cargoType)}&cbm=${encodeURIComponent(priced.measuredCbm)}`}
-                  className="track-go inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold"
+                  className="track-go inline-flex h-12 items-center gap-2 rounded-md px-6 text-sm font-semibold"
                 >
                   {t(locale, "Book this shipment")}
                   <ArrowRight className="size-4" />
@@ -505,9 +505,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   return (
     <div>
       <p className="mb-3 flex items-center gap-3 font-display text-lg font-bold tracking-tight">
-        <span className="tnum grid size-8 place-items-center rounded-full bg-gradient-to-br from-signal to-orange-600 text-sm text-white">
-          {n}
-        </span>
+        <span className="tnum font-mono text-xs font-normal text-signal">{String(n).padStart(2, "0")}</span>
         {title}
       </p>
       {children}

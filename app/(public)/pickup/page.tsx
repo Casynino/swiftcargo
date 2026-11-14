@@ -26,8 +26,8 @@ export default async function Page() {
         overlap
         photo="cnFactoryLine"
         eyebrow={t(locale, "China pickup")}
-        lead={t(locale, "We collect it")}
-        trail={t(locale, "from your supplier.")}
+        lead={t(locale, "We collect it.")}
+        trail={t(locale, "From your supplier.")}
         body={<p>{t(locale, "We can collect from your supplier in China and bring it to our Guangzhou warehouse.")}</p>}
       />
       <FormShell side={<FormSide photo="cnWholesaleHall" />}>

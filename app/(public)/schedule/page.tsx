@@ -4,7 +4,7 @@ import { Ship } from "lucide-react";
 
 import { PageHero, heroButton } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
-import { SailingCard } from "@/components/site/sailing-card";
+import { NextSailingStrip, SailingCard } from "@/components/site/sailing-card";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { ARRIVAL_CAVEAT_SW, publicSailings } from "@/lib/sailing-schedule";
 
@@ -25,11 +25,11 @@ const WEEKS_SHOWN = 12;
 export default async function SchedulePage() {
   const locale = DEFAULT_LOCALE;
   const sailings = await publicSailings({ count: WEEKS_SHOWN });
+  const next = sailings.find((s) => s.bookingOpen) ?? null;
 
   return (
     <>
       <PageHero
-        overlap
         photo="shipSea"
         eyebrow={t(locale, "Ratiba ya meli")}
         lead={t(locale, "Meli kila Jumatatu.")}
@@ -44,9 +44,11 @@ export default async function SchedulePage() {
         }
       />
 
-      <section className="container pb-20 sm:pb-28">
+      {next ? <NextSailingStrip sailing={next} /> : null}
+
+      <section className="container py-14 sm:py-24">
         {sailings.length === 0 ? (
-          <div className="relative z-10 -mt-24 rounded-[2rem] border bg-card p-12 text-center shadow-raised">
+          <div className="rounded-3xl border bg-card p-12 text-center shadow-raised">
             <Ship className="mx-auto size-8 text-muted-foreground" />
             <p className="mt-4 font-medium">{t(locale, "Hakuna ratiba ya meli kwa sasa")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -57,16 +59,16 @@ export default async function SchedulePage() {
             </Link>
           </div>
         ) : (
-          <ul className="relative z-10 -mt-24 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sailings.map((sailing, i) => (
               <Reveal as="li" key={sailing.key} delay={Math.min(i, 5) * 70}>
-                <SailingCard sailing={sailing} />
+                <SailingCard sailing={sailing} featured={sailing.key === next?.key} />
               </Reveal>
             ))}
           </ul>
         )}
 
-        <p className="mt-8 text-xs text-muted-foreground">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
+        <p className="mt-8 text-xs text-white/45">{t(locale, ARRIVAL_CAVEAT_SW)}</p>
         <p className="mt-2 text-xs text-muted-foreground">
           {t(
             locale,

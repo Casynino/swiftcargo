@@ -22,9 +22,9 @@ export const metadata: Metadata = {
 export default function NotFound() {
   const locale = DEFAULT_LOCALE;
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="dark sc-site flex min-h-dvh flex-col">
       <SiteHeader />
-      <main className="container flex flex-1 flex-col items-center justify-center py-20 text-center">
+      <main className="container flex flex-1 flex-col items-center justify-center py-32 text-center">
         <span className="inline-flex size-14 items-center justify-center rounded-full bg-secondary text-muted-foreground">
           <SearchX className="size-7" />
         </span>

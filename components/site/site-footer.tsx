@@ -34,60 +34,53 @@ export async function SiteFooter() {
   const whatsapp = whatsappLink(company?.whatsapp, WHATSAPP_OPENER);
 
   return (
-    <footer className="relative isolate overflow-hidden bg-ink text-white/80">
-      <div className="container flex flex-wrap items-end justify-between gap-8 border-b border-white/10 pb-12 pt-16">
-        <p className="font-display text-4xl font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl">
-          {ROUTE.originCity} <span className="text-signal">→</span>
-          <br />
-          <span className="site-outline">{ROUTE.destinationCity}</span>
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/quote"
-            className="track-go inline-flex h-12 items-center gap-2 rounded-full px-6 text-sm font-semibold text-white"
-          >
+    <footer className="dark relative isolate overflow-hidden border-t border-white/10 bg-[#030a13] text-white/75">
+      <div className="container grid gap-10 pb-12 pt-16 sm:pt-24 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+        <div>
+          <p className="sc-label flex items-center gap-3 text-white/50">
+            {ROUTE.originCity} → {ROUTE.destinationCity}
+          </p>
+          <p className="sc-title mt-6 text-[2.2rem] text-white sm:text-6xl lg:text-7xl">
+            {t(locale, "Ship it.")} <span className="text-white/35">{t(locale, "We bring it home.")}</span>
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3 lg:justify-end">
+          <Link href="/quote" className="sc-btn sc-btn--orange sc-btn--plain">
             {t(locale, "Get a quote")}
           </Link>
-          <Link
-            href="/track"
-            className="inline-flex h-12 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/20"
-          >
+          <Link href="/track" className="sc-btn sc-btn--line sc-btn--plain">
             {t(locale, "Track cargo")}
           </Link>
         </div>
       </div>
-      <div className="container grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          {/* The footer is dark in both themes, so the mark is drawn in its
-              dark-theme colours here whatever the reader has chosen. */}
-          <span className="dark inline-flex">
-            <BrandMark size={32} />
-          </span>
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70">
-            {t(locale, "Sea freight from")} {ROUTE.originCity} {t(locale, "to")}{" "}
-            {ROUTE.destinationCity}.{" "}
-            {t(locale, "Loose cargo and full containers,")} {ROUTE.transitDaysMin}–
-            {ROUTE.transitDaysMax} {t(locale, "days at sea.")}
+
+      <div className="container grid grid-cols-2 gap-x-6 gap-y-10 border-t border-white/10 py-14 lg:grid-cols-4">
+        <div className="col-span-2 lg:col-span-1">
+          <BrandMark size={32} />
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/55">
+            {t(locale, "Sea freight from")} {ROUTE.originCity} {t(locale, "to")} {ROUTE.destinationCity}.{" "}
+            {t(locale, "Loose cargo and full containers,")} {ROUTE.transitDaysMin}–{ROUTE.transitDaysMax}{" "}
+            {t(locale, "days at sea.")}
           </p>
           {whatsapp ? (
             <a
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white/10 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+              className="sc-link mt-5 text-sm text-white"
             >
-              <MessageCircle className="size-4" />
+              <MessageCircle className="size-4 text-signal" />
               {t(locale, "Message us on WhatsApp")}
             </a>
           ) : null}
         </div>
 
         <nav aria-label={t(locale, "Shipping")}>
-          <p className="eyebrow text-marine">{t(locale, "Shipping")}</p>
-          <ul className="mt-4 space-y-2.5 text-sm">
+          <p className="sc-label text-white/40">{t(locale, "Shipping")}</p>
+          <ul className="mt-5 space-y-3 text-sm">
             {SHIP.map(([href, label]) => (
               <li key={href}>
-                <Link href={href} className="hover:text-white">
+                <Link href={href} className="transition-colors hover:text-signal">
                   {t(locale, label)}
                 </Link>
               </li>
@@ -96,11 +89,11 @@ export async function SiteFooter() {
         </nav>
 
         <nav aria-label={t(locale, "Work with us")}>
-          <p className="eyebrow text-marine">{t(locale, "Work with us")}</p>
-          <ul className="mt-4 space-y-2.5 text-sm">
+          <p className="sc-label text-white/40">{t(locale, "Work with us")}</p>
+          <ul className="mt-5 space-y-3 text-sm">
             {ASK.map(([href, label]) => (
               <li key={href}>
-                <Link href={href} className="hover:text-white">
+                <Link href={href} className="transition-colors hover:text-signal">
                   {t(locale, label)}
                 </Link>
               </li>
@@ -108,18 +101,18 @@ export async function SiteFooter() {
           </ul>
         </nav>
 
-        <div>
-          <p className="eyebrow text-marine">{t(locale, "Reach us")}</p>
-          <ul className="mt-4 space-y-3 text-sm">
+        <div className="col-span-2 lg:col-span-1">
+          <p className="sc-label text-white/40">{t(locale, "Reach us")}</p>
+          <ul className="mt-5 space-y-3 text-sm">
             {company?.phone ? (
               <li className="flex gap-2.5">
-                <Phone className="mt-0.5 size-4 shrink-0 text-marine" />
+                <Phone className="mt-0.5 size-4 shrink-0 text-white/40" />
                 <span className="tnum">
-                  <a href={telHref(company.phone)} className="hover:text-white">
+                  <a href={telHref(company.phone)} className="hover:text-signal">
                     {company.phone}
                   </a>
                   {company.altPhone ? (
-                    <a href={telHref(company.altPhone)} className="block hover:text-white">
+                    <a href={telHref(company.altPhone)} className="block hover:text-signal">
                       {company.altPhone}
                     </a>
                   ) : null}
@@ -128,21 +121,21 @@ export async function SiteFooter() {
             ) : null}
             {company?.email ? (
               <li className="flex min-w-0 gap-2.5">
-                <Mail className="mt-0.5 size-4 shrink-0 text-marine" />
-                <a href={`mailto:${company.email}`} className="break-all hover:text-white">
+                <Mail className="mt-0.5 size-4 shrink-0 text-white/40" />
+                <a href={`mailto:${company.email}`} className="break-all hover:text-signal">
                   {company.email}
                 </a>
               </li>
             ) : null}
             {company?.darAddress ? (
               <li className="flex gap-2.5">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-marine" />
+                <MapPin className="mt-0.5 size-4 shrink-0 text-white/40" />
                 {company.darAddress}
               </li>
             ) : null}
             {company?.chinaAddress ? (
               <li className="flex gap-2.5">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-marine" />
+                <MapPin className="mt-0.5 size-4 shrink-0 text-white/40" />
                 {company.chinaAddress}
               </li>
             ) : null}
@@ -150,8 +143,15 @@ export async function SiteFooter() {
         </div>
       </div>
 
+      {/* The name, as wide as the page, cut off at the foot like a hull at the waterline. */}
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden">
+        <p className="sc-title sc-stroke -mb-[0.18em] whitespace-nowrap text-center text-[10.4vw] leading-none opacity-40">
+          Swift Cargo
+        </p>
+      </div>
+
       <div className="border-t border-white/10">
-        <div className="container flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-white/50">
+        <div className="container flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-white/45">
           <p>
             © {new Date().getFullYear()} {company?.name ?? "Swift Cargo"}
             {company?.tagline ? `. ${company.tagline}.` : "."}

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, CheckCircle2, Container, Package, Search, Truck, Warehouse } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, Container, Package, Search, Truck, Warehouse } from "lucide-react";
 
-import { CtaBand, PageHero, PhotoFrame, heroButton } from "@/components/site/kit";
+import { Btn, CtaBand, PageHero, PhotoFrame, Ticker, heroButton } from "@/components/site/kit";
 import { Reveal } from "@/components/site/motion";
 import type { PhotoName } from "@/components/site/photos";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
@@ -107,8 +107,8 @@ export default async function ServicesPage() {
     <>
       <PageHero
         photo="portCranes"
-        lead={t(locale, "Everything between your supplier")}
-        trail={t(locale, "and your shop.")}
+        lead={t(locale, "Supplier to shop.")}
+        trail={t(locale, "We do it all.")}
         body={
           <p>
             {t(
@@ -130,31 +130,36 @@ export default async function ServicesPage() {
         }
       />
 
-      <section className="container py-14 sm:py-24">
-        <ol className="divide-y">
+      <Ticker words={SERVICES.map((service) => t(locale, service.title))} />
+
+      <section className="container pb-20 sm:pb-32">
+        <ol>
           {SERVICES.map((service, i) => (
-            <li key={service.title} className="py-10 first:pt-0 sm:py-16">
-              <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
-                <Reveal className={i % 2 ? "lg:order-2" : undefined}>
-                  <PhotoFrame name={service.photo} className="aspect-[4/3] rounded-2xl" />
-                </Reveal>
-                <Reveal delay={100}>
-                  <p className="font-mono text-xs text-signal">{String(i + 1).padStart(2, "0")}</p>
-                  <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-                    {t(locale, service.title)}
-                  </h2>
-                  <p className="mt-3 max-w-md text-lg text-muted-foreground">{t(locale, service.body)}</p>
-                  <ul className="mt-6 divide-y border-y text-sm">
+            <li key={service.title} className="border-t border-white/10 py-12 sm:py-20">
+              <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+                <div className={i % 2 ? "lg:order-2" : undefined}>
+                  <PhotoFrame name={service.photo} className="aspect-[4/3] rounded-3xl lg:aspect-[5/4]" />
+                </div>
+                <Reveal delay={100} className="lg:pt-4">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="sc-title sc-stroke tnum text-6xl sm:text-8xl">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="sc-label text-white/40">
+                      {String(i + 1).padStart(2, "0")} / {String(SERVICES.length).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <h2 className="sc-title mt-6 text-[1.9rem] text-white sm:text-5xl">{t(locale, service.title)}</h2>
+                  <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/65 sm:text-lg">{t(locale, service.body)}</p>
+                  <ul className="mt-7 divide-y divide-white/10 border-y border-white/10 text-[15px] text-white/85">
                     {service.points.map((text) => (
-                      <li key={text} className="py-2.5">
+                      <li key={text} className="flex items-start gap-3 py-3">
+                        <Check className="mt-1 size-4 shrink-0 text-signal" />
                         {point(text)}
                       </li>
                     ))}
                   </ul>
-                  <Link href={service.href} className="group mt-6 inline-flex items-center gap-2 border-b border-signal pb-1 font-medium">
+                  <Btn href={service.href} tone="line" className="mt-8">
                     {t(locale, service.cta)}
-                    <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </Link>
+                  </Btn>
                 </Reveal>
               </div>
             </li>
@@ -164,7 +169,7 @@ export default async function ServicesPage() {
 
       <CtaBand
         photo="shipSea"
-        lead={t(locale, "Not sure which one you need?")}
+        lead={t(locale, "Not sure which?")}
         trail={t(locale, "Ask us.")}
         body={t(locale, "Tell us what you are shipping and roughly how much, and we will tell you the cheapest way to move it.")}
         actions={

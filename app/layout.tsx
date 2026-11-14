@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Inter } from "next/font/google";
+import { Archivo, Geist_Mono, Inter } from "next/font/google";
 
 import { InstallApp } from "@/components/install-app";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,7 +19,15 @@ const inter = Inter({
 const display = Archivo({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["600", "700", "800"],
+  /* The width axis too: the public site sets its big words expanded (font-wide), the staff app keeps the normal cut. */
+  axes: ["wdth"],
+  display: "swap",
+});
+
+/* The small index labels and figures on the public site. */
+const mono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -104,7 +112,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} ${display.variable} font-sans`}>
+      <body className={`${inter.variable} ${display.variable} ${mono.variable} font-sans`}>
         <ThemeProvider>{children}</ThemeProvider>
         <UploadBudget limitBytes={UPLOAD_REQUEST_BUDGET} />
         <div aria-hidden className="status-strip" />

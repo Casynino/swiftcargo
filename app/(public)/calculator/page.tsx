@@ -26,8 +26,8 @@ export default async function CalculatorPage() {
         overlap
         photo="parcels"
         eyebrow={t(locale, "Price calculator")}
-        lead={t(locale, "Shipping price calculator.")}
-        trail={t(locale, "Measure, choose, done.")}
+        lead={t(locale, "Price calculator.")}
+        trail={t(locale, "Measure. Done.")}
         body={
           <p>
             {t(

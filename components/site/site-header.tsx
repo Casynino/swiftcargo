@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Menu, UserRound, X } from "lucide-react";
+import { ArrowUpRight, LayoutDashboard, UserRound } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { DEFAULT_LOCALE, t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -49,9 +47,23 @@ export function SiteHeader() {
     setOpen(false);
   }, [pathname]);
 
-  /* Every public page opens on a dark photograph, and the header floats over
-     it in white until the page is scrolled; then it turns to frosted paper so
-     it reads over whatever is underneath. */
+  /* The phone menu covers the screen; the page under it must not scroll. */
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  /* Every public page opens on a photograph, and the header floats over it
+     until the page is scrolled; then it becomes a dark frosted bar. */
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -59,35 +71,36 @@ export function SiteHeader() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const solid = scrolled || open;
+
+  const account = signedIn ? home : "/login";
+  const accountLabel = signedIn === "staff" ? "My desk" : signedIn ? "My account" : "Sign in";
+  const AccountIcon = signedIn === "staff" ? LayoutDashboard : signedIn ? UserRound : null;
 
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-40 border-b pt-[env(safe-area-inset-top)] transition-[background-color,border-color,color] duration-300",
-        solid ? "glass text-foreground" : "border-transparent bg-transparent text-white"
+        "dark fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] text-white transition-[background-color,border-color] duration-500",
+        scrolled && !open
+          ? "border-b border-white/10 bg-[rgba(3,10,19,0.72)] backdrop-blur-xl backdrop-saturate-150"
+          : "border-b border-transparent bg-transparent"
       )}
     >
-      <div className="container flex h-[4.5rem] items-center gap-3 sm:gap-6">
-        {/* Over the photograph the mark is drawn in its dark-theme colours. */}
-        <Link href="/" className={cn("focus-ring shrink-0 rounded", !solid && "dark")}>
-          <BrandMark size={36} />
+      <div className="container flex h-16 items-center gap-3 sm:h-[4.5rem] sm:gap-6">
+        <Link href="/" className="focus-ring relative z-10 shrink-0 rounded">
+          <BrandMark size={34} />
         </Link>
 
-        <nav className="ml-auto hidden items-center gap-0.5 lg:flex">
+        <nav className="ml-auto hidden items-center gap-7 lg:flex">
           {LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "focus-ring relative rounded-full px-3.5 py-2 text-sm font-medium transition-colors",
+                "focus-ring relative py-1 text-[13px] font-medium transition-colors",
+                "after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-signal after:transition-transform after:duration-500",
                 pathname === link.href
-                  ? solid
-                    ? "bg-brand/10 text-brand"
-                    : "bg-white/15 text-white"
-                  : solid
-                    ? "text-foreground/70 hover:text-foreground"
-                    : "text-white/80 hover:text-white"
+                  ? "text-white after:scale-x-100"
+                  : "text-white/65 after:scale-x-0 hover:text-white hover:after:scale-x-100"
               )}
             >
               {t(locale, link.label)}
@@ -95,74 +108,81 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
-          {/* The toggle gives way first on the narrowest phones; the menu and
-              sign-in are what somebody at 320 pixels came for. */}
-          <span className={cn("hidden min-[360px]:contents", !solid && "[&_button]:text-white [&_button:hover]:bg-white/15")}>
-            <ThemeToggle />
-          </span>
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "hidden rounded-full sm:inline-flex",
-              !solid && "text-white hover:bg-white/15 hover:text-white"
-            )}
+        <div className="relative z-10 ml-auto flex shrink-0 items-center gap-2 lg:ml-2">
+          <Link
+            href="/track"
+            className="focus-ring hidden h-10 items-center px-2 text-[13px] font-medium text-white/75 transition-colors hover:text-white sm:inline-flex"
           >
-            <Link href="/track">{t(locale, "Track cargo")}</Link>
-          </Button>
-          {/* Short on a phone: at full length "Back to my desk" pushed the
-              menu button off the edge of the screen, and the menu is the only
-              way to the rest of the site. */}
-          <Button asChild size="sm" className={cn("track-go h-9 shrink-0 gap-1.5 rounded-lg border-0 px-3 text-white sm:px-4 max-sm:!bg-transparent max-sm:px-1 max-sm:underline max-sm:decoration-signal max-sm:decoration-2 max-sm:underline-offset-[6px]", solid && "max-sm:!text-foreground")}>
-            <Link href={signedIn ? home : "/login"}>
-              {signedIn === "staff" ? (
-                <>
-                  <LayoutDashboard className="size-4" />
-                  <span className="sm:hidden">{t(locale, "My desk")}</span>
-                  <span className="hidden sm:inline">{t(locale, "Back to my desk")}</span>
-                </>
-              ) : signedIn ? (
-                <>
-                  <UserRound className="size-4" />
-                  <span className="sm:hidden">{t(locale, "Account")}</span>
-                  <span className="hidden sm:inline">{t(locale, "My account")}</span>
-                </>
-              ) : (
-                t(locale, "Sign in")
-              )}
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("shrink-0 lg:hidden", !solid && "text-white hover:bg-white/15 hover:text-white")}
+            {t(locale, "Track cargo")}
+          </Link>
+          <Link
+            href={account}
+            className="focus-ring inline-flex h-10 items-center gap-1.5 px-2 text-[13px] font-semibold text-white underline decoration-signal decoration-2 underline-offset-[6px] transition-colors hover:text-signal"
+          >
+            {AccountIcon ? <AccountIcon className="size-4" /> : null}
+            {t(locale, accountLabel)}
+          </Link>
+          {/* Two lines that become a cross: the way to the rest of the site on a phone. */}
+          <button
+            type="button"
+            className="focus-ring relative -mr-2 grid size-10 place-items-center lg:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t(locale, "Close menu") : t(locale, "Open menu")}
             aria-expanded={open}
             aria-controls="site-menu"
           >
-            {open ? <X /> : <Menu />}
-          </Button>
+            <span
+              aria-hidden
+              className={cn(
+                "absolute h-[1.5px] w-6 bg-white transition-transform duration-300",
+                open ? "rotate-45" : "-translate-y-[4px]"
+              )}
+            />
+            <span
+              aria-hidden
+              className={cn(
+                "absolute h-[1.5px] w-6 bg-white transition-transform duration-300",
+                open ? "-rotate-45" : "translate-y-[4px]"
+              )}
+            />
+          </button>
         </div>
       </div>
 
       {open ? (
-        <nav id="site-menu" className="border-t bg-card lg:hidden">
-          <ul className="container grid gap-1 py-3">
-            {[...LINKS, { href: "/track", label: "Track cargo" }].map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-md px-3 py-2.5 text-sm font-medium hover:bg-secondary"
-                >
-                  {t(locale, link.label)}
+        <nav
+          id="site-menu"
+          className="fixed inset-0 -z-10 flex flex-col bg-[#030a13] pt-[calc(env(safe-area-inset-top)+5rem)] lg:hidden"
+        >
+          <ul className="container flex-1 overflow-y-auto">
+            {[...LINKS, { href: "/track", label: "Track cargo" }].map((link, i) => (
+              <li key={link.href} className="sc-menu-item border-b border-white/10" style={{ ["--i" as string]: i }}>
+                <Link href={link.href} onClick={() => setOpen(false)} className="group flex items-center gap-4 py-4">
+                  <span className="tnum w-5 font-mono text-[11px] text-white/35">{String(i + 1).padStart(2, "0")}</span>
+                  <span
+                    className={cn(
+                      "sc-title flex-1 text-[1.45rem] transition-colors",
+                      pathname === link.href ? "text-signal" : "text-white group-hover:text-signal"
+                    )}
+                  >
+                    {t(locale, link.label)}
+                  </span>
+                  <ArrowUpRight className="size-4 text-white/30" />
                 </Link>
               </li>
             ))}
           </ul>
+          <div
+            className="sc-menu-item container grid grid-cols-2 gap-3 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-6"
+            style={{ ["--i" as string]: 9 }}
+          >
+            <Link href="/quote" onClick={() => setOpen(false)} className="sc-btn sc-btn--orange sc-btn--plain justify-center">
+              {t(locale, "Get a quote")}
+            </Link>
+            <Link href="/register" onClick={() => setOpen(false)} className="sc-btn sc-btn--line sc-btn--plain justify-center">
+              {t(locale, "Create account")}
+            </Link>
+          </div>
         </nav>
       ) : null}
     </header>

@@ -52,8 +52,8 @@ export default async function ChinaPage() {
         overlap
         photo="guangzhouNight"
         eyebrow={t(locale, "Explore China")}
-        lead={t(locale, "Explore China's markets,")}
-        trail={t(locale, "we ship it home.")}
+        lead={t(locale, "Explore China.")}
+        trail={t(locale, "We ship it home.")}
         body={
           <p>
             {t(
@@ -125,17 +125,18 @@ export default async function ChinaPage() {
           <SectionHead
             eyebrow={t(locale, "Bought it? Here is what happens")}
             lead={t(locale, "From the market")}
-            trail={t(locale, "to your shop in Tanzania.")}
+            trail={t(locale, "to your shop.")}
           />
           <ol className="mt-10 grid gap-4 sm:grid-cols-2">
             {HOW_WE_HELP.map((step, i) => {
               const Icon = HELP_ICONS[i] ?? PackageCheck;
               return (
-                <Reveal as="li" key={step.title} delay={i * 80} className="rounded-2xl border bg-card p-5 shadow-soft">
-                  <span className="grid size-11 place-items-center rounded-xl bg-gradient-to-br from-signal to-orange-600 text-white">
-                    <Icon className="size-5" />
+                <Reveal as="li" key={step.title} delay={i * 80} className="rounded-2xl border border-white/10 bg-card p-5">
+                  <span className="flex items-center justify-between">
+                    <Icon className="size-5 text-signal" />
+                    <span className="font-mono text-[11px] text-white/35">{String(i + 1).padStart(2, "0")}</span>
                   </span>
-                  <p className="mt-4 font-semibold">{t(locale, step.title)}</p>
+                  <p className="mt-5 font-semibold text-white">{t(locale, step.title)}</p>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(locale, step.body)}</p>
                 </Reveal>
               );
@@ -144,7 +145,7 @@ export default async function ChinaPage() {
         </div>
 
         <Reveal>
-          <PhotoFrame name="guangzhouDusk" className="min-h-[34rem] rounded-[2rem]">
+          <PhotoFrame name="guangzhouDusk" className="min-h-[34rem] rounded-3xl">
             <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
               <p className="flex items-center gap-2 text-sm font-semibold text-cyan-200">
@@ -199,8 +200,8 @@ export default async function ChinaPage() {
 
       <CtaBand
         photo="cnTradeFair"
-        lead={t(locale, "Want us to source for you?")}
-        trail={t(locale, "Tell us what you need.")}
+        lead={t(locale, "We can source it.")}
+        trail={t(locale, "Just ask.")}
         body={t(
           locale,
           "What you are looking for, your budget and the quantity. We find suppliers, compare prices, check the goods before they load and consolidate everything into one shipment."
