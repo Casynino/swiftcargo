@@ -1215,8 +1215,13 @@ html[data-sc-intro] .sc-intro { display: none; }
   place-items: center;
   background: #040c16;
   pointer-events: none;
-  animation: sc-intro-lift 0.9s cubic-bezier(0.76, 0, 0.24, 1) 1.5s forwards;
+  overflow: hidden;
+  animation: sc-intro-out 1s cubic-bezier(0.65, 0, 0.35, 1) 2.3s forwards;
 }
+/* The camera pushes in over the ship while the name rises, then the whole scene opens out into the page. */
+.sc-intro-film { animation: sc-intro-push 3.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes sc-intro-push { from { transform: scale(1.3); } to { transform: scale(1.04); } }
+@keyframes sc-intro-out { to { opacity: 0; transform: scale(1.08); visibility: hidden; } }
 .sc-intro-word { animation: sc-intro-word 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
 .sc-intro-bar { transform-origin: left; animation: sc-intro-bar 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both; }
 @keyframes sc-intro-lift { to { transform: translate3d(0, -100%, 0); visibility: hidden; } }
@@ -1233,7 +1238,7 @@ html[data-sc-intro] .sc-intro { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .sc-hero-photo, .sc-hero-fade, .sc-track { transform: none !important; opacity: 1 !important; }
-  .sc-ticker, .sc-live, .sc-menu-item, .sc-intro-word, .sc-intro-bar { animation: none !important; }
+  .sc-ticker, .sc-live, .sc-menu-item, .sc-intro-word, .sc-intro-bar, .sc-intro-film { animation: none !important; }
   .sc-intro { display: none; }
 }
 .sc-band-photo { transform: translate3d(0, calc((0.5 - var(--p, 0.5)) * 14%), 0); will-change: transform; }

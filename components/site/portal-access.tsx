@@ -32,11 +32,11 @@ export function PortalAccess({ mode }: { mode: "register" | "reset" }) {
 
   if (!phone.step) {
     return (
-      <form action={check} className="space-y-3 lg:space-y-4">
+      <form action={check} className="space-y-3">
         <div className="space-y-2">
-          <Label htmlFor="phone" className="max-lg:sr-only">Phone number</Label>
+          <Label htmlFor="phone" className="sr-only">Phone number</Label>
           <TzPhoneInput id="phone" name="phone" required autoFocus />
-          <p className="text-sm text-white/75 max-lg:hidden">
+          <p className="text-sm text-white/75 hidden">
             {mode === "reset"
               ? "The phone number on your account."
               : "Enter the phone number you used when sending cargo with us."}
@@ -83,8 +83,8 @@ export function PortalAccess({ mode }: { mode: "register" | "reset" }) {
   if (phone.step === "activate") return <ActivateForm phone={phone.phone!} name={phone.name} />;
 
   return (
-    <div className="space-y-3 lg:space-y-4">
-      <p className="text-sm text-white/80 lg:rounded-xl lg:border lg:border-white/15 lg:bg-white/5 lg:p-3 lg:text-white/85">
+    <div className="space-y-3">
+      <p className="text-sm text-white/80">
         New here? Let us create your account.
       </p>
       <RegisterForm initialPhone={phone.phone} />
@@ -105,23 +105,23 @@ function Notice({ title, body, action }: { title: string; body: string; action: 
 function ActivateForm({ phone, name }: { phone: string; name?: string }) {
   const [state, action] = useActionState<ActivateState, FormData>(activateAccount, {});
   return (
-    <form action={action} className="space-y-3 lg:space-y-4">
+    <form action={action} className="space-y-3">
       <div>
         <h2 className="font-display text-xl font-semibold text-white">{name ? `Welcome, ${name}` : "Welcome back"}</h2>
         <p className="mt-1 text-sm text-white/75">You are on our books. Add your email and a password to open your account.</p>
       </div>
       <input type="hidden" name="phone" value={phone} />
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="email" className="max-lg:sr-only">Your email</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="sr-only">Your email</Label>
         <Input id="email" name="email" type="email" required autoComplete="email" placeholder="Email" />
       </div>
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:gap-4">
-        <div className="space-y-1.5 lg:space-y-2">
-          <Label htmlFor="password" className="max-lg:sr-only">Choose a password</Label>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="sr-only">Choose a password</Label>
           <PasswordInput id="password" name="password" required minLength={8} autoComplete="new-password" placeholder="Password" />
         </div>
-        <div className="space-y-1.5 lg:space-y-2">
-          <Label htmlFor="confirmPassword" className="max-lg:sr-only">Confirm password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword" className="sr-only">Confirm password</Label>
           <PasswordInput id="confirmPassword" name="confirmPassword" required minLength={8} autoComplete="new-password" placeholder="Confirm password" />
         </div>
       </div>
@@ -129,7 +129,7 @@ function ActivateForm({ phone, name }: { phone: string; name?: string }) {
       <SubmitButton className="w-full" size="lg" pendingLabel="Opening…">
         Open my account
       </SubmitButton>
-      <p className="text-center text-xs text-white/70 lg:text-left lg:text-sm">
+      <p className="text-center text-xs text-white/70">
         Not {name ?? "you"}?{" "}
         <Link href="/register" className={link}>Start again</Link>
       </p>

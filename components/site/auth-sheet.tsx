@@ -49,17 +49,17 @@ export function AuthSheet({
     <>
       {/* The phone's first screen: the logo, one line, one small button. */}
       <InstallPrompt />
-      <div className="flex min-h-[calc(100dvh-6.5rem)] flex-col items-center justify-between py-6 text-center lg:hidden">
+      <div className="flex min-h-[calc(100dvh-6.5rem)] flex-1 flex-col items-center justify-between py-6 text-center">
         <BrandMark size={72} className="flex-col gap-3 [&>span:last-child]:items-center" />
-        <div className="flex flex-col items-center gap-5">
-          <p className="max-w-xs text-balance text-lg font-medium leading-snug text-white/90">{tagline}</p>
+        <div className="flex flex-col items-center gap-5 sm:gap-6">
+          <p className="max-w-xs text-balance text-lg font-medium leading-snug text-white/90 [text-shadow:0_2px_16px_rgba(0,0,0,0.6)] sm:max-w-xl sm:text-3xl sm:font-semibold sm:tracking-tight">{tagline}</p>
           {/* Two plain choices, no pills: the one for this page underlined, the other a quiet line under it. */}
           <div className="flex flex-col items-center gap-4">
             <button
               type="button"
               onClick={() => setOpen(true)}
               aria-haspopup="dialog"
-              className="focus-ring group relative inline-flex items-center gap-2 pb-1.5 text-base font-semibold text-white"
+              className="focus-ring group relative inline-flex items-center gap-2 pb-1.5 text-base font-semibold text-white sm:text-lg"
             >
               {cta}
               <ArrowRight className="size-3.5 text-white/80 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
@@ -91,7 +91,7 @@ export function AuthSheet({
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/55 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/55"
         />
       ) : null}
 
@@ -101,18 +101,18 @@ export function AuthSheet({
         aria-modal={open}
         aria-hidden={!open}
         className={cn(
-          "auth-card dark site-glass rounded-[2rem] p-6 text-foreground sm:p-8",
-          /* On a phone: a small see-through glass card low on the page, not a slab across it. */
-          "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] max-lg:z-50 max-lg:mx-auto max-lg:max-h-[78dvh] max-lg:w-[calc(100%-2.5rem)] max-lg:max-w-[21rem] max-lg:overflow-y-auto max-lg:rounded-2xl max-lg:p-4 max-lg:transition-[transform,visibility] max-lg:duration-300",
-          "max-lg:!border-white/[0.09] max-lg:!bg-[#0a1624]/70 max-lg:!backdrop-blur-2xl max-lg:backdrop-saturate-150 max-lg:shadow-[0_18px_44px_-22px_rgba(0,0,0,0.75)]",
-          open ? "max-lg:translate-y-0" : "max-lg:invisible max-lg:translate-y-[115%]"
+          "auth-card dark text-foreground",
+          /* A small see-through glass card low on the page, not a slab across it — on a phone and a computer alike. */
+          "fixed inset-x-0 bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 mx-auto max-h-[78dvh] w-[calc(100%-2.5rem)] max-w-[21rem] overflow-y-auto rounded-2xl p-4 transition-[transform,visibility] duration-300 sm:bottom-[10vh] sm:max-w-[24rem] sm:p-6",
+          "border border-white/[0.09] bg-[#0a1624]/70 shadow-[0_18px_44px_-22px_rgba(0,0,0,0.75)] backdrop-blur-2xl backdrop-saturate-150",
+          open ? "translate-y-0" : "invisible translate-y-[calc(100%+12vh)]"
         )}
       >
         <button
           type="button"
           aria-label="Close"
           onClick={() => setOpen(false)}
-          className="focus-ring absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white lg:hidden"
+          className="focus-ring absolute right-2.5 top-2.5 grid size-8 place-items-center rounded-full text-white/50 hover:bg-white/10 hover:text-white"
         >
           <X className="size-4" />
         </button>

@@ -32,11 +32,11 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   }, []);
 
   return (
-    <form action={action} className="mt-4 space-y-2.5 lg:mt-8 lg:space-y-4">
+    <form action={action} className="mt-4 space-y-2.5">
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="identifier" className="max-lg:sr-only">Phone number or email</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="identifier" className="sr-only">Phone number or email</Label>
         <Input
           id="identifier"
           name="identifier"
@@ -49,13 +49,13 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           ref={first}
           placeholder="Phone or email"
         />
-        <p className="text-xs text-muted-foreground max-lg:hidden">
+        <p className="text-xs text-muted-foreground hidden">
           Customers: your Tanzanian number, such as 0712 345 678. Staff: your work email.
         </p>
       </div>
 
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="password" className="max-lg:sr-only">Password</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="sr-only">Password</Label>
         <PasswordInput
           id="password"
           name="password"

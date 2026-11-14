@@ -17,27 +17,27 @@ export function RegisterForm({ initialPhone }: { initialPhone?: string }) {
   );
 
   return (
-    <form action={action} className="space-y-2.5 lg:space-y-4">
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="fullName" className="max-lg:sr-only">Full name</Label>
+    <form action={action} className="space-y-2.5">
+      <div className="space-y-1.5">
+        <Label htmlFor="fullName" className="sr-only">Full name</Label>
         <Input id="fullName" name="fullName" required autoComplete="name" placeholder="Full name" defaultValue={state.values?.fullName} key={state.values?.fullName} />
       </div>
 
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="businessName" className="max-lg:sr-only">
+      <div className="space-y-1.5">
+        <Label htmlFor="businessName" className="sr-only">
           Business name{" "}
           <span className="font-normal text-muted-foreground">(optional)</span>
         </Label>
         <Input id="businessName" name="businessName" autoComplete="organization" placeholder="Business name (optional)" defaultValue={state.values?.businessName} key={state.values?.businessName} />
       </div>
 
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="phone" className="max-lg:sr-only">Phone number</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="phone" className="sr-only">Phone number</Label>
         <TzPhoneInput key={state.values?.phone ?? initialPhone} id="phone" name="phone" required defaultValue={state.values?.phone ?? initialPhone} />
       </div>
 
-      <div className="space-y-1.5 lg:space-y-2">
-        <Label htmlFor="email" className="max-lg:sr-only">Email</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="sr-only">Email</Label>
         <Input
           id="email"
           name="email"
@@ -50,9 +50,9 @@ export function RegisterForm({ initialPhone }: { initialPhone?: string }) {
         />
       </div>
 
-      <div className="grid gap-2.5 sm:grid-cols-2 lg:gap-4">
-        <div className="space-y-1.5 lg:space-y-2">
-          <Label htmlFor="password" className="max-lg:sr-only">Password</Label>
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="password" className="sr-only">Password</Label>
           <PasswordInput
             id="password"
             name="password"
@@ -62,8 +62,8 @@ export function RegisterForm({ initialPhone }: { initialPhone?: string }) {
             placeholder="Password"
           />
         </div>
-        <div className="space-y-1.5 lg:space-y-2">
-          <Label htmlFor="confirmPassword" className="max-lg:sr-only">Confirm password</Label>
+        <div className="space-y-1.5">
+          <Label htmlFor="confirmPassword" className="sr-only">Confirm password</Label>
           <PasswordInput
             id="confirmPassword"
             name="confirmPassword"

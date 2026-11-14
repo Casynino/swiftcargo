@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata, Viewport } from "next";
-import { AlertTriangle } from "lucide-react";
 
 import { LoginForm } from "@/components/login-form";
 import { AuthScene } from "@/components/site/auth-scene";
@@ -33,50 +32,17 @@ export default async function LoginPage({
           "Your cargo, from Guangzhou to Dar es Salaam"
         )
       }
-      welcome="Karibu tena"
-      title={
-        <>
-          Welcome back. <span className="text-orange-300">Your cargo is waiting.</span>
-        </>
-      }
-      subtitle="Track your shipments, see your invoices and the photos of your goods — all in one place."
-      points={[
-        "Track your cargo",
-        "Invoices and receipts",
-        "Photos of your goods",
-        "A sailing every Monday",
-      ]}
     >
-      <h1 className="font-display text-3xl font-bold tracking-tight text-white">Sign in</h1>
-      <p className="mt-2 text-sm text-white/85 max-lg:hidden">
-        Staff and customers use the same door. You will land in the right place.
-      </p>
-
-      {revoked ? (
-        <div className="mt-6 flex gap-3 rounded-xl border border-amber-300/40 max-lg:hidden bg-amber-500/15 p-3 text-sm text-amber-100">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-          <p>
-            {sessionEnded
-              ? "That sign-in has ended. Sign in again to continue."
-              : "Your account is no longer active. Speak to your manager if you think this is wrong."}
-          </p>
-        </div>
-      ) : null}
-
+      <h1 className="font-display text-2xl font-bold tracking-tight text-white">Sign in</h1>
       <LoginForm callbackUrl={params.callbackUrl ?? ""} />
 
-      <div className="mt-4 flex items-center justify-between gap-3 text-xs lg:mt-6 lg:block lg:text-sm lg:text-white/85">
-        <Link href="/register?mode=reset" className="font-medium text-orange-300 underline-offset-4 hover:underline lg:font-semibold">
-          <span className="lg:hidden">Forgot password?</span>
-          <span className="max-lg:hidden">Forgot your password?</span>
+      <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+        <Link href="/register?mode=reset" className="font-medium text-orange-300 underline-offset-4 hover:underline">
+          Forgot password?
         </Link>
-        <p className="lg:mt-3">
-          <span className="max-lg:hidden">New customer, or shipped with us before? </span>
-          <Link href="/register" className="font-medium text-orange-300 underline-offset-4 hover:underline lg:font-semibold">
-            <span className="lg:hidden">Create account</span>
-            <span className="max-lg:hidden">Create an account</span>
-          </Link>
-        </p>
+        <Link href="/register" className="font-medium text-orange-300 underline-offset-4 hover:underline">
+          Create account
+        </Link>
       </div>
     </AuthScene>
   );

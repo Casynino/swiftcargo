@@ -82,7 +82,8 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* The first visit to the home page in a session opens on the mark and the route (globals.css .sc-intro). */}
+      {/* The first visit to the home page in a session opens on the ship itself: the camera pushing in over a
+          container ship at sea, the name rising over it, then the scene opens into the page (globals.css .sc-intro). */}
       <script
         dangerouslySetInnerHTML={{
           __html:
@@ -90,12 +91,25 @@ export default async function HomePage() {
         }}
       />
       <div aria-hidden className="sc-intro">
-        <div className="text-center">
-          <p className="sc-intro-word sc-title text-[2.4rem] text-white sm:text-7xl">Swift Cargo</p>
-          <div className="mx-auto mt-5 h-px w-48 bg-white/15 sm:w-72">
+        <div className="sc-intro-film absolute inset-0">
+          {/* The film's own first frame, on screen before the film arrives. */}
+          <img src="/video/ship-sea.webp" alt="" className="absolute inset-0 size-full object-cover" />
+          <video
+            src="/video/ship-sea.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 size-full object-cover"
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(3,10,19,0.25)_0%,rgba(3,10,19,0.7)_75%)]" />
+        </div>
+        <div className="relative text-center">
+          <p className="sc-intro-word sc-title text-[2.4rem] text-white [text-shadow:0_4px_40px_rgba(0,0,0,0.6)] sm:text-7xl">Swift Cargo</p>
+          <div className="mx-auto mt-5 h-px w-48 bg-white/25 sm:w-72">
             <div className="sc-intro-bar h-px bg-signal" />
           </div>
-          <p className="sc-intro-word sc-label mt-4 text-white/50 [animation-delay:0.35s]">
+          <p className="sc-intro-word sc-label mt-4 text-white/80 [animation-delay:0.35s]">
             {ROUTE.originCity} → {ROUTE.destinationCity}
           </p>
         </div>
