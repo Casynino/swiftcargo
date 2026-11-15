@@ -75,7 +75,7 @@ export function TrackForm({
           spellCheck={false}
           maxLength={40}
           required
-          className="tnum h-full min-w-0 flex-1 bg-transparent text-sm uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/50"
+          className="tnum h-full min-w-0 flex-1 bg-transparent text-base uppercase tracking-wide text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-white/50 sm:text-sm"
         />
         <button
           type="submit"

@@ -1202,6 +1202,9 @@ body:has([data-nino-page]) .status-strip {
   will-change: transform;
 }
 .sc-hero-fade { opacity: calc(1 - var(--p, 0) * 1.6); transform: translate3d(0, calc(var(--p, 0) * -60px), 0); }
+/* A field in the hero being typed in stays where it is and fully visible: a phone scrolls the page to make room for
+   its keyboard, and the scroll fade above would otherwise fade the very box the customer is typing into. */
+.sc-hero-fade:focus-within { opacity: 1 !important; transform: none !important; }
 .sc-rail { transform: scaleY(var(--p, 0)); transform-origin: top; }
 @media (min-width: 1024px) {
   .sc-track { transform: translate3d(calc(var(--p, 0) * (100vw - 100%)), 0, 0); will-change: transform; }
