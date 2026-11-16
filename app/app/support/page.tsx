@@ -274,7 +274,7 @@ export default async function SupportHome() {
       <ActionPills pills={pills} />
 
       <div>
-        <SectionLabel
+        <SectionLabel className="hidden md:flex"
           count={attention.length}
           action={{ href: "/app/finance/collections", label: t(locale, "The call list") }}
         >
@@ -290,7 +290,7 @@ export default async function SupportHome() {
         <SectionLabel action={{ href: "/app/customers", label: t(locale, "All customers") }}>
           {t(locale, "The desk · today")}
         </SectionLabel>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="phone-tiles grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label={t(locale, "Customers")}
             numeric={overview.customers}

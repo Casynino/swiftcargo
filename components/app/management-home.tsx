@@ -100,7 +100,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
     foot: React.ReactNode;
     ring?: React.ReactNode;
   }) => (
-    <div className={cn("relative min-w-0 rounded-xl border bg-card bg-gradient-to-br to-transparent p-4 shadow-soft", TINT[tone] ?? "from-secondary/40")}>
+    <div data-tile className={cn("relative min-w-0 rounded-xl border bg-card bg-gradient-to-br to-transparent p-4 shadow-soft", TINT[tone] ?? "from-secondary/40")}>
       <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
         <span className={cn("grid size-8 place-items-center rounded-lg ring-1 ring-inset", CHIP[tone] ?? "bg-secondary text-foreground/70 ring-border")}>
           <Icon className="size-4" />
@@ -108,8 +108,8 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
         <span className="truncate">{label}</span>
         {ring ? <span className="ml-auto">{ring}</span> : null}
       </div>
-      <p className={cn("tnum mt-3 truncate text-2xl font-bold tracking-tight", tone)}>{value}</p>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{foot}</div>
+      <p data-tile-value className={cn("tnum mt-3 truncate text-2xl font-bold tracking-tight", tone)}>{value}</p>
+      <div data-tile-foot className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{foot}</div>
     </div>
   );
 
@@ -210,7 +210,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
       <ActionPills pills={pillsFor(user.role)} />
 
       <section>
-        <SectionLabel
+        <SectionLabel className="hidden md:flex"
           count={o.attention.filter((a) => a.tone === "bad").length}
           action={{ href: "/app/manager/control", label: tr("Control room") }}
         >
@@ -283,7 +283,7 @@ export async function ManagementHome({ user }: { user: SessionUser }) {
         <SectionLabel action={{ href: "/app/finance/reports", label: tr("Profit & loss") }}>
           {`${tr("This month")} · ${tr("against last month")}`}
         </SectionLabel>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="phone-tiles grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Tile
             icon={Receipt}
             label={tr("Billed")}

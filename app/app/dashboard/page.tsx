@@ -81,6 +81,7 @@ function QueueCard({ card, index }: { card: ActionCard; index: number }) {
   return (
     <Link href={card.href} className="focus-ring group block rounded-xl">
       <div
+        data-tile
         className={cn(
           "animate-in-up relative h-full overflow-hidden rounded-xl border bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-raised",
           loud && "border-signal/35"
@@ -92,18 +93,22 @@ function QueueCard({ card, index }: { card: ActionCard; index: number }) {
         ) : null}
 
         <div className="flex items-start justify-between gap-3">
+          {/* A phone names the card first, beside its icon, as the other home tiles do. */}
+          <span className="min-w-0 pt-1 text-[13px] leading-snug text-muted-foreground md:hidden"><Tx>{card.label}</Tx></span>
           <span
+            data-tile-icon
             className={cn(
-              "grid size-9 place-items-center rounded-lg",
+              "grid size-9 shrink-0 place-items-center rounded-lg",
               loud ? "bg-signal/12 text-signal" : "bg-brand/10 text-brand"
             )}
           >
             <Glyph name={card.icon} className="size-4" />
           </span>
-          <ArrowRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+          <ArrowRight className="hidden size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 md:block" />
         </div>
 
         <p
+          data-tile-value
           className={cn(
             "tnum mt-4 text-[30px] font-semibold leading-none tracking-tight",
             loud ? "text-signal" : "text-foreground"
@@ -111,9 +116,9 @@ function QueueCard({ card, index }: { card: ActionCard; index: number }) {
         >
           {card.count}
         </p>
-        <p className="mt-1.5 text-sm font-medium"><Tx>{card.label}</Tx></p>
+        <p className="mt-1.5 hidden text-sm font-medium md:block"><Tx>{card.label}</Tx></p>
         {card.hint ? (
-          <p className="mt-1 text-xs text-muted-foreground"><Tx>{card.hint}</Tx></p>
+          <p data-tile-hint className="mt-1 text-xs text-muted-foreground"><Tx>{card.hint}</Tx></p>
         ) : null}
       </div>
     </Link>
@@ -286,7 +291,7 @@ export default async function DashboardPage() {
       {/* Always on the page, as on the air side: an empty panel is the good
           news, said where the desk looks first. */}
       <section>
-        <SectionLabel
+        <SectionLabel className="hidden md:flex"
           count={attention.length}
           action={
             chinaHome
@@ -320,7 +325,7 @@ export default async function DashboardPage() {
       {cards.length > 0 && !chinaHome ? (
         <section>
           <SectionLabel>What needs you today</SectionLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="phone-tiles grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map((card, i) => (
               <QueueCard key={card.href + card.label} card={card} index={i} />
             ))}
@@ -333,7 +338,7 @@ export default async function DashboardPage() {
           <SectionLabel action={{ href: "/app/finance/collections", label: "Collections" }}>
             The money · right now
           </SectionLabel>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="phone-tiles grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <MoneyTile
               index={0}
               tone="success"

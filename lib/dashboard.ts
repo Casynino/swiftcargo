@@ -548,6 +548,7 @@ export type AttentionRow = {
   /** How many there are. The headline is built from it. */
   count: number;
   title: string;
+  short?: string;
   /** Why it matters, in a sentence. Not a reference — a reason. */
   detail: string;
   href: string;
@@ -1287,6 +1288,7 @@ async function deskRows(role: Role): Promise<AttentionRow[]> {
         group: "Dar floor",
         count: clearing,
         title: `${clearing} ${plural(clearing, "consignment", "consignments")} in customs clearance`,
+        short: `${clearing} in customs`,
         detail: "Landed at the port. Mark them cleared when customs is done.",
         href: "/app/receive/dar",
         tone: "neutral",

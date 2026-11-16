@@ -1399,3 +1399,17 @@ html[data-sc-intro] .sc-intro { display: none; }
 }
 .dark [data-sea-shell] thead { background: rgba(255, 255, 255, 0.03); }
 .dark [data-sea-shell] tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+/*
+  Home tiles on a phone, as ZELab's home reads: two small cards across, the
+  label, the figure and the icon; the explaining line is for a computer. One
+  rule for every desk's home, so the tiles cannot drift apart desk by desk.
+*/
+@media (max-width: 767.98px) {
+  .phone-tiles.phone-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; }
+  .phone-tiles [data-tile] { padding: 0.875rem 0.875rem 1rem; border-radius: 1rem; }
+  .phone-tiles [data-tile-value] { margin-top: 0.875rem; font-size: 1.25rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .phone-tiles [data-tile-hint] { display: none; }
+  .phone-tiles [data-tile-foot] { font-size: 11px; }
+  .phone-tiles [data-tile-icon] { width: 2rem; height: 2rem; }
+}

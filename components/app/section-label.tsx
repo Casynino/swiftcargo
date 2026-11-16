@@ -1,4 +1,6 @@
 import Link from "next/link";
+
+import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 
 import { Tx } from "@/components/app/tx";
@@ -18,6 +20,7 @@ export function SectionLabel({
   children,
   count,
   action,
+  className,
 }: {
   children: React.ReactNode;
   count?: number;
@@ -28,9 +31,10 @@ export function SectionLabel({
    * their way down to the thing they just pressed.
    */
   action?: { href: string; label: string; keepScroll?: boolean };
+  className?: string;
 }) {
   return (
-    <div className="mb-3 flex items-baseline justify-between gap-3">
+    <div className={cn("mb-3 flex items-baseline justify-between gap-3", className)}>
       <h2 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
         {typeof children === "string" ? <Tx>{children}</Tx> : children}
         {count !== undefined && count > 0 ? (

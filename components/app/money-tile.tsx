@@ -76,6 +76,7 @@ export function MoneyTile({
 
   const body = (
     <div
+      data-tile
       className={cn(
         "animate-in-up relative h-full overflow-hidden rounded-xl border bg-card p-5 shadow-soft transition-all",
         href && "hover:-translate-y-0.5 hover:shadow-raised"
@@ -100,12 +101,12 @@ export function MoneyTile({
           ) : null}
         </div>
 
-        <p className={cn("tnum mt-3 text-[26px] font-semibold leading-none tracking-tight", VALUE[tone])}>
+        <p data-tile-value className={cn("tnum mt-3 text-[26px] font-semibold leading-none tracking-tight", VALUE[tone])}>
           {value}
         </p>
 
         {secondary ? (
-          <p className="tnum mt-3 inline-flex items-center gap-2 rounded-md bg-foreground/[0.05] px-2.5 py-1.5 text-xs">
+          <p data-tile-hint className="tnum mt-3 inline-flex items-center gap-2 rounded-md bg-foreground/[0.05] px-2.5 py-1.5 text-xs">
             {secondaryLabel ? (
               <span className="text-muted-foreground">{secondaryLabel}</span>
             ) : null}

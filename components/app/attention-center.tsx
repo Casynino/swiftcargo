@@ -12,6 +12,8 @@ export type AttentionItem = {
   group: string;
   count: number;
   title: string;
+  /** The same line in fewer words, for a phone, where it must fit on one row. */
+  short?: string;
   detail: string;
   href: string;
   tone: "warn" | "bad" | "neutral";
@@ -109,12 +111,12 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
       {/* Three rows show; the rest scroll inside the panel, which is the same
           height whether the desk has three things or thirty. */}
-      <ul className="max-h-[12.5rem] divide-y overflow-y-auto md:max-h-[8.6rem]">
+      <ul className="max-h-[11.6rem] divide-y overflow-y-auto md:max-h-[8.6rem]">
         {shown.map((item) => (
           <li key={item.id}>
             <Link
               href={item.href}
-              className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-secondary/50 active:bg-secondary/60 md:gap-2.5 md:px-3.5 md:py-1.5"
+              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50 active:bg-secondary/60 md:gap-2.5 md:px-3.5 md:py-1.5"
             >
               {/* A phone gets one coloured dot and the line, as ZELab's home does; the
                   bar, the icon, the reason and the figure are for a computer. */}
@@ -126,7 +128,10 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
                 <TriangleAlert className={cn("hidden size-3.5 shrink-0 md:block", ICON[item.tone])} />
               )}
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 text-[15px] font-medium leading-snug md:block md:truncate md:text-[13px] md:font-semibold md:leading-tight">
+                <span className="block truncate text-[15px] font-medium leading-snug md:hidden">
+                  {titleIn(item.short ?? item.title, t)}
+                </span>
+                <span className="hidden truncate text-[13px] font-semibold leading-tight md:block">
                   {titleIn(item.title, t)}
                 </span>
                 <span className="mt-px hidden truncate text-[11px] leading-tight text-muted-foreground md:block">

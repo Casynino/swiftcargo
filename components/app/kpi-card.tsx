@@ -115,6 +115,7 @@ export function KpiCard({
 
   const card = (
     <div
+      data-tile
       className={cn(
         "animate-in-up group relative h-full overflow-hidden rounded-xl border bg-card p-5 shadow-soft transition-all",
         href && "hover:-translate-y-0.5 hover:shadow-raised",
@@ -137,6 +138,7 @@ export function KpiCard({
           </p>
 
           <p
+            data-tile-value
             className={cn(
               "tnum mt-2.5 text-[28px] font-semibold leading-none tracking-tight",
               VALUE_TONES[tone]
@@ -166,7 +168,7 @@ export function KpiCard({
           </p>
 
           {hint ? (
-            <p className="mt-1.5 text-xs text-muted-foreground"><Tx>{hint}</Tx></p>
+            <p data-tile-hint className="mt-1.5 text-xs text-muted-foreground"><Tx>{hint}</Tx></p>
           ) : null}
 
           {delta !== undefined ? (
@@ -203,6 +205,7 @@ export function KpiCard({
             />
           ) : Icon ? (
             <span
+              data-tile-icon
               className={cn(
                 "grid size-9 place-items-center rounded-lg",
                 ICON_TONES[tone]
