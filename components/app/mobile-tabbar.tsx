@@ -6,16 +6,19 @@ import {
   Banknote,
   Boxes,
   Headset,
+  Landmark,
   LayoutDashboard,
-  Menu,
   MessageSquare,
   PackageCheck,
   PackagePlus,
   Search,
   ShieldCheck,
   Ship,
+  TriangleAlert,
   Truck,
+  Users,
   Wallet,
+  Warehouse,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@prisma/client";
@@ -32,8 +35,9 @@ import { cn } from "@/lib/utils";
  * out was the hamburger, then finding the row. Home and the desk's own working
  * screens are always one press away from here, whatever page the reader is on.
  *
- * Four per desk and the fifth opens the whole menu. A fifth destination puts
- * every target under 60px on a 360px phone.
+ * Five working doors per desk and no menu button: the menu already opens from
+ * the bar at the top of the screen, and two buttons that open the same drawer
+ * waste the best place on a phone (Nino, 16 Nov 2026, as ZELab's bar is).
  */
 type Tab = { href: string; icon: LucideIcon; exact?: boolean; label?: string };
 
@@ -43,12 +47,14 @@ const TABS: Partial<Record<Role, Tab[]>> = {
     { href: "/app/search", icon: Search },
     { href: "/app/containers/loading", icon: Ship, label: "Loading" },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
+    { href: "/app/finance/accounts", icon: Landmark, label: "Accounts" },
   ],
   MANAGER: [
     { href: "/app/manager", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
     { href: "/app/manager/control", icon: ShieldCheck, label: "Control" },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
+    { href: "/app/exceptions", icon: TriangleAlert, label: "Issues" },
   ],
   /* Guangzhou receives and loads; it never checks cargo in or releases it. */
   CHINA_WAREHOUSE: [
@@ -56,6 +62,7 @@ const TABS: Partial<Record<Role, Tab[]>> = {
     { href: "/app/search", icon: Search },
     { href: "/app/receive/new", icon: PackagePlus, label: "Receiving" },
     { href: "/app/containers/loading", icon: Boxes, label: "Loading" },
+    { href: "/app/inventory", icon: Warehouse, label: "Warehouse" },
   ],
   /* The Dar floor works a line: a box lands and is checked in, a customer
      arrives and it goes out. Those two screens are the shift. */
@@ -64,11 +71,13 @@ const TABS: Partial<Record<Role, Tab[]>> = {
     { href: "/app/search", icon: Search },
     { href: "/app/receive/dar", icon: PackageCheck, label: "Check-in" },
     { href: "/app/release", icon: Truck, label: "Release" },
+    { href: "/app/exceptions", icon: TriangleAlert, label: "Issues" },
   ],
   FINANCE: [
     { href: "/app/dashboard", icon: LayoutDashboard, exact: true, label: "Home" },
     { href: "/app/search", icon: Search },
     { href: "/app/finance/collections", icon: Banknote, label: "Collections" },
+    { href: "/app/finance/collections/verify", icon: ShieldCheck, label: "Verify" },
     { href: "/app/finance", icon: Wallet, label: "Finance" },
   ],
   CUSTOMER_SUPPORT: [
@@ -76,6 +85,7 @@ const TABS: Partial<Record<Role, Tab[]>> = {
     { href: "/app/search", icon: Search },
     { href: "/app/support/tickets", icon: MessageSquare, label: "Tickets" },
     { href: "/app/finance/collections", icon: Banknote, label: "Collections" },
+    { href: "/app/customers", icon: Users, label: "Customers" },
   ],
 };
 
@@ -83,14 +93,11 @@ export function MobileTabbar({
   sections,
   home,
   role,
-  onMore,
 }: {
   /** The role's own menu, already filtered by permission. */
   sections: NavSection[];
   home: NavItem;
   role: Role;
-  /** Opens the drawer the shell already has. */
-  onMore: () => void;
 }) {
   const pathname = usePathname() ?? "";
   const t = useT();
@@ -151,17 +158,6 @@ export function MobileTabbar({
             </Link>
           );
         })}
-
-        <button
-          type="button"
-          onClick={onMore}
-          className="flex min-w-0 flex-1 flex-col items-center justify-start gap-0.5 pt-1.5 text-muted-foreground transition-colors active:bg-secondary"
-        >
-          <Menu className="size-5 shrink-0" />
-          <span className="line-clamp-1 px-0.5 text-center text-[10px] font-medium leading-[1.15]">
-            {t("Navigation")}
-          </span>
-        </button>
       </div>
     </nav>
   );

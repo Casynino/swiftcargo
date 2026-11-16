@@ -468,7 +468,7 @@ export function AppShell({
         {/* The room the bottom bar stands in, so the last row of a list is
             never under it. */}
         <div aria-hidden className="h-[calc(3.5rem_+_env(safe-area-inset-bottom))] lg:hidden print:hidden" />
-        <MobileTabbar sections={sections} home={home} role={user.role} onMore={() => setOpen(true)} />
+        <MobileTabbar sections={sections} home={home} role={user.role} />
         {/* One dialog for the whole app, opened from any button or any link
             to #record-payment, over whatever screen the desk is on. */}
         {canRecordPayment ? <RecordPaymentDialog canClear={canClearShortfall} /> : null}
