@@ -80,7 +80,7 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
   return (
     <div>
       {groups.length > 1 ? (
-      <div className="mb-2 flex flex-wrap gap-1.5">
+      <div className="mb-2 hidden flex-wrap gap-1.5 md:flex">
         {["All", ...groups].map((group) => {
           const count =
             group === "All"
@@ -109,36 +109,39 @@ export function AttentionCenter({ items }: { items: AttentionItem[] }) {
 
       {/* Three rows show; the rest scroll inside the panel, which is the same
           height whether the desk has three things or thirty. */}
-      <ul className="max-h-[8.6rem] divide-y overflow-y-auto">
+      <ul className="max-h-[12.5rem] divide-y overflow-y-auto md:max-h-[8.6rem]">
         {shown.map((item) => (
           <li key={item.id}>
             <Link
               href={item.href}
-              className="flex items-center gap-2.5 px-3.5 py-1.5 transition-colors hover:bg-secondary/50"
+              className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-secondary/50 active:bg-secondary/60 md:gap-2.5 md:px-3.5 md:py-1.5"
             >
-              <span aria-hidden className={cn("h-6 w-0.5 shrink-0 rounded-full", BAR[item.tone])} />
+              {/* A phone gets one coloured dot and the line, as ZELab's home does; the
+                  bar, the icon, the reason and the figure are for a computer. */}
+              <span aria-hidden className={cn("size-2 shrink-0 rounded-full md:hidden", BAR[item.tone])} />
+              <span aria-hidden className={cn("hidden h-6 w-0.5 shrink-0 rounded-full md:block", BAR[item.tone])} />
               {item.tone === "neutral" ? (
-                <Info className={cn("size-3.5 shrink-0", ICON[item.tone])} />
+                <Info className={cn("hidden size-3.5 shrink-0 md:block", ICON[item.tone])} />
               ) : (
-                <TriangleAlert className={cn("size-3.5 shrink-0", ICON[item.tone])} />
+                <TriangleAlert className={cn("hidden size-3.5 shrink-0 md:block", ICON[item.tone])} />
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-semibold leading-tight">
+                <span className="line-clamp-2 text-[15px] font-medium leading-snug md:block md:truncate md:text-[13px] md:font-semibold md:leading-tight">
                   {titleIn(item.title, t)}
                 </span>
-                <span className="mt-px block truncate text-[11px] leading-tight text-muted-foreground">
+                <span className="mt-px hidden truncate text-[11px] leading-tight text-muted-foreground md:block">
                   {t(item.detail)}
                 </span>
               </span>
               {item.meta ? (
-                <span className="shrink-0 text-right">
+                <span className="hidden shrink-0 text-right md:block">
                   <span className="block font-mono text-[11px] font-semibold tabular-nums">{t(item.meta)}</span>
                   {item.metaSub ? (
                     <span className="block font-mono text-[10px] tabular-nums text-muted-foreground">{t(item.metaSub)}</span>
                   ) : null}
                 </span>
               ) : null}
-              <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground md:size-3.5" />
             </Link>
           </li>
         ))}

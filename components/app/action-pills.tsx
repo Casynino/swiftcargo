@@ -53,39 +53,11 @@ export async function ActionPills({ pills }: { pills: ActionPill[] }) {
 
   return (
     <>
-      {/* PHONE: five tiles across, each a square icon over a short name, and a
-          sixth or seventh a swipe away — thumbs hit tiles, not pills. */}
-      <div
-        className={cn(
-          "-mx-4 grid gap-2 px-4 pb-1 lg:hidden",
-          /* Up to seven sit in one row across the width; more scroll sideways. */
-          pills.length <= 7
-            ? "grid-flow-col auto-cols-fr gap-0.5"
-            : "snap-x snap-mandatory scroll-px-4 auto-cols-[calc((100%-2.5rem)/6)] grid-flow-col overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        )}
-      >
-        {pills.map((pill) => {
-          const Icon = iconFor(pill.icon);
-          return (
-            <Link
-              key={`m-${pill.href}${pill.label}`}
-              href={pill.href}
-              className="focus-ring flex min-w-0 snap-start flex-col items-center gap-1.5 rounded-2xl px-0 py-2.5 text-center transition-transform active:scale-95 active:bg-foreground/5"
-            >
-              {Icon ? <Icon className={cn("size-6", CHIP[pill.tone ?? "plain"])} strokeWidth={1.6} /> : null}
-              <span className="w-full truncate text-[10.5px] font-medium leading-tight text-foreground/85">{t(pill.short ?? pill.label)}</span>
-            </Link>
-          );
-        })}
-      </div>
-    <div className="-mx-1 hidden flex-wrap gap-2 px-1 lg:flex">
+      {/* A phone has the bottom bar and the menu for these; the home screen keeps
+          to the banner, what needs attention and the figures (as ZELab's does). */}
+    <div className="-mx-1 hidden flex-wrap gap-2 px-1 md:flex">
       {pills.map((pill) => {
-        const Icon = (
-          Icons as unknown as Record<
-            string,
-            React.ComponentType<{ className?: string; strokeWidth?: number }>
-          >
-        )[pill.icon];
+        const Icon = iconFor(pill.icon);
         return (
           <Link
             key={pill.href + pill.label}
