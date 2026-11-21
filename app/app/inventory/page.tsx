@@ -147,7 +147,11 @@ export default async function InventoryPage({
       ? { receivedAt: { ...(since ? { gte: since } : {}), ...(until ? { lte: until } : {}) } }
       : null;
 
-  const cargo = await prisma.cargo.findMany({
+  /* Nothing below the list depends on the list, so the counts, the category
+     book and the storage terms are asked for together with it, not after it:
+     one wait instead of five. */
+  const [cargo, [waiting, loaded, held], categories, money] = await Promise.all([
+  prisma.cargo.findMany({
     where: {
       deletedAt: null,
       status: { in: filtered },
@@ -263,9 +267,8 @@ export default async function InventoryPage({
         orderBy: { createdAt: "asc" },
       },
     },
-  });
-
-  const [waiting, loaded, held] = await Promise.all([
+  }),
+  Promise.all([
     prisma.cargo.count({
       where: {
         deletedAt: null,
@@ -285,11 +288,15 @@ export default async function InventoryPage({
     prisma.cargo.count({
       where: { deletedAt: null, operationalHold: true, status: { in: statuses } },
     }),
-  ]);
-
+  ]),
   /* The categories the rate book actually prices, so the filter offers what the
      counter was offered rather than a free-text box nobody spells the same. */
-  const categories = await cargoTypeOptions();
+  cargoTypeOptions(),
+  prisma.companySetting.findUnique({
+    where: { id: "singleton" },
+    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+  }),
+  ]);
 
   /*
     HAS THIS CUSTOMER BEEN TOLD?
@@ -349,10 +356,6 @@ export default async function InventoryPage({
 
   /* The storage terms a customer is quoted are the company's own, never a
      figure typed into a message. */
-  const money = await prisma.companySetting.findUnique({
-    where: { id: "singleton" },
-    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
-  });
   const storage = {
     freeDays: money?.freeStorageDays ?? 7,
     perDay: money?.storagePerDay?.toString() ?? null,
@@ -674,22 +677,24 @@ export default async function InventoryPage({
                           <div className="flex items-center gap-1.5">
                             <Link
                               href={`/app/cargo/${item.id}`}
-                              className="flex -space-x-2"
+                              className="flex"
                               aria-label={T("{n} photo(s) of {reference}")
                                 .replace("{n}", String(item.photos.length))
                                 .replace("{reference}", item.reference)}
                             >
-                              {item.photos.map((photo) => (
-                                /* Uploads from a warehouse phone, of unknown
-                                   dimensions — the optimiser cannot help. */
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
-                                  key={photo.id}
-                                  src={photo.url}
-                                  alt=""
-                                  className="size-9 rounded border-2 border-background object-cover"
-                                />
-                              ))}
+                              {/* The first photograph only, and only once the row is on
+                                  screen: three full-size phone pictures a row, two hundred
+                                  rows, was the page that never finished opening. */}
+                              <img
+                                src={item.photos[0].url}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="size-9 rounded border-2 border-background object-cover"
+                              />
+                              {item.photos.length > 1 ? (
+                                <span className="tnum ml-1.5 self-center text-xs text-muted-foreground">+{item.photos.length - 1}</span>
+                              ) : null}
                             </Link>
                             <a
                               href={item.photos[0].url}
