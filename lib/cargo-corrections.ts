@@ -397,7 +397,7 @@ export async function syncLineTotals(
     },
   });
 
-  await redrawDeliveryNote(tx, actor, cargoId, reason);
+  return redrawDeliveryNote(tx, actor, cargoId, reason);
 }
 
 /**
@@ -419,7 +419,7 @@ async function redrawDeliveryNote(
   actor: Actor,
   cargoId: string,
   reason: string
-) {
+): Promise<boolean> {
   const [note, receiving, lines] = await Promise.all([
     tx.deliveryNote.findUnique({
       where: { cargoId },
@@ -434,7 +434,7 @@ async function redrawDeliveryNote(
       orderBy: { reference: "asc" },
     }),
   ]);
-  if (!note || !receiving) return;
+  if (!note || !receiving) return false;
 
   const was = note.snapshot as Record<string, unknown> & {
     packagesCount?: number;
@@ -475,7 +475,7 @@ async function redrawDeliveryNote(
     JSON.stringify(
       ((was.lines as { quantity: number; cbm: string }[]) ?? []).map((l) => [l.quantity, l.cbm])
     ) === JSON.stringify(drawnLines.map((l) => [l.quantity, l.cbm]));
-  if (unchanged) return;
+  if (unchanged) return false;
 
   for (const field of ["packagesCount", "piecesCount", "weightKg", "cbm"] as const) {
     const before = was[field] ?? null;
@@ -507,6 +507,7 @@ async function redrawDeliveryNote(
       } as unknown as Prisma.InputJsonValue,
     },
   });
+  return true;
 }
 
 /**
@@ -652,7 +653,16 @@ export async function applyPackageLine(
     if ("declaredUnitValue" in next)
       num("declaredUnitValue", before.declaredUnitValue, next.declaredUnitValue ?? null);
 
-    if (changes.length === 0) throw new CorrectionRefused("Nothing was changed.");
+    if (changes.length === 0) {
+      /* A line that already says the right thing, saved again, is how a note
+         drawn before the count was corrected is brought into step: the totals
+         are re-added from the lines and the paper is drawn again if it
+         disagrees. Only when something was out of step is that a save. */
+      if (!checkedInAtDar(cargo) && (await syncLineTotals(tx, actor, cargo.id, reason))) {
+        return { reference: cargo.reference, created: false, measurementMoved: false };
+      }
+      throw new CorrectionRefused("Nothing was changed.");
+    }
 
     for (const change of changes) {
       await recordFieldChange(
