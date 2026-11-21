@@ -29,6 +29,9 @@ type Snapshot = {
   receivedAt: string;
   packagesCount: number;
   piecesCount: number | null;
+  /** Drawn again after a count was corrected at the Guangzhou counter. */
+  version?: number;
+  redrawnAt?: string;
   weightKg: string | null;
   cbm: string;
   condition: string;
@@ -157,6 +160,11 @@ export default async function DeliveryNotePage({
               <p className="text-[9px] uppercase tracking-[0.2em] text-white/60">Hati ya kupokea mzigo · 收货单</p>
               <p className="tnum mt-1 text-2xl font-extrabold tracking-tight">{note.number}</p>
               <p className="text-[10px] text-white/70">Issued {formatDateTime(note.issuedAt)}</p>
+              {snap.version && snap.version > 1 && snap.redrawnAt ? (
+                <p className="text-[10px] font-semibold text-white/90">
+                  Corrected {formatDateTime(new Date(snap.redrawnAt))} · version {snap.version}
+                </p>
+              ) : null}
             </div>
           </div>
           <div className="relative mt-5 h-1 rounded-full bg-gradient-to-r from-[#f4611f] via-[#ffb27d] to-[#4fc9f0]" />

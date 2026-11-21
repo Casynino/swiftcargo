@@ -396,6 +396,117 @@ export async function syncLineTotals(
       ...(lines.some((l) => l.weightKg !== null) ? { weightKg: weight } : {}),
     },
   });
+
+  await redrawDeliveryNote(tx, actor, cargoId, reason);
+}
+
+/**
+ * THE PAPER FOLLOWS THE COUNT WHILE GUANGZHOU STILL HOLDS THE CARGO.
+ *
+ * The delivery note is drawn when the cargo is received and stays a frozen
+ * copy of what it said. A count corrected a minute later on the same counter
+ * (38 cartons keyed as 33) left the customer holding a note one carton at odds
+ * with the record, and nobody to explain which was right. While Guangzhou
+ * still holds the cargo the note is therefore drawn again from the corrected
+ * lines under the same number, as the packing list is at the seal, and marked
+ * as a later version. The figures it said before go to FieldChange first.
+ *
+ * After Dar books the cargo in this is never reached: China's receiving row is
+ * then left as China measured it, and so is the paper that says so.
+ */
+async function redrawDeliveryNote(
+  tx: TxClient,
+  actor: Actor,
+  cargoId: string,
+  reason: string
+) {
+  const [note, receiving, lines] = await Promise.all([
+    tx.deliveryNote.findUnique({
+      where: { cargoId },
+      select: { id: true, number: true, snapshot: true },
+    }),
+    tx.chinaReceiving.findUnique({
+      where: { cargoId },
+      select: { packagesCount: true, piecesCount: true, weightKg: true, cbm: true },
+    }),
+    tx.cargoPackage.findMany({
+      where: { cargoId, deletedAt: null },
+      orderBy: { reference: "asc" },
+    }),
+  ]);
+  if (!note || !receiving) return;
+
+  const was = note.snapshot as Record<string, unknown> & {
+    packagesCount?: number;
+    piecesCount?: number | null;
+    weightKg?: string | null;
+    cbm?: string;
+    version?: number;
+  };
+  const now = {
+    packagesCount: receiving.packagesCount,
+    piecesCount: receiving.piecesCount,
+    weightKg: receiving.weightKg?.toString() ?? null,
+    cbm: receiving.cbm.toString(),
+  };
+  const drawnLines = lines.map((p) => ({
+    reference: p.reference,
+    type: p.packageType,
+    description: p.description,
+    descriptionZh: p.descriptionZh,
+    quantity: p.quantity,
+    pieces: p.pieces,
+    unit: p.unit,
+    length: p.length?.toString() ?? null,
+    width: p.width?.toString() ?? null,
+    height: p.height?.toString() ?? null,
+    cbm: p.cbm.toString(),
+    weightKg: p.weightKg?.toString() ?? null,
+    balerNumber: p.balerNumber,
+  }));
+
+  /* Nothing the paper shows has moved (a description or a type, say): leave
+     the version alone rather than minting a new one for the same figures. */
+  const unchanged =
+    was.packagesCount === now.packagesCount &&
+    (was.piecesCount ?? null) === now.piecesCount &&
+    (was.weightKg ?? null) === now.weightKg &&
+    was.cbm === now.cbm &&
+    JSON.stringify(
+      ((was.lines as { quantity: number; cbm: string }[]) ?? []).map((l) => [l.quantity, l.cbm])
+    ) === JSON.stringify(drawnLines.map((l) => [l.quantity, l.cbm]));
+  if (unchanged) return;
+
+  for (const field of ["packagesCount", "piecesCount", "weightKg", "cbm"] as const) {
+    const before = was[field] ?? null;
+    if (String(before) === String(now[field])) continue;
+    await recordFieldChange(
+      {
+        actor,
+        entity: "DeliveryNote",
+        entityId: note.id,
+        field,
+        oldValue: before === null ? null : String(before),
+        newValue: now[field] === null ? null : String(now[field]),
+        reason,
+      },
+      tx
+    );
+  }
+
+  await tx.deliveryNote.update({
+    where: { id: note.id },
+    data: {
+      snapshot: {
+        ...was,
+        ...now,
+        lines: drawnLines,
+        version: (was.version ?? 1) + 1,
+        redrawnAt: new Date().toISOString(),
+        redrawnBy: actor.name,
+      } as unknown as Prisma.InputJsonValue,
+    },
+  });
 }
 
 /**

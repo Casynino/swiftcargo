@@ -15,6 +15,8 @@ export const maxDuration = 60;
 
 /** The snapshot the note froze when the goods were taken in. */
 type Snapshot = {
+  version?: number;
+  redrawnAt?: string;
   cargoReference: string;
   shippingMark: string | null;
   sender: { name: string; phone: string; code: string };
@@ -102,7 +104,11 @@ export async function GET(
 
   const pdf = renderDeliveryNotePdf({
     number: note.number,
-    issued: formatDateTime(note.issuedAt) ?? "",
+    issued:
+      (formatDateTime(note.issuedAt) ?? "") +
+      (snap.version && snap.version > 1 && snap.redrawnAt
+        ? ` · corrected ${formatDateTime(new Date(snap.redrawnAt)) ?? ""} (v${snap.version})`
+        : ""),
     company: {
       name: company?.name ?? "Swift Cargo",
       tagline: company?.tagline ?? null,
