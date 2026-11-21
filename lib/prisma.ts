@@ -21,7 +21,12 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
    moment later is answered. Typed as the plain client so nothing else changes. */
 const create = () =>
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
+    /* PRISMA_LOG_QUERIES=1 prints every query, for counting what a page asks. */
+    log: process.env.PRISMA_LOG_QUERIES
+      ? ["query", "warn", "error"]
+      : process.env.NODE_ENV === "development"
+        ? ["warn", "error"]
+        : ["error"],
   }).$extends({
     query: {
       $allOperations: ({ args, query }) => withRetry(() => query(args)),
