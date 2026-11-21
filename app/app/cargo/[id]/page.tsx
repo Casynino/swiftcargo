@@ -98,38 +98,39 @@ export default async function CargoDetailPage({
   const { box: scannedBox } = await searchParams;
 
   /* The rate book's readers get the valuation; the floors never receive it at
-     all. See cargoById — this is a strip, not a hidden div. */
-  /* The storage line on the message reads from settings, so changing the rate
-     changes every message without anybody editing wording. */
-  const money = await prisma.companySetting.findUnique({
-    where: { id: "singleton" },
-    select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
-  });
+     all. See cargoById — this is a strip, not a hidden div.
+     The storage line on the message reads from settings, so changing the rate
+     changes every message without anybody editing wording.
 
-  const accounts = await prisma.bankAccount.findMany({
-    where: { active: true },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-    select: { id: true, bankName: true, currency: true, branch: true, kind: true },
-  });
-
-  const cargo = await cargoById(id, can(user.role, "rate.view"));
+     None of these depends on another, so they are asked together: the page
+     used to wait for each in turn, a round trip to the database apiece. */
+  const [money, accounts, cargo, warehouses, locale, cargoTypes] = await Promise.all([
+    prisma.companySetting.findUnique({
+      where: { id: "singleton" },
+      select: { freeStorageDays: true, storagePerDay: true, storageCurrency: true },
+    }),
+    prisma.bankAccount.findMany({
+      where: { active: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, bankName: true, currency: true, branch: true, kind: true },
+    }),
+    cargoById(id, can(user.role, "rate.view")),
+    prisma.warehouse.findMany({
+      where: { active: true, kind: "CHINA" },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    localeOf(user.id),
+    cargoTypeOptions(),
+  ]);
   if (!cargo) notFound();
 
-  const warehouses = await prisma.warehouse.findMany({
-    where: { active: true, kind: "CHINA" },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
-
   const amend = canAmendCargo(user.role, cargo.status);
-  const locale = await localeOf(user.id);
   /* The lines belong to whichever floor holds the cargo, Dar included once it
      has booked the boxes in. The actions apply the same custody — see
      lib/cargo-corrections.ts. */
   const chinaHolds = cargoCustody(cargo.status) === "CHINA";
   const canEditDetails = can(user.role, "cargo.edit") && amend;
-
-  const cargoTypes = await cargoTypeOptions();
 
   /*
     THE COUNTER, ON THE CARGO RECORD.
