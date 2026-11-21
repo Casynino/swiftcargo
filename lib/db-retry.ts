@@ -19,6 +19,7 @@ export async function withRetry<T>(run: () => Promise<T>, waits: number[] = WAIT
       return await run();
     } catch (error) {
       if (!isUnreachable(error) || attempt >= waits.length) throw error;
+      console.warn(`[db-retry] database unreachable, asking again in ${waits[attempt]}ms (attempt ${attempt + 1})`);
       await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
     }
   }

@@ -15,6 +15,8 @@ import { withRetry } from "@/lib/db-retry";
  * side, and the pooler fans the instances in. Migrations use DIRECT_URL, because
  * PgBouncer in transaction mode cannot run them.
  */
+const SLOW_QUERY_MS = 250;
+
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 /* A sleeping Neon database fails the first request with P1001; asking again a
@@ -29,7 +31,18 @@ const create = () =>
         : ["error"],
   }).$extends({
     query: {
-      $allOperations: ({ args, query }) => withRetry(() => query(args)),
+      /* Names any question that took long, in the server log and nowhere else:
+         the model and the operation and the milliseconds, never a value. When
+         a screen is slow this is what says which question it was waiting on. */
+      $allOperations: async ({ model, operation, args, query }) => {
+        const started = Date.now();
+        try {
+          return await withRetry(() => query(args));
+        } finally {
+          const ms = Date.now() - started;
+          if (ms >= SLOW_QUERY_MS) console.warn(`[slow-query] ${model ?? "raw"}.${operation} ${ms}ms`);
+        }
+      },
     },
   }) as unknown as PrismaClient;
 

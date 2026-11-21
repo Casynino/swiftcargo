@@ -70,11 +70,16 @@ let revoked = false;
 /**
  * Who is asking, as the database currently describes them.
  *
+ * Asked once per request. A page calls this from the layout, the page itself
+ * and a dozen components, and while the Developer is working as somebody each
+ * call used to cost three more queries (the account, the session, the person
+ * worked as) that nothing remembered: a screen waited on dozens of them in turn.
+ *
  * Null when there is no session, and null when the account behind the session
  * has been suspended or removed — the same two tests the login screen makes,
  * asked again on every request rather than once at sign-in.
  */
-async function viewer(): Promise<SessionUser | null> {
+const viewer = cache(async function viewer(): Promise<SessionUser | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
 
@@ -123,7 +128,7 @@ async function viewer(): Promise<SessionUser | null> {
     customerId: user.customerId,
     accountType: user.role === "DEVELOPER" ? "DEVELOPER" : "STAFF",
   };
-}
+});
 
 export async function currentUser(): Promise<SessionUser | null> {
   return viewer();
